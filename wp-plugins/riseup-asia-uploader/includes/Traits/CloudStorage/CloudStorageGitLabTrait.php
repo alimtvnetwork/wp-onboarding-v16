@@ -125,20 +125,12 @@ trait CloudStorageGitLabTrait {
     /** List files in a repository directory. */
     private function gitlabListFiles(array $account, string $token, string $dir): array
     {
+        $body = $this->gitlabListTree($account, $token, $dir);
         $apiBase     = $this->gitlabGetApiBase($account);
         $namespace   = $account['RepoOwner'] ?? '';
         $projectName = $account['RepoName'] ?? 'wp-backups';
         $projectPath = urlencode($namespace . '/' . $projectName);
 
-        $treePath   = sprintf('/projects/%s/repository/tree?path=%s&ref=main', $projectPath, urlencode($dir));
-        $statusCode = $this->gitlabApiStatusCode('GET', $apiBase, $treePath, $token);
-        $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
-
-        if ($isNotFound) {
-            return array();
-        }
-
-        $body  = $this->gitlabApiRequest('GET', $apiBase, $treePath, $token);
         $files = array();
 
         foreach ($body as $item) {
@@ -161,6 +153,56 @@ trait CloudStorageGitLabTrait {
         }
 
         return $files;
+    }
+
+    /**
+     * List subdirectory names in a repository directory.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $dir     Directory path.
+     * @return array<string> Directory names (not full paths).
+     */
+    private function gitlabListDirectories(array $account, string $token, string $dir): array
+    {
+        $body = $this->gitlabListTree($account, $token, $dir);
+        $dirs = array();
+
+        foreach ($body as $item) {
+            $isTree = (($item['type'] ?? '') === 'tree');
+
+            if ($isTree) {
+                $dirs[] = $item['name'] ?? '';
+            }
+        }
+
+        return $dirs;
+    }
+
+    /**
+     * Fetch raw repository tree for a directory (non-recursive, one level).
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $dir     Directory path.
+     * @return array Raw API response items.
+     */
+    private function gitlabListTree(array $account, string $token, string $dir): array
+    {
+        $apiBase     = $this->gitlabGetApiBase($account);
+        $namespace   = $account['RepoOwner'] ?? '';
+        $projectName = $account['RepoName'] ?? 'wp-backups';
+        $projectPath = urlencode($namespace . '/' . $projectName);
+
+        $treePath   = sprintf('/projects/%s/repository/tree?path=%s&ref=main', $projectPath, urlencode($dir));
+        $statusCode = $this->gitlabApiStatusCode('GET', $apiBase, $treePath, $token);
+        $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        return $this->gitlabApiRequest('GET', $apiBase, $treePath, $token);
     }
 
     /** Delete a file from the repository. */

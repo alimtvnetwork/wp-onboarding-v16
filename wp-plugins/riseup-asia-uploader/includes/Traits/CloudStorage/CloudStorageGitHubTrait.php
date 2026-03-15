@@ -166,19 +166,7 @@ trait CloudStorageGitHubTrait {
     /** List files in a repository directory. */
     private function githubListFiles(array $account, string $token, string $dir): array
     {
-        $owner = $account['RepoOwner'] ?? '';
-        $repo  = $account['RepoName'] ?? 'wp-backups';
-
-        $path = sprintf('/repos/%s/%s/contents/%s', urlencode($owner), urlencode($repo), $dir);
-
-        $statusCode = $this->githubApiStatusCode('GET', $path, $token);
-        $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
-
-        if ($isNotFound) {
-            return array();
-        }
-
-        $body  = $this->githubApiRequest('GET', $path, $token);
+        $body = $this->githubListContents($account, $token, $dir);
         $files = array();
 
         foreach ($body as $item) {
@@ -196,6 +184,55 @@ trait CloudStorageGitHubTrait {
         }
 
         return $files;
+    }
+
+    /**
+     * List subdirectory names in a repository directory.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $dir     Directory path.
+     * @return array<string> Directory names (not full paths).
+     */
+    private function githubListDirectories(array $account, string $token, string $dir): array
+    {
+        $body = $this->githubListContents($account, $token, $dir);
+        $dirs = array();
+
+        foreach ($body as $item) {
+            $isDir = (($item['type'] ?? '') === 'dir');
+
+            if ($isDir) {
+                $dirs[] = $item['name'] ?? '';
+            }
+        }
+
+        return $dirs;
+    }
+
+    /**
+     * Fetch raw Contents API response for a directory.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token.
+     * @param string $dir     Directory path.
+     * @return array Raw API response items.
+     */
+    private function githubListContents(array $account, string $token, string $dir): array
+    {
+        $owner = $account['RepoOwner'] ?? '';
+        $repo  = $account['RepoName'] ?? 'wp-backups';
+
+        $path = sprintf('/repos/%s/%s/contents/%s', urlencode($owner), urlencode($repo), $dir);
+
+        $statusCode = $this->githubApiStatusCode('GET', $path, $token);
+        $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        return $this->githubApiRequest('GET', $path, $token);
     }
 
     /** Delete a file from the repository. */

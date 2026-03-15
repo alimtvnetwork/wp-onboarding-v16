@@ -1,9 +1,6 @@
 <?php
 /**
- * CloudStorageGoogleDriveTrait — Google Drive API operations for cloud storage.
- *
- * Supports OAuth2 Bearer authentication, resumable uploads for large files,
- * folder creation, file listing, and deletion via the Drive v3 API.
+ * CloudStorageGoogleDriveTrait — Google Drive v3 API operations.
  *
  * @package RiseupAsia\Traits\CloudStorage
  * @since   2.15.0
@@ -16,8 +13,6 @@ if (!defined('ABSPATH')) {
 }
 
 use RuntimeException;
-use Throwable;
-
 use RiseupAsia\Enums\HttpConfigType;
 use RiseupAsia\Enums\HttpHeaderType;
 use RiseupAsia\Enums\HttpStatusType;
@@ -122,7 +117,10 @@ trait CloudStorageGoogleDriveTrait {
             return array();
         }
 
-        $query = sprintf("'%s' in parents and trashed=false", $folderId);
+        $query = sprintf(
+            "'%s' in parents and mimeType!='application/vnd.google-apps.folder' and trashed=false",
+            $folderId,
+        );
 
         $url = self::GDRIVE_API . '/files?' . http_build_query(array(
             'q'       => $query,
@@ -150,6 +148,50 @@ trait CloudStorageGoogleDriveTrait {
         return $files;
     }
 
+    /** List subfolder names under a resolved path from the account's root folder. */
+    private function googleDriveListDirectories(array $account, string $token, string $dir): array
+    {
+        $validToken   = $this->googleDriveEnsureValidToken($account);
+        $rootFolderId = $account['FolderId'] ?? '';
+        $isRootEmpty  = empty($rootFolderId);
+
+        if ($isRootEmpty) {
+            return array();
+        }
+
+        // Resolve the target folder by walking the path
+        $parentId = $this->googleDriveResolveFolderByPath($validToken, $rootFolderId, $dir);
+        $isNotFound = empty($parentId);
+
+        if ($isNotFound) {
+            return array();
+        }
+
+        $query = sprintf(
+            "'%s' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            $parentId,
+        );
+
+        $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+            'q'       => $query,
+            'fields'  => 'files(id,name)',
+            'orderBy' => 'name',
+        ));
+
+        $options  = $this->googleDriveBuildOptions('GET', $validToken);
+        $response = wp_remote_get($url, $options);
+        $body     = $this->googleDriveParseResponse($response);
+
+        $dirs  = array();
+        $items = $body['files'] ?? array();
+
+        foreach ($items as $item) {
+            $dirs[] = $item['name'] ?? '';
+        }
+
+        return $dirs;
+    }
+
     /** Delete a file from Google Drive by file ID. */
     private function googleDriveDeleteFile(array $account, string $token, string $fileId): bool
     {
@@ -165,16 +207,7 @@ trait CloudStorageGoogleDriveTrait {
         return $isDeleted;
     }
 
-    /**
-     * Delete a folder and all its contents from Google Drive.
-     *
-     * Finds the folder by navigating the path hierarchy (e.g., "full-backup/001 - …"),
-     * then deletes the folder by ID — Google Drive cascades to all children.
-     *
-     * @param array  $account Account row.
-     * @param string $token   Decrypted access token (unused — refreshed internally).
-     * @param string $path    Folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
-     */
+    /** Delete a folder by resolving its path, then deleting by ID (cascades to children). */
     private function googleDriveDeleteFolder(array $account, string $token, string $path): void
     {
         $validToken  = $this->googleDriveEnsureValidToken($account);
@@ -209,14 +242,7 @@ trait CloudStorageGoogleDriveTrait {
         }
     }
 
-    /**
-     * Resolve a folder ID by walking a slash-separated path from a parent folder.
-     *
-     * @param string $token        Valid access token.
-     * @param string $parentId     Parent folder ID to start from.
-     * @param string $relativePath Slash-separated path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
-     * @return string Folder ID or empty string if not found.
-     */
+    /** Resolve a folder ID by walking a slash-separated path from a parent folder. */
     private function googleDriveResolveFolderByPath(string $token, string $parentId, string $relativePath): string
     {
         $segments  = explode('/', trim($relativePath, '/'));
@@ -375,11 +401,10 @@ trait CloudStorageGoogleDriveTrait {
             'name'    => $fileName,
             'parents' => array($folderId),
         ));
-
         $initOptions = $this->googleDriveBuildOptions('POST', $token);
-        $initOptions['headers']['Content-Type']            = 'application/json; charset=UTF-8';
-        $initOptions['headers']['X-Upload-Content-Type']   = 'application/zip';
-        $initOptions['headers']['X-Upload-Content-Length']  = $fileSize;
+        $initOptions['headers']['Content-Type']           = 'application/json; charset=UTF-8';
+        $initOptions['headers']['X-Upload-Content-Type']  = 'application/zip';
+        $initOptions['headers']['X-Upload-Content-Length'] = $fileSize;
         $initOptions['body'] = $metadata;
 
         $initUrl      = self::GDRIVE_UPLOAD . '/files?uploadType=resumable&fields=id,name,webViewLink';
@@ -412,7 +437,6 @@ trait CloudStorageGoogleDriveTrait {
 
             if ($isIncomplete) {
                 $offset += $chunkLen;
-
                 continue;
             }
 
@@ -420,12 +444,10 @@ trait CloudStorageGoogleDriveTrait {
 
             if ($isComplete) {
                 fclose($handle);
-
                 return json_decode(wp_remote_retrieve_body($chunkResponse), true) ?? array();
             }
 
             fclose($handle);
-
             throw new RuntimeException(
                 sprintf('Google Drive chunk upload failed at offset %d [HTTP %d]', $offset, $chunkStatus),
             );
