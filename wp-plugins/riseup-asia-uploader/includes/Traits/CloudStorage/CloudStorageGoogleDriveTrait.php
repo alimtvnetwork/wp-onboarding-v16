@@ -165,6 +165,98 @@ trait CloudStorageGoogleDriveTrait {
         return $isDeleted;
     }
 
+    /**
+     * Delete a folder and all its contents from Google Drive.
+     *
+     * Finds the folder by navigating the path hierarchy (e.g., "full-backup/001 - …"),
+     * then deletes the folder by ID — Google Drive cascades to all children.
+     *
+     * @param array  $account Account row.
+     * @param string $token   Decrypted access token (unused — refreshed internally).
+     * @param string $path    Folder path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     */
+    private function googleDriveDeleteFolder(array $account, string $token, string $path): void
+    {
+        $validToken  = $this->googleDriveEnsureValidToken($account);
+        $rootFolderId = $account['FolderId'] ?? '';
+        $isRootEmpty  = empty($rootFolderId);
+
+        if ($isRootEmpty) {
+            return;
+        }
+
+        $folderId = $this->googleDriveResolveFolderByPath($validToken, $rootFolderId, $path);
+        $isNotFound = empty($folderId);
+
+        if ($isNotFound) {
+            $this->fileLogger->info('[CLOUD-GDRIVE] Folder not found for deletion', array('path' => $path));
+
+            return;
+        }
+
+        $url     = self::GDRIVE_API . '/files/' . urlencode($folderId);
+        $options = $this->googleDriveBuildOptions('DELETE', $validToken);
+
+        $response   = wp_remote_request($url, $options);
+        $statusCode = (int) wp_remote_retrieve_response_code($response);
+        $isDeleted  = ($statusCode === HttpStatusType::NoContent->value);
+
+        if ($isDeleted) {
+            $this->fileLogger->info('[CLOUD-GDRIVE] Deleted folder', array(
+                'path'     => $path,
+                'folderId' => $folderId,
+            ));
+        }
+    }
+
+    /**
+     * Resolve a folder ID by walking a slash-separated path from a parent folder.
+     *
+     * @param string $token        Valid access token.
+     * @param string $parentId     Parent folder ID to start from.
+     * @param string $relativePath Slash-separated path (e.g., "full-backup/001 - 15 Mar 2026 - W11").
+     * @return string Folder ID or empty string if not found.
+     */
+    private function googleDriveResolveFolderByPath(string $token, string $parentId, string $relativePath): string
+    {
+        $segments  = explode('/', trim($relativePath, '/'));
+        $currentId = $parentId;
+
+        foreach ($segments as $segment) {
+            $isSegmentEmpty = empty($segment);
+
+            if ($isSegmentEmpty) {
+                continue;
+            }
+
+            $query = sprintf(
+                "'%s' in parents and name='%s' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+                $currentId,
+                addslashes($segment),
+            );
+
+            $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+                'q'      => $query,
+                'fields' => 'files(id)',
+            ));
+
+            $options  = $this->googleDriveBuildOptions('GET', $token);
+            $response = wp_remote_get($url, $options);
+            $body     = $this->googleDriveParseResponse($response);
+
+            $files   = $body['files'] ?? array();
+            $isFound = !empty($files);
+
+            if (!$isFound) {
+                return '';
+            }
+
+            $currentId = $files[0]['id'] ?? '';
+        }
+
+        return $currentId;
+    }
+
     // ── Google Drive Private Helpers ───────────────────────────────
 
     /** Ensure the access token is valid; refresh if expired. Returns a valid token. */
