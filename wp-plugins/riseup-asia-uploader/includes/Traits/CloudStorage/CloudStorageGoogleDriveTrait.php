@@ -153,17 +153,7 @@ trait CloudStorageGoogleDriveTrait {
         return $files;
     }
 
-    /**
-     * List subfolder names in the backup root folder.
-     *
-     * For Google Drive, the `$dir` parameter is used to resolve a subfolder
-     * by path from the account's root FolderId.
-     *
-     * @param array  $account Account row.
-     * @param string $token   Decrypted access token (unused — refreshed internally).
-     * @param string $dir     Relative folder path (e.g., "full-backup").
-     * @return array<string> Subfolder names.
-     */
+    /** List subfolder names under a resolved path from the account's root folder. */
     private function googleDriveListDirectories(array $account, string $token, string $dir): array
     {
         $validToken   = $this->googleDriveEnsureValidToken($account);
