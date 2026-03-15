@@ -103,7 +103,7 @@ trait CloudStorageSettingsTrait {
     }
 
     /** Format a settings row for API response. */
-    private function formatSettingsRow(?array $row): array
+    private function formatSettingsRow(array|false $row): array
     {
         $isNull = ($row === false);
 
