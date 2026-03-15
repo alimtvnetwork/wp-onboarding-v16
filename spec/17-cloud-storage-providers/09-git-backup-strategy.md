@@ -276,9 +276,9 @@ enum CloudStorageBackupStatusType: string
 
 ## 3. Automated Scheduling
 
-### 3.1 WordPress Cron
+### 3.1 WordPress Cron (Default)
 
-Register two WP-Cron events:
+Register two WP-Cron events. WP-Cron fires on page visits, which is acceptable for most sites.
 
 ```php
 // In Plugin activation hook
@@ -299,7 +299,18 @@ if (!wp_next_scheduled('riseup_cloud_incremental_backup')) {
 }
 ```
 
-### 3.2 Cron Handlers
+### 3.2 Real System Cron (Recommended for Reliability)
+
+For low-traffic sites where WP-Cron may miss schedules, document this setup:
+
+```bash
+# Add to crontab (crontab -e) or cPanel Cron Jobs:
+*/15 * * * * curl -sf https://your-site.com/wp-cron.php >/dev/null 2>&1
+```
+
+**Important**: Do NOT set `DISABLE_WP_CRON` in the plugin — that's the user's choice. The plugin should work with both WP-Cron and real cron.
+
+### 3.3 Cron Handlers
 
 ```php
 add_action('riseup_cloud_full_backup', array($this, 'handleScheduledFullBackup'));
