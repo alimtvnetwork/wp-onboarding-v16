@@ -106,13 +106,22 @@ The cloud storage provider system supports remote backups to three providers:
 | Restore method | Git-first (shallow clone), API fallback |
 | Branch cleanup | Auto-delete with full backup rotation |
 
+## PHP Utility Classes (Phase 5 v2)
+
+| Class | Location | Purpose |
+|-------|----------|---------|
+| `ZipSplitter` | `CloudStorage/ZipSplitter.php` | Split ZIP into ≤ 3 MB chunks + manifest.json with SHA-256 |
+| `ZipReassembler` | `CloudStorage/ZipReassembler.php` | Reassemble chunks with checksum verification |
+| `BackupFolderResolver` | `CloudStorage/BackupFolderResolver.php` | Folder naming (`{seq}_{DD-MMM-YYYY}[_{label}]`), path resolution, commit messages |
+
 ## Pending Backend Work
 
 1. Wire `cloud_upload` stage into `ServicePublishPipeline.go`
 2. Emit WebSocket progress events for cloud upload
 3. Cloud upload failures should warn, not block publish
 4. Skip stage if no accounts selected
-5. Implement `createFullBackupZip()` and `createIncrementalBackupZip()` stubs
-6. Implement `dispatchCloudUpload()` stub with branch-aware commit
-7. Implement `restoreFromZip()` stub in CloudStorageRestoreTrait
+5. Wire `ZipSplitter` into `createFullBackupZip()` and `createIncrementalBackupZip()`
+6. Implement `dispatchCloudUpload()` with Contents API upload (split chunks, single commit)
+7. Wire `ZipReassembler` into `restoreFromZip()` in CloudStorageRestoreTrait
 8. Implement `gitlabApiRequestRaw()` for raw file downloads
+9. Migration v21: add `chunk_count`, `total_size`, `folder_path` to BackupHistory; drop `branch_name`, `commit_sha`
