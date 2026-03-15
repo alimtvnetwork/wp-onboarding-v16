@@ -107,21 +107,38 @@ trait AdminSettingsTrait {
     /** Get plugin settings. */
     public static function getSettings(): array {
         $settings = get_option(OptionNameType::PluginSettings->value, array());
+        $isSettingsArray = is_array($settings);
 
-        return wp_parse_args($settings, self::$defaults);
+        if ($isSettingsArray === false) {
+            return self::$defaults;
+        }
+
+        return array_replace_recursive(self::$defaults, $settings);
     }
 
-    /** Check if an endpoint is enabled. */
+    /** Check if an endpoint is enabled. Missing keys default to true (backward-safe). */
     public static function isEndpointEnabled(string $endpoint): bool {
         $settings = self::getSettings();
+        $endpointConfig = $settings['endpoints'][$endpoint] ?? null;
+        $hasEnabledFlag = (is_array($endpointConfig) && array_key_exists('enabled', $endpointConfig));
 
-        return !empty($settings['endpoints'][$endpoint]['enabled'] ?? null);
+        if ($hasEnabledFlag === false) {
+            return true;
+        }
+
+        return !empty($endpointConfig['enabled']);
     }
 
-    /** Check if an endpoint requires authentication. */
+    /** Check if an endpoint requires authentication. Missing keys default to true (secure by default). */
     public static function isAuthRequired(string $endpoint): bool {
         $settings = self::getSettings();
+        $endpointConfig = $settings['endpoints'][$endpoint] ?? null;
+        $hasAuthFlag = (is_array($endpointConfig) && array_key_exists('auth_required', $endpointConfig));
 
-        return !empty($settings['endpoints'][$endpoint]['auth_required'] ?? null);
+        if ($hasAuthFlag === false) {
+            return true;
+        }
+
+        return !empty($endpointConfig['auth_required']);
     }
 }
