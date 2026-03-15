@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Cloud, Github, HardDrive } from "lucide-react";
+import { Plus, Cloud, Github, HardDrive, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { CloudStorageAccountCard } from "@/components/cloud-storage/CloudStorageAccountCard";
 import { CloudStorageAccountDialog } from "@/components/cloud-storage/CloudStorageAccountDialog";
