@@ -275,10 +275,12 @@ Current implementation reflects the approved naming format:
 Format:     {seq} - {DD MMM YYYY} - W{week}[ - {label}]
 Separator:  " - " (space-dash-space)
 Date:       DD MMM YYYY (spaces, not hyphens)
+Week:       Zero-padded (W01–W53)
 Order:      sequence → date → week → label
 
-Regex:      /^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{1,2})(?:\s-\s(.+))?$/
+Regex:      /^(\d{3}) - (\d{2} [A-Za-z]{3} \d{4}) - W(\d{2})(?:\s-\s(.+))?$/
 
 Example (auto):    001 - 15 Mar 2026 - W11
+Example (week 1):  003 - 05 Jan 2026 - W01
 Example (manual):  002 - 22 Mar 2026 - W12 - pre-deployment
 ```
