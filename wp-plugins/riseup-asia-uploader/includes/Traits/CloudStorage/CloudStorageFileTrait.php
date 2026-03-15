@@ -41,12 +41,13 @@ trait CloudStorageFileTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
 
             $files = match(true) {
-                $provider->isGitHub() => $this->githubListFiles($account, $token, $path),
-                $provider->isGitLab() => $this->gitlabListFiles($account, $token, $path),
-                default               => array(),
+                $provider->isGitHub()      => $this->githubListFiles($account, $token, $path),
+                $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $path),
+                $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $path),
+                default                    => array(),
             };
 
             return new WP_REST_Response(array(
