@@ -51,7 +51,8 @@ var variantLabels = [...]string{
 	Completed:    "Completed",
 	Failed:       "Failed",
 	Running:      "Running",
-	RemoteBackup: "RemoteBackup",
+	RemoteBackup:  "RemoteBackup",
+	CloudUpload:   "CloudUpload",
 }
 
 var variantValues = [...]string{
