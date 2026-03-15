@@ -154,3 +154,27 @@ type ActivateResponseInfo struct {
 	Status int    `json:",omitempty"`
 	Body   string `json:",omitempty"`
 }
+
+// --- Cloud upload detail structs ---
+
+// CloudUploadInitDetails carries cloud upload initiation context.
+type CloudUploadInitDetails struct {
+	AccountIds []int  `json:",omitempty"`
+	PluginSlug string `json:",omitempty"`
+}
+
+// CloudUploadAccountResultDetails carries per-account upload result context.
+type CloudUploadAccountResultDetails struct {
+	AccountId  int    `json:",omitempty"`
+	Status     string `json:",omitempty"`
+	RemotePath string `json:",omitempty"`
+	RemoteUrl  string `json:",omitempty"`
+	Bytes      int64  `json:",omitempty"`
+	Error      string `json:",omitempty"`
+}
+
+// CloudUploadSummaryDetails carries cloud upload summary context.
+type CloudUploadSummaryDetails struct {
+	SuccessCount int `json:",omitempty"`
+	TotalCount   int `json:",omitempty"`
+}

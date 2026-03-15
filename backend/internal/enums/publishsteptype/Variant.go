@@ -29,6 +29,7 @@ const (
 	Failed
 	Running
 	RemoteBackup
+	CloudUpload
 )
 
 var variantLabels = [...]string{
@@ -50,7 +51,8 @@ var variantLabels = [...]string{
 	Completed:    "Completed",
 	Failed:       "Failed",
 	Running:      "Running",
-	RemoteBackup: "RemoteBackup",
+	RemoteBackup:  "RemoteBackup",
+	CloudUpload:   "CloudUpload",
 }
 
 var variantValues = [...]string{
@@ -72,7 +74,8 @@ var variantValues = [...]string{
 	Completed:    "completed",
 	Failed:       "failed",
 	Running:      "running",
-	RemoteBackup: "remote-backup",
+	RemoteBackup:  "remote-backup",
+	CloudUpload:   "cloud_upload",
 }
 
 func (v Variant) String() string {
@@ -137,6 +140,7 @@ func (v Variant) IsCompleted() bool  { return v == Completed }
 func (v Variant) IsFailed() bool     { return v == Failed }
 func (v Variant) IsRunning() bool       { return v == Running }
 func (v Variant) IsRemoteBackup() bool  { return v == RemoteBackup }
+func (v Variant) IsCloudUpload() bool   { return v == CloudUpload }
 
 func (v Variant) IsAnyOf(others ...Variant) bool {
 	for _, o := range others {
@@ -152,7 +156,7 @@ func All() []Variant {
 		Init, Backup, Package, Packaging, Connect,
 		Upload, Uploading, Activate, Activating, Cleanup,
 		PreBackup, Complete, Rollback, Started, Completed, Failed, Running,
-		RemoteBackup,
+		RemoteBackup, CloudUpload,
 	}
 }
 

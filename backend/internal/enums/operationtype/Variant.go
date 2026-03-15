@@ -60,6 +60,7 @@ const (
 	RequestLogsClear
 	ConfirmLogsClear
 	EmailLogs
+	CloudStorageUpload
 )
 
 var variantLabels = [...]string{
@@ -113,6 +114,7 @@ var variantLabels = [...]string{
 	RequestLogsClear:       "RequestLogsClear",
 	ConfirmLogsClear:       "ConfirmLogsClear",
 	EmailLogs:              "EmailLogs",
+	CloudStorageUpload:     "CloudStorageUpload",
 }
 
 var variantValues = [...]string{
@@ -166,6 +168,7 @@ var variantValues = [...]string{
 	RequestLogsClear:       "request logs clear",
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",
+	CloudStorageUpload:     "cloud storage upload",
 }
 
 func (v Variant) String() string  { return v.Value() }
