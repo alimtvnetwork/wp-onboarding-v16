@@ -39,6 +39,7 @@ trait RouteRegistrationTrait
         };
 
         $this->registerCoreRoutes($safeRegister);
+        $this->registerMachineManagementRoutes($safeRegister);
         $this->registerLogManagementRoutes($safeRegister);
 
         $this->fileLogger->info("Route registration complete: $registered registered, $failed failed");

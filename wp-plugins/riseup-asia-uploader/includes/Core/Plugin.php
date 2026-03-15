@@ -87,6 +87,7 @@ class Plugin {
     use LogStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
+    use MachineApprovalTrait;
 
     // Wave 4 traits
     use UserCrudTrait;

@@ -44,6 +44,7 @@ class Plugin {
     use LogStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
+    use MachineApprovalTrait;
 
     private FileLogger $fileLogger;
     private static ?self $instance = null;

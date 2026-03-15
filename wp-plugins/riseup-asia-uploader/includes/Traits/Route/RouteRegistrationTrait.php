@@ -317,6 +317,12 @@ trait RouteRegistrationTrait
             'callback'            => array($this, 'handleLogsEmail'),
             'permission_callback' => $this->buildPermissionCallback('logs_email', array($this, 'checkPluginPermission')),
         ));
+
+        $safeRegister(EndpointType::MachinesApprove->route(), array(
+            'methods'             => HttpMethodType::Put->value,
+            'callback'            => array($this, 'handleApproveMachine'),
+            'permission_callback' => $this->buildPermissionCallback('machines_approve', array($this, 'checkPluginPermission')),
+        ));
     }
 
     /**
