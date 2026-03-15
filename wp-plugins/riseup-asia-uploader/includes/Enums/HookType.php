@@ -48,6 +48,10 @@ enum HookType: string
     case CronSnapshotIncremental = 'riseup_snapshot_incremental';
     case CronLicenseRevalidate   = 'riseup_license_revalidate';
 
+    // ── Cloud Storage Cron Hooks ────────────────────────────────
+    case CronCloudFullBackup        = 'riseup_cloud_full_backup';
+    case CronCloudIncrementalBackup = 'riseup_cloud_incremental_backup';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

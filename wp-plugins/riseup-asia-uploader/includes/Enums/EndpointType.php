@@ -107,6 +107,11 @@ enum EndpointType: string
     case CloudStorageDelete          = 'cloud-storage/delete';
     case CloudStorageOAuthCallback   = 'cloud-storage/oauth/callback';
     case CloudStorageOAuthInitiate   = 'cloud-storage/oauth/initiate';
+    case CloudStorageRepos           = 'cloud-storage/repos';
+    case CloudStorageBranches        = 'cloud-storage/branches';
+    case CloudStorageBackupHistory   = 'cloud-storage/backup-history';
+    case CloudStorageBackupHistoryId = 'cloud-storage/backup-history/(?P<id>\d+)';
+    case CloudStorageRestore         = 'cloud-storage/restore';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

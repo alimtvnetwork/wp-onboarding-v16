@@ -39,8 +39,9 @@ enum TableType: string
     case FlashState         = 'FlashState';
 
     // ── Cloud Storage ───────────────────────────────────────────────
-    case CloudStorageAccounts  = 'CloudStorageAccounts';
-    case CloudStorageSettings  = 'CloudStorageSettings';
+    case CloudStorageAccounts       = 'CloudStorageAccounts';
+    case CloudStorageSettings       = 'CloudStorageSettings';
+    case CloudStorageBackupHistory  = 'CloudStorageBackupHistory';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

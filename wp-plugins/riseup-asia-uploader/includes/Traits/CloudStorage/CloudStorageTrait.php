@@ -22,4 +22,8 @@ trait CloudStorageTrait {
     use CloudStorageOAuthTrait;
     use CloudStorageUploadTrait;
     use CloudStorageFileTrait;
+    use CloudStorageBranchTrait;
+    use CloudStorageHistoryTrait;
+    use CloudStorageScheduleTrait;
+    use CloudStorageRestoreTrait;
 }
