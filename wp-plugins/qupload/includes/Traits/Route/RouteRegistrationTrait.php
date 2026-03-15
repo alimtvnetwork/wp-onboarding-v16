@@ -39,9 +39,18 @@ trait RouteRegistrationTrait
         };
 
         $this->registerCoreRoutes($safeRegister);
+        $this->registerMachineManagementRoutes($safeRegister);
         $this->registerLogManagementRoutes($safeRegister);
 
         $this->fileLogger->info("Route registration complete: $registered registered, $failed failed");
+    }
+
+    private function registerMachineManagementRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::MachinesApprove->route(), [
+            'methods'             => HttpMethodType::Put->value,
+            'callback'            => [$this, 'handleApproveMachine'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
     }
 
     private function registerLogManagementRoutes(callable $safeRegister): void {

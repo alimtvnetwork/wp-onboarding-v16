@@ -23,6 +23,7 @@ enum EndpointType: string
     case LogsClear    = 'logs/clear';
     case LogsConfirm  = 'logs/clear/confirm';
     case LogsEmail    = 'logs/email';
+    case MachinesApprove = 'machines/approve';
 
     /** Prefixes value with '/' for register_rest_route(). */
     public function route(): string

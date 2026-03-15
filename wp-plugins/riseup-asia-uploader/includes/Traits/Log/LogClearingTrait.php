@@ -281,12 +281,31 @@ trait LogClearingTrait
         $hasNoApprovedMachines = empty($approvedMachines);
 
         if ($hasNoApprovedMachines) {
-            return false;
+            // Fallback: check WP option (populated by remote -am approval)
+            $settingsOption = get_option(PluginConfigType::SettingsGroup->value, array());
+            $approvedMachines = $settingsOption['approved_machines'] ?? array();
+            $hasNoApprovedMachines = empty($approvedMachines);
+
+            if ($hasNoApprovedMachines) {
+                return false;
+            }
         }
 
         $lowerMachine = strtolower($machineName);
 
         foreach ($approvedMachines as $approved) {
+            $isMatch = (strtolower($approved) === $lowerMachine);
+
+            if ($isMatch) {
+                return true;
+            }
+        }
+
+        // Also check WP option if settings.json didn't match
+        $settingsOption = get_option(PluginConfigType::SettingsGroup->value, array());
+        $optionMachines = $settingsOption['approved_machines'] ?? array();
+
+        foreach ($optionMachines as $approved) {
             $isMatch = (strtolower($approved) === $lowerMachine);
 
             if ($isMatch) {

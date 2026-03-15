@@ -31,6 +31,7 @@ param(
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
     [Alias('cla')][switch]$clearlogsall,
+    [Alias('am')][string]$approvemachine = "",
     [Alias('i')][string]$index = ""
 )
 
@@ -94,6 +95,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-list-sites.ps1")
 . (Join-Path $ModulesDir "mode-test.ps1")
 . (Join-Path $ModulesDir "mode-clear-logs.ps1")
+. (Join-Path $ModulesDir "mode-approve-machine.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -211,6 +213,10 @@ if ($help) {
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
     Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
     Write-Host ""
+    Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
+    Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
@@ -267,6 +273,10 @@ if ($help) {
     Write-Host "    .\run.ps1 -cl -i 1,2,3             # Clear logs on sites #1, #2, #3"
     Write-Host "    .\run.ps1 -cl -xs 'Test V1'        # Clear logs on all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -cla                     # Clear logs on ALL configured sites"
+    Write-Host ""
+    Write-Host "  Machine management:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -am                      # Approve current machine on all sites"
+    Write-Host "    .\run.ps1 -am 'CI-SERVER'          # Approve a specific machine name"
     Write-Host ""
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
@@ -404,6 +414,7 @@ if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
 if ($clearlogs) { Invoke-ClearLogsMode }
+if ($approvemachine -ne "" -or $PSBoundParameters.ContainsKey('approvemachine')) { Invoke-ApproveMachineMode -MachineNameToApprove $approvemachine }
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
 if ($upload -and $qupload) { Invoke-UploadComboMode }
