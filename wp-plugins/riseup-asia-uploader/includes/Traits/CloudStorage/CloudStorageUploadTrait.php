@@ -57,13 +57,14 @@ trait CloudStorageUploadTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
             $startTime = microtime(true);
 
             $uploadResult = match(true) {
-                $provider->isGitHub() => $this->githubUploadFile($account, $token, $filePath, $remotePath),
-                $provider->isGitLab() => $this->gitlabUploadFile($account, $token, $filePath, $remotePath),
-                default               => throw new \RuntimeException('Provider not yet supported: ' . $provider->value),
+                $provider->isGitHub()      => $this->githubUploadFile($account, $token, $filePath, $remotePath),
+                $provider->isGitLab()      => $this->gitlabUploadFile($account, $token, $filePath, $remotePath),
+                $provider->isGoogleDrive() => $this->googleDriveUploadFile($account, $token, $filePath, $remotePath),
+                default                    => throw new \RuntimeException('Provider not yet supported: ' . $provider->value),
             };
 
             $duration = round(microtime(true) - $startTime, 2);

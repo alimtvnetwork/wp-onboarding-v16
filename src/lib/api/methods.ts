@@ -765,4 +765,9 @@ export const api = {
     request<Record<string, unknown>>(`/cloud-storage/settings/${provider}`),
   updateCloudStorageSettings: (provider: string, settings: Record<string, unknown>) =>
     request<Record<string, unknown>>(`/cloud-storage/settings/${provider}`, { method: "PUT", body: JSON.stringify(settings) }),
+  initiateCloudStorageOAuth: (accountLabel: string) =>
+    request<{ Success: boolean; OAuthUrl?: string; OAuthState?: string; Error?: string }>(
+      "/cloud-storage/oauth/initiate",
+      { method: "POST", body: JSON.stringify({ AccountLabel: accountLabel }) },
+    ),
 };

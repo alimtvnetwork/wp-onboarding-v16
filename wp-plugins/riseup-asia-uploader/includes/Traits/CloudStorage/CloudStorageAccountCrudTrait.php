@@ -245,12 +245,13 @@ trait CloudStorageAccountCrudTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
 
             $result = match(true) {
-                $provider->isGitHub() => $this->githubTestConnection($account, $token),
-                $provider->isGitLab() => $this->gitlabTestConnection($account, $token),
-                default               => array('Success' => false, 'Error' => 'Provider not yet supported'),
+                $provider->isGitHub()      => $this->githubTestConnection($account, $token),
+                $provider->isGitLab()      => $this->gitlabTestConnection($account, $token),
+                $provider->isGoogleDrive() => $this->googleDriveTestConnection($account, $token),
+                default                    => array('Success' => false, 'Error' => 'Provider not yet supported'),
             };
 
             $this->updateAccountLastUsed($accountId, $result);

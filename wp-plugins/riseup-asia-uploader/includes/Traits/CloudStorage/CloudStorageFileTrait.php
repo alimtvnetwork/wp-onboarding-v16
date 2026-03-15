@@ -41,12 +41,13 @@ trait CloudStorageFileTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
 
             $files = match(true) {
-                $provider->isGitHub() => $this->githubListFiles($account, $token, $path),
-                $provider->isGitLab() => $this->gitlabListFiles($account, $token, $path),
-                default               => array(),
+                $provider->isGitHub()      => $this->githubListFiles($account, $token, $path),
+                $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $path),
+                $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $path),
+                default                    => array(),
             };
 
             return new WP_REST_Response(array(
@@ -83,12 +84,13 @@ trait CloudStorageFileTrait {
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
-            $token    = $this->decryptToken($account['AccessToken']);
+            $token    = $provider->isGoogleDrive() ? '' : $this->decryptToken($account['AccessToken']);
 
             $deleted = match(true) {
-                $provider->isGitHub() => $this->githubDeleteFile($account, $token, $remotePath),
-                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $remotePath),
-                default               => false,
+                $provider->isGitHub()      => $this->githubDeleteFile($account, $token, $remotePath),
+                $provider->isGitLab()      => $this->gitlabDeleteFile($account, $token, $remotePath),
+                $provider->isGoogleDrive() => $this->googleDriveDeleteFile($account, $token, $remotePath),
+                default                    => false,
             };
 
             $this->logCloudStorageAction(ActionType::CloudStorageDelete, array(
@@ -117,9 +119,10 @@ trait CloudStorageFileTrait {
         $provider = CloudStorageProviderType::from($account['Provider']);
 
         $files = match(true) {
-            $provider->isGitHub() => $this->githubListFiles($account, $token, $backupDir),
-            $provider->isGitLab() => $this->gitlabListFiles($account, $token, $backupDir),
-            default               => array(),
+            $provider->isGitHub()      => $this->githubListFiles($account, $token, $backupDir),
+            $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $backupDir),
+            $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $backupDir),
+            default                    => array(),
         };
 
         usort($files, fn($a, $b) => strcmp($a['Name'], $b['Name']));
@@ -136,9 +139,10 @@ trait CloudStorageFileTrait {
 
         foreach ($filesToDelete as $file) {
             $wasDeleted = match(true) {
-                $provider->isGitHub() => $this->githubDeleteFile($account, $token, $file['Path']),
-                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $file['Path']),
-                default               => false,
+                $provider->isGitHub()      => $this->githubDeleteFile($account, $token, $file['Path']),
+                $provider->isGitLab()      => $this->gitlabDeleteFile($account, $token, $file['Path']),
+                $provider->isGoogleDrive() => $this->googleDriveDeleteFile($account, $token, $file['Path']),
+                default                    => false,
             };
 
             if ($wasDeleted) {

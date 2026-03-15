@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Cloud, Github, HardDrive } from "lucide-react";
+import { Plus, Cloud, Github, HardDrive, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { CloudStorageAccountCard } from "@/components/cloud-storage/CloudStorageAccountCard";
 import { CloudStorageAccountDialog } from "@/components/cloud-storage/CloudStorageAccountDialog";
@@ -25,7 +26,7 @@ import type {
 const PROVIDERS: { id: CloudStorageProvider; label: string; icon: React.ReactNode }[] = [
   { id: "GitHub", label: "GitHub", icon: <Github className="h-4 w-4" /> },
   { id: "GitLab", label: "GitLab", icon: <HardDrive className="h-4 w-4" /> },
-  // Google Drive will be added in Phase 3
+  { id: "GoogleDrive", label: "Google Drive", icon: <FolderOpen className="h-4 w-4" /> },
 ];
 
 export default function CloudStorage() {
