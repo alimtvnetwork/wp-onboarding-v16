@@ -79,8 +79,8 @@ All credentials are Base64-encoded for basic obfuscation (not encryption):
 
 1. Validates `wpPlugins.sites` configuration exists
 2. Lists all configured sites (shows enabled/disabled status)
-3. Filters by `-site` name if provided, otherwise uses all enabled sites
-4. Discovers uploadable plugins (excludes QUpload + skipPlugins)
+3. Filters by `-site` name, `-index` number, or uses all enabled sites
+4. Discovers uploadable plugins (respects skipPlugins only, no hardcoded exclusions)
 5. ZIPs all plugins once (reuses existing ZIP logic)
 6. For each target site:
    - Resolves default credential (first with `isDefault: true`, or first entry)
