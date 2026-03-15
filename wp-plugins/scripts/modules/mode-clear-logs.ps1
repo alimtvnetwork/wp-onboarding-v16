@@ -5,6 +5,7 @@
 # Expects: $site, $exclude, $sync, $index
 
 function Invoke-ClearLogsMode {
+    param([switch]$ForceAll)
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host "  Remote Log Clearing Mode (-cl)" -ForegroundColor Magenta
