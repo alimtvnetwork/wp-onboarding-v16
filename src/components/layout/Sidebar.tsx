@@ -20,6 +20,7 @@ import {
   HeartPulse,
   Radio,
   Activity,
+  Cloud,
 } from "lucide-react";
 
 const navItems = [
