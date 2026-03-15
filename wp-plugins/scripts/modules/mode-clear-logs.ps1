@@ -146,8 +146,9 @@ function Invoke-ClearLogsMode {
     if ($failCount -gt 0) {
         Write-Host ""
         Write-Host "  TROUBLESHOOTING:" -ForegroundColor Yellow
+        Write-Host "    403 rest_disabled: Enable logs_clear/logs_confirm in Riseup Settings > API Endpoints Configuration" -ForegroundColor Gray
         Write-Host "    403 Forbidden: Check that the WordPress user has 'activate_plugins' capability" -ForegroundColor Gray
-        Write-Host "    403 + machine_not_approved: Add '$machineName' to approved_machines in plugin settings" -ForegroundColor Gray
+        Write-Host "    403 machine_not_approved: Add '$machineName' to approved_machines in plugin settings/settings.json" -ForegroundColor Gray
         Write-Host "    404 Not Found: The plugin may not be installed/activated on that site" -ForegroundColor Gray
         Write-Host "    401 Unauthorized: Verify Base64 credentials in powershell.json" -ForegroundColor Gray
     }

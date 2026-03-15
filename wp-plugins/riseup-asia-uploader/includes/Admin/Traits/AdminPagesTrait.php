@@ -138,9 +138,14 @@ trait AdminPagesTrait {
                 'label' => __('Monitoring & Logs', $pluginSlug),
                 'icon'  => 'dashicons-chart-area',
                 'endpoints' => array(
-                    'logs'       => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
-                    'logs_stats' => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
-                    'error_logs' => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
+                    'logs'           => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
+                    'logs_stats'     => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
+                    'logs_status'    => array('label' => 'Remote Logs Status', 'desc' => 'Get remote log file metadata and counters'),
+                    'logs_clear'     => array('label' => 'Remote Logs Clear', 'desc' => 'Request secure two-step log clearing token'),
+                    'logs_confirm'   => array('label' => 'Remote Logs Confirm', 'desc' => 'Confirm and execute two-step log clearing'),
+                    'logs_email'     => array('label' => 'Remote Logs Email', 'desc' => 'Send log files via email attachments'),
+                    'error_logs'     => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
+                    'error_sessions' => array('label' => 'Error Sessions', 'desc' => 'Fetch grouped error sessions and stack traces'),
                 ),
             ),
             'backup' => array(
