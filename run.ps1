@@ -29,7 +29,8 @@ param(
     [Alias('xs')][string]$exclude = "",
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
-    [Alias('cl')][switch]$clearlogs
+    [Alias('cl')][switch]$clearlogs,
+    [int]$index = 0
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -189,6 +190,7 @@ if ($help) {
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (parallel)"
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
+    Write-Host "  -uas -index N       Upload ALL plugins to site #N (1-based index from -ls)"
     Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
     Write-Host "  -u -as              Upload DEFAULT plugin only to ALL configured sites (parallel)"
     Write-Host "  -u -as -sync        Upload DEFAULT plugin to ALL sites SEQUENTIALLY"

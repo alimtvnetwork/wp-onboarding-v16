@@ -2,7 +2,7 @@
 # Multi-site upload mode: -uas (upload all plugins to all configured sites)
 # Thin orchestrator — delegates to zip-parallel.ps1, upload-parallel.ps1, summary-printer.ps1
 # Dot-sourced by run.ps1 — expects all helpers, plugin-helpers, zip-*, upload-*, summary-printer loaded.
-# Expects: $site, $exclude, $sync, $ScriptDir, $Config
+# Expects: $site, $index, $exclude, $sync, $ScriptDir, $Config
 
 function Invoke-UploadAllSitesMode {
     Write-Host ""
@@ -42,7 +42,18 @@ function Invoke-UploadAllSitesMode {
 
     # ── Filter target sites ────────────────────────────────────────────────
     $targetSites = @()
-    if ($site -ne "") {
+    if ($index -gt 0) {
+        # Index-based site selection (1-based)
+        $allSites = @($Config.wpPlugins.sites)
+        if ($index -gt $allSites.Count) {
+            Write-Host "ERROR: Site index $index is out of range. Only $($allSites.Count) site(s) configured." -ForegroundColor Red
+            Write-Host "Use -ls to see site indices." -ForegroundColor Yellow
+            exit 1
+        }
+        $matchedSite = $allSites[$index - 1]
+        $targetSites += $matchedSite
+        Write-Host "  Target site #${index}: $($matchedSite.name)" -ForegroundColor Cyan
+    } elseif ($site -ne "") {
         $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
         if (-not $matchedSite) {
             Write-Host "ERROR: Site '$site' not found in configuration." -ForegroundColor Red

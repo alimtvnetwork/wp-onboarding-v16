@@ -84,3 +84,58 @@ func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
 
 	return rawResult.AppError()
 }
+
+// DisablePluginViaQUpload deactivates a plugin via QUpload's deactivate endpoint.
+func (c *Client) DisablePluginViaQUpload(slug string) *apperror.AppError {
+	normalizedSlug := normalizePluginSlug(slug)
+	endpoint := "/" + QUploadNamespace + ep.Disable.String()
+
+	callInput := apiCallInput{
+		Method:     httpmethod.Put,
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Operation:  operationtype.DisablePlugin,
+		PluginSlug: normalizedSlug,
+		ErrorCode:  apperror.ErrWPPluginActivate,
+	}
+	rawResult := c.doApiCallRaw(callInput)
+
+	return rawResult.AppError()
+}
+
+// ListPluginsViaQUpload lists all plugins via QUpload's plugins endpoint.
+func (c *Client) ListPluginsViaQUpload() apperror.Result[[]UploaderPluginInfo] {
+	endpoint := "/" + QUploadNamespace + ep.Plugins.String()
+
+	callInput := apiCallInput{
+		Method:    httpmethod.Get,
+		Endpoint:  endpoint,
+		Operation: operationtype.ListPlugins,
+		ErrorCode: apperror.ErrWPPluginList,
+	}
+	rawResult := c.doApiCallRaw(callInput)
+
+	if rawResult.HasError() {
+		return apperror.Fail[[]UploaderPluginInfo](rawResult.AppError())
+	}
+
+	return parsePluginListResponse(rawResult.Value())
+}
+
+// DeletePluginViaQUpload deletes a plugin via QUpload's delete endpoint.
+func (c *Client) DeletePluginViaQUpload(slug string) *apperror.AppError {
+	normalizedSlug := normalizePluginSlug(slug)
+	endpoint := "/" + QUploadNamespace + ep.Delete.String()
+
+	callInput := apiCallInput{
+		Method:     httpmethod.Post,
+		Endpoint:   endpoint,
+		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Operation:  operationtype.DeletePlugin,
+		PluginSlug: normalizedSlug,
+		ErrorCode:  apperror.ErrWPConnection,
+	}
+	rawResult := c.doApiCallRaw(callInput)
+
+	return rawResult.AppError()
+}
