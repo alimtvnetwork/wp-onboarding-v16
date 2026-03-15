@@ -45,6 +45,7 @@ trait CloudStorageFileTrait {
 
             $files = match(true) {
                 $provider->isGitHub() => $this->githubListFiles($account, $token, $path),
+                $provider->isGitLab() => $this->gitlabListFiles($account, $token, $path),
                 default               => array(),
             };
 
@@ -86,6 +87,7 @@ trait CloudStorageFileTrait {
 
             $deleted = match(true) {
                 $provider->isGitHub() => $this->githubDeleteFile($account, $token, $remotePath),
+                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $remotePath),
                 default               => false,
             };
 
@@ -116,6 +118,7 @@ trait CloudStorageFileTrait {
 
         $files = match(true) {
             $provider->isGitHub() => $this->githubListFiles($account, $token, $backupDir),
+            $provider->isGitLab() => $this->gitlabListFiles($account, $token, $backupDir),
             default               => array(),
         };
 
@@ -134,6 +137,7 @@ trait CloudStorageFileTrait {
         foreach ($filesToDelete as $file) {
             $wasDeleted = match(true) {
                 $provider->isGitHub() => $this->githubDeleteFile($account, $token, $file['Path']),
+                $provider->isGitLab() => $this->gitlabDeleteFile($account, $token, $file['Path']),
                 default               => false,
             };
 

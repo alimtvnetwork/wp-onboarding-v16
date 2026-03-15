@@ -62,6 +62,7 @@ trait CloudStorageUploadTrait {
 
             $uploadResult = match(true) {
                 $provider->isGitHub() => $this->githubUploadFile($account, $token, $filePath, $remotePath),
+                $provider->isGitLab() => $this->gitlabUploadFile($account, $token, $filePath, $remotePath),
                 default               => throw new \RuntimeException('Provider not yet supported: ' . $provider->value),
             };
 
