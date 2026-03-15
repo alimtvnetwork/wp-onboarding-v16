@@ -8,7 +8,7 @@ param(
     [Alias('s')][switch]$skipbuild,
     [Alias('p')][switch]$skippull,
     [Alias('f')][switch]$force,
-    [Alias('i')][switch]$install,
+    [switch]$install,
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
@@ -30,7 +30,7 @@ param(
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
-    [int]$index = 0
+    [Alias('i')][string]$index = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
