@@ -34,7 +34,7 @@ function Invoke-ListSitesMode {
             Write-Host "       Upload:      " -NoNewline -ForegroundColor Gray
             Write-Host ".\run.ps1 -u -site '$($s.name)'" -ForegroundColor DarkYellow
             Write-Host "       Upload all:  " -NoNewline -ForegroundColor Gray
-            Write-Host ".\run.ps1 -uas -site '$($s.name)'" -ForegroundColor DarkYellow
+            Write-Host ".\run.ps1 -uas -site '$($s.name)'  or  .\run.ps1 -uas -i $siteIndex" -ForegroundColor DarkYellow
             Write-Host "       Credentials: $credCount configured" -ForegroundColor Gray
 
             if ($s.credentials -and $s.credentials.Count -gt 0) {

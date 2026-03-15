@@ -41,36 +41,7 @@ function Invoke-UploadAllSitesMode {
     }
 
     # ── Filter target sites ────────────────────────────────────────────────
-    $targetSites = @()
-    if ($index -gt 0) {
-        # Index-based site selection (1-based)
-        $allSites = @($Config.wpPlugins.sites)
-        if ($index -gt $allSites.Count) {
-            Write-Host "ERROR: Site index $index is out of range. Only $($allSites.Count) site(s) configured." -ForegroundColor Red
-            Write-Host "Use -ls to see site indices." -ForegroundColor Yellow
-            exit 1
-        }
-        $matchedSite = $allSites[$index - 1]
-        $targetSites += $matchedSite
-        Write-Host "  Target site #${index}: $($matchedSite.name)" -ForegroundColor Cyan
-    } elseif ($site -ne "") {
-        $matchedSite = $Config.wpPlugins.sites | Where-Object { $_.name -eq $site }
-        if (-not $matchedSite) {
-            Write-Host "ERROR: Site '$site' not found in configuration." -ForegroundColor Red
-            Write-Host "Available sites:" -ForegroundColor Yellow
-            foreach ($s in $Config.wpPlugins.sites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
-            exit 1
-        }
-        $targetSites += $matchedSite
-        Write-Host "  Target site: $site" -ForegroundColor Cyan
-    } elseif ($excludedSiteNames.Count -gt 0) {
-        $allEnabled = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
-        $targetSites = @($allEnabled | Where-Object { $_.name -notin $excludedSiteNames })
-        Write-Host "  Target: $($targetSites.Count) site(s) (excluded sites: $($excludedSiteNames -join ', '))" -ForegroundColor Cyan
-    } else {
-        $targetSites = @($Config.wpPlugins.sites | Where-Object { $_.enabled -ne $false })
-        Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
-    }
+    $targetSites = @(Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludedSiteNames -AllSites $Config.wpPlugins.sites)
 
     if ($targetSites.Count -eq 0) {
         Write-Host "No enabled sites found." -ForegroundColor Yellow

@@ -90,3 +90,69 @@ function Resolve-RelativePath($Path) {
     }
     return Join-Path $ScriptDir $Path
 }
+
+function Resolve-TargetSites {
+    param(
+        [string]$Index,
+        [string]$SiteName,
+        [string[]]$ExcludedSiteNames,
+        [object[]]$AllSites
+    )
+
+    $isIndexProvided = ($Index -ne "")
+
+    if ($isIndexProvided) {
+        $indices = @($Index -split ',' | ForEach-Object { [int]$_.Trim() })
+        $resolved = @()
+
+        foreach ($idx in $indices) {
+            $isOutOfRange = ($idx -lt 1 -or $idx -gt $AllSites.Count)
+
+            if ($isOutOfRange) {
+                Write-Host "ERROR: Site index $idx is out of range. Only $($AllSites.Count) site(s) configured." -ForegroundColor Red
+                Write-Host "Use -ls to see site indices." -ForegroundColor Yellow
+                exit 1
+            }
+
+            $resolved += $AllSites[$idx - 1]
+        }
+
+        $labels = @($indices | ForEach-Object { "#$_" }) -join ', '
+        Write-Host "  Target site(s): $labels" -ForegroundColor Cyan
+
+        return $resolved
+    }
+
+    $isSiteNameProvided = ($SiteName -ne "")
+
+    if ($isSiteNameProvided) {
+        $matchedSite = $AllSites | Where-Object { $_.name -eq $SiteName }
+        $isNotFound = (-not $matchedSite)
+
+        if ($isNotFound) {
+            Write-Host "ERROR: Site '$SiteName' not found in configuration." -ForegroundColor Red
+            Write-Host "Available sites:" -ForegroundColor Yellow
+            foreach ($s in $AllSites) { Write-Host "  - $($s.name)" -ForegroundColor Gray }
+            exit 1
+        }
+
+        Write-Host "  Target site: $SiteName" -ForegroundColor Cyan
+
+        return @($matchedSite)
+    }
+
+    $hasExclusions = ($ExcludedSiteNames.Count -gt 0)
+
+    if ($hasExclusions) {
+        $allEnabled = @($AllSites | Where-Object { $_.enabled -ne $false })
+        $filtered = @($allEnabled | Where-Object { $_.name -notin $ExcludedSiteNames })
+        Write-Host "  Target: $($filtered.Count) site(s) (excluded sites: $($ExcludedSiteNames -join ', '))" -ForegroundColor Cyan
+
+        return $filtered
+    }
+
+    $enabledSites = @($AllSites | Where-Object { $_.enabled -ne $false })
+    Write-Host "  Target: All enabled sites ($($enabledSites.Count))" -ForegroundColor Cyan
+
+    return $enabledSites
+}

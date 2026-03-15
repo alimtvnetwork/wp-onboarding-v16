@@ -8,7 +8,7 @@ param(
     [Alias('s')][switch]$skipbuild,
     [Alias('p')][switch]$skippull,
     [Alias('f')][switch]$force,
-    [Alias('i')][switch]$install,
+    [switch]$install,
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
@@ -30,7 +30,7 @@ param(
     [Alias('ls','lr')][switch]$listsites,
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
-    [int]$index = 0
+    [Alias('i')][string]$index = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -174,7 +174,7 @@ if ($help) {
     Write-Host "  -s,  -skipbuild     Skip frontend build, only run the backend server"
     Write-Host "  -p,  -skippull      Skip git pull step"
     Write-Host "  -f,  -force         Clean build: remove caches, dependencies, databases"
-    Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
+    Write-Host "       -install       Install/update dependencies (frontend + backend)"
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
@@ -190,11 +190,13 @@ if ($help) {
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (parallel)"
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
-    Write-Host "  -uas -index N       Upload ALL plugins to site #N (1-based index from -ls)"
+    Write-Host "  -uas -i N           Upload ALL plugins to site #N (1-based index from -ls)"
+    Write-Host "  -uas -i 1,2         Upload ALL plugins to multiple sites by index"
     Write-Host "  -uas -xs 'name'     Upload ALL plugins to all sites EXCEPT the named one(s)"
     Write-Host "  -u -as              Upload DEFAULT plugin only to ALL configured sites (parallel)"
     Write-Host "  -u -as -sync        Upload DEFAULT plugin to ALL sites SEQUENTIALLY"
     Write-Host "  -u -as -site 'name' Upload DEFAULT plugin to a specific site"
+    Write-Host "  -u -as -i N         Upload DEFAULT plugin to site #N"
     Write-Host "  -u -as -xs 'name'   Upload DEFAULT plugin to all sites EXCEPT the named one(s)"
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
@@ -242,6 +244,8 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas                     # Upload all plugins to all sites (parallel)"
     Write-Host "    .\run.ps1 -uas -sync               # Upload all plugins to all sites (sequential)"
     Write-Host "    .\run.ps1 -uas -site 'Test V1'     # Upload all plugins to specific site"
+    Write-Host "    .\run.ps1 -uas -i 1                # Upload all plugins to site #1"
+    Write-Host "    .\run.ps1 -uas -i 1,2              # Upload all plugins to sites #1 and #2"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
     Write-Host ""
@@ -249,6 +253,7 @@ if ($help) {
     Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
     Write-Host "    .\run.ps1 -u -as -sync             # Upload default plugin to all sites (sequential)"
     Write-Host "    .\run.ps1 -u -as -site 'Test V1'   # Upload default plugin to specific site"
+    Write-Host "    .\run.ps1 -u -as -i 1              # Upload default plugin to site #1"
     Write-Host "    .\run.ps1 -u -as -xs 'Test V1'     # Exclude specific site"
     Write-Host ""
     Write-Host "  Log management:" -ForegroundColor DarkGray
