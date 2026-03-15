@@ -124,6 +124,7 @@ ${logSection}
 
 const STAGE_LABELS: Record<string, string> = {
   backup: "Creating Backup",
+  cloud_upload: "Uploading to Cloud Storage",
   package: "Packaging Files",
   upload: "Uploading to Site",
   activate: "Activating Plugin",
@@ -134,6 +135,7 @@ const STAGE_LABELS: Record<string, string> = {
 
 const DEFAULT_STAGES: PublishStage[] = [
   { name: "backup", label: "Creating Backup", status: "pending" },
+  { name: "cloud_upload", label: "Uploading to Cloud Storage", status: "pending" },
   { name: "package", label: "Packaging Files", status: "pending" },
   { name: "upload", label: "Uploading to Site", status: "pending" },
   { name: "activate", label: "Activating Plugin", status: "pending" },
