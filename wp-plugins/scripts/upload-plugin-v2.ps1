@@ -1292,6 +1292,31 @@ foreach ($candidateNamespace in $namespaceOrder) {
         if (Test-ServerCriticalError $attemptBody) {
             Write-Status "        Server-side critical error marker detected in response body." -Color Red
         }
+
+        # Display rollback information if present in error response
+        if (-not [string]::IsNullOrWhiteSpace($attemptBody)) {
+            try {
+                $errParsed = $attemptBody | ConvertFrom-Json -ErrorAction Stop
+                $hasRollback = ($errParsed.RollbackSuccess -eq $true) -or ($errParsed.RolledBack -eq $true)
+
+                # Also check Results array
+                if (-not $hasRollback -and $errParsed.Results -and $errParsed.Results.Count -gt 0) {
+                    $r = $errParsed.Results[0]
+                    $hasRollback = ($r.RollbackSuccess -eq $true) -or ($r.RolledBack -eq $true)
+                    if ($hasRollback) { $errParsed = $r }
+                }
+
+                if ($hasRollback) {
+                    Write-Status "" -Color Yellow
+                    Write-Status "        ╔══════════════════════════════════════════════╗" -Color Yellow
+                    Write-Status "        ║  ROLLBACK: Previous version restored        ║" -Color Yellow
+                    Write-Status "        ╚══════════════════════════════════════════════╝" -Color Yellow
+                    if ($errParsed.RestoredVersion) {
+                        Write-Status "        Restored Version: $($errParsed.RestoredVersion)" -Color Green
+                    }
+                }
+            } catch {}
+        }
     }
 }
 
