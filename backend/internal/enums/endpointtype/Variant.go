@@ -81,6 +81,11 @@ const (
 	CloudStorageDelete
 	CloudStorageOAuthCallback
 	CloudStorageOAuthInitiate
+	CloudStorageRepos
+	CloudStorageBranches
+	CloudStorageBackupHistory
+	CloudStorageBackupHistoryId
+	CloudStorageRestore
 )
 
 var variantLabels = [...]string{
