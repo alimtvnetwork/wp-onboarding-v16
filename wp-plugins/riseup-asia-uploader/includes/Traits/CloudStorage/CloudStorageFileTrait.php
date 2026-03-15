@@ -45,6 +45,7 @@ trait CloudStorageFileTrait {
 
             $files = match(true) {
                 $provider->isGitHub() => $this->githubListFiles($account, $token, $path),
+                $provider->isGitLab() => $this->gitlabListFiles($account, $token, $path),
                 default               => array(),
             };
 
