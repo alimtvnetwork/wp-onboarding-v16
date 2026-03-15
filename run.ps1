@@ -217,7 +217,6 @@ if ($help) {
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
-    Write-Host "  -am -machine 'NAME' Approve a specific machine name (explicit arg)"
     Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
@@ -419,7 +418,7 @@ if ($clearlogs) { Invoke-ClearLogsMode }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 
-    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not $PSBoundParameters.ContainsKey('pluginpath') -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
+    if ([string]::IsNullOrWhiteSpace($machineNameForApproval) -and -not [string]::IsNullOrWhiteSpace($pluginpath)) {
         $machineNameForApproval = $pluginpath
     }
 
