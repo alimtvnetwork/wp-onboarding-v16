@@ -220,13 +220,7 @@ trait CloudStorageScheduleHelpersTrait {
         }
     }
 
-    /**
-     * Delete a remote folder and all its contents.
-     *
-     * @param array  $account Account row.
-     * @param string $token   Decrypted token.
-     * @param string $path    Remote folder path.
-     */
+    /** Delete a remote folder and all its contents. */
     private function deleteRemoteFolder(array $account, string $token, string $path): void
     {
         try {
