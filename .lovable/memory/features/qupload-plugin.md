@@ -16,8 +16,8 @@ The 'Quick Upload' (QUpload) WordPress plugin (PHP 8.1+) is a minimal remote dep
 |--------|----------|-------------|
 | `GET` | `/status` | Health check |
 | `POST` | `/upload` | Upload plugin ZIP |
-| `POST` | `/activate` | Activate plugin by slug |
-| `POST` | `/deactivate` | Deactivate plugin by slug |
+| `PUT` | `/activate` | Activate plugin by slug |
+| `PUT` | `/deactivate` | Deactivate plugin by slug |
 | `GET` | `/plugins` | List installed plugins |
 | `GET` | `/logs/status` | Log file status |
 | `POST` | `/logs/clear` | Clear logs |

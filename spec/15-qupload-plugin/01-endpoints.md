@@ -33,7 +33,7 @@ Upload a plugin ZIP, extract, replace existing, and activate.
 10. Detect installed version
 11. Return result envelope
 
-### 2. `POST /activate`
+### 2. `PUT /activate`
 
 Activate an already-installed plugin.
 

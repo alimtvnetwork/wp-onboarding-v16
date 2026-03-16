@@ -485,7 +485,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         }
         if (plugin.status === RemotePluginStatus.Active) {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
         }
         const response = await api.deleteRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });
