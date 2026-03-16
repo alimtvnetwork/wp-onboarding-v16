@@ -220,6 +220,11 @@ if ($help) {
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
     Write-Host ""
+    Write-Host "DIAGNOSTICS:" -ForegroundColor Yellow
+    Write-Host "  -check              Preflight readiness check across all sites (read-only)"
+    Write-Host "  -check -site 'name' Check a specific site only"
+    Write-Host "  -check -i N         Check site(s) by index"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
