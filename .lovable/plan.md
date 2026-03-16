@@ -90,9 +90,9 @@
 |---|------|----------|------------|--------|
 | E-1 | Phase 5A: Repo selection + branch management | 🟡 Medium | None | ✅ Done |
 | E-2 | Phase 5B: Full + incremental backup engine | 🟡 Medium | E-1 | ✅ Done |
-| E-3 | Phase 5C: Automated scheduling (WP-Cron) | 🟡 Medium | E-2 | 🔲 Pending |
-| E-4 | Phase 5D: Git clone restore | 🟡 Medium | E-2 | 🔲 Pending |
-| E-5 | Phase 5E: Backup history visualization | 🟡 Medium | E-2 | 🔲 Pending |
+| E-3 | Phase 5C: Automated scheduling (WP-Cron) | 🟡 Medium | E-2 | ✅ Done |
+| E-4 | Phase 5D: Git clone restore | 🟡 Medium | E-2 | ✅ Done |
+| E-5 | Phase 5E: Backup history visualization | 🟡 Medium | E-2 | ✅ Done |
 | E-6 | Phase 5F: Google Drive folder adaptation | 🟢 Low | E-2 | 🔲 Pending |
 
 **Spec files:** `spec/17-cloud-storage-providers/09-git-backup-strategy.md`, `10-git-backup-workflow-v2.md`
