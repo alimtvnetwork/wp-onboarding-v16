@@ -1,7 +1,7 @@
 # Issues Fixed - Learning Repository
 
 > **Purpose:** Document resolved issues with root causes and solutions for AI learning continuity.  
-> **Updated:** 2026-03-12
+> **Updated:** 2026-03-16
 
 ---
 
@@ -31,10 +31,36 @@
 
 ---
 
+## Structural / Debt Issues (`.lovable/memory/issues/`)
+
+| # | Issue | Category | Status |
+|---|-------|----------|--------|
+| 001 | Missing stack traces in error log | Logging | Resolved |
+| 002 | Raw comparisons in ternaries | Code Quality | Resolved |
+| 003 | ORM PDO class not found | Database | Open (pending fix) |
+| 004 | QUpload activate PUT not POST | API Design | Resolved |
+| 005 | Log rotation missing | Logging | Resolved (already implemented in FileLogger) |
+| 006 | EnvelopeBuilder class not found on self-update | Self-Update | Fixed (`class_exists()` + fallback) |
+| 007 | Upload 404 rest_no_route | Deployment | Root cause: version mismatch. Fix: deploy v2.17.0+ |
+| 008 | `-check` command implementation | Enhancement | ✅ Implemented |
+
+---
+
+## Key Learnings (Do NOT Repeat)
+
+1. **Never hard-depend on helper classes in response paths** — use `class_exists()` guard for any class that could be missing during self-update (Issue #006)
+2. **Boot-time logic must be wrapped in try/catch** — enum/class access during WordPress init can crash the entire REST namespace (Issue #006 memory)
+3. **Always deploy latest versions before using new CLI features** — 404 errors from version mismatch waste debugging time (Issue #007)
+4. **Deep-merge settings** — use `array_replace_recursive()` when evolving plugin settings to avoid breaking existing installs (Issue #037 / `-cla` failure)
+5. **Preflight checks prevent blind failures** — the `-am` and `-check` commands validate endpoint availability before attempting operations
+
+---
+
 ## Cross-References
 
 - **App issues (03–28):** `spec/02-app-issues/` — see [spec/02-app-issues/README.md](../../../spec/02-app-issues/README.md) for the full index
-- **Structural debt issues:** `.lovable/memory/issues/` — [001-missing-stack-traces](../issues/001-missing-stack-traces-in-error-log.md), [002-raw-comparisons](../issues/002-raw-comparisons-in-ternaries.md), [003-orm-pdo](../issues/003-orm-pdo-class-not-found.md), [004-activate-put](../issues/004-qupload-activate-put-not-post.md), [005-log-rotation](../issues/005-log-rotation-missing.md)
+- **Structural debt issues:** `.lovable/memory/issues/` — files 001–008
+- **Suggestions tracker:** `.lovable/memory/suggestions/01-suggestions-tracker.md`
 
 ---
 
@@ -56,4 +82,5 @@
 - **Frontend/UX** - Error handling, state management, UI bugs
 - **Frontend/Build** - Vite, Rollup, TypeScript compilation
 - **WordPress/PHP** - Plugin initialization, circular dependencies, enums
+- **PowerShell/Automation** - CLI flags, upload scripts, diagnostics
 - **Tooling/Config** - version.json, coverage reports, config files

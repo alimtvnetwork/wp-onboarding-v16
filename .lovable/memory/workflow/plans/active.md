@@ -1,44 +1,77 @@
 # Active Development Plan
 
-Updated: 2026-03-15
+> **Updated:** 2026-03-16
+
+---
 
 ## Current Focus Areas
 
-- **Cloud Storage Integration**: Frontend complete (3 providers + dashboard + publish integration). Backend Go pipeline integration pending.
-- **Issue Resolution**: ORM PDO fix needs redeployment (critical). QUpload PUT migration and UI uplift pending.
-- **Code Quality & Standards**: Ongoing enforcement of formatting rules and code consistency.
-- **Issue Documentation**: Every fix requires a write-up under `/spec/02-app-issues/` per the post-fix workflow.
+- **PowerShell Automation:** CLI suite complete with `-check`, `-am` preflight, full site targeting. Ready for deployment verification.
+- **QUpload Stability:** EnvelopeBuilder crash fix applied. Self-update resilience via `class_exists()` fallback. Log rotation confirmed working.
+- **Cloud Storage Integration:** Frontend complete (3 providers + dashboard + publish integration). Backend Go pipeline integration pending.
+- **Code Quality & Standards:** Ongoing enforcement of formatting rules and code consistency.
+- **Issue Documentation:** Every fix requires a write-up under `/spec/02-app-issues/` per the post-fix workflow.
 
-## Recently Completed (2026-03-15)
+---
 
-### Phase 7E: Cloud Storage Providers ✅
+## Recently Completed (2026-03-16 — This Session)
 
-- **CS-001**: Cloud Storage Settings Page — provider tabs, account cards, account dialog with dynamic fields
-- **CS-002**: Google Drive OAuth2 — `CloudStorageGoogleDriveTrait.php`, `CloudStorageOAuthTrait.php`, resumable uploads
-- **CS-003**: CloudStorageBackupSelector — collapsible selector in publish dialog with localStorage persistence
-- **CS-004**: `cloudStorageAccountIds` passed through `useQuickPublish` hook
-- **CS-005**: `cloudStorageAccountIds` passed through `useBulkQuickPublish` hook
-- **CS-006**: `cloud_upload` stage added to `PublishProgressDialog` (between backup and package)
+### PowerShell & QUpload Improvements
 
-### Previously Completed (2026-02-23)
+| Item | Description | Files |
+|------|-------------|-------|
+| `-am` preflight check | Version-aware readiness check before machine approval | `mode-approve-machine.ps1` |
+| EnvelopeBuilder crash fix | `class_exists()` + inline fallback in ResponseTrait | `ResponseTrait.php`, `UploadHandlerTrait.php` |
+| Root `README.md` | Comprehensive CLI reference with all flags and examples | `README.md` |
+| `-check` command | Read-only site/plugin readiness diagnostics | `mode-check.ps1`, `run.ps1` |
+| Log rotation confirmed | Already implemented — size-based rotation + pruning in `FileLogger.php` | `FileLogger.php` |
+| Memory & docs update | Issues, suggestions, plans, CLI reference all updated | Multiple `.lovable/memory/` files |
 
-- **S-033–S-040**: Code quality improvements (DateHelper, camelCase, ResponseKeyType, etc.)
-- **Phase 8**: Plugin identity strings replaced with PluginConfigType enum
-- **Go Phases 4–6**: Boolean standards, code organization, CI lint integration
-- **All compliance sweeps**: Formatting, ABSPATH guards, dead code, PascalCase enums
+### Previously Completed (2026-03-15 — Cloud Storage)
+
+- **CS-001–CS-006**: Cloud Storage Settings Page, Google Drive OAuth2, BackupSelector, publish integration
+- **S-041–S-044**: Cloud upload progress stage, OAuth settings, version bump
+
+### Previously Completed (2026-02-23 — Code Quality)
+
+- **S-033–S-040**: DateHelper, camelCase, ResponseKeyType, formatting sweeps
+- **Phase 8**: Plugin identity PluginConfigType enum
+- **Go Phases 4–6**: Boolean standards, code organization, CI lint
+
+---
 
 ## Pending Tasks
 
-| # | Task | Priority | Blocked? |
-|---|------|----------|----------|
-| 1 | ORM PDO Fix — Redeploy | 🔴 Critical | Yes (deployment) |
-| 2 | Cloud Storage Go pipeline `cloud_upload` stage (S-044) | 🟡 Medium | No |
-| 3 | Google OAuth admin settings page (S-042) | 🟡 Medium | No |
-| 4 | Conditionally show cloud_upload stage in UI (S-041) | 🟡 Medium | Depends on #2 |
-| 5 | QUpload Activate → PUT (all layers) | 🟡 Medium | No |
-| 6 | QUpload Admin UI Uplift | 🟡 Medium | No |
-| 7 | Log Rotation for both plugins | 🟡 Medium | No |
-| 8 | Bump versions to 2.15.0 (S-043) | 🟢 Low | After #2 |
-| 9 | Type-safety `interface{}` audit | 🟢 Low | No |
-| 10 | Licensing admin dashboard (S-045) | 🟢 Low | No |
-| 11 | Publish analytics dashboard (S-046) | 🟢 Low | No |
+| # | Task | Priority | Status | Suggestion |
+|---|------|----------|--------|------------|
+| 1 | **Deploy v2.17.0+ to all sites** | 🔴 High | Blocked (user action) | — |
+| 2 | **ORM PDO Fix — Redeploy** | 🔴 High | Blocked (deployment) | — |
+| 3 | Go `interface{}` → `any` migration | 🟡 Medium | ~2,680 instances | — |
+| 4 | Cloud Storage Go pipeline `cloud_upload` stage | 🟡 Medium | Open | S-044 |
+| 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | Open | S-047 |
+| 6 | Go Backend UserClient | 🟡 Medium | Open | — |
+| 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
+| 8 | Chunk reassembly manifest validation | 🟡 Medium | Open | S-048 |
+| 9 | Auto-invalidate cached ZIP on source change | 🟡 Medium | Open | S-052 |
+| 10 | Google Drive Rotation (Phase 5F) | 🟢 Low | Open | S-046 |
+| 11 | Diagnostic Reporting (Spec #08) | 🟢 Low | Open | — |
+| 12 | QUpload API method migration (activate/deactivate → PUT) | 🟢 Low | Open | — |
+| 13 | Create `settings.json` for QUpload | 🟢 Low | Open | S-049 |
+| 14 | `/logs/rotation-status` endpoint | 🟢 Low | Open | S-050 |
+| 15 | Verbose `-check` mode (HEAD probing) | 🟢 Low | Open | S-051 |
+| 16 | Licensing admin dashboard | 🟢 Low | Open | S-053 |
+| 17 | Publish analytics dashboard | 🟢 Low | Open | S-054 |
+
+---
+
+## Key Cross-References
+
+- **Suggestions:** `.lovable/memory/suggestions/01-suggestions-tracker.md`
+- **Pending tasks:** `.lovable/memory/workflow/pending-tasks.md`
+- **Issues:** `.lovable/memory/issues/` and `.lovable/memory/issues-fixed/00-index.md`
+- **CLI reference:** `.lovable/memory/workflow/powershell-automation/cli-reference.md`
+- **QUpload features:** `.lovable/memory/features/qupload-plugin.md`
+
+---
+
+*Update this file when plans are started, completed, or deprioritized.*
