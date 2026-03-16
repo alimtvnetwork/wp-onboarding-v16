@@ -30,6 +30,7 @@ type PublishHistoryListResult struct {
 type SiteHealthServiceInterface interface {
 	CheckSite(ctx context.Context, siteId int64) (*models.SiteHealthCheck, *apperror.AppError)
 	CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, *apperror.AppError)
+	VerboseCheck(ctx context.Context, siteId int64) (*sitehealth.VerboseCheckResult, *apperror.AppError)
 	GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError)
 	GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, *apperror.AppError)
 	GetStats(ctx context.Context) (*models.SiteHealthStats, *apperror.AppError)
