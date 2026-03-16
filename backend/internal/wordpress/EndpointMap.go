@@ -47,10 +47,11 @@ const (
 	EPErrorSessions WPEndpointName = "ErrorSessions"
 
 	// Remote log management endpoints
-	EPLogsStatus  WPEndpointName = "LogsStatus"
-	EPLogsClear   WPEndpointName = "LogsClear"
-	EPLogsConfirm WPEndpointName = "LogsConfirm"
-	EPLogsEmail   WPEndpointName = "LogsEmail"
+	EPLogsStatus          WPEndpointName = "LogsStatus"
+	EPLogsRotationStatus  WPEndpointName = "LogsRotationStatus"
+	EPLogsClear           WPEndpointName = "LogsClear"
+	EPLogsConfirm         WPEndpointName = "LogsConfirm"
+	EPLogsEmail           WPEndpointName = "LogsEmail"
 
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
@@ -126,10 +127,11 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPErrorSessions: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/error-sessions"},
 
 	// Remote log management
-	EPLogsStatus:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs"},
-	EPLogsClear:   {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/remote-logs/clear"},
-	EPLogsConfirm: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
-	EPLogsEmail:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/email"},
+	EPLogsStatus:          {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs"},
+	EPLogsRotationStatus:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs/rotation"},
+	EPLogsClear:           {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/remote-logs/clear"},
+	EPLogsConfirm:         {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
+	EPLogsEmail:           {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/email"},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/snapshots"},
@@ -193,10 +195,11 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPErrorSessions: {Method: httpmethod.Get, Endpoint: ep.ErrorSessions},
 
 	// Remote log management
-	EPLogsStatus:  {Method: httpmethod.Get, Endpoint: ep.LogsStatus},
-	EPLogsClear:   {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
-	EPLogsConfirm: {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
-	EPLogsEmail:   {Method: httpmethod.Post, Endpoint: ep.LogsEmail},
+	EPLogsStatus:          {Method: httpmethod.Get, Endpoint: ep.LogsStatus},
+	EPLogsRotationStatus:  {Method: httpmethod.Get, Endpoint: ep.LogsRotationStatus},
+	EPLogsClear:           {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
+	EPLogsConfirm:         {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
+	EPLogsEmail:           {Method: httpmethod.Post, Endpoint: ep.LogsEmail},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},

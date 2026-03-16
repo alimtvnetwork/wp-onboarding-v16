@@ -63,6 +63,7 @@ type SiteServiceInterface interface {
 
 	// Remote log management
 	GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
 	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
 	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
 	EmailRemoteLogs(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
@@ -274,6 +275,10 @@ func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, cre
 
 func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	return a.Service.GetRemoteLogsStatus(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteLogsRotationStatus(ctx, siteId)
 }
 
 func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {

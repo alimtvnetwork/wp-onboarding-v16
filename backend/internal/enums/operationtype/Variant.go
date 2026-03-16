@@ -57,6 +57,7 @@ const (
 	CheckUploaderNamespace
 	RemotePluginBackup
 	GetLogsStatus
+	GetLogsRotationStatus
 	RequestLogsClear
 	ConfirmLogsClear
 	EmailLogs
@@ -113,6 +114,7 @@ var variantLabels = [...]string{
 	CheckUploaderNamespace: "CheckUploaderNamespace",
 	RemotePluginBackup:     "RemotePluginBackup",
 	GetLogsStatus:          "GetLogsStatus",
+	GetLogsRotationStatus:  "GetLogsRotationStatus",
 	RequestLogsClear:       "RequestLogsClear",
 	ConfirmLogsClear:       "ConfirmLogsClear",
 	EmailLogs:              "EmailLogs",
@@ -169,6 +171,7 @@ var variantValues = [...]string{
 	CheckUploaderNamespace: "check uploader namespace",
 	RemotePluginBackup:     "remote plugin backup",
 	GetLogsStatus:          "get logs status",
+	GetLogsRotationStatus:  "get logs rotation status",
 	RequestLogsClear:       "request logs clear",
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",

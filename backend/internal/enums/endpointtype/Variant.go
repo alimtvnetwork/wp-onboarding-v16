@@ -33,6 +33,7 @@ const (
 	ErrorLogs
 	ErrorSessions
 	LogsStatus
+	LogsRotationStatus
 	LogsClear
 	LogsConfirm
 	LogsEmail
@@ -118,6 +119,7 @@ var variantLabels = [...]string{
 	ErrorLogs:               "ErrorLogs",
 	ErrorSessions:           "ErrorSessions",
 	LogsStatus:              "LogsStatus",
+	LogsRotationStatus:      "LogsRotationStatus",
 	LogsClear:               "LogsClear",
 	LogsConfirm:             "LogsConfirm",
 	LogsEmail:               "LogsEmail",
@@ -203,6 +205,7 @@ var variantValues = [...]string{
 	ErrorLogs:               "/error-logs",
 	ErrorSessions:           "/error-sessions",
 	LogsStatus:              "/logs/status",
+	LogsRotationStatus:      "/logs/rotation-status",
 	LogsClear:               "/logs/clear",
 	LogsConfirm:             "/logs/clear/confirm",
 	LogsEmail:               "/logs/email",

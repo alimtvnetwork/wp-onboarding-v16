@@ -20,6 +20,14 @@ var GetRemoteLogs = handleSiteActionById(
 	},
 )
 
+// GetRemoteLogsRotationStatus returns log rotation config from a remote WordPress site
+var GetRemoteLogsRotationStatus = handleSiteActionById(
+	apperror.ErrWPConnection,
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+		return Services.SiteService.GetRemoteLogsRotationStatus(ctx, siteId)
+	},
+)
+
 // ClearRemoteLogs initiates Step 1 of the two-step log clearing flow
 var ClearRemoteLogs = handleSiteActionById(
 	apperror.ErrWPConnection,

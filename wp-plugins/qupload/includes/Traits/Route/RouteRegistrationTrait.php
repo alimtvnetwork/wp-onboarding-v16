@@ -60,6 +60,12 @@ trait RouteRegistrationTrait
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);
 
+        $safeRegister(EndpointType::LogsRotationStatus->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handleLogsRotationStatus'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
+
         $safeRegister(EndpointType::LogsClear->route(), [
             'methods'             => HttpMethodType::Delete->value,
             'callback'            => [$this, 'handleLogsClearRequest'],

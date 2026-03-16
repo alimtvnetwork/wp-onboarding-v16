@@ -30,6 +30,25 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 	return result.Value(), nil
 }
 
+// GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
+func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	result := doApiCall[map[string]any](client, apiCallInput{
+		Method:    httpmethod.Get,
+		Endpoint:  ep.LogsRotationStatus.String(),
+		Operation: operationtype.GetLogsRotationStatus,
+	})
+	if result.HasError() {
+		return nil, result.AppError()
+	}
+
+	return result.Value(), nil
+}
+
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
 func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)

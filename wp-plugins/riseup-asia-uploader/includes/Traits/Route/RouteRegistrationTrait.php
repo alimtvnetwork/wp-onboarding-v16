@@ -300,6 +300,12 @@ trait RouteRegistrationTrait
             'permission_callback' => $this->buildPermissionCallback('logs_status', $logPerm),
         ));
 
+        $safeRegister(EndpointType::LogsRotationStatus->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleLogsRotationStatus'),
+            'permission_callback' => $this->buildPermissionCallback('logs_rotation_status', $logPerm),
+        ));
+
         $safeRegister(EndpointType::LogsClear->route(), array(
             'methods'             => HttpMethodType::Delete->value,
             'callback'            => array($this, 'handleLogsClearRequest'),

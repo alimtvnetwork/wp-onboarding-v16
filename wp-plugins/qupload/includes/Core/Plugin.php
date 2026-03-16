@@ -27,6 +27,7 @@ use QUpload\Traits\Activate\ActivateHandlerTrait;
 use QUpload\Traits\Activate\DeactivateEndpointTrait;
 use QUpload\Traits\Deactivate\DeactivateHandlerTrait;
 use QUpload\Traits\Log\LogStatusTrait;
+use QUpload\Traits\Log\LogRotationStatusTrait;
 use QUpload\Traits\Log\LogClearingTrait;
 use QUpload\Traits\Log\LogEmailTrait;
 use QUpload\Traits\Machine\MachineApprovalTrait;
@@ -42,6 +43,7 @@ class Plugin {
     use DeactivateEndpointTrait;
     use DeactivateHandlerTrait;
     use LogStatusTrait;
+    use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
     use MachineApprovalTrait;

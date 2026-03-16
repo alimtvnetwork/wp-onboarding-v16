@@ -19,10 +19,11 @@ enum EndpointType: string
     case Activate     = 'activate';
     case Deactivate   = 'deactivate';
     case Plugins      = 'plugins';
-    case LogsStatus   = 'logs/status';
-    case LogsClear    = 'logs/clear';
-    case LogsConfirm  = 'logs/clear/confirm';
-    case LogsEmail    = 'logs/email';
+    case LogsStatus         = 'logs/status';
+    case LogsRotationStatus = 'logs/rotation-status';
+    case LogsClear          = 'logs/clear';
+    case LogsConfirm        = 'logs/clear/confirm';
+    case LogsEmail          = 'logs/email';
     case MachinesApprove = 'machines/approve';
 
     /** Prefixes value with '/' for register_rest_route(). */
