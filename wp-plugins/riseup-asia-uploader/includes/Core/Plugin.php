@@ -86,6 +86,7 @@ class Plugin {
     use SnapshotBackupTrait;
     use FileSystemTrait;
     use LogStatusTrait;
+    use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
     use MachineApprovalTrait;

@@ -43,6 +43,7 @@ class Plugin {
     use DeactivateEndpointTrait;
     use DeactivateHandlerTrait;
     use LogStatusTrait;
+    use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
     use MachineApprovalTrait;
