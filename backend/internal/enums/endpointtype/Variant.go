@@ -119,6 +119,7 @@ var variantLabels = [...]string{
 	ErrorLogs:               "ErrorLogs",
 	ErrorSessions:           "ErrorSessions",
 	LogsStatus:              "LogsStatus",
+	LogsRotationStatus:      "LogsRotationStatus",
 	LogsClear:               "LogsClear",
 	LogsConfirm:             "LogsConfirm",
 	LogsEmail:               "LogsEmail",
