@@ -57,6 +57,7 @@ const (
 	CheckUploaderNamespace
 	RemotePluginBackup
 	GetLogsStatus
+	GetLogsRotationStatus
 	RequestLogsClear
 	ConfirmLogsClear
 	EmailLogs
