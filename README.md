@@ -301,6 +301,26 @@ The `run.ps1` script is the single entry point for all operations. **`git pull` 
 # ── Upload All Plugins ──
 .\run.ps1 -ua                          # ZIP + upload all plugins via QUpload
 
+# ── Upload Multi-Site ──
+.\run.ps1 -uas                         # Upload all plugins to ALL sites (parallel)
+.\run.ps1 -uas -sync                   # Upload all plugins to ALL sites (sequential)
+.\run.ps1 -uas -site 'Test V1'         # Upload to specific site by name
+.\run.ps1 -uas -i 1                    # Upload to site #1 (1-based index)
+.\run.ps1 -uas -i 1,2                  # Upload to sites #1 and #2
+.\run.ps1 -uas -xs 'Test V1'           # Exclude a specific site
+.\run.ps1 -u -as                       # Upload DEFAULT plugin to ALL sites
+.\run.ps1 -u -as -site 'Test V1'      # Upload DEFAULT plugin to specific site
+
+# ── Log Management ──
+.\run.ps1 -cl                          # Clear logs on default site (both plugins)
+.\run.ps1 -cl -site 'Test V1'          # Clear logs on specific site
+.\run.ps1 -cl -i 1,2,3                 # Clear logs on sites #1, #2, #3
+.\run.ps1 -cla                         # Clear logs on ALL sites (both plugins)
+
+# ── Machine Authorization ──
+.\run.ps1 -am                          # Approve current machine on ALL sites
+.\run.ps1 -am 'CI-SERVER'              # Approve a specific machine name
+
 # ── ZIP Only ──
 .\run.ps1 -z                           # ZIP default plugin
 .\run.ps1 -za                          # ZIP all plugins
