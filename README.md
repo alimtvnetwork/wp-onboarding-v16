@@ -190,7 +190,9 @@ A minimal, focused plugin for ZIP-based deployments. Used as the transport layer
 | **Auth** | WordPress Application Passwords |
 | **Min PHP** | 8.1 |
 
-**Key endpoints:** `/upload`, `/status`, `/activate`
+**Key endpoints:** `/upload`, `/status`, `/activate`, `/deactivate`, `/plugins`, `/logs/status`, `/logs/clear`, `/logs/clear/confirm`, `/logs/email`, `/machines/approve`
+
+> 📖 See [`wp-plugins/qupload/README.md`](wp-plugins/qupload/README.md) for full details.
 
 ### Plugins Onboard
 
@@ -243,8 +245,34 @@ The `run.ps1` script is the single entry point for all operations. **`git pull` 
 | `-q` / `-qupload` | Upload default plugin via QUpload API |
 | `-u -q` | Upload Riseup Asia Uploader itself via QUpload API |
 | `-ua` / `-uploadall` | ZIP + upload **all** plugins (except QUpload and skip list) via QUpload API |
+| `-uas` | Upload **all** plugins to **all** configured sites (parallel) |
+| `-u -as` | Upload **default** plugin only to **all** configured sites (parallel) |
 | `-d` / `-debug` | Enable debug logging for uploads |
 | `-pp <path>` | Override plugin folder path |
+| `-sync` | Sequential mode (use with `-uas` or `-u -as`) |
+| `-site 'name'` | Target specific site by name (fuzzy, case-insensitive match) |
+| `-i N` / `-index N` | Target site by 1-based index (e.g., `-i 1,2`) |
+| `-xs 'name'` / `-exclude` | Exclude sites or plugins by name |
+
+### Log Management Flags
+
+| Flag | Description |
+|------|-------------|
+| `-cl` / `-clearlogs` | Clear logs on default site (both plugins) |
+| `-cl -site 'name'` | Clear logs on a specific site |
+| `-cl -i N` | Clear logs on site #N (1-based index) |
+| `-cl -i 1,2,3` | Clear logs on multiple sites by index |
+| `-cl -xs 'name'` | Clear logs on all sites EXCEPT the named one |
+| `-cla` / `-clearlogsall` | Clear logs on **ALL** configured sites (both plugins) |
+
+### Machine Management Flags
+
+| Flag | Description |
+|------|-------------|
+| `-am` / `-approvemachine` | Approve current machine (`$env:COMPUTERNAME`) on ALL sites |
+| `-am 'MACHINE-NAME'` | Approve a specific machine name on ALL sites |
+
+> **Preflight check:** `-am` queries each site's `/status` endpoint and only attempts approval on sites running v2.17.0+. Sites with older versions are reported as "NOT READY" and skipped.
 
 ### ZIP Flags
 
@@ -274,6 +302,26 @@ The `run.ps1` script is the single entry point for all operations. **`git pull` 
 
 # ── Upload All Plugins ──
 .\run.ps1 -ua                          # ZIP + upload all plugins via QUpload
+
+# ── Upload Multi-Site ──
+.\run.ps1 -uas                         # Upload all plugins to ALL sites (parallel)
+.\run.ps1 -uas -sync                   # Upload all plugins to ALL sites (sequential)
+.\run.ps1 -uas -site 'Test V1'         # Upload to specific site by name
+.\run.ps1 -uas -i 1                    # Upload to site #1 (1-based index)
+.\run.ps1 -uas -i 1,2                  # Upload to sites #1 and #2
+.\run.ps1 -uas -xs 'Test V1'           # Exclude a specific site
+.\run.ps1 -u -as                       # Upload DEFAULT plugin to ALL sites
+.\run.ps1 -u -as -site 'Test V1'      # Upload DEFAULT plugin to specific site
+
+# ── Log Management ──
+.\run.ps1 -cl                          # Clear logs on default site (both plugins)
+.\run.ps1 -cl -site 'Test V1'          # Clear logs on specific site
+.\run.ps1 -cl -i 1,2,3                 # Clear logs on sites #1, #2, #3
+.\run.ps1 -cla                         # Clear logs on ALL sites (both plugins)
+
+# ── Machine Authorization ──
+.\run.ps1 -am                          # Approve current machine on ALL sites
+.\run.ps1 -am 'CI-SERVER'              # Approve a specific machine name
 
 # ── ZIP Only ──
 .\run.ps1 -z                           # ZIP default plugin
