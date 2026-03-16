@@ -1,170 +1,189 @@
 # Master Roadmap & Backlog
 
-> Updated: 2026-03-15
+> Updated: 2026-03-17
 
 ---
 
 ## Completed Phases
 
 ### ✅ Go Phase 4: Positive Logic & Boolean Standards
-- Renamed 12 negative booleans (`isNot*`, `hasNo*`, `isNon*`) to positive polarity across 11 files
-- Extracted 15 `!positiveVar` patterns to named positive intermediate variables
-- Zero violations remain in non-test Go files
+- Renamed 12 negative booleans across 11 files; zero violations remain
 
 ### ✅ Magic Strings Elimination in Template JS
-- Replaced hardcoded action strings in `admin-agents.php` with `ActionType` enum
-- Added `SNAP_RETENTION` and `SNAP_AJAX` JS constant blocks in `admin-snapshots.php`
-- Replaced 5 inline PHP enum calls with JS constants
+- `ActionType` enum in `admin-agents.php`; `SNAP_RETENTION`/`SNAP_AJAX` constants
 
 ### ✅ Phase 7A: Remote Plugin Backups (PHP + Go endpoints)
-- Created `BackupType`, `BackupStatusType`, `BackupConfigType` enums
-- Added 4 new `EndpointType` cases: `PluginBackup`, `PluginBackupRestore`, `PluginBackupList`, `PluginBackupDelete`
-- Added `Backups` to `PathSubdirType` and `getBackupsDir()` to `PathHelperCoreTrait`
-- Implemented `PluginBackupHandlerTrait` with full CRUD (create zip, restore, list, delete)
-- Registered 4 routes in `PluginRouteRegistrationTrait`
-- Wired trait into `Plugin.php`
-- Added 4 matching Go `Variant` constants to keep drift test in sync
-- Auto-retention enforces max 5 backups per plugin
-- ✅ Pre-publish hook integration complete (Go calls backup before upload)
+- `BackupType`, `BackupStatusType`, `BackupConfigType` enums
+- 4 endpoints: backup, restore, list, delete
+- Auto-retention max 5 backups per plugin
+- Pre-publish hook integration complete
 
-### ✅ 7A Remaining: Pre-Publish Backup Hook (Go)
-Wire the remote backup endpoint into the Go publish pipeline so a backup is automatically created before each upload. — **Complete**
-
-### ✅ 7B: Bulk Quick Publish (Multi-select) — Go + React complete
+### ✅ 7B: Bulk Quick Publish — Go + React complete
 
 ### ✅ 7C: True Diff (Remote File Hash Comparison) — Go + React complete
 
-### ✅ 7D: Licensing System (Custom Go Server) — Architecture + scaffold + handlers complete
+### ✅ 7D: Licensing System — Architecture + scaffold + handlers complete
 
 ### ✅ Go Phase 5: Code Organization Standards
-- Renamed 5 files to PascalCase
-- Split oversized files, refactored helpers
 - All 247 Go files within 300-line limit; all functions within 15-line body limit
 
 ### ✅ Go Phase 6: CI Lint Scripts & Integration
-- All 7 lint scripts enforced in CI for both backend and licensing modules
-- Pre-commit hooks and dedicated CI jobs
+- All 7 lint scripts enforced in CI; pre-commit hooks active
 
-### ✅ Phase 7E: Cloud Storage Providers (All 3 Phases Complete — 2026-03-15)
-
-**Phase 1 — GitHub (PAT/Git Data API):**
-- `CloudStorageGitHubTrait.php` — Git Data API for file operations
-- AES-256-CBC encrypted credential storage
-- Provider-agnostic CRUD interface
-
-**Phase 2 — GitLab (Private-Token, self-hosted support):**
-- `CloudStorageGitLabTrait.php` — REST API with self-hosted BaseUrl support
-- Shared upload/file/account traits
-
-**Phase 3 — Google Drive (OAuth2, resumable uploads):**
-- `CloudStorageGoogleDriveTrait.php` — Drive v3 API, chunked streaming (262KB chunks)
-- `CloudStorageOAuthTrait.php` — OAuth2 flow with CSRF state via WP transients
-- Token auto-refresh with 60s buffer
-
-**React Dashboard:**
-- `CloudStorageSettingsPage` with provider tabs (GitHub, GitLab, Google Drive)
-- `CloudStorageAccountCard` with masked tokens, test connection, action dropdown
-- `CloudStorageAccountDialog` with dynamic fields per provider
-- `CloudStorageProviderSettings` — auto-backup toggle, retention slider, backup prefix
-- `CloudStorageBackupSelector` — collapsible selector in publish dialog with localStorage persistence
-- 8 API methods in `src/lib/api/methods.ts`
-- Route: `/cloud-storage`
-
-**Publish Integration:**
-- `cloudStorageAccountIds` passed through `useQuickPublish`, `useBulkQuickPublish`, and publish dialog
-- `cloud_upload` stage added to `PublishProgressDialog` (between backup and package)
-- `bulkPublish` API accepts `cloudStorageAccountIds`
+### ✅ Phase 7E: Cloud Storage Providers (3 Phases)
+- GitHub (PAT/Git Data API), GitLab (Private-Token, self-hosted), Google Drive (OAuth2, resumable uploads)
+- Full React dashboard, publish integration, quick publish support
 
 ---
 
-## Remaining Work
+## Active Issues
 
-### 🔲 Type-Safety Migration: `interface{}` → `any`
-**Priority:** Medium  
-**Dependencies:** None  
-**Status:** Partially complete (see `.lovable/memory/architecture/backend/go-type-remediation-progress`)
+### Phase A: Deployment & Verification (🔴 Blocked — needs user)
 
-Migrate remaining ~2,680 `interface{}` instances across ~58 Go files to typed alternatives.
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| A-1 | Deploy v2.17.0+ to all remote sites | 🔴 Critical | User runs `.\run.ps1 -uas` | Blocked |
+| A-2 | Verify EnvelopeBuilder fallback fix | 🔴 Critical | A-1 | Blocked |
+| A-3 | Verify preflight check works on remote | 🟡 Medium | A-1 | Blocked |
 
-**Packages by priority (estimated instance count):**
-- `handlers` (~999) — ✅ Complete
-- `services` (~942) — ✅ Complete  
-- `ws` (~30) — ✅ Complete
-- `envelope`, `models`, `config`, `database`, `dbops`, `logger`, `apperror` — ✅ Complete
-- `wordpress/client` — ✅ Complete
-- `wordpress` — ✅ Complete
-- `cmd/server/main` — ✅ Complete
-- Remaining packages — 🔲 Audit needed to confirm scope
+**Expected outputs:** Confirmed working uploads; no 500 errors; `-check` passes all sites
+**Acceptance criteria:** All remote sites on v2.17.0+; `-check` returns green for all endpoints
 
 ---
 
-## Active Issues (March 2026)
+### Phase B: Backend Integration (🟡 Medium)
 
-### 1. 🔴 ORM PDO Fix — Redeploy Riseup Asia Uploader
-- **Issue:** `spec/02-app-issues/25-orm-pdo-class-not-found.md`
-- **Action:** Redeploy plugin to remote site; verify `use PDO;` is present in deployed `OrmQueryTrait.php`
-- **Scope:** Deployment only (code already fixed locally)
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| B-1 | Wire `cloud_upload` stage into Go pipeline | 🟡 Medium | None | 🔲 Pending |
+| B-2 | Bump plugin versions to 2.15.0+ | 🟢 Low | B-1 | 🔲 Pending |
 
-### 2. 🟡 QUpload Activate → PUT (All Layers)
-- **Issue:** `spec/02-app-issues/26-qupload-activate-should-use-put.md`
-- **Action:** Change HTTP method from POST to PUT across:
-  - [ ] PHP: `QUpload/RouteRegistrationTrait.php` — `HttpMethodType::Put`
-  - [ ] PHP: `QUpload/Enums/HttpMethodType.php` — add `Put` case if missing
-  - [ ] PHP: `plugins-onboard/api/Api.php` — enable endpoint → PUT
-  - [ ] Go: `QUploader.go` line 76 → `httpmethod.Put`
-  - [ ] Go: `EndpointMap.go` EPEnablePlugin → `httpmethod.Put`
-  - [ ] Frontend: API client enable/activate calls → PUT
-  - [ ] PowerShell: Any direct activate calls → `-Method PUT`
-  - [ ] Specs: Update endpoint documentation
+**Expected outputs:** `ServicePublishPipeline.go` emits WS events for cloud upload; version constants updated
+**Acceptance criteria:** Cloud upload progress visible in React dashboard when cloud storage accounts selected
 
-### 3. 🟡 QUpload Admin UI Uplift
-- **Issue:** `spec/02-app-issues/27-qupload-ui-uplift-version-header.md`
-- **Action:**
-  - [ ] Add version number badge to QUpload admin header
-  - [ ] Apply shared `admin-shared.css` animations (fadeInUp, shimmer)
-  - [ ] Match Riseup Asia Uploader's gradient button + high-contrast design
-  - [ ] Visual QA against Riseup Asia reference
+---
 
-### 4. 🟡 Log Rotation for Both Plugins
-- **Issue:** `spec/02-app-issues/28-log-rotation-both-plugins.md`
-- **Action:**
-  - [ ] Add `settings.json` with `logging.maxLogSizeBytes: 524288` to both plugins
-  - [ ] Implement rotation in `FileLogger.php` (both plugins): check size before write, move to `archive/{NNN}/`
-  - [ ] Rotate `log.txt`, `error.txt`, `stacktrace.txt` independently
-  - [ ] Test with synthetic large writes
-  - [ ] Verify admin log viewer still works post-rotation
+### Phase C: All-Layer HTTP Method Fix (🟡 Medium)
 
-### 5. 🟡 Cloud Storage — Pending Backend Integration
-- **Action:**
-  - [ ] Add `cloud_upload` stage to `ServicePublishPipeline.go` — emit WS events for cloud upload progress (S-044)
-  - [x] Add Google OAuth settings to admin Settings page (S-042)
-  - [x] Conditionally show `cloud_upload` stage in PublishProgressDialog only when accounts selected (S-041)
-  - [ ] Bump plugin versions to 2.15.0 (S-043)
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| C-1 | QUpload Activate → PUT (all layers) | 🟡 Medium | None | 🔲 Pending |
 
-### 6. 🟡 Cloud Storage — Git Backup Strategy (NEW)
-- **Spec:** `spec/17-cloud-storage-providers/09-git-backup-strategy.md`
-- **Action (Phases 5A–5F):**
-  - [ ] Phase 5A: Repo selection + branch management (migration v19, list repos/branches endpoints, UI)
-  - [ ] Phase 5B: Full + incremental backup engine (migration v20, BackupHistory table, enums)
-  - [ ] Phase 5C: Automated scheduling (WP-Cron, schedule settings)
-  - [ ] Phase 5D: Git clone restore (shallow clone, API fallback, restore endpoint)
-  - [ ] Phase 5E: Backup history visualization (timeline UI, history endpoints)
-  - [ ] Phase 5F: Google Drive folder structure adaptation
+**Scope (7 touch points):**
+- PHP: `RouteRegistrationTrait.php` → `HttpMethodType::Put`
+- PHP: `HttpMethodType.php` → add `Put` case if missing
+- PHP: `plugins-onboard/api/Api.php` → enable endpoint → PUT
+- Go: `QUploader.go` line 76 → `httpmethod.Put`
+- Go: `EndpointMap.go` EPEnablePlugin → `httpmethod.Put`
+- Frontend: API client enable/activate calls → PUT
+- PowerShell: Any direct activate calls → `-Method PUT`
+- Specs: Update endpoint documentation
+
+**Expected outputs:** All activate/enable endpoints use PUT; specs updated
+**Acceptance criteria:** Plugin activation works via all paths (UI, PowerShell, Go backend)
+
+---
+
+### Phase D: UI & UX (🟡 Medium)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| D-1 | QUpload Admin UI Uplift | 🟡 Medium | None | 🔲 Pending |
+| D-2 | Backup History Visualization (Phase 5E) | 🟡 Medium | None | 🔲 Pending |
+
+**D-1 scope:** Version badge in header; `admin-shared.css` animations; gradient buttons; visual QA
+**D-2 scope:** Timeline UI in Cloud Storage dashboard
+
+**Expected outputs:** Updated QUpload admin pages; backup history timeline component
+**Acceptance criteria:** Visual parity with Riseup Asia Uploader design; timeline shows backup history
+
+---
+
+### Phase E: Git Backup Strategy (🟡 Medium — 6 sub-phases)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| E-1 | Phase 5A: Repo selection + branch management | 🟡 Medium | None | 🔲 Pending |
+| E-2 | Phase 5B: Full + incremental backup engine | 🟡 Medium | E-1 | 🔲 Pending |
+| E-3 | Phase 5C: Automated scheduling (WP-Cron) | 🟡 Medium | E-2 | 🔲 Pending |
+| E-4 | Phase 5D: Git clone restore | 🟡 Medium | E-2 | 🔲 Pending |
+| E-5 | Phase 5E: Backup history visualization | 🟡 Medium | E-2 | 🔲 Pending |
+| E-6 | Phase 5F: Google Drive folder adaptation | 🟢 Low | E-2 | 🔲 Pending |
+
+**Spec files:** `spec/17-cloud-storage-providers/09-git-backup-strategy.md`, `10-git-backup-workflow-v2.md`
+**Expected outputs:** DB migrations v19-v20; BackupHistory table; PHP traits; React timeline UI; WP-Cron jobs
+**Acceptance criteria:** Automated backups to Git providers on schedule; restore from any backup point
+
+---
+
+### Phase F: Configuration & Monitoring (🟢 Low)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| F-1 | Create `settings.json` for QUpload | 🟢 Low | None | 🔲 Pending |
+| F-2 | Add `/logs/rotation-status` endpoint | 🟢 Low | F-1 | 🔲 Pending |
+| F-3 | Verbose `-check` mode (HEAD requests) | 🟢 Low | None | 🔲 Pending |
+| F-4 | Auto-invalidate cached ZIP on source change | 🟡 Medium | None | 🔲 Pending |
+
+**Expected outputs:** `settings.json` with logging config; rotation status API; enhanced diagnostics
+**Acceptance criteria:** Configurable without code changes; remote monitoring possible
+
+---
+
+### Phase G: Type Safety (🟢 Low)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| G-1 | Audit remaining `interface{}` scope | 🟢 Low | None | 🔲 Pending |
+
+**Expected outputs:** List of files/counts; migration to `any` or typed generics
+**Acceptance criteria:** Zero `interface{}` outside test files
+
+---
+
+### Phase H: Future Features (Not Yet Scoped)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| H-1 | Admin dashboard for licensing server | 🟢 Low | Spec needed | 🔲 Not scoped |
+| H-2 | Publish analytics / history reporting | 🟢 Low | Spec needed | 🔲 Not scoped |
+| H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | 🔲 Not scoped |
 
 ---
 
 ## Next Task Selection
 
-> For handoff to other AI models: pick the next unchecked (🔲) task from "Active Issues" above.
+> **For handoff to other AI models:** Pick the next task based on priority and unblocked status.
 
-**Recommended order:**
-1. **ORM PDO Fix** — redeploy Riseup Asia Uploader (critical, admin broken)
-2. **Cloud Storage backend integration** — wire `cloud_upload` stage into Go pipeline
-3. **QUpload Activate → PUT** — all-layer HTTP method fix
-4. **QUpload UI Uplift** — version header + design parity
-5. **Log Rotation** — both plugins
-6. **Type-safety audit** — confirm remaining `interface{}` scope
-7. **Future considerations** (not yet scoped):
-   - Admin dashboard for licensing server (React SPA or Go templates)
-   - Publish analytics / history reporting
-   - Plugin dependency graph visualization
+**Recommended implementation order:**
+
+1. **Phase C: QUpload Activate → PUT** — well-specified all-layer fix, no blockers
+2. **Phase B-1: Cloud Storage Go pipeline** — wire `cloud_upload` stage
+3. **Phase D-1: QUpload UI Uplift** — visual improvement, no blockers
+4. **Phase E-1: Git Backup Phase 5A** — repo selection + branch management
+5. **Phase F-4: Auto-invalidate cached ZIP** — developer productivity improvement
+6. **Phase D-2: Backup History Visualization** — timeline UI
+7. **Phase F-1–F-3: Configuration & Monitoring** — low priority quality-of-life
+
+**Blocked (needs user action):**
+- Phase A: All deployment tasks — user must run PowerShell scripts
+
+---
+
+## Open Suggestions Cross-Reference
+
+| Suggestion | Maps To |
+|------------|---------|
+| S-046 | Phase E-6 (Google Drive folder rotation) |
+| S-047 | Phase D-2 / E-5 (Backup history visualization) |
+| S-048 | Phase B-1 (Go backend validation) |
+| S-049 | Phase F-1 (QUpload settings.json) |
+| S-050 | Phase F-2 (Rotation status endpoint) |
+| S-051 | Phase F-3 (Verbose `-check`) |
+| S-052 | Phase F-4 (Auto-invalidate cached ZIP) |
+| S-053 | Phase H-1 (Licensing dashboard) |
+| S-054 | Phase H-2 (Publish analytics) |
+
+---
+
+*Master plan for AI handoff. Pick from "Next Task Selection" above. Read specs before implementing.*
