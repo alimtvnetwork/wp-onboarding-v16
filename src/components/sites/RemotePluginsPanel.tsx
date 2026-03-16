@@ -223,10 +223,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       }
       if (enable) {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
       } else {
         const response = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
       }
     },
     onMutate: async ({ plugin, enable }) => {
