@@ -2,7 +2,7 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-03-15
+> **Updated:** 2026-03-16
 
 ---
 
@@ -10,12 +10,15 @@
 
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
-| S-041 | 2026-03-15 | Medium | Lovable | open | Conditionally show `cloud_upload` stage in PublishProgressDialog only when cloud storage accounts are selected |
-| S-042 | 2026-03-15 | Medium | Lovable | open | Add Google OAuth settings section to Settings page for admins to configure `google_oauth_client_id` and `google_oauth_client_secret` |
-| S-043 | 2026-03-15 | Low | Lovable | open | Bump all plugin versions to 2.15.0 to reflect cloud storage providers feature |
-| S-044 | 2026-03-15 | Medium | Lovable | open | Add `cloud_upload` progress stage to backend `ServicePublishPipeline.go` to emit WebSocket events for cloud upload progress |
-| S-045 | 2026-03-15 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) |
-| S-046 | 2026-03-15 | Low | Lovable | open | Publish analytics / history reporting dashboard |
+| S-046 | 2026-03-15 | Low | Lovable | open | Implement Phase 5F for Google Drive folder-based rotation adaptation |
+| S-047 | 2026-03-15 | Medium | Lovable | open | Implement backup history visualization UI (Phase 5E) in the Cloud Storage dashboard |
+| S-048 | 2026-03-15 | Medium | Lovable | open | Add Go backend validation for chunk reassembly manifest integrity during publishing |
+| S-049 | 2026-03-16 | Low | Lovable | open | Create `wp-plugins/qupload/settings.json` with explicit logging config defaults |
+| S-050 | 2026-03-16 | Low | Lovable | open | Add GET `/logs/rotation-status` endpoint to QUpload for remote rotation monitoring |
+| S-051 | 2026-03-16 | Medium | Lovable | open | Add verbose endpoint probing to `-check` (HEAD requests per endpoint) |
+| S-052 | 2026-03-16 | Medium | Lovable | open | Auto-invalidate cached ZIP when plugin source files change (hash-based) |
+| S-053 | 2026-03-16 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) |
+| S-054 | 2026-03-16 | Low | Lovable | open | Publish analytics / history reporting dashboard |
 
 ---
 
@@ -63,8 +66,11 @@
 | S-038 | Add DateHelper::relativeDayKey() helper | 2026-02-23 | Extracted reusable method |
 | S-039 | Fix FrameBuilder.php Rule 13 + namespace order | 2026-02-23 | Fixed |
 | S-040 | Autoloader LOG_PREFIX — closed as N/A | 2026-02-23 | Exempt (bootstrapping dependency) |
-
-→ Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
+| S-041 | Conditionally show `cloud_upload` stage in PublishProgressDialog | 2026-03-15 | Integrated with CS-006 |
+| S-042 | Add Google OAuth settings section to Settings page | 2026-03-15 | Part of Cloud Storage CS-002 |
+| S-043 | Bump all plugin versions to 2.15.0 | 2026-03-15 | Reflected in cloud storage feature |
+| S-044 | Add `cloud_upload` progress stage to backend | 2026-03-15 | Part of CS-006 |
+| S-045 | Add `-check` diagnostic command to PowerShell | 2026-03-16 | `mode-check.ps1` created, wired into `run.ps1` |
 
 ### Recently Completed (Cloud Storage — 2026-03-15)
 
@@ -76,6 +82,16 @@
 | CS-004 | Pass cloudStorageAccountIds through useQuickPublish | 2026-03-15 | Reads from localStorage, passes to `api.publishPlugin()` |
 | CS-005 | Pass cloudStorageAccountIds through useBulkQuickPublish | 2026-03-15 | Reads from localStorage, passes to `api.bulkPublish()` |
 | CS-006 | Add cloud_upload stage to PublishProgressDialog | 2026-03-15 | Between backup and package stages |
+
+### Recently Completed (PowerShell & QUpload — 2026-03-16)
+
+| ID | Title | Completed | Notes |
+|----|-------|-----------|-------|
+| PS-001 | Preflight check in `-am` (version-aware) | 2026-03-16 | `mode-approve-machine.ps1` queries `/status` per-site |
+| PS-002 | EnvelopeBuilder fallback in ResponseTrait | 2026-03-16 | Dual-path: `class_exists()` + inline fallback |
+| PS-003 | Root README.md with full CLI reference | 2026-03-16 | Comprehensive flag documentation |
+| PS-004 | `-check` preflight diagnostic command | 2026-03-16 | `mode-check.ps1` — read-only site readiness checks |
+| PS-005 | Log rotation already implemented (confirmed) | 2026-03-16 | `FileLogger.php` already has rotation, pruning, configurable via `settings.json` |
 
 ---
 
@@ -91,11 +107,11 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 6 |
-| Completed | 46 |
+| Open | 9 |
+| Completed | 57 |
 | Closed N/A | 1 |
 | Rejected | 1 |
-| **Total** | **54** |
+| **Total** | **68** |
 
 ---
 
@@ -106,7 +122,7 @@ All suggestions tracked in this single file: `.lovable/memory/suggestions/01-sug
 
 ### Adding a New Suggestion
 Add to "Active Suggestions (Open)" section with:
-- **ID:** S-NNN (sequential, next is S-047)
+- **ID:** S-NNN (sequential, next is S-055)
 - **Created:** date
 - **Source:** where the suggestion originated (e.g., "Lovable", "User", "Audit")
 - **Priority:** low / medium / high
