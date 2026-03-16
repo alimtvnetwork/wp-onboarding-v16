@@ -190,7 +190,9 @@ A minimal, focused plugin for ZIP-based deployments. Used as the transport layer
 | **Auth** | WordPress Application Passwords |
 | **Min PHP** | 8.1 |
 
-**Key endpoints:** `/upload`, `/status`, `/activate`
+**Key endpoints:** `/upload`, `/status`, `/activate`, `/deactivate`, `/plugins`, `/logs/status`, `/logs/clear`, `/logs/clear/confirm`, `/logs/email`, `/machines/approve`
+
+> 📖 See [`wp-plugins/qupload/README.md`](wp-plugins/qupload/README.md) for full details.
 
 ### Plugins Onboard
 
