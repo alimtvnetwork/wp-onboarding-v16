@@ -119,7 +119,7 @@
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| G-1 | Audit remaining `interface{}` scope | 🟢 Low | None | 🔲 Pending |
+| G-1 | Audit remaining `interface{}` scope | 🟢 Low | None | ✅ Done |
 
 **Expected outputs:** List of files/counts; migration to `any` or typed generics
 **Acceptance criteria:** Zero `interface{}` outside test files
