@@ -51,6 +51,7 @@ use RiseupAsia\Traits\Snapshot\SnapshotExportTrait;
 use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
 use RiseupAsia\Traits\FileSystem\FileSystemTrait;
 use RiseupAsia\Traits\Log\LogStatusTrait;
+use RiseupAsia\Traits\Log\LogRotationStatusTrait;
 use RiseupAsia\Traits\Log\LogClearingTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
