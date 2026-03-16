@@ -33,6 +33,7 @@ const (
 	ErrorLogs
 	ErrorSessions
 	LogsStatus
+	LogsRotationStatus
 	LogsClear
 	LogsConfirm
 	LogsEmail
