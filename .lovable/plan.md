@@ -63,24 +63,9 @@
 
 ---
 
-### Phase C: All-Layer HTTP Method Fix (🟡 Medium)
-
-| # | Task | Priority | Dependencies | Status |
-|---|------|----------|------------|--------|
-| C-1 | QUpload Activate → PUT (all layers) | 🟡 Medium | None | 🔲 Pending |
-
-**Scope (7 touch points):**
-- PHP: `RouteRegistrationTrait.php` → `HttpMethodType::Put`
-- PHP: `HttpMethodType.php` → add `Put` case if missing
-- PHP: `plugins-onboard/api/Api.php` → enable endpoint → PUT
-- Go: `QUploader.go` line 76 → `httpmethod.Put`
-- Go: `EndpointMap.go` EPEnablePlugin → `httpmethod.Put`
-- Frontend: API client enable/activate calls → PUT
-- PowerShell: Any direct activate calls → `-Method PUT`
-- Specs: Update endpoint documentation
-
-**Expected outputs:** All activate/enable endpoints use PUT; specs updated
-**Acceptance criteria:** Plugin activation works via all paths (UI, PowerShell, Go backend)
+### ✅ Phase C: All-Layer HTTP Method Fix
+- QUpload Activate → PUT across PHP, Go, Frontend, specs, and memory docs
+- 6 error-context strings fixed in RemotePluginsPanel.tsx
 
 ---
 
