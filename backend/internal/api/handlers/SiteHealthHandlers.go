@@ -17,6 +17,13 @@ var CheckSiteHealth = handleSiteActionById("E4001",
 	},
 )
 
+// VerboseCheckSiteHealth performs a HEAD-based verbose check on a single site
+var VerboseCheckSiteHealth = handleSiteActionById("E4006",
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+		return Services.SiteHealthService.VerboseCheck(ctx, siteId)
+	},
+)
+
 // CheckAllSitesHealth performs health checks on all sites
 func CheckAllSitesHealth(w http.ResponseWriter, r *http.Request) {
 	isMissing :=

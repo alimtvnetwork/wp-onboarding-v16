@@ -6,7 +6,7 @@ import (
 
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/publish_history"
-	"wp-plugin-publish/internal/services/site_health"
+	sitehealth "wp-plugin-publish/internal/services/site_health"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -30,6 +30,7 @@ type PublishHistoryListResult struct {
 type SiteHealthServiceInterface interface {
 	CheckSite(ctx context.Context, siteId int64) (*models.SiteHealthCheck, *apperror.AppError)
 	CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, *apperror.AppError)
+	VerboseCheck(ctx context.Context, siteId int64) (*sitehealth.VerboseCheckResult, *apperror.AppError)
 	GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError)
 	GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, *apperror.AppError)
 	GetStats(ctx context.Context) (*models.SiteHealthStats, *apperror.AppError)
@@ -114,6 +115,17 @@ func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.
 	}
 
 	return result.Items(), nil
+}
+
+func (a *SiteHealthServiceAdapter) VerboseCheck(ctx context.Context, siteId int64) (*sitehealth.VerboseCheckResult, *apperror.AppError) {
+	result := a.Service.VerboseCheck(ctx, siteId)
+	if result.HasError() {
+		return nil, result.AppError()
+	}
+
+	v := result.Value()
+
+	return &v, nil
 }
 
 func (a *SiteHealthServiceAdapter) GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError) {
