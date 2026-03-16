@@ -33,7 +33,8 @@ param(
     [Alias('cla')][switch]$clearlogsall,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
-    [Alias('i')][string]$index = ""
+    [Alias('i')][string]$index = "",
+    [switch]$check
 )
 
 # -rebuild is a convenience flag that combines -force and -install
