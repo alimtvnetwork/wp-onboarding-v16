@@ -93,7 +93,7 @@
 | E-3 | Phase 5C: Automated scheduling (WP-Cron) | 🟡 Medium | E-2 | ✅ Done |
 | E-4 | Phase 5D: Git clone restore | 🟡 Medium | E-2 | ✅ Done |
 | E-5 | Phase 5E: Backup history visualization | 🟡 Medium | E-2 | ✅ Done |
-| E-6 | Phase 5F: Google Drive folder adaptation | 🟢 Low | E-2 | 🔲 Pending |
+| E-6 | Phase 5F: Google Drive folder adaptation | 🟢 Low | E-2 | ✅ Done |
 
 **Spec files:** `spec/17-cloud-storage-providers/09-git-backup-strategy.md`, `10-git-backup-workflow-v2.md`
 **Expected outputs:** DB migrations v19-v20; BackupHistory table; PHP traits; React timeline UI; WP-Cron jobs
