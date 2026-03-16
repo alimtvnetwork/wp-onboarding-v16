@@ -33,7 +33,8 @@ param(
     [Alias('cla')][switch]$clearlogsall,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
-    [Alias('i')][string]$index = ""
+    [Alias('i')][string]$index = "",
+    [switch]$check
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -97,6 +98,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-test.ps1")
 . (Join-Path $ModulesDir "mode-clear-logs.ps1")
 . (Join-Path $ModulesDir "mode-approve-machine.ps1")
+. (Join-Path $ModulesDir "mode-check.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -218,6 +220,11 @@ if ($help) {
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
     Write-Host ""
+    Write-Host "DIAGNOSTICS:" -ForegroundColor Yellow
+    Write-Host "  -check              Preflight readiness check across all sites (read-only)"
+    Write-Host "  -check -site 'name' Check a specific site only"
+    Write-Host "  -check -i N         Check site(s) by index"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
@@ -328,6 +335,13 @@ if ($help) {
 # ============================================================================
 if ($listsites) {
     Invoke-ListSitesMode
+}
+
+# ============================================================================
+# PREFLIGHT CHECK (early exit)
+# ============================================================================
+if ($check) {
+    Invoke-CheckMode
 }
 
 # ============================================================================

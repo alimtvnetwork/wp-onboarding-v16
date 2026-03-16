@@ -57,6 +57,11 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 | `-za` | | ZIP ALL plugins |
 | `-zipqupload` | `-zq` | ZIP QUpload only |
 
+### Diagnostics
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-check` | | Preflight readiness check across all sites (read-only) |
+
 ### Info
 | Flag | Alias | Description |
 |------|-------|-------------|
