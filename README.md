@@ -243,8 +243,34 @@ The `run.ps1` script is the single entry point for all operations. **`git pull` 
 | `-q` / `-qupload` | Upload default plugin via QUpload API |
 | `-u -q` | Upload Riseup Asia Uploader itself via QUpload API |
 | `-ua` / `-uploadall` | ZIP + upload **all** plugins (except QUpload and skip list) via QUpload API |
+| `-uas` | Upload **all** plugins to **all** configured sites (parallel) |
+| `-u -as` | Upload **default** plugin only to **all** configured sites (parallel) |
 | `-d` / `-debug` | Enable debug logging for uploads |
 | `-pp <path>` | Override plugin folder path |
+| `-sync` | Sequential mode (use with `-uas` or `-u -as`) |
+| `-site 'name'` | Target specific site by name (fuzzy, case-insensitive match) |
+| `-i N` / `-index N` | Target site by 1-based index (e.g., `-i 1,2`) |
+| `-xs 'name'` / `-exclude` | Exclude sites or plugins by name |
+
+### Log Management Flags
+
+| Flag | Description |
+|------|-------------|
+| `-cl` / `-clearlogs` | Clear logs on default site (both plugins) |
+| `-cl -site 'name'` | Clear logs on a specific site |
+| `-cl -i N` | Clear logs on site #N (1-based index) |
+| `-cl -i 1,2,3` | Clear logs on multiple sites by index |
+| `-cl -xs 'name'` | Clear logs on all sites EXCEPT the named one |
+| `-cla` / `-clearlogsall` | Clear logs on **ALL** configured sites (both plugins) |
+
+### Machine Management Flags
+
+| Flag | Description |
+|------|-------------|
+| `-am` / `-approvemachine` | Approve current machine (`$env:COMPUTERNAME`) on ALL sites |
+| `-am 'MACHINE-NAME'` | Approve a specific machine name on ALL sites |
+
+> **Preflight check:** `-am` queries each site's `/status` endpoint and only attempts approval on sites running v2.17.0+. Sites with older versions are reported as "NOT READY" and skipped.
 
 ### ZIP Flags
 
