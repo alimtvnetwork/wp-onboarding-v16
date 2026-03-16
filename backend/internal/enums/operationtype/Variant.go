@@ -114,6 +114,7 @@ var variantLabels = [...]string{
 	CheckUploaderNamespace: "CheckUploaderNamespace",
 	RemotePluginBackup:     "RemotePluginBackup",
 	GetLogsStatus:          "GetLogsStatus",
+	GetLogsRotationStatus:  "GetLogsRotationStatus",
 	RequestLogsClear:       "RequestLogsClear",
 	ConfirmLogsClear:       "ConfirmLogsClear",
 	EmailLogs:              "EmailLogs",
