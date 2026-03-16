@@ -277,6 +277,10 @@ func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int
 	return a.Service.GetRemoteLogsStatus(ctx, siteId)
 }
 
+func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteLogsRotationStatus(ctx, siteId)
+}
+
 func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	return a.Service.RequestRemoteLogsClear(ctx, siteId)
 }
