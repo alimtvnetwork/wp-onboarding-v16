@@ -1,7 +1,7 @@
 # Memory: features/qupload-plugin
 Updated: 2026-03-16
 
-The 'Quick Upload' (QUpload) WordPress plugin (PHP 8.1+) is a minimal remote deployment system namespaced as `QUpload\`. It uses WordPress Application Passwords (Basic Auth) for security and provides a REST API (`qupload-api/v1`) for ZIP-based plugin deployment (`POST /upload`) and slug-based activation (`POST /activate`). The upload process includes automatic slug detection, forced replacement of existing versions, and OPcache resetting.
+The 'Quick Upload' (QUpload) WordPress plugin (PHP 8.1+) is a minimal remote deployment system namespaced as `QUpload\`. It uses WordPress Application Passwords (Basic Auth) for security and provides a REST API (`qupload-api/v1`) for ZIP-based plugin deployment (`POST /upload`) and slug-based activation (`PUT /activate`). The upload process includes automatic slug detection, forced replacement of existing versions, and OPcache resetting.
 
 ## Key Components
 
@@ -16,8 +16,8 @@ The 'Quick Upload' (QUpload) WordPress plugin (PHP 8.1+) is a minimal remote dep
 |--------|----------|-------------|
 | `GET` | `/status` | Health check |
 | `POST` | `/upload` | Upload plugin ZIP |
-| `POST` | `/activate` | Activate plugin by slug |
-| `POST` | `/deactivate` | Deactivate plugin by slug |
+| `PUT` | `/activate` | Activate plugin by slug |
+| `PUT` | `/deactivate` | Deactivate plugin by slug |
 | `GET` | `/plugins` | List installed plugins |
 | `GET` | `/logs/status` | Log file status |
 | `POST` | `/logs/clear` | Clear logs |

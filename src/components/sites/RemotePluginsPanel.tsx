@@ -223,10 +223,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       }
       if (enable) {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
       } else {
         const response = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
       }
     },
     onMutate: async ({ plugin, enable }) => {
@@ -290,7 +290,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       // If plugin is active, deactivate first, then delete
       if (plugin.status === RemotePluginStatus.Active) {
         const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+        requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
       }
       const response = await api.deleteRemotePlugin(site.id, plugin.plugin, plugin.version);
       return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });
@@ -408,7 +408,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           throw new Error(`Plugin "${plugin.plugin}" not found — bulk activate blocked`);
         }
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
         return plugin.name;
       })
     );
@@ -446,7 +446,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           throw new Error(`Plugin "${plugin.plugin}" not found — bulk deactivate blocked`);
         }
         const response = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
         return plugin.name;
       })
     );
@@ -485,7 +485,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         }
         if (plugin.status === RemotePluginStatus.Active) {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
-          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
+          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
         }
         const response = await api.deleteRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });

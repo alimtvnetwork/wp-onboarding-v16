@@ -64,8 +64,8 @@
 
 ## Done Checklist
 
-- [ ] Spec updated under `../01-app/`
+- [x] Spec updated under `../01-app/`
 - [x] Issue write-up created under `./`
-- [ ] Memory updated with summary and prevention rule
-- [ ] Acceptance criteria updated or added
+- [x] Memory updated with summary and prevention rule
+- [x] Acceptance criteria updated or added
 - [ ] Iterations recorded if applicable
