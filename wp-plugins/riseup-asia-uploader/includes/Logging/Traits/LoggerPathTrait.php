@@ -96,6 +96,15 @@ trait LoggerPathTrait {
         return $this->stacktraceFile;
     }
 
+    /** Get rotation configuration for remote monitoring. */
+    public function getRotationConfig(): array {
+        return array(
+            'max_log_size_bytes' => $this->maxLogSizeBytes,
+            'max_rotations'     => $this->maxRotations,
+            'archive_enabled'   => $this->archiveEnabled,
+        );
+    }
+
     /**
      * Collect known log files plus any extra files in the logs directory.
      *

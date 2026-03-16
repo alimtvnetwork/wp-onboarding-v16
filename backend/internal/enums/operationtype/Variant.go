@@ -171,6 +171,7 @@ var variantValues = [...]string{
 	CheckUploaderNamespace: "check uploader namespace",
 	RemotePluginBackup:     "remote plugin backup",
 	GetLogsStatus:          "get logs status",
+	GetLogsRotationStatus:  "get logs rotation status",
 	RequestLogsClear:       "request logs clear",
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",

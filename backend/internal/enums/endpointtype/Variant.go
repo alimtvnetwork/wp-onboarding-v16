@@ -205,6 +205,7 @@ var variantValues = [...]string{
 	ErrorLogs:               "/error-logs",
 	ErrorSessions:           "/error-sessions",
 	LogsStatus:              "/logs/status",
+	LogsRotationStatus:      "/logs/rotation-status",
 	LogsClear:               "/logs/clear",
 	LogsConfirm:             "/logs/clear/confirm",
 	LogsEmail:               "/logs/email",
