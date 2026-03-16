@@ -73,14 +73,14 @@
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| D-1 | QUpload Admin UI Uplift | 🟡 Medium | None | 🔲 Pending |
+| D-1 | QUpload Admin UI Uplift | 🟡 Medium | None | ✅ Done |
 | D-2 | Backup History Visualization (Phase 5E) | 🟡 Medium | None | 🔲 Pending |
 
-**D-1 scope:** Version badge in header; `admin-shared.css` animations; gradient buttons; visual QA
+**D-1 completed:** Version badge, admin-shared.css animations (8 keyframes), gradient buttons, method badges, card animations — all already implemented
 **D-2 scope:** Timeline UI in Cloud Storage dashboard
 
-**Expected outputs:** Updated QUpload admin pages; backup history timeline component
-**Acceptance criteria:** Visual parity with Riseup Asia Uploader design; timeline shows backup history
+**Expected outputs:** Backup history timeline component
+**Acceptance criteria:** Timeline shows backup history
 
 ---
 
