@@ -152,6 +152,7 @@ func registerHistoryRoutes(api *mux.Router) {
 	api.HandleFunc("/site-health/history", handlers.GetSiteHealthHistory).Methods("GET")
 	api.HandleFunc("/site-health/history", handlers.ClearSiteHealthHistory).Methods("DELETE")
 	api.HandleFunc("/site-health/sites/{id}/check", handlers.CheckSiteHealth).Methods("POST")
+	api.HandleFunc("/site-health/sites/{id}/verbose-check", handlers.VerboseCheckSiteHealth).Methods("POST")
 	api.HandleFunc("/publish-history", handlers.ListPublishHistory).Methods("GET")
 	api.HandleFunc("/publish-history", handlers.ClearPublishHistory).Methods("DELETE")
 	api.HandleFunc("/publish-history/stats", handlers.GetPublishHistoryStats).Methods("GET")

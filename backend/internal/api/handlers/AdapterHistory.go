@@ -117,6 +117,17 @@ func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.
 	return result.Items(), nil
 }
 
+func (a *SiteHealthServiceAdapter) VerboseCheck(ctx context.Context, siteId int64) (*sitehealth.VerboseCheckResult, *apperror.AppError) {
+	result := a.Service.VerboseCheck(ctx, siteId)
+	if result.HasError() {
+		return nil, result.AppError()
+	}
+
+	v := result.Value()
+
+	return &v, nil
+}
+
 func (a *SiteHealthServiceAdapter) GetHistory(siteId int64, limit int) ([]models.SiteHealthCheck, *apperror.AppError) {
 	result := a.Service.GetHistory(siteId, limit)
 	if result.HasError() {
