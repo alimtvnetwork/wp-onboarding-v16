@@ -105,7 +105,7 @@
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| F-1 | Create `settings.json` for QUpload | 🟢 Low | None | 🔲 Pending |
+| F-1 | Create `settings.json` for QUpload | 🟢 Low | None | ✅ Done |
 | F-2 | Add `/logs/rotation-status` endpoint | 🟢 Low | F-1 | 🔲 Pending |
 | F-3 | Verbose `-check` mode (HEAD requests) | 🟢 Low | None | 🔲 Pending |
 | F-4 | Auto-invalidate cached ZIP on source change | 🟡 Medium | None | ✅ Done |
