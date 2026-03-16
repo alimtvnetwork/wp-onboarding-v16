@@ -89,7 +89,7 @@
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
 | E-1 | Phase 5A: Repo selection + branch management | 🟡 Medium | None | ✅ Done |
-| E-2 | Phase 5B: Full + incremental backup engine | 🟡 Medium | E-1 | 🔲 Pending |
+| E-2 | Phase 5B: Full + incremental backup engine | 🟡 Medium | E-1 | ✅ Done |
 | E-3 | Phase 5C: Automated scheduling (WP-Cron) | 🟡 Medium | E-2 | 🔲 Pending |
 | E-4 | Phase 5D: Git clone restore | 🟡 Medium | E-2 | 🔲 Pending |
 | E-5 | Phase 5E: Backup history visualization | 🟡 Medium | E-2 | 🔲 Pending |
