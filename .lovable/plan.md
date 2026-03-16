@@ -56,7 +56,7 @@
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
 | B-1 | Wire `cloud_upload` stage into Go pipeline | 🟡 Medium | None | ✅ Done |
-| B-2 | Bump plugin versions to 2.15.0+ | 🟢 Low | B-1 | 🔲 Pending |
+| B-2 | Bump plugin versions to 2.15.0+ | 🟢 Low | B-1 | ✅ Done |
 
 **Expected outputs:** `ServicePublishPipeline.go` emits WS events for cloud upload; version constants updated
 **Acceptance criteria:** Cloud upload progress visible in React dashboard when cloud storage accounts selected
