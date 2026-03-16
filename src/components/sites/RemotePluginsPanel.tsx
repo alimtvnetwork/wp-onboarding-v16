@@ -408,7 +408,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           throw new Error(`Plugin "${plugin.plugin}" not found — bulk activate blocked`);
         }
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
         return plugin.name;
       })
     );
