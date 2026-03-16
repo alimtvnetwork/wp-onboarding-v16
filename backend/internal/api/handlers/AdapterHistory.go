@@ -6,7 +6,7 @@ import (
 
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/publish_history"
-	"wp-plugin-publish/internal/services/site_health"
+	sitehealth "wp-plugin-publish/internal/services/site_health"
 	"wp-plugin-publish/pkg/apperror"
 )
 
