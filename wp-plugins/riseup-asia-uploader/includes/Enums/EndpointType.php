@@ -82,10 +82,11 @@ enum EndpointType: string
     case ErrorSessions = 'error-sessions';
 
     // ── Remote Log Management ────────────────────────────────────────
-    case LogsStatus    = 'logs/status';
-    case LogsClear     = 'logs/clear';
-    case LogsConfirm   = 'logs/clear/confirm';
-    case LogsEmail     = 'logs/email';
+    case LogsStatus         = 'logs/status';
+    case LogsRotationStatus = 'logs/rotation-status';
+    case LogsClear          = 'logs/clear';
+    case LogsConfirm        = 'logs/clear/confirm';
+    case LogsEmail          = 'logs/email';
 
     // ── Machine Management ──────────────────────────────────────────
     case MachinesApprove = 'machines/approve';
