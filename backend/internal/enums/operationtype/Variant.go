@@ -200,6 +200,17 @@ var variantValues = [...]string{
 	CloudStorageUpload:         "cloud storage upload",
 	CloudStorageRestore:       "cloud storage restore",
 	CloudStorageBackupHistory: "cloud storage backup history",
+	ListUsers:                 "list users",
+	GetUser:                   "get user",
+	CreateUser:                "create user",
+	UpdateUser:                "update user",
+	DeleteUser:                "delete user",
+	CreateAppPassword:         "create app password",
+	RevokeAppPassword:         "revoke app password",
+	ExportUsersCsv:            "export users csv",
+	ImportUsersCsv:            "import users csv",
+	ExportUsersSqlite:         "export users sqlite",
+	ImportUsersSqlite:         "import users sqlite",
 }
 
 func (v Variant) String() string  { return v.Value() }
