@@ -85,7 +85,7 @@ func TestGoAbbrCasing_IgnoresStringLiterals(t *testing.T) {
 
 	findings := r.Check(ctx)
 	// The "pluginID" inside the string should be ignored,
-	// but the bare pluginID variable reference is not a declaration line
+	// but the bare pluginId variable reference is not a declaration line
 	// so it shouldn't be checked at all.
 	if len(findings) != 0 {
 		t.Errorf("expected 0 findings for non-declaration line, got %d", len(findings))
