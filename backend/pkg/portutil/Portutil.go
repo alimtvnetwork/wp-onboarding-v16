@@ -66,7 +66,7 @@ func isPortInUse(port int) bool {
 // isPortFree returns true when the port is available for binding.
 func isPortFree(port int) bool { return !isPortInUse(port) }
 
-func findPIDOnPort(port int) (int, error) {
+func findPidOnPort(port int) (int, error) {
 	switch runtime.GOOS {
 	case "windows":
 		out, err := exec.Command("cmd", "/c", fmt.Sprintf("netstat -ano | findstr :%d | findstr LISTENING", port)).CombinedOutput()
