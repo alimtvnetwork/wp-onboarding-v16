@@ -47,6 +47,7 @@ class Plugin {
     use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
+    use LogRetrievalTrait;
     use MachineApprovalTrait;
 
     private FileLogger $fileLogger;

@@ -90,6 +90,7 @@ class Plugin {
     use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
+    use LogRetrievalTrait;
     use MachineApprovalTrait;
 
     // Wave 4 traits
