@@ -1,8 +1,8 @@
 {
-  "pluginFolderPath": "D:\\wp-work\\riseup-asia\\category-forge\\wordpress-plugin\\category-generator",
-  "wordPressSiteURL": "https://demoat.attoproperty.com.au",
-  "username": "admin",
-  "appPassword": "EKRMpPCMaug9E4j8o3rPsl9A",
+  "pluginFolderPath": "D:\\wp-work\\your-project\\wordpress-plugin\\your-plugin",
+  "wordPressSiteURL": "https://your-site.example.com",
+  "username": "your-username",
+  "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
   "outputZipPath": "",
   "activateAfterInstall": true,
   "deleteZipAfterUpload": false,

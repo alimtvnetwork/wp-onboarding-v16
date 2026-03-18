@@ -1,8 +1,8 @@
 {
-  "pluginFolderPath": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\qupload",
-  "wordPressSiteURL": "https://demoat.attoproperty.com.au",
-  "username": "admin",
-  "appPassword": "EKRM pPCM aug9 E4j8 o3rP sl9A",
+  "pluginFolderPath": "D:\\wp-work\\your-project\\wp-plugins\\qupload",
+  "wordPressSiteURL": "https://your-site.example.com",
+  "username": "your-username",
+  "appPassword": "xxxx xxxx xxxx xxxx xxxx xxxx",
   "activateAfterInstall": true,
   "deleteZipAfterUpload": false
 }
