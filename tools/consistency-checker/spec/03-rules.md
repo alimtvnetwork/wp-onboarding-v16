@@ -31,7 +31,7 @@
 
 | Rule ID          | Name                | Default          | Severity | Description                                |
 |------------------|---------------------|------------------|----------|--------------------------------------------|
-| `file-naming`    | File Naming         | configurable     | warning  | File names follow configured convention     |
+| `file-naming`    | File Naming         | PascalCase       | warning  | File names follow configured convention (Go + PHP). WP `class-*.php` files exempt. |
 
 ## Rule Configuration (rules.json)
 
