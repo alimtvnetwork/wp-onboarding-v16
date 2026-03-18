@@ -451,9 +451,34 @@ trait UploadInstallExtractTrait
 
     /** Open ZIP, extract to temp dir, and clean up the ZIP file. */
     private function openAndExtractZip(string $tempFile, string $tempExtractDir) {
-        $zip = new ZipArchive();
+        $isFileExists = file_exists($tempFile);
 
-        if ($zip->open($tempFile) !== true) {
+        if ($isFileExists === false) {
+            $this->fileLogger->error('Temp ZIP file does not exist', array('path' => $tempFile));
+            $this->deleteDirectory($tempExtractDir);
+
+            return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
+        }
+
+        $tempFileSize = @filesize($tempFile);
+        $this->fileLogger->info('Opening ZIP file', array(
+            'path'   => $tempFile,
+            'size'   => $tempFileSize,
+            'exists' => true,
+        ));
+
+        $zip = new ZipArchive();
+        $openResult = $zip->open($tempFile);
+        $isOpened = ($openResult === true);
+
+        if ($isOpened === false) {
+            $this->fileLogger->error('ZipArchive::open() failed', array(
+                'path'      => $tempFile,
+                'errorCode' => $openResult,
+                'errorMsg'  => $this->zipErrorMessage($openResult),
+                'fileSize'  => $tempFileSize,
+            ));
+
             @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);
 
@@ -472,6 +497,28 @@ trait UploadInstallExtractTrait
         }
 
         return null;
+    }
+
+    /** Translate ZipArchive error code to human-readable message. */
+    private function zipErrorMessage(int|bool $code): string
+    {
+        if ($code === true) {
+            return 'OK';
+        }
+
+        $messages = array(
+            ZipArchive::ER_EXISTS   => 'File already exists',
+            ZipArchive::ER_INCONS   => 'Inconsistent ZIP archive',
+            ZipArchive::ER_INVAL    => 'Invalid argument',
+            ZipArchive::ER_MEMORY   => 'Memory allocation failure',
+            ZipArchive::ER_NOENT    => 'No such file',
+            ZipArchive::ER_NOZIP    => 'Not a ZIP archive',
+            ZipArchive::ER_OPEN     => 'Cannot open file',
+            ZipArchive::ER_READ     => 'Read error',
+            ZipArchive::ER_SEEK     => 'Seek error',
+        );
+
+        return $messages[$code] ?? 'Unknown error (code: ' . $code . ')';
     }
 
     /** Move extracted plugin folder to target, with copy fallback. */
