@@ -17,8 +17,11 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Activity, TrendingUp, Clock, Globe } from "lucide-react";
+import { Activity, TrendingUp, Clock, Globe, Download, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { exportAnalyticsCsv, exportAnalyticsPdf } from "@/lib/analyticsExport";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
