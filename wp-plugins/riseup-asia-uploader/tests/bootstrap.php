@@ -200,7 +200,7 @@ class WpAjaxTestException extends \RuntimeException {
 }
 
 if (!function_exists('check_ajax_referer')) {
-    function check_ajax_referer(string $action, string $queryArg = false): bool {
+    function check_ajax_referer(string $action, string $queryArg = ''): bool {
         return true; // always pass in tests
     }
 }
