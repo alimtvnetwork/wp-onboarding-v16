@@ -388,8 +388,8 @@ if ($level->isEqual(LogLevelType::Error)) { ... }
 ```php
 enum StatusType: string
 {
-    case Success = 'success';
-    case Failed  = 'failed';
+    case Success = 'Success';
+    case Failed  = 'Failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
 
