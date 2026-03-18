@@ -62,3 +62,50 @@ func TestReadEnumVersionRegex(t *testing.T) {
 		t.Errorf("enumVersionRe failed to match, got %v", match)
 	}
 }
+
+func TestResolvePluginDirName(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "qupload plugin",
+			path:     "wp-plugins/qupload/qupload.php",
+			expected: "qupload",
+		},
+		{
+			name:     "riseup plugin",
+			path:     "wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php",
+			expected: "riseup-asia-uploader",
+		},
+		{
+			name:     "non-plugin path",
+			path:     "backend/internal/version/Version.go",
+			expected: "",
+		},
+		{
+			name:     "nested plugin file",
+			path:     "wp-plugins/qupload/includes/Enums/PluginConfigType.php",
+			expected: "qupload",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolvePluginDirName(tt.path)
+			if got != tt.expected {
+				t.Errorf("resolvePluginDirName(%q) = %q, want %q", tt.path, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestPluginDirToJsonKeyMapping(t *testing.T) {
+	if key, ok := pluginDirToJsonKey["qupload"]; !ok || key != "quploadVersion" {
+		t.Errorf("qupload mapping incorrect: got %q, %v", key, ok)
+	}
+	if key, ok := pluginDirToJsonKey["riseup-asia-uploader"]; !ok || key != "wpPluginVersion" {
+		t.Errorf("riseup-asia-uploader mapping incorrect: got %q, %v", key, ok)
+	}
+}
