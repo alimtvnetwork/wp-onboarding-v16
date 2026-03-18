@@ -20,6 +20,7 @@
 |------------------|---------------------|------------------|----------|--------------------------------------------|
 | `php-file-size`  | File Size Limit     | max: 500 lines   | warning  | PHP files must not exceed line limit        |
 | `php-global-imports` | Global Class Imports | —           | error    | Namespaced files must import global classes  |
+| `php-enum-naming` | Enum Naming Convention | —            | warning  | Enums must be PascalCase + `Type` suffix, file must match |
 
 ### Markdown Rules
 
