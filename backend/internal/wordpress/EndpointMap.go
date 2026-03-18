@@ -177,6 +177,19 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPAgentsPlugins: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/agents/plugins"},
 	EPAgentAction:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/agents/action"},
 	EPAgentHistory:  {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/agents/history"},
+
+	// User management operations
+	EPListUsers:      {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users"},
+	EPGetUser:        {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users/{userId}"},
+	EPCreateUser:     {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users"},
+	EPUpdateUser:     {Method: httpmethod.Put, Pattern: "/api/v1/sites/{id}/users/{userId}"},
+	EPDeleteUser:     {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/users/{userId}"},
+	EPCreateAppPass:  {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/app-password"},
+	EPRevokeAppPass:  {Method: httpmethod.Delete, Pattern: "/api/v1/sites/{id}/users/app-password"},
+	EPExportUsersCsv: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users/export"},
+	EPImportUsersCsv: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import"},
+	EPExportSqlite:   {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users/export-sqlite"},
+	EPImportSqlite:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import-sqlite"},
 }
 
 // WPEndpointMap maps each operation enum to the WordPress Riseup Asia Uploader REST endpoint.
