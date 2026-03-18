@@ -34,6 +34,20 @@ enum ResponseKeyType: string
     case PreviousVersion  = 'PreviousVersion';
     case RestoredVersion  = 'RestoredVersion';
 
+    /** Log/diagnostic keys. */
+    case InfoLog       = 'InfoLog';
+    case ErrorLog      = 'ErrorLog';
+    case StacktraceLog = 'StacktraceLog';
+    case Exists        = 'Exists';
+    case Content       = 'Content';
+    case Lines         = 'Lines';
+    case TotalLines    = 'TotalLines';
+    case TotalSize     = 'TotalSize';
+    case Truncated     = 'Truncated';
+    case Path          = 'Path';
+    case Settings      = 'Settings';
+    case RequestedAt   = 'RequestedAt';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

@@ -24,6 +24,7 @@ enum EndpointType: string
     case LogsClear          = 'logs/clear';
     case LogsConfirm        = 'logs/clear/confirm';
     case LogsEmail          = 'logs/email';
+    case LogsRetrieve       = 'logs/retrieve';
     case MachinesApprove = 'machines/approve';
 
     public function isEqual(self $other): bool { return $this === $other; }

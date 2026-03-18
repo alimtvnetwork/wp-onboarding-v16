@@ -137,6 +137,7 @@ enum ResponseKeyType: string
 
     /** Log/diagnostic keys. */
     case ErrorLog      = 'ErrorLog';
+    case InfoLog       = 'InfoLog';
     case FullLog       = 'FullLog';
     case StacktraceLog = 'StacktraceLog';
     case Exists        = 'Exists';
@@ -144,6 +145,7 @@ enum ResponseKeyType: string
     case Truncated     = 'Truncated';
     case Lines         = 'Lines';
     case TotalLines    = 'TotalLines';
+    case RequestedAt   = 'RequestedAt';
 
     /** Internal/domain-specific keys. */
     case Ids            = 'Ids';

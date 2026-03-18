@@ -30,6 +30,7 @@ use QUpload\Traits\Log\LogStatusTrait;
 use QUpload\Traits\Log\LogRotationStatusTrait;
 use QUpload\Traits\Log\LogClearingTrait;
 use QUpload\Traits\Log\LogEmailTrait;
+use QUpload\Traits\Log\LogRetrievalTrait;
 use QUpload\Traits\Machine\MachineApprovalTrait;
 
 class Plugin {
@@ -46,6 +47,7 @@ class Plugin {
     use LogRotationStatusTrait;
     use LogClearingTrait;
     use LogEmailTrait;
+    use LogRetrievalTrait;
     use MachineApprovalTrait;
 
     private FileLogger $fileLogger;
