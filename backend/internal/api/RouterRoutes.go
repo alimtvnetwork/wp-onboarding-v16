@@ -81,6 +81,19 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs/confirm", handlers.ConfirmClearRemoteLogs).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-logs/email", handlers.EmailRemoteLogs).Methods("POST")
 	registerSnapshotRoutes(api)
+	registerUserRoutes(api)
+}
+
+func registerUserRoutes(api *mux.Router) {
+	api.HandleFunc("/sites/{id}/users", handlers.ListRemoteUsers).Methods("GET")
+	api.HandleFunc("/sites/{id}/users", handlers.CreateRemoteUser).Methods("POST")
+	api.HandleFunc("/sites/{id}/users/{userId}", handlers.GetRemoteUser).Methods("GET")
+	api.HandleFunc("/sites/{id}/users/{userId}", handlers.UpdateRemoteUser).Methods("PUT")
+	api.HandleFunc("/sites/{id}/users/{userId}", handlers.DeleteRemoteUser).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/users/app-password", handlers.CreateRemoteAppPassword).Methods("POST")
+	api.HandleFunc("/sites/{id}/users/app-password", handlers.RevokeRemoteAppPassword).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/users/export", handlers.ExportRemoteUsersCsv).Methods("GET")
+	api.HandleFunc("/sites/{id}/users/export-sqlite", handlers.ExportRemoteUsersSqlite).Methods("GET")
 }
 
 func registerSnapshotRoutes(api *mux.Router) {
