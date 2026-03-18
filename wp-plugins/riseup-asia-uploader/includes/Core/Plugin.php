@@ -54,6 +54,7 @@ use RiseupAsia\Traits\Log\LogStatusTrait;
 use RiseupAsia\Traits\Log\LogRotationStatusTrait;
 use RiseupAsia\Traits\Log\LogClearingTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
+use RiseupAsia\Traits\Log\LogRetrievalTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
 use RiseupAsia\Traits\User\UserCrudTrait;
 use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
