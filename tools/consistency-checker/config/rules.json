@@ -165,6 +165,16 @@
       "reference": "spec/03-rules.md#php-enum-naming"
     },
     {
+      "id": "php-enum-case-values",
+      "name": "PHP Enum Case Values",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {},
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/03-rules.md#php-enum-case-values"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,
