@@ -70,7 +70,7 @@ func TestRequestMutationToken_UsesOnboardNamespace(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	tokResult := c.RequestMutationToken("upload")
 	if tokResult.HasError() {
 		t.Fatalf("expected no error, got: %v", tokResult.AppError())
