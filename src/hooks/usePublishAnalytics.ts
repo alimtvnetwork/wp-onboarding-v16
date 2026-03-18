@@ -5,7 +5,6 @@ import { api, PublishHistoryEntry } from "@/lib/api";
 import { subDays, startOfDay, format, getDay, getHours, parseISO } from "date-fns";
 
 const ANALYTICS_LIMIT = 500;
-const DAYS = 30;
 
 export interface DailyPublishPoint {
   date: string;          // "Mar 01"
@@ -52,17 +51,17 @@ export interface PublishAnalyticsData {
   };
 }
 
-function buildAnalytics(entries: PublishHistoryEntry[]): PublishAnalyticsData {
+function buildAnalytics(entries: PublishHistoryEntry[], days: number): PublishAnalyticsData {
   const now = new Date();
-  const cutoff = subDays(now, DAYS);
+  const cutoff = subDays(now, days);
 
-  // Filter to 30-day window
+  // Filter to window
   const recent = entries.filter((e) => new Date(e.createdAt) >= cutoff);
 
   // ── Daily publishes ──────────────────────────
   const dailyMap = new Map<string, DailyPublishPoint>();
-  for (let i = 0; i < DAYS; i++) {
-    const d = subDays(now, DAYS - 1 - i);
+  for (let i = 0; i < days; i++) {
+    const d = subDays(now, days - 1 - i);
     const key = format(startOfDay(d), "MMM dd");
     dailyMap.set(key, { date: key, success: 0, failed: 0, partial: 0, total: 0 });
   }
@@ -149,13 +148,13 @@ function buildAnalytics(entries: PublishHistoryEntry[]): PublishAnalyticsData {
   };
 }
 
-export function usePublishAnalytics() {
+export function usePublishAnalytics(days: number = 30) {
   return useQuery({
-    queryKey: ["publish-analytics"],
+    queryKey: ["publish-analytics", days],
     queryFn: async () => {
       const res = await api.getPublishHistory({ limit: ANALYTICS_LIMIT });
       const entries = res.data?.entries ?? [];
-      return buildAnalytics(entries);
+      return buildAnalytics(entries, days);
     },
     staleTime: 60_000,
   });
