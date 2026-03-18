@@ -50,7 +50,7 @@ trait AgentCrudReadTrait {
         );
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to get agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to get agent site');
 
             return null;
         }
@@ -79,7 +79,7 @@ trait AgentCrudReadTrait {
         );
 
         if ($countResult->hasError()) {
-            $this->fileLogger->logException($countResult->error(), 'Failed to list agent sites');
+            $this->fileLogger->logException($countResult->getError(), 'Failed to list agent sites');
 
             return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
@@ -94,7 +94,7 @@ trait AgentCrudReadTrait {
         );
 
         if ($listResult->hasError()) {
-            $this->fileLogger->logException($listResult->error(), 'Failed to list agent sites');
+            $this->fileLogger->logException($listResult->getError(), 'Failed to list agent sites');
 
             return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }

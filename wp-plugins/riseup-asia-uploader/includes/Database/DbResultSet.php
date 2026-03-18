@@ -111,7 +111,7 @@ final class DbResultSet {
     }
 
     /** Return the underlying error, or null. */
-    public function error(): ?Throwable {
+    public function getError(): ?Throwable {
         return $this->error;
     }
 
