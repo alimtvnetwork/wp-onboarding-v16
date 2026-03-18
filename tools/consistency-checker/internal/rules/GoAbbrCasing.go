@@ -107,12 +107,14 @@ func checkLineForViolations(
 	ctx engine.CheckContext,
 	line string,
 	lineNum int,
+	pattern *regexp.Regexp,
+	abbreviations []string,
 ) []engine.Finding {
 	var findings []engine.Finding
 
-	matches := abbrPattern.FindAllString(line, -1)
+	matches := pattern.FindAllString(line, -1)
 	for _, match := range matches {
-		abbr := findViolatingAbbr(match)
+		abbr := findViolatingAbbr(match, abbreviations)
 		if abbr == "" {
 			continue
 		}
