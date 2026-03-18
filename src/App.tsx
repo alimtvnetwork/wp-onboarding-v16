@@ -38,6 +38,7 @@ import RequestSessions from "@/pages/RequestSessions";
 import CorePluginDashboard from "@/pages/CorePluginDashboard";
 import ActivityFeed from "@/pages/ActivityFeed";
 import CloudStorage from "@/pages/CloudStorage";
+import Licensing from "@/pages/Licensing";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
