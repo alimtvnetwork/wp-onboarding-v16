@@ -61,7 +61,8 @@ const SITE_COLORS = [
 ];
 
 export function PublishAnalyticsTab() {
-  const { data, isLoading } = usePublishAnalytics();
+  const [days, setDays] = useState(30);
+  const { data, isLoading } = usePublishAnalytics(days);
 
   if (isLoading) {
     return <div className="text-center py-12 text-muted-foreground">Loading analytics…</div>;
@@ -70,7 +71,7 @@ export function PublishAnalyticsTab() {
   if (!data || data.summary.total === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        No publish data in the last 30 days.
+        No publish data in the last {days} days.
       </div>
     );
   }
@@ -79,9 +80,21 @@ export function PublishAnalyticsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header with export */}
+      {/* Header with range picker and export */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-muted-foreground">30-day publish analytics</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Publish analytics</h2>
+          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RANGE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">

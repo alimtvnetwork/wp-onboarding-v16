@@ -148,13 +148,13 @@ function buildAnalytics(entries: PublishHistoryEntry[], days: number): PublishAn
   };
 }
 
-export function usePublishAnalytics() {
+export function usePublishAnalytics(days: number = 30) {
   return useQuery({
-    queryKey: ["publish-analytics"],
+    queryKey: ["publish-analytics", days],
     queryFn: async () => {
       const res = await api.getPublishHistory({ limit: ANALYTICS_LIMIT });
       const entries = res.data?.entries ?? [];
-      return buildAnalytics(entries);
+      return buildAnalytics(entries, days);
     },
     staleTime: 60_000,
   });
