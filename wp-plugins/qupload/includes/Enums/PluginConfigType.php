@@ -25,6 +25,10 @@ enum PluginConfigType: string
     case LogPrefix      = '[QUpload]';
     case SettingsGroup  = 'qupload_settings';
 
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+
     public static function uploadsSubdir(): string
     {
         return self::Slug->value;

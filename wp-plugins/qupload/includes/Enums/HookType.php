@@ -21,6 +21,10 @@ enum HookType: string
     case AdminEnqueue  = 'admin_enqueue_scripts';
     case Deactivate    = 'deactivate_';
 
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+
     /** Build a wp_ajax_ hook name. */
     public static function ajax(string $action): string
     {

@@ -26,6 +26,10 @@ enum EndpointType: string
     case LogsEmail          = 'logs/email';
     case MachinesApprove = 'machines/approve';
 
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+
     /** Prefixes value with '/' for register_rest_route(). */
     public function route(): string
     {

@@ -17,4 +17,8 @@ enum PathLogFileType: string
     case Log        = '/log.txt';
     case Error      = '/error.txt';
     case Stacktrace = '/stacktrace.txt';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

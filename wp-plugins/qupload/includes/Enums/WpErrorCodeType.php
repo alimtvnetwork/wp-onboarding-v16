@@ -19,4 +19,8 @@ enum WpErrorCodeType: string
 
     /** Custom plugin error codes — PascalCase values per enum standard. */
     case InternalError = 'InternalError';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

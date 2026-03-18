@@ -19,5 +19,9 @@ enum LogLevelType: string
     case Warn  = 'Warn';
     case Error = 'Error';
 
-    public function isError(): bool { return $this === self::Error; }
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+
+    public function isError(): bool { return $this->isEqual(self::Error); }
 }

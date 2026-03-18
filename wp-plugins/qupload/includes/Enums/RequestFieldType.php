@@ -20,4 +20,8 @@ enum RequestFieldType: string
     case PluginZip = 'plugin_zip';
     case Slug      = 'slug';
     case Activate  = 'activate';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

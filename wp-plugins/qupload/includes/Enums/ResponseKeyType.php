@@ -33,4 +33,8 @@ enum ResponseKeyType: string
     case RolledBack       = 'RolledBack';
     case PreviousVersion  = 'PreviousVersion';
     case RestoredVersion  = 'RestoredVersion';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
