@@ -22,6 +22,7 @@
 | `php-global-imports` | Global Class Imports | —           | error    | Namespaced files must import global classes  |
 | `php-enum-naming` | Enum Naming Convention | —            | warning  | Enums must be PascalCase + `Type` suffix, file must match |
 | `php-enum-case-values` | Enum Case Values | —            | warning  | Enum case values must be PascalCase strings |
+| `php-enum-methods` | Enum Required Methods | —            | warning  | Enums must include isEqual, isOtherThan, isAnyOf methods |
 
 ### Markdown Rules
 
