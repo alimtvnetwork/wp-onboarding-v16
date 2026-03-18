@@ -19,4 +19,6 @@ enum ContentTypeValueType: string {
     case JsonUtf8 = 'application/json; charset=utf-8';
 
     public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
