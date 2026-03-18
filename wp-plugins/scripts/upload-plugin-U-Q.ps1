@@ -654,6 +654,41 @@ try {
     if ($isStatusSuccess) {
         $statusResult = $statusParsed.Results[0]
         Write-Status "      Auth OK - QUpload v$($statusResult.Version) on WP $($statusResult.WpVersion)" -Color Green
+
+        # ── Pre-upload file size check against server PHP limits ──────────
+        $serverUploadMaxBytes = $statusResult.UploadMaxFilesizeBytes
+        $serverPostMaxBytes   = $statusResult.PostMaxSizeBytes
+        $hasServerLimits      = $null -ne $serverUploadMaxBytes -and $null -ne $serverPostMaxBytes
+
+        if ($hasServerLimits) {
+            Write-Status "      Server limits: upload_max_filesize=$($statusResult.UploadMaxFilesize), post_max_size=$($statusResult.PostMaxSize), memory_limit=$($statusResult.MemoryLimit)" -Color DarkGray
+
+            $zipFileSize = (Get-Item $OutputZipPath).Length
+            $zipFileSizeMB = [math]::Round($zipFileSize / 1MB, 2)
+
+            # QUpload uses base64 encoding, which inflates the payload by ~33%
+            $base64EstimateBytes = [math]::Ceiling($zipFileSize * 1.37)
+            $base64EstimateMB    = [math]::Round($base64EstimateBytes / 1MB, 2)
+
+            $isZipTooLargeForUpload = $zipFileSize -gt [long]$serverUploadMaxBytes
+            $isPayloadTooLargeForPost = $base64EstimateBytes -gt [long]$serverPostMaxBytes
+
+            if ($isZipTooLargeForUpload) {
+                Write-Host ""
+                Write-Host "      ERROR: ZIP file ($($zipFileSizeMB) MB) exceeds server upload_max_filesize ($($statusResult.UploadMaxFilesize))" -ForegroundColor Red
+                Write-Host "      Increase upload_max_filesize in php.ini or .htaccess on the server." -ForegroundColor Yellow
+                exit 1
+            }
+
+            if ($isPayloadTooLargeForPost) {
+                Write-Host ""
+                Write-Host "      ERROR: Base64-encoded payload (~$($base64EstimateMB) MB) exceeds server post_max_size ($($statusResult.PostMaxSize))" -ForegroundColor Red
+                Write-Host "      Increase post_max_size in php.ini or .htaccess on the server." -ForegroundColor Yellow
+                exit 1
+            }
+
+            Write-Status "      ZIP size: $($zipFileSizeMB) MB, base64 payload: ~$($base64EstimateMB) MB — within server limits" -Color Green
+        }
     } else {
         Write-Host "      Auth check returned failure: $($statusParsed.Status.Message)" -ForegroundColor Red
         exit 1

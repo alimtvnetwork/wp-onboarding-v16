@@ -34,7 +34,28 @@ trait StatusHandlerTrait
                 ResponseKeyType::PhpVersion->value  => PHP_VERSION,
                 ResponseKeyType::WpVersion->value   => get_bloginfo('version'),
                 ResponseKeyType::Timestamp->value   => DateHelper::nowIso(),
+                ResponseKeyType::UploadMaxFilesize->value      => ini_get('upload_max_filesize'),
+                ResponseKeyType::PostMaxSize->value             => ini_get('post_max_size'),
+                ResponseKeyType::MemoryLimit->value             => ini_get('memory_limit'),
+                ResponseKeyType::UploadMaxFilesizeBytes->value => self::phpSizeToBytes(ini_get('upload_max_filesize')),
+                ResponseKeyType::PostMaxSizeBytes->value        => self::phpSizeToBytes(ini_get('post_max_size')),
             ])
             ->toResponse();
+    }
+
+    /**
+     * Convert PHP ini shorthand size (e.g. '128M', '2G') to bytes.
+     */
+    private static function phpSizeToBytes(string $size): int {
+        $size = trim($size);
+        $value = (int) $size;
+        $unit = strtolower(substr($size, -1));
+
+        return match ($unit) {
+            'g' => $value * 1024 * 1024 * 1024,
+            'm' => $value * 1024 * 1024,
+            'k' => $value * 1024,
+            default => $value,
+        };
     }
 }
