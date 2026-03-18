@@ -24,7 +24,7 @@ func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	result := c.CheckOnboardPluginAvailable()
 	if result.HasError() {
 		t.Fatalf("expected no error, got: %v", result.AppError())
