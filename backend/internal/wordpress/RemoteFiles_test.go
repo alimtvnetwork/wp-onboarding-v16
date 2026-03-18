@@ -130,7 +130,7 @@ func TestUploadPluginZip_PostsToOnboardUploadEndpoint(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	res := c.UploadPluginZip(zipPath, "category-generator")
 	if res.HasError() {
 		t.Fatalf("expected no error, got: %v", res.AppError())
