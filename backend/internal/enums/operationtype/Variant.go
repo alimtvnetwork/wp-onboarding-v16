@@ -64,6 +64,17 @@ const (
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
+	ListUsers
+	GetUser
+	CreateUser
+	UpdateUser
+	DeleteUser
+	CreateAppPassword
+	RevokeAppPassword
+	ExportUsersCsv
+	ImportUsersCsv
+	ExportUsersSqlite
+	ImportUsersSqlite
 )
 
 var variantLabels = [...]string{
