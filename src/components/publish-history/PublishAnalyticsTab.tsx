@@ -401,6 +401,100 @@ export function PublishAnalyticsTab() {
   );
 }
 
+function RangeControls({
+  rangeType,
+  setRangeType,
+  customFrom,
+  customTo,
+  setCustomFrom,
+  setCustomTo,
+}: {
+  rangeType: string;
+  setRangeType: (v: string) => void;
+  customFrom: Date | undefined;
+  customTo: Date | undefined;
+  setCustomFrom: (d: Date | undefined) => void;
+  setCustomTo: (d: Date | undefined) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <h2 className="text-sm font-medium text-muted-foreground">Publish analytics</h2>
+      <Select value={rangeType} onValueChange={setRangeType}>
+        <SelectTrigger className="h-8 w-[150px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {RANGE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {rangeType === "custom" && (
+        <div className="flex items-center gap-2">
+          <DatePickerButton
+            label="From"
+            date={customFrom}
+            onSelect={setCustomFrom}
+            maxDate={customTo ?? new Date()}
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <DatePickerButton
+            label="To"
+            date={customTo}
+            onSelect={setCustomTo}
+            minDate={customFrom}
+            maxDate={new Date()}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DatePickerButton({
+  label,
+  date,
+  onSelect,
+  minDate,
+  maxDate,
+}: {
+  label: string;
+  date: Date | undefined;
+  onSelect: (d: Date | undefined) => void;
+  minDate?: Date;
+  maxDate?: Date;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-8 w-[130px] justify-start text-xs font-normal",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+          {date ? format(date, "MMM dd, yyyy") : label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onSelect}
+          disabled={(d) =>
+            (maxDate ? d > maxDate : false) || (minDate ? d < minDate : false)
+          }
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function SummaryCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
