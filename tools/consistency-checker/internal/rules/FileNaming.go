@@ -27,11 +27,21 @@ func (r *FileNaming) Check(ctx engine.CheckContext) []engine.Finding {
 	convention := ctx.Spec.ParamString("convention", "PascalCase")
 	baseName := stripExtension(filepath.Base(ctx.FilePath))
 
+	// WordPress non-namespaced files use class-{kebab-case}.php — exempt from PascalCase.
+	if isWordPressClassFile(baseName) {
+		return nil
+	}
+
 	if isValidName(baseName, convention) {
 		return nil
 	}
 
 	return []engine.Finding{buildNamingFinding(ctx, baseName, convention)}
+}
+
+// isWordPressClassFile returns true for WP non-namespaced class files (class-*.php pattern).
+func isWordPressClassFile(baseName string) bool {
+	return strings.HasPrefix(baseName, "class-")
 }
 
 // stripExtension removes the file extension.
