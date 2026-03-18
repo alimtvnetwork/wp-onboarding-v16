@@ -155,6 +155,16 @@
       "reference": "spec/03-rules.md#php-global-imports"
     },
     {
+      "id": "php-enum-naming",
+      "name": "PHP Enum Naming Convention",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {},
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/03-rules.md#php-enum-naming"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,
