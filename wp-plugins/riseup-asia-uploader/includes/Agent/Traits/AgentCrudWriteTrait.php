@@ -58,7 +58,7 @@ trait AgentCrudWriteTrait {
         ]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to add agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to add agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to add agent site');
         }
