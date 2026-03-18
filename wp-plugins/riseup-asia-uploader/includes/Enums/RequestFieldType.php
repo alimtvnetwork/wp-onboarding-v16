@@ -22,4 +22,8 @@ enum RequestFieldType: string
     case Activate      = 'activate';
     case UploadSource  = 'upload_source';
     case PluginVersion = 'plugin_version';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

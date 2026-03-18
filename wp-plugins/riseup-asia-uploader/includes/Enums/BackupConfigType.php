@@ -19,4 +19,8 @@ enum BackupConfigType: int
 
     /** Maximum plugin size in MB for backup (skip if larger). */
     case MaxPluginSizeMb = 200;
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

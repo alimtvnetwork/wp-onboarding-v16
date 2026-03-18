@@ -33,4 +33,8 @@ enum SnapshotConfigType: int {
 
     /** Root database filename used in per-table snapshots. */
     public const RootDbFilename = 'a-root.db';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
