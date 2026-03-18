@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.17.0",
-  "releaseDate": "2026-03-15",
+  "version": "2.18.0",
+  "releaseDate": "2026-03-18",
   "gitCommit": "dev",
-  "buildTime": "2026-03-15T00:00:00Z",
-  "scriptVersion": "2.17.0",
-  "wpPluginVersion": "2.17.0",
-  "quploadVersion": "2.17.0",
+  "buildTime": "2026-03-18T00:00:00Z",
+  "scriptVersion": "2.18.0",
+  "wpPluginVersion": "2.18.0",
+  "quploadVersion": "2.18.0",
   "changelog": [
+    {
+      "version": "2.18.0",
+      "date": "2026-03-18",
+      "title": "Version Bump & Consistency Checker Enhancements",
+      "changes": [
+        "🔢 Version bump across all components (app, script, plugins, QUpload)",
+        "🔤 Go abbreviation casing rule now uses PascalCase config with dynamic ALL-CAPS derivation",
+        "📋 Added go-struct-field-casing rule to consistency checker spec"
+      ]
+    },
     {
       "version": "2.17.0",
       "date": "2026-03-15",
