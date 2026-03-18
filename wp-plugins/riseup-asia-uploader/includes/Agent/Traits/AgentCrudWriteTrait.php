@@ -96,7 +96,7 @@ trait AgentCrudWriteTrait {
         $result = $query->exec($sql, $update[$paramsKey]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to update agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to update agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to update agent site');
         }
