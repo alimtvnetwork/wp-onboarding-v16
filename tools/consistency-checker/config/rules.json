@@ -99,6 +99,16 @@
       "reference": "spec/03-rules.md#go-abbr-casing"
     },
     {
+      "id": "go-struct-field-casing",
+      "name": "Go Struct Field Casing",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["go"],
+      "params": {},
+      "exclude": ["*_test.go"],
+      "reference": "spec/03-rules.md#go-struct-field-casing"
+    },
+    {
       "id": "go-raw-error",
       "name": "Go Raw Error Return",
       "enabled": true,
