@@ -157,7 +157,28 @@ trait StatusPayloadTrait {
             'DbAvailable' => $dbAvailable,
             'ServerTime'  => DateHelper::nowIso(),
             'Timezone'    => wp_timezone_string(),
+            'UploadMaxFilesize'      => ini_get('upload_max_filesize'),
+            'PostMaxSize'            => ini_get('post_max_size'),
+            'MemoryLimit'            => ini_get('memory_limit'),
+            'UploadMaxFilesizeBytes' => self::phpSizeToBytes(ini_get('upload_max_filesize')),
+            'PostMaxSizeBytes'       => self::phpSizeToBytes(ini_get('post_max_size')),
         );
+    }
+
+    /**
+     * Convert PHP ini shorthand size (e.g. '128M', '2G') to bytes.
+     */
+    private static function phpSizeToBytes(string $size): int {
+        $size = trim($size);
+        $value = (int) $size;
+        $unit = strtolower(substr($size, -1));
+
+        return match ($unit) {
+            'g' => $value * 1024 * 1024 * 1024,
+            'm' => $value * 1024 * 1024,
+            'k' => $value * 1024,
+            default => $value,
+        };
     }
 
     /**
