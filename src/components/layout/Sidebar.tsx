@@ -21,6 +21,7 @@ import {
   Radio,
   Activity,
   Cloud,
+  KeyRound,
 } from "lucide-react";
 
 const navItems = [
