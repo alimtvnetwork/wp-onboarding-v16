@@ -129,10 +129,10 @@ Use a single unexported array for all lookups, serialization, and display:
 
 ```go
 var variantLabels = [...]string{
-    Invalid:     "invalid",
-    SerpApi:     "serpapi",
-    MapsScraper: "maps_scraper",
-    Colly:       "colly",
+    Invalid:     "Invalid",
+    SerpApi:     "SerpApi",
+    MapsScraper: "MapsScraper",
+    Colly:       "Colly",
 }
 ```
 
