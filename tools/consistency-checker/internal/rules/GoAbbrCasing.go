@@ -10,7 +10,7 @@ import (
 )
 
 // allCapsAbbreviations lists abbreviations that must use PascalCase, not ALL-CAPS.
-var allCapsAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP"}
+var allCapsAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
 
 // abbrPattern matches ALL-CAPS abbreviations in Go identifiers (struct fields, func names, vars).
 // It looks for the abbreviation preceded or followed by another letter/digit boundary.
