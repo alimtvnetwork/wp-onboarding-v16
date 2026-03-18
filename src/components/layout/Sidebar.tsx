@@ -34,6 +34,7 @@ const navItems = [
   { to: "/activity", label: "Activity Feed", icon: Activity },
   { to: "/cloud-storage", label: "Cloud Storage", icon: Cloud },
   { to: "/licensing", label: "Licensing", icon: KeyRound },
+  { to: "/users", label: "Users", icon: Users },
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/sessions", label: "Sessions", icon: History },

@@ -230,6 +230,7 @@ const App = () => (
                         <Route path="api-explorer" element={<ApiExplorer />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="errors" element={<Errors />} />
+                        <Route path="users" element={<UserManagement />} />
                       </Route>
                       <Route path="*" element={<NotFound />} />
                     </Routes>
