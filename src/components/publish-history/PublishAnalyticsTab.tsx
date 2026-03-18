@@ -66,8 +66,22 @@ const SITE_COLORS = [
 ];
 
 export function PublishAnalyticsTab() {
-  const [days, setDays] = useState(30);
-  const { data, isLoading } = usePublishAnalytics(days);
+  const [rangeType, setRangeType] = useState<string>("30");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
+
+  const days = rangeType === "custom" ? 30 : Number(rangeType);
+  const customRange =
+    rangeType === "custom" && customFrom && customTo
+      ? { from: customFrom, to: customTo }
+      : undefined;
+
+  const { data, isLoading } = usePublishAnalytics(days, customRange);
+
+  const rangeLabel =
+    rangeType === "custom" && customFrom && customTo
+      ? `${format(customFrom, "MMM dd")} – ${format(customTo, "MMM dd")}`
+      : `${days}d`;
 
   if (isLoading) {
     return <div className="text-center py-12 text-muted-foreground">Loading analytics…</div>;
@@ -75,8 +89,18 @@ export function PublishAnalyticsTab() {
 
   if (!data || data.summary.total === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        No publish data in the last {days} days.
+      <div className="space-y-4">
+        <RangeControls
+          rangeType={rangeType}
+          setRangeType={setRangeType}
+          customFrom={customFrom}
+          customTo={customTo}
+          setCustomFrom={setCustomFrom}
+          setCustomTo={setCustomTo}
+        />
+        <div className="text-center py-12 text-muted-foreground">
+          No publish data in the selected range.
+        </div>
       </div>
     );
   }
@@ -86,20 +110,34 @@ export function PublishAnalyticsTab() {
   return (
     <div className="space-y-6">
       {/* Header with range picker and export */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Publish analytics</h2>
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RANGE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <RangeControls
+          rangeType={rangeType}
+          setRangeType={setRangeType}
+          customFrom={customFrom}
+          customTo={customTo}
+          setCustomFrom={setCustomFrom}
+          setCustomTo={setCustomTo}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportAnalyticsCsv(data)}>
+              <Download className="h-3.5 w-3.5 mr-2" />
+              Download CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAnalyticsPdf(data)}>
+              <FileText className="h-3.5 w-3.5 mr-2" />
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
