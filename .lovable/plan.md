@@ -95,8 +95,10 @@
 **Recommended implementation order:**
 
 1. **Phase A: Deploy & Verify** — 🔴 Critical but blocked on user running `.\run.ps1 -uas`
-2. **H-2: Publish Analytics** — build charts/trends on existing publish history data; needs spec scoping first
-3. **H-3: User Management** — largest scope; spec exists at `spec/16-user-management/`; adds auth + roles to Go backend + React
+2. **H-3: User Management** — in progress; PHP layer + Go proxy + React dashboard scaffolded; needs wiring (route, sidebar, plan update)
+
+**Completed recently:**
+- **H-2: Publish Analytics** — Analytics tab on Publish History page with 4 charts (daily publishes, success rate trend, duration heatmap, per-site breakdown)
 
 **Blocked (needs user action):**
 - Phase A: All deployment tasks — user must run PowerShell scripts
