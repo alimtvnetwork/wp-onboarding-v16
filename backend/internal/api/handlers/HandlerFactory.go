@@ -152,6 +152,46 @@ func handleSiteActionById(
 	}
 }
 
+// handleSiteActionByIdWithQuery creates a handler that passes query string to the action.
+func handleSiteActionByIdWithQuery(
+	errCode apperror.ErrorCode,
+	fn func(ctx context.Context, siteId int64, query string) (any, *apperror.AppError),
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isSiteServiceMissing(w) {
+			return
+		}
+
+		siteId, err := getIdParam(r, "id")
+		if err != nil {
+			respondError(
+				w,
+				wordpress.HttpStatusBadRequest,
+				apperror.ErrConfigParse,
+				responsemessage.InvalidId.String(),
+			)
+
+			return
+		}
+
+		query := r.URL.RawQuery
+
+		result, appErr := fn(r.Context(), siteId, query)
+		if appErr != nil {
+			respondError(
+				w,
+				wordpress.HttpStatusServerError,
+				errCode,
+				appErr.Error(),
+			)
+
+			return
+		}
+
+		respondSuccess(w, result)
+	}
+}
+
 // noArgsConfig bundles parameters for no-args handler factories.
 type noArgsConfig struct {
 	GetService  func() any
