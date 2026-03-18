@@ -84,6 +84,19 @@ const (
 	EPAgentsPlugins WPEndpointName = "AgentsPlugins"
 	EPAgentAction   WPEndpointName = "AgentAction"
 	EPAgentHistory  WPEndpointName = "AgentHistory"
+
+	// User management endpoints
+	EPListUsers        WPEndpointName = "ListUsers"
+	EPGetUser          WPEndpointName = "GetUser"
+	EPCreateUser       WPEndpointName = "CreateUser"
+	EPUpdateUser       WPEndpointName = "UpdateUser"
+	EPDeleteUser       WPEndpointName = "DeleteUser"
+	EPCreateAppPass    WPEndpointName = "CreateAppPassword"
+	EPRevokeAppPass    WPEndpointName = "RevokeAppPassword"
+	EPExportUsersCsv   WPEndpointName = "ExportUsersCsv"
+	EPImportUsersCsv   WPEndpointName = "ImportUsersCsv"
+	EPExportSqlite     WPEndpointName = "ExportUsersSqlite"
+	EPImportSqlite     WPEndpointName = "ImportUsersSqlite"
 )
 
 // GoEndpointRoute describes the Go backend API route for a delegated operation.
