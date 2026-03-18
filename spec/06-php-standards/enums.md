@@ -349,10 +349,10 @@ add_action(HookType::ajax('riseup_test'), [$this, 'ajaxTest']);
 ```php
 enum LogLevelType: string
 {
-    case Debug = 'DEBUG';
-    case Info  = 'INFO';
-    case Warn  = 'WARN';
-    case Error = 'ERROR';
+    case Debug = 'Debug';
+    case Info  = 'Info';
+    case Warn  = 'Warn';
+    case Error = 'Error';
 
     public function isEqual(self $other): bool { return $this === $other; }
 
