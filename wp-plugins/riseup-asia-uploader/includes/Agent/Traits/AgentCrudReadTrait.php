@@ -94,7 +94,7 @@ trait AgentCrudReadTrait {
         );
 
         if ($listResult->hasError()) {
-            $this->fileLogger->logException($listResult->error(), 'Failed to list agent sites');
+            $this->fileLogger->logException($listResult->getError(), 'Failed to list agent sites');
 
             return [ResponseKeyType::Total->value => 0, ResponseKeyType::Agents->value => []];
         }
