@@ -51,17 +51,17 @@ export interface PublishAnalyticsData {
   };
 }
 
-function buildAnalytics(entries: PublishHistoryEntry[]): PublishAnalyticsData {
+function buildAnalytics(entries: PublishHistoryEntry[], days: number): PublishAnalyticsData {
   const now = new Date();
-  const cutoff = subDays(now, DAYS);
+  const cutoff = subDays(now, days);
 
-  // Filter to 30-day window
+  // Filter to window
   const recent = entries.filter((e) => new Date(e.createdAt) >= cutoff);
 
   // ── Daily publishes ──────────────────────────
   const dailyMap = new Map<string, DailyPublishPoint>();
-  for (let i = 0; i < DAYS; i++) {
-    const d = subDays(now, DAYS - 1 - i);
+  for (let i = 0; i < days; i++) {
+    const d = subDays(now, days - 1 - i);
     const key = format(startOfDay(d), "MMM dd");
     dailyMap.set(key, { date: key, success: 0, failed: 0, partial: 0, total: 0 });
   }
