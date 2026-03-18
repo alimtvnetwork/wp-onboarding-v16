@@ -117,7 +117,7 @@ export function PublishAnalyticsTab() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <SummaryCard label="Total (30d)" value={data.summary.total} />
+        <SummaryCard label={`Total (${days}d)`} value={data.summary.total} />
         <SummaryCard
           label="Success Rate"
           value={`${data.summary.total > 0 ? Math.round((data.summary.success / data.summary.total) * 100) : 0}%`}
