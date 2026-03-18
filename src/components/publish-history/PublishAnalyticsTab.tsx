@@ -1,6 +1,7 @@
 // Publish Analytics Tab — 4 charts: daily publishes, success rate trend, duration heatmap, per-site breakdown.
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { usePublishAnalytics } from "@/hooks/usePublishAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,17 +19,21 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Activity, TrendingUp, Clock, Globe, Download, FileText } from "lucide-react";
+import { Activity, TrendingUp, Clock, Globe, Download, FileText, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { exportAnalyticsCsv, exportAnalyticsPdf } from "@/lib/analyticsExport";
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
   { value: "30", label: "Last 30 days" },
   { value: "90", label: "Last 90 days" },
+  { value: "custom", label: "Custom range" },
 ] as const;
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
