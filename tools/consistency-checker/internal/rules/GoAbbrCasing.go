@@ -149,8 +149,8 @@ func checkLineForViolations(
 }
 
 // findViolatingAbbr returns the first ALL-CAPS abbreviation found in an identifier, or "".
-func findViolatingAbbr(identifier string) string {
-	for _, abbr := range allCapsAbbreviations {
+func findViolatingAbbr(identifier string, abbreviations []string) string {
+	for _, abbr := range abbreviations {
 		if !strings.Contains(identifier, abbr) {
 			continue
 		}
