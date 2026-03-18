@@ -33,6 +33,7 @@ const navItems = [
   { to: "/publish-history", label: "Publish History", icon: BarChart3 },
   { to: "/activity", label: "Activity Feed", icon: Activity },
   { to: "/cloud-storage", label: "Cloud Storage", icon: Cloud },
+  { to: "/licensing", label: "Licensing", icon: KeyRound },
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/sessions", label: "Sessions", icon: History },
