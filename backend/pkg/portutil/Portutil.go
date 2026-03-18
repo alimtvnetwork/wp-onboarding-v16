@@ -106,7 +106,7 @@ func parseNetstatWindows(output string, port int) (int, error) {
 		}
 	}
 
-	return 0, apperror.New(apperror.ErrInternal, "no PID found in netstat output").
+	return 0, apperror.New(apperror.ErrInternal, "no Pid found in netstat output").
 		WithValue("port", strconv.Itoa(port))
 }
 
