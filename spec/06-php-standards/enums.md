@@ -33,7 +33,8 @@ All enums MUST use the **`Type` suffix** in their name. This clearly distinguish
 4. **`Type` suffix required** — use `UploadSourceType`, not `UploadSource`.
 5. **String-backed** (`enum Foo: string`) for all enums whose values are strings.
 6. **Case names use PascalCase** — `case RestApi`, not `case REST_API`.
-7. **No `RISEUP_` prefix** on anything — namespace provides scoping.
+7. **Case values use PascalCase** — `case Success = 'Success'`, not `'success'` or `'SUCCESS'`. **Exemptions:** enums wrapping external identifiers (WordPress hooks, capabilities, post statuses, HTTP methods, WP_Error codes, HTTP form fields) retain the external format. See [PascalCase Value Exemptions](#pascalcase-value-exemptions) below.
+8. **No `RISEUP_` prefix** on anything — namespace provides scoping.
 8. **`define()` constants are prohibited** for values that belong in an enum.
 9. **Access pattern:** `UploadSourceType::Script` (the enum case) or `UploadSourceType::Script->value` (the raw string).
 10. **Validation helpers** go as `static` methods on the enum itself (camelCase: `validValues()`, `isValid()`).
