@@ -32,6 +32,9 @@ var declarationPrefixes = []string{
 
 // Check scans Go source lines for ALL-CAPS abbreviation violations.
 func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
+	abbreviations := ctx.Spec.ParamStringSlice("abbreviations", defaultAbbreviations)
+	pattern := buildAbbrPattern(abbreviations)
+
 	var findings []engine.Finding
 
 	for i, line := range ctx.Lines {
@@ -41,11 +44,21 @@ func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
 			continue
 		}
 
-		lineFindings := checkLineForViolations(ctx, trimmed, i+1)
+		lineFindings := checkLineForViolations(ctx, trimmed, i+1, pattern, abbreviations)
 		findings = append(findings, lineFindings...)
 	}
 
 	return findings
+}
+
+// buildAbbrPattern creates a compiled regex matching ALL-CAPS abbreviations.
+func buildAbbrPattern(abbreviations []string) *regexp.Regexp {
+	pattern := fmt.Sprintf(
+		`\b([A-Za-z]*(?:%s)[A-Za-z0-9]*)\b`,
+		strings.Join(abbreviations, "|"),
+	)
+
+	return regexp.MustCompile(pattern)
 }
 
 // isCheckableLine returns true if the line could contain an identifier declaration.
