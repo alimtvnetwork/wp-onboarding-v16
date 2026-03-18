@@ -22,6 +22,7 @@ import {
   Activity,
   Cloud,
   KeyRound,
+  Users,
 } from "lucide-react";
 
 const navItems = [
