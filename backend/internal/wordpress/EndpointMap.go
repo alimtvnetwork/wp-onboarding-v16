@@ -258,6 +258,19 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPAgentsPlugins: {Method: httpmethod.Post, Endpoint: ep.AgentsPlugins},
 	EPAgentAction:   {Method: httpmethod.Post, Endpoint: ep.AgentAction},
 	EPAgentHistory:  {Method: httpmethod.Get, Endpoint: ep.AgentHistory},
+
+	// User management operations
+	EPListUsers:      {Method: httpmethod.Get, Endpoint: ep.Users},
+	EPGetUser:        {Method: httpmethod.Get, Endpoint: ep.UserId},
+	EPCreateUser:     {Method: httpmethod.Post, Endpoint: ep.Users},
+	EPUpdateUser:     {Method: httpmethod.Put, Endpoint: ep.UserId},
+	EPDeleteUser:     {Method: httpmethod.Delete, Endpoint: ep.UserId},
+	EPCreateAppPass:  {Method: httpmethod.Post, Endpoint: ep.UserAppPassword},
+	EPRevokeAppPass:  {Method: httpmethod.Delete, Endpoint: ep.UserAppPassword},
+	EPExportUsersCsv: {Method: httpmethod.Get, Endpoint: ep.UsersExport},
+	EPImportUsersCsv: {Method: httpmethod.Post, Endpoint: ep.UsersImport},
+	EPExportSqlite:   {Method: httpmethod.Get, Endpoint: ep.UsersExportSqlite},
+	EPImportSqlite:   {Method: httpmethod.Post, Endpoint: ep.UsersImportSqlite},
 }
 
 // ResolveGoEndpoint returns the Go backend route for a given operation,
