@@ -22,5 +22,6 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&PhpEnumNaming{})
 	eng.Register(&PhpEnumCaseValues{})
 	eng.Register(&PhpEnumMethods{})
+	eng.Register(&PhpVersionSync{})
 	eng.Register(&MdHeading{})
 }

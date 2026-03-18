@@ -197,6 +197,16 @@
       "reference": "spec/03-rules.md#php-enum-methods"
     },
     {
+      "id": "php-version-sync",
+      "name": "PHP Version Sync",
+      "enabled": true,
+      "severity": "error",
+      "languages": ["php"],
+      "params": {},
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/09-wordpress/05-qupload-plugin/01-endpoints.md"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,
