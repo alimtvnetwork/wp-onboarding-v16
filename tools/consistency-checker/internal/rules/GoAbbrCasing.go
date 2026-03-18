@@ -9,34 +9,8 @@ import (
 	"consistency-checker/internal/engine"
 )
 
-// allCapsAbbreviations lists abbreviations that must use PascalCase, not ALL-CAPS.
-var allCapsAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
-
-// abbrPattern matches ALL-CAPS abbreviations in Go identifiers (struct fields, func names, vars).
-// It looks for the abbreviation preceded or followed by another letter/digit boundary.
-var abbrPattern = buildAbbrPattern()
-
-// buildAbbrPattern creates a compiled regex that matches any ALL-CAPS abbreviation
-// in a Go identifier context (type/func/var/field declarations and struct literal keys).
-func buildAbbrPattern() *regexp.Regexp {
-	parts := make([]string, len(allCapsAbbreviations))
-	for i, abbr := range allCapsAbbreviations {
-		// Match the abbreviation when:
-		// - preceded by a lowercase letter or digit (e.g., pluginID, siteURL)
-		// - followed by an uppercase letter, digit, or end of word (e.g., IDConfig, URLs)
-		// - at the start of a word in a declaration (e.g., ID int64)
-		parts[i] = abbr
-	}
-
-	// Match identifiers containing ALL-CAPS abbreviations in declarations and struct fields.
-	// Captures: the full identifier and the violating abbreviation.
-	pattern := fmt.Sprintf(
-		`\b([A-Za-z]*(?:%s)[A-Za-z0-9]*)\b`,
-		strings.Join(parts, "|"),
-	)
-
-	return regexp.MustCompile(pattern)
-}
+// defaultAbbreviations is the fallback list when no config param is provided.
+var defaultAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
 
 // GoAbbrCasing checks that Go identifiers use PascalCase for abbreviations (Id, Url, Http, etc.)
 // instead of ALL-CAPS (ID, URL, HTTP, etc.).
@@ -58,6 +32,9 @@ var declarationPrefixes = []string{
 
 // Check scans Go source lines for ALL-CAPS abbreviation violations.
 func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
+	abbreviations := ctx.Spec.ParamStringSlice("abbreviations", defaultAbbreviations)
+	pattern := buildAbbrPattern(abbreviations)
+
 	var findings []engine.Finding
 
 	for i, line := range ctx.Lines {
@@ -67,11 +44,21 @@ func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
 			continue
 		}
 
-		lineFindings := checkLineForViolations(ctx, trimmed, i+1)
+		lineFindings := checkLineForViolations(ctx, trimmed, i+1, pattern, abbreviations)
 		findings = append(findings, lineFindings...)
 	}
 
 	return findings
+}
+
+// buildAbbrPattern creates a compiled regex matching ALL-CAPS abbreviations.
+func buildAbbrPattern(abbreviations []string) *regexp.Regexp {
+	pattern := fmt.Sprintf(
+		`\b([A-Za-z]*(?:%s)[A-Za-z0-9]*)\b`,
+		strings.Join(abbreviations, "|"),
+	)
+
+	return regexp.MustCompile(pattern)
 }
 
 // isCheckableLine returns true if the line could contain an identifier declaration.
@@ -120,12 +107,14 @@ func checkLineForViolations(
 	ctx engine.CheckContext,
 	line string,
 	lineNum int,
+	pattern *regexp.Regexp,
+	abbreviations []string,
 ) []engine.Finding {
 	var findings []engine.Finding
 
-	matches := abbrPattern.FindAllString(line, -1)
+	matches := pattern.FindAllString(line, -1)
 	for _, match := range matches {
-		abbr := findViolatingAbbr(match)
+		abbr := findViolatingAbbr(match, abbreviations)
 		if abbr == "" {
 			continue
 		}
@@ -160,8 +149,8 @@ func checkLineForViolations(
 }
 
 // findViolatingAbbr returns the first ALL-CAPS abbreviation found in an identifier, or "".
-func findViolatingAbbr(identifier string) string {
-	for _, abbr := range allCapsAbbreviations {
+func findViolatingAbbr(identifier string, abbreviations []string) string {
+	for _, abbr := range abbreviations {
 		if !strings.Contains(identifier, abbr) {
 			continue
 		}
