@@ -175,6 +175,16 @@
       "reference": "spec/03-rules.md#php-enum-case-values"
     },
     {
+      "id": "php-enum-methods",
+      "name": "PHP Enum Required Methods",
+      "enabled": true,
+      "severity": "warning",
+      "languages": ["php"],
+      "params": {},
+      "exclude": ["**/plugins-onboard/**"],
+      "reference": "spec/03-rules.md#php-enum-methods"
+    },
+    {
       "id": "md-heading",
       "name": "Single H1 Heading",
       "enabled": true,

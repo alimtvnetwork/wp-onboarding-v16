@@ -20,5 +20,6 @@ func RegisterAll(eng *engine.Engine) {
 	eng.Register(&PhpGlobalImports{})
 	eng.Register(&PhpEnumNaming{})
 	eng.Register(&PhpEnumCaseValues{})
+	eng.Register(&PhpEnumMethods{})
 	eng.Register(&MdHeading{})
 }
