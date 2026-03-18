@@ -78,14 +78,14 @@
     },
     {
       "id": "file-naming",
-      "name": "Go File Naming Convention",
+      "name": "File Naming Convention",
       "enabled": true,
       "severity": "warning",
-      "languages": ["go"],
+      "languages": ["go", "php"],
       "params": {
         "convention": "PascalCase"
       },
-      "exclude": ["*_test.go", "go.mod", "go.sum"],
+      "exclude": ["*_test.go", "go.mod", "go.sum", "**/plugins-onboard/**"],
       "reference": "spec/03-rules.md#file-naming"
     },
     {
