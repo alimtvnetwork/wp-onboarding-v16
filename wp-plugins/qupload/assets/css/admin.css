@@ -169,7 +169,7 @@
 .qupload-card table th {
     text-align: left;
     width: 160px;
-    padding: 8px 12px 8px 0;
+    padding: 10px 12px;
     font-weight: 600;
     font-size: 13px;
     color: var(--qu-text-secondary);
@@ -178,7 +178,7 @@
 }
 
 .qupload-card table td {
-    padding: 8px 0;
+    padding: 10px 12px;
     font-size: 13px;
     color: var(--qu-text);
     border-bottom: 1px solid var(--qu-border);
