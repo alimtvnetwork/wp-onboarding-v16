@@ -126,3 +126,29 @@ func TestGoAbbrCasing_FlagsTypeDecl(t *testing.T) {
 		t.Errorf("expected 2 findings, got %d", len(findings))
 	}
 }
+
+func TestGoAbbrCasing_UsesConfigPascalAbbreviations(t *testing.T) {
+	r := &GoAbbrCasing{}
+	ctx := engine.CheckContext{
+		FilePath: "test.go",
+		Language: "go",
+		Lines: []string{
+			"	SiteSQL string",
+			"	SiteSql string",
+		},
+		Spec: config.RuleSpec{
+			Severity: "warning",
+			Params: map[string]interface{}{
+				"abbreviations": []interface{}{"Sql"},
+			},
+		},
+	}
+
+	findings := r.Check(ctx)
+	if len(findings) != 1 {
+		t.Errorf("expected 1 finding for SiteSQL with PascalCase config, got %d", len(findings))
+		for _, f := range findings {
+			t.Logf("  finding: %s", f.Message)
+		}
+	}
+}
