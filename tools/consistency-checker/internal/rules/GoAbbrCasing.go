@@ -33,8 +33,15 @@ var declarationPrefixes = []string{
 
 // Check scans Go source lines for ALL-CAPS abbreviation violations.
 func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
-	abbreviations := ctx.Spec.ParamStringSlice("abbreviations", defaultAbbreviations)
-	pattern := buildAbbrPattern(abbreviations)
+	pascalAbbrs := ctx.Spec.ParamStringSlice("abbreviations", defaultAbbreviations)
+
+	// Derive ALL-CAPS forms from PascalCase config values.
+	allCapsAbbrs := make([]string, len(pascalAbbrs))
+	for i, a := range pascalAbbrs {
+		allCapsAbbrs[i] = strings.ToUpper(a)
+	}
+
+	pattern := buildAbbrPattern(allCapsAbbrs)
 
 	var findings []engine.Finding
 
@@ -45,7 +52,7 @@ func (r *GoAbbrCasing) Check(ctx engine.CheckContext) []engine.Finding {
 			continue
 		}
 
-		lineFindings := checkLineForViolations(ctx, trimmed, i+1, pattern, abbreviations)
+		lineFindings := checkLineForViolations(ctx, trimmed, i+1, pattern, allCapsAbbrs)
 		findings = append(findings, lineFindings...)
 	}
 
