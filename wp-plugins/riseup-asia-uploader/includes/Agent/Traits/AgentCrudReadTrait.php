@@ -50,7 +50,7 @@ trait AgentCrudReadTrait {
         );
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to get agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to get agent site');
 
             return null;
         }
