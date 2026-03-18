@@ -184,7 +184,7 @@ case "colly":
 **After:**
 ```go
 switch req.Provider {
-case provider.SerpAPI:
+case provider.SerpApi:
     // ...
 case provider.Colly:
     // ...
