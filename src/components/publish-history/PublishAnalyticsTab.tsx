@@ -1,0 +1,325 @@
+// Publish Analytics Tab — 4 charts: daily publishes, success rate trend, duration heatmap, per-site breakdown.
+
+import { usePublishAnalytics } from "@/hooks/usePublishAnalytics";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { Activity, TrendingUp, Clock, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function durationLabel(ms: number): string {
+  if (ms === 0) return "—";
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+}
+
+function heatColor(avgMs: number, maxMs: number): string {
+  if (avgMs === 0) return "hsl(var(--muted))";
+  const ratio = Math.min(avgMs / (maxMs || 1), 1);
+  // Green → Yellow → Red
+  if (ratio < 0.5) {
+    const g = Math.round(140 + ratio * 2 * (50 - 140)); // not used, hsl approach:
+    return `hsl(${Math.round(120 - ratio * 2 * 120)}, 70%, 45%)`;
+  }
+  return `hsl(${Math.round(120 - ratio * 120)}, 70%, 45%)`;
+}
+
+const SITE_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(210, 60%, 55%)",
+  "hsl(280, 50%, 55%)",
+  "hsl(30, 70%, 50%)",
+];
+
+export function PublishAnalyticsTab() {
+  const { data, isLoading } = usePublishAnalytics();
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-muted-foreground">Loading analytics…</div>;
+  }
+
+  if (!data || data.summary.total === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        No publish data in the last 30 days.
+      </div>
+    );
+  }
+
+  const maxHeatMs = Math.max(...data.heatmap.map((h) => h.avgDurationMs));
+
+  return (
+    <div className="space-y-6">
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <SummaryCard label="Total (30d)" value={data.summary.total} />
+        <SummaryCard
+          label="Success Rate"
+          value={`${data.summary.total > 0 ? Math.round((data.summary.success / data.summary.total) * 100) : 0}%`}
+        />
+        <SummaryCard label="Successes" value={data.summary.success} />
+        <SummaryCard label="Failures" value={data.summary.failed} />
+        <SummaryCard label="Avg Duration" value={durationLabel(data.summary.avgDurationMs)} />
+      </div>
+
+      {/* Row 1: Daily publishes + Success rate trend */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily publishes stacked bar */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              Publishes Over Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.daily} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  interval={4}
+                  className="fill-muted-foreground"
+                />
+                <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar dataKey="success" stackId="a" fill="hsl(var(--chart-2))" name="Success" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="partial" stackId="a" fill="hsl(var(--chart-4))" name="Partial" />
+                <Bar dataKey="failed" stackId="a" fill="hsl(var(--destructive))" name="Failed" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Success rate area chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Success Rate Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={data.successRate.filter((d) => d.total > 0)} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} className="fill-muted-foreground" />
+                <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} className="fill-muted-foreground" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                  formatter={(value: number) => [`${value}%`, "Success Rate"]}
+                />
+                {/* Threshold line at 90% */}
+                <defs>
+                  <linearGradient id="successGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="rate"
+                  stroke="hsl(var(--chart-2))"
+                  fill="url(#successGrad)"
+                  strokeWidth={2}
+                  dot={{ r: 2, fill: "hsl(var(--chart-2))" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Duration heatmap + Per-site breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Duration heatmap */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              Duration by Day × Hour
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <div className="min-w-[420px]">
+                {/* Hour labels */}
+                <div className="flex mb-1 ml-10">
+                  {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
+                    <span
+                      key={h}
+                      className="text-[9px] text-muted-foreground"
+                      style={{ width: `${(3 / 24) * 100}%` }}
+                    >
+                      {h}:00
+                    </span>
+                  ))}
+                </div>
+                {/* Grid */}
+                {DAY_LABELS.map((dayLabel, dayIdx) => (
+                  <div key={dayIdx} className="flex items-center gap-1 mb-0.5">
+                    <span className="text-[10px] text-muted-foreground w-8 text-right shrink-0">
+                      {dayLabel}
+                    </span>
+                    <div className="flex flex-1 gap-[1px]">
+                      {Array.from({ length: 24 }, (_, hour) => {
+                        const cell = data.heatmap.find(
+                          (c) => c.day === dayIdx && c.hour === hour
+                        );
+                        const avgMs = cell?.avgDurationMs ?? 0;
+                        const count = cell?.count ?? 0;
+                        return (
+                          <div
+                            key={hour}
+                            className="flex-1 aspect-square rounded-[2px] cursor-default transition-colors"
+                            style={{ backgroundColor: heatColor(avgMs, maxHeatMs) }}
+                            title={`${dayLabel} ${hour}:00 — ${count} publish${count !== 1 ? "es" : ""}, avg ${durationLabel(avgMs)}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {/* Legend */}
+                <div className="flex items-center justify-end gap-2 mt-2">
+                  <span className="text-[9px] text-muted-foreground">Fast</span>
+                  <div className="flex gap-[1px]">
+                    {[0, 0.25, 0.5, 0.75, 1].map((r) => (
+                      <div
+                        key={r}
+                        className="w-3 h-3 rounded-[2px]"
+                        style={{ backgroundColor: r === 0 ? "hsl(var(--muted))" : `hsl(${Math.round(120 - r * 120)}, 70%, 45%)` }}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[9px] text-muted-foreground">Slow</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Per-site breakdown */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" />
+              Per-Site Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.sites.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No data</p>
+            ) : (
+              <div className="flex gap-6">
+                {/* Pie chart */}
+                <div className="w-36 h-36 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={data.sites}
+                        dataKey="total"
+                        nameKey="siteName"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={55}
+                        paddingAngle={2}
+                      >
+                        {data.sites.map((_, i) => (
+                          <Cell key={i} fill={SITE_COLORS[i % SITE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Legend/table */}
+                <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px]">
+                  {data.sites.map((site, i) => (
+                    <div key={site.siteId} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: SITE_COLORS[i % SITE_COLORS.length] }}
+                        />
+                        <span className="truncate">{site.siteName}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-xs text-muted-foreground">{site.total}</span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 ${
+                            site.successRate >= 90
+                              ? "text-success border-success/30"
+                              : site.successRate >= 70
+                                ? "text-warning border-warning/30"
+                                : "text-destructive border-destructive/30"
+                          }`}
+                        >
+                          {site.successRate}%
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Card>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
