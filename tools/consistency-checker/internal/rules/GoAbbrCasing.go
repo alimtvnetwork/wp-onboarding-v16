@@ -9,34 +9,8 @@ import (
 	"consistency-checker/internal/engine"
 )
 
-// allCapsAbbreviations lists abbreviations that must use PascalCase, not ALL-CAPS.
-var allCapsAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
-
-// abbrPattern matches ALL-CAPS abbreviations in Go identifiers (struct fields, func names, vars).
-// It looks for the abbreviation preceded or followed by another letter/digit boundary.
-var abbrPattern = buildAbbrPattern()
-
-// buildAbbrPattern creates a compiled regex that matches any ALL-CAPS abbreviation
-// in a Go identifier context (type/func/var/field declarations and struct literal keys).
-func buildAbbrPattern() *regexp.Regexp {
-	parts := make([]string, len(allCapsAbbreviations))
-	for i, abbr := range allCapsAbbreviations {
-		// Match the abbreviation when:
-		// - preceded by a lowercase letter or digit (e.g., pluginID, siteURL)
-		// - followed by an uppercase letter, digit, or end of word (e.g., IDConfig, URLs)
-		// - at the start of a word in a declaration (e.g., ID int64)
-		parts[i] = abbr
-	}
-
-	// Match identifiers containing ALL-CAPS abbreviations in declarations and struct fields.
-	// Captures: the full identifier and the violating abbreviation.
-	pattern := fmt.Sprintf(
-		`\b([A-Za-z]*(?:%s)[A-Za-z0-9]*)\b`,
-		strings.Join(parts, "|"),
-	)
-
-	return regexp.MustCompile(pattern)
-}
+// defaultAbbreviations is the fallback list when no config param is provided.
+var defaultAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
 
 // GoAbbrCasing checks that Go identifiers use PascalCase for abbreviations (Id, Url, Http, etc.)
 // instead of ALL-CAPS (ID, URL, HTTP, etc.).

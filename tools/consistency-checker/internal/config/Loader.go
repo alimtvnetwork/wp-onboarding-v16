@@ -90,3 +90,34 @@ func (r *RuleSpec) ParamString(key, defaultVal string) string {
 	}
 	return defaultVal
 }
+
+// ParamStringSlice extracts a string slice parameter with a default.
+func (r *RuleSpec) ParamStringSlice(key string, defaultVal []string) []string {
+	v, ok := r.Params[key]
+	if !ok {
+		return defaultVal
+	}
+
+	raw, ok := v.([]any)
+	if !ok {
+		return defaultVal
+	}
+
+	return coerceToStringSlice(raw, defaultVal)
+}
+
+// coerceToStringSlice converts a []any of strings to []string.
+func coerceToStringSlice(raw []any, defaultVal []string) []string {
+	result := make([]string, 0, len(raw))
+
+	for _, item := range raw {
+		s, ok := item.(string)
+		if !ok {
+			return defaultVal
+		}
+
+		result = append(result, s)
+	}
+
+	return result
+}

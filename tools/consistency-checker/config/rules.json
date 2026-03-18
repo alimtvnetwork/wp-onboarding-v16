@@ -94,7 +94,9 @@
       "enabled": true,
       "severity": "warning",
       "languages": ["go"],
-      "params": {},
+      "params": {
+        "abbreviations": ["ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"]
+      },
       "exclude": ["*_test.go"],
       "reference": "spec/03-rules.md#go-abbr-casing"
     },
