@@ -51,10 +51,34 @@ trait UploadFileSystemTrait
     private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response
     {
         $this->traceStage('extractZipToTemp:start', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
+
+        $isFileExists = file_exists($tempFile);
+
+        if ($isFileExists === false) {
+            $this->fileLogger->error('Temp ZIP file does not exist', ['path' => $tempFile]);
+
+            return $this->handleZipOpenFailure($tempFile, $tempExtractDir);
+        }
+
+        $tempFileSize = @filesize($tempFile);
+        $this->fileLogger->info('Opening ZIP file', [
+            'path'   => $tempFile,
+            'size'   => $tempFileSize,
+            'exists' => true,
+        ]);
+
         $zip = new ZipArchive();
-        $isOpened = $zip->open($tempFile) === true;
+        $openResult = $zip->open($tempFile);
+        $isOpened = ($openResult === true);
 
         if ($isOpened === false) {
+            $this->fileLogger->error('ZipArchive::open() failed', [
+                'path'      => $tempFile,
+                'errorCode' => $openResult,
+                'errorMsg'  => $this->zipErrorMessage($openResult),
+                'fileSize'  => $tempFileSize,
+            ]);
+
             return $this->handleZipOpenFailure($tempFile, $tempExtractDir);
         }
 
@@ -78,6 +102,28 @@ trait UploadFileSystemTrait
         $this->deleteDirectory($tempExtractDir);
 
         return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
+    }
+
+    /** Translate ZipArchive error code to human-readable message. */
+    private function zipErrorMessage(int|bool $code): string
+    {
+        if ($code === true) {
+            return 'OK';
+        }
+
+        $messages = [
+            ZipArchive::ER_EXISTS   => 'File already exists',
+            ZipArchive::ER_INCONS   => 'Inconsistent ZIP archive',
+            ZipArchive::ER_INVAL    => 'Invalid argument',
+            ZipArchive::ER_MEMORY   => 'Memory allocation failure',
+            ZipArchive::ER_NOENT    => 'No such file',
+            ZipArchive::ER_NOZIP    => 'Not a ZIP archive',
+            ZipArchive::ER_OPEN     => 'Cannot open file',
+            ZipArchive::ER_READ     => 'Read error',
+            ZipArchive::ER_SEEK     => 'Seek error',
+        ];
+
+        return $messages[$code] ?? 'Unknown error (code: ' . $code . ')';
     }
 
     /** Clean up after a failed ZIP extraction. */
