@@ -51,17 +51,20 @@ export interface PublishAnalyticsData {
   };
 }
 
-function buildAnalytics(entries: PublishHistoryEntry[], days: number): PublishAnalyticsData {
+function buildAnalytics(entries: PublishHistoryEntry[], days: number, startFrom?: Date): PublishAnalyticsData {
   const now = new Date();
-  const cutoff = subDays(now, days);
+  const anchor = startFrom ?? subDays(now, days);
 
   // Filter to window
-  const recent = entries.filter((e) => new Date(e.createdAt) >= cutoff);
+  const recent = startFrom
+    ? entries
+    : entries.filter((e) => new Date(e.createdAt) >= anchor);
 
   // ── Daily publishes ──────────────────────────
   const dailyMap = new Map<string, DailyPublishPoint>();
+  const baseDate = startFrom ?? subDays(now, days - 1);
   for (let i = 0; i < days; i++) {
-    const d = subDays(now, days - 1 - i);
+    const d = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
     const key = format(startOfDay(d), "MMM dd");
     dailyMap.set(key, { date: key, success: 0, failed: 0, partial: 0, total: 0 });
   }
@@ -148,12 +151,29 @@ function buildAnalytics(entries: PublishHistoryEntry[], days: number): PublishAn
   };
 }
 
-export function usePublishAnalytics(days: number = 30) {
+export function usePublishAnalytics(days: number = 30, customRange?: { from: Date; to: Date }) {
+  const rangeKey = customRange
+    ? `${customRange.from.toISOString()}-${customRange.to.toISOString()}`
+    : String(days);
+
   return useQuery({
-    queryKey: ["publish-analytics", days],
+    queryKey: ["publish-analytics", rangeKey],
     queryFn: async () => {
       const res = await api.getPublishHistory({ limit: ANALYTICS_LIMIT });
       const entries = res.data?.entries ?? [];
+      if (customRange) {
+        const diffDays = Math.ceil(
+          (customRange.to.getTime() - customRange.from.getTime()) / (1000 * 60 * 60 * 24)
+        ) + 1;
+        return buildAnalytics(
+          entries.filter((e) => {
+            const d = new Date(e.createdAt);
+            return d >= customRange.from && d <= customRange.to;
+          }),
+          diffDays,
+          customRange.from
+        );
+      }
       return buildAnalytics(entries, days);
     },
     staleTime: 60_000,

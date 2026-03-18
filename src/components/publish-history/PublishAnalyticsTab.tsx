@@ -1,6 +1,7 @@
 // Publish Analytics Tab — 4 charts: daily publishes, success rate trend, duration heatmap, per-site breakdown.
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { usePublishAnalytics } from "@/hooks/usePublishAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,17 +19,21 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Activity, TrendingUp, Clock, Globe, Download, FileText } from "lucide-react";
+import { Activity, TrendingUp, Clock, Globe, Download, FileText, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { exportAnalyticsCsv, exportAnalyticsPdf } from "@/lib/analyticsExport";
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
   { value: "30", label: "Last 30 days" },
   { value: "90", label: "Last 90 days" },
+  { value: "custom", label: "Custom range" },
 ] as const;
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -61,8 +66,22 @@ const SITE_COLORS = [
 ];
 
 export function PublishAnalyticsTab() {
-  const [days, setDays] = useState(30);
-  const { data, isLoading } = usePublishAnalytics(days);
+  const [rangeType, setRangeType] = useState<string>("30");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
+
+  const days = rangeType === "custom" ? 30 : Number(rangeType);
+  const customRange =
+    rangeType === "custom" && customFrom && customTo
+      ? { from: customFrom, to: customTo }
+      : undefined;
+
+  const { data, isLoading } = usePublishAnalytics(days, customRange);
+
+  const rangeLabel =
+    rangeType === "custom" && customFrom && customTo
+      ? `${format(customFrom, "MMM dd")} – ${format(customTo, "MMM dd")}`
+      : `${days}d`;
 
   if (isLoading) {
     return <div className="text-center py-12 text-muted-foreground">Loading analytics…</div>;
@@ -70,8 +89,18 @@ export function PublishAnalyticsTab() {
 
   if (!data || data.summary.total === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        No publish data in the last {days} days.
+      <div className="space-y-4">
+        <RangeControls
+          rangeType={rangeType}
+          setRangeType={setRangeType}
+          customFrom={customFrom}
+          customTo={customTo}
+          setCustomFrom={setCustomFrom}
+          setCustomTo={setCustomTo}
+        />
+        <div className="text-center py-12 text-muted-foreground">
+          No publish data in the selected range.
+        </div>
       </div>
     );
   }
@@ -81,20 +110,34 @@ export function PublishAnalyticsTab() {
   return (
     <div className="space-y-6">
       {/* Header with range picker and export */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Publish analytics</h2>
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RANGE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <RangeControls
+          rangeType={rangeType}
+          setRangeType={setRangeType}
+          customFrom={customFrom}
+          customTo={customTo}
+          setCustomFrom={setCustomFrom}
+          setCustomTo={setCustomTo}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportAnalyticsCsv(data)}>
+              <Download className="h-3.5 w-3.5 mr-2" />
+              Download CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAnalyticsPdf(data)}>
+              <FileText className="h-3.5 w-3.5 mr-2" />
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
@@ -117,7 +160,7 @@ export function PublishAnalyticsTab() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <SummaryCard label={`Total (${days}d)`} value={data.summary.total} />
+        <SummaryCard label={`Total (${rangeLabel})`} value={data.summary.total} />
         <SummaryCard
           label="Success Rate"
           value={`${data.summary.total > 0 ? Math.round((data.summary.success / data.summary.total) * 100) : 0}%`}
@@ -355,6 +398,100 @@ export function PublishAnalyticsTab() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function RangeControls({
+  rangeType,
+  setRangeType,
+  customFrom,
+  customTo,
+  setCustomFrom,
+  setCustomTo,
+}: {
+  rangeType: string;
+  setRangeType: (v: string) => void;
+  customFrom: Date | undefined;
+  customTo: Date | undefined;
+  setCustomFrom: (d: Date | undefined) => void;
+  setCustomTo: (d: Date | undefined) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <h2 className="text-sm font-medium text-muted-foreground">Publish analytics</h2>
+      <Select value={rangeType} onValueChange={setRangeType}>
+        <SelectTrigger className="h-8 w-[150px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {RANGE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {rangeType === "custom" && (
+        <div className="flex items-center gap-2">
+          <DatePickerButton
+            label="From"
+            date={customFrom}
+            onSelect={setCustomFrom}
+            maxDate={customTo ?? new Date()}
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <DatePickerButton
+            label="To"
+            date={customTo}
+            onSelect={setCustomTo}
+            minDate={customFrom}
+            maxDate={new Date()}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DatePickerButton({
+  label,
+  date,
+  onSelect,
+  minDate,
+  maxDate,
+}: {
+  label: string;
+  date: Date | undefined;
+  onSelect: (d: Date | undefined) => void;
+  minDate?: Date;
+  maxDate?: Date;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-8 w-[130px] justify-start text-xs font-normal",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+          {date ? format(date, "MMM dd, yyyy") : label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onSelect}
+          disabled={(d) =>
+            (maxDate ? d > maxDate : false) || (minDate ? d < minDate : false)
+          }
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
