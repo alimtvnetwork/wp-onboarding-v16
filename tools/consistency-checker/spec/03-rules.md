@@ -13,6 +13,7 @@
 | `go-file-naming` | File Naming         | PascalCase       | warning  | Go files must follow naming convention      |
 | `go-param-count` | Parameter Count     | max: 3           | warning  | Max params excluding context.Context        |
 | `go-raw-error`   | Raw Error Return    | —                | error    | Functions must not return raw `error`; use `*apperror.AppError` |
+| `go-struct-field-casing` | Struct Field Casing | —          | warning  | Exported struct fields must use PascalCase (no underscores)     |
 
 ### PHP Rules
 
