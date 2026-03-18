@@ -222,7 +222,7 @@ func TestEnablePlugin_UsesOnboardNamespaceAndEnableRoute(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	if err := c.EnablePlugin("category-generator"); err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}
