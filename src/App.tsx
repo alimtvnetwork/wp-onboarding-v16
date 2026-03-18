@@ -39,6 +39,7 @@ import CorePluginDashboard from "@/pages/CorePluginDashboard";
 import ActivityFeed from "@/pages/ActivityFeed";
 import CloudStorage from "@/pages/CloudStorage";
 import Licensing from "@/pages/Licensing";
+import UserManagement from "@/pages/UserManagement";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
@@ -229,6 +230,7 @@ const App = () => (
                         <Route path="api-explorer" element={<ApiExplorer />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="errors" element={<Errors />} />
+                        <Route path="users" element={<UserManagement />} />
                       </Route>
                       <Route path="*" element={<NotFound />} />
                     </Routes>
