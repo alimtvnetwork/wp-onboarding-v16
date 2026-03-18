@@ -22,7 +22,7 @@ func EnsurePortFree(port int) error {
 
 	portStr := strconv.Itoa(port)
 
-	pid, err := findPIDOnPort(port)
+	pid, err := findPidOnPort(port)
 	if err != nil || pid == 0 {
 		return apperror.Wrap(err, apperror.ErrInternal, "port is in use but could not identify the process").
 			WithValue("port", portStr)
@@ -66,7 +66,7 @@ func isPortInUse(port int) bool {
 // isPortFree returns true when the port is available for binding.
 func isPortFree(port int) bool { return !isPortInUse(port) }
 
-func findPIDOnPort(port int) (int, error) {
+func findPidOnPort(port int) (int, error) {
 	switch runtime.GOOS {
 	case "windows":
 		out, err := exec.Command("cmd", "/c", fmt.Sprintf("netstat -ano | findstr :%d | findstr LISTENING", port)).CombinedOutput()
@@ -106,14 +106,14 @@ func parseNetstatWindows(output string, port int) (int, error) {
 		}
 	}
 
-	return 0, apperror.New(apperror.ErrInternal, "no PID found in netstat output").
+	return 0, apperror.New(apperror.ErrInternal, "no Pid found in netstat output").
 		WithValue("port", strconv.Itoa(port))
 }
 
 func killProcess(pid int) error {
 	switch runtime.GOOS {
 	case "windows":
-		killErr := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run()
+		killErr := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run() // "/PID" is a Windows CLI flag, not a Go identifier
 
 		if killErr != nil {
 			return apperror.Wrap(killErr, apperror.ErrInternal, "taskkill failed").
