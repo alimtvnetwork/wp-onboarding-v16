@@ -132,6 +132,17 @@ var variantLabels = [...]string{
 	CloudStorageUpload:         "CloudStorageUpload",
 	CloudStorageRestore:       "CloudStorageRestore",
 	CloudStorageBackupHistory: "CloudStorageBackupHistory",
+	ListUsers:                 "ListUsers",
+	GetUser:                   "GetUser",
+	CreateUser:                "CreateUser",
+	UpdateUser:                "UpdateUser",
+	DeleteUser:                "DeleteUser",
+	CreateAppPassword:         "CreateAppPassword",
+	RevokeAppPassword:         "RevokeAppPassword",
+	ExportUsersCsv:            "ExportUsersCsv",
+	ImportUsersCsv:            "ImportUsersCsv",
+	ExportUsersSqlite:         "ExportUsersSqlite",
+	ImportUsersSqlite:         "ImportUsersSqlite",
 }
 
 var variantValues = [...]string{
