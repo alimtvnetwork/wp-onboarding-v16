@@ -51,10 +51,34 @@ trait UploadFileSystemTrait
     private function extractZipToTemp(string $tempFile, string $tempExtractDir): ?WP_REST_Response
     {
         $this->traceStage('extractZipToTemp:start', ['tempFile' => $tempFile, 'extractDir' => $tempExtractDir]);
+
+        $isFileExists = file_exists($tempFile);
+
+        if ($isFileExists === false) {
+            $this->fileLogger->error('Temp ZIP file does not exist', ['path' => $tempFile]);
+
+            return $this->handleZipOpenFailure($tempFile, $tempExtractDir);
+        }
+
+        $tempFileSize = @filesize($tempFile);
+        $this->fileLogger->info('Opening ZIP file', [
+            'path'   => $tempFile,
+            'size'   => $tempFileSize,
+            'exists' => true,
+        ]);
+
         $zip = new ZipArchive();
-        $isOpened = $zip->open($tempFile) === true;
+        $openResult = $zip->open($tempFile);
+        $isOpened = ($openResult === true);
 
         if ($isOpened === false) {
+            $this->fileLogger->error('ZipArchive::open() failed', [
+                'path'      => $tempFile,
+                'errorCode' => $openResult,
+                'errorMsg'  => $this->zipErrorMessage($openResult),
+                'fileSize'  => $tempFileSize,
+            ]);
+
             return $this->handleZipOpenFailure($tempFile, $tempExtractDir);
         }
 
