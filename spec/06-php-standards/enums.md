@@ -33,7 +33,8 @@ All enums MUST use the **`Type` suffix** in their name. This clearly distinguish
 4. **`Type` suffix required** — use `UploadSourceType`, not `UploadSource`.
 5. **String-backed** (`enum Foo: string`) for all enums whose values are strings.
 6. **Case names use PascalCase** — `case RestApi`, not `case REST_API`.
-7. **No `RISEUP_` prefix** on anything — namespace provides scoping.
+7. **Case values use PascalCase** — `case Success = 'Success'`, not `'success'` or `'SUCCESS'`. **Exemptions:** enums wrapping external identifiers (WordPress hooks, capabilities, post statuses, HTTP methods, WP_Error codes, HTTP form fields) retain the external format. See [PascalCase Value Exemptions](#pascalcase-value-exemptions) below.
+8. **No `RISEUP_` prefix** on anything — namespace provides scoping.
 8. **`define()` constants are prohibited** for values that belong in an enum.
 9. **Access pattern:** `UploadSourceType::Script` (the enum case) or `UploadSourceType::Script->value` (the raw string).
 10. **Validation helpers** go as `static` methods on the enum itself (camelCase: `validValues()`, `isValid()`).
@@ -115,8 +116,8 @@ Existing domain-specific helpers (e.g., `isSuccess()`, `isError()`) MUST delegat
 ```php
 enum StatusType: string
 {
-    case Success = 'success';
-    case Failed  = 'failed';
+    case Success = 'Success';
+    case Failed  = 'Failed';
 
     public function isEqual(self $other): bool
     {
@@ -167,6 +168,26 @@ public function isErrorOrWarn(): bool
   }
   ```
 - **Static validation** — `tryFrom()` and `validValues()` are not comparisons.
+
+---
+
+## PascalCase Value Exemptions
+
+The following enums are **exempt** from the PascalCase value requirement because their values map to external identifiers defined by WordPress, HTTP standards, or external APIs. Changing these values would break integration.
+
+| Enum | Reason | Value Format |
+|------|--------|--------------|
+| `CapabilityType` | WordPress capability strings | `snake_case` (`'manage_options'`) |
+| `HookType` | WordPress hook names | `snake_case` (`'plugins_loaded'`) |
+| `PostStatusType` | WordPress post status identifiers | `lowercase` (`'publish'`) |
+| `HttpMethodType` | HTTP standard method names | `UPPER_CASE` (`'GET'`) |
+| `WpErrorCodeType` | WordPress `WP_Error` code conventions | `snake_case` (`'rest_forbidden'`) |
+| `UploadSourceType` | Legacy external-facing form field values | `snake_case` (`'upload_script'`) |
+| `BackupType` | WordPress hook-style trigger identifiers | `snake_case` (`'pre_update'`) |
+| `RequestFieldType` | HTTP form field names | `snake_case` (`'plugin_zip'`) |
+| `ContentTypeValueType` | MIME type standards | `mime/format` (`'application/json'`) |
+
+All other enums MUST use PascalCase values (e.g., `case Success = 'Success'`).
 
 ---
 
@@ -349,10 +370,10 @@ add_action(HookType::ajax('riseup_test'), [$this, 'ajaxTest']);
 ```php
 enum LogLevelType: string
 {
-    case Debug = 'DEBUG';
-    case Info  = 'INFO';
-    case Warn  = 'WARN';
-    case Error = 'ERROR';
+    case Debug = 'Debug';
+    case Info  = 'Info';
+    case Warn  = 'Warn';
+    case Error = 'Error';
 
     public function isEqual(self $other): bool { return $this === $other; }
 
@@ -388,8 +409,8 @@ if ($level->isEqual(LogLevelType::Error)) { ... }
 ```php
 enum StatusType: string
 {
-    case Success = 'success';
-    case Failed  = 'failed';
+    case Success = 'Success';
+    case Failed  = 'Failed';
 
     public function isEqual(self $other): bool { return $this === $other; }
 
