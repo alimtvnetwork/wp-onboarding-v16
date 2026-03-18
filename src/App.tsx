@@ -220,6 +220,7 @@ const App = () => (
                         <Route path="publish-history" element={<PublishHistory />} />
                         <Route path="activity" element={<ActivityFeed />} />
                         <Route path="cloud-storage" element={<CloudStorage />} />
+                        <Route path="licensing" element={<Licensing />} />
                         <Route path="site-health" element={<SiteHealth />} />
                         <Route path="tests" element={<Tests />} />
                         <Route path="logs" element={<Logs />} />
