@@ -10,7 +10,8 @@ import (
 )
 
 // defaultAbbreviations is the fallback list when no config param is provided.
-var defaultAbbreviations = []string{"ID", "URL", "HTTP", "JSON", "API", "PHP", "PID"}
+// Values are in PascalCase; the ALL-CAPS form is derived automatically.
+var defaultAbbreviations = []string{"Id", "Url", "Http", "Json", "Api", "Php", "Pid"}
 
 // GoAbbrCasing checks that Go identifiers use PascalCase for abbreviations (Id, Url, Http, etc.)
 // instead of ALL-CAPS (ID, URL, HTTP, etc.).
