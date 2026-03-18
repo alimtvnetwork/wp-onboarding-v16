@@ -61,7 +61,7 @@ final class DbExecResult {
         return $this->lastInsertId;
     }
 
-    public function error(): ?Throwable {
+    public function getError(): ?Throwable {
         return $this->error;
     }
 

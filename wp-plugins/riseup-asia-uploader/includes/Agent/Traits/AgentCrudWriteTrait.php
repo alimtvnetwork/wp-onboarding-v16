@@ -58,7 +58,7 @@ trait AgentCrudWriteTrait {
         ]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to add agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to add agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to add agent site');
         }
@@ -96,7 +96,7 @@ trait AgentCrudWriteTrait {
         $result = $query->exec($sql, $update[$paramsKey]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to update agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to update agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to update agent site');
         }
@@ -119,7 +119,7 @@ trait AgentCrudWriteTrait {
         $result = $query->exec(self::AGENT_DELETE_QUERY, [$id]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to remove agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to remove agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to remove agent site');
         }
