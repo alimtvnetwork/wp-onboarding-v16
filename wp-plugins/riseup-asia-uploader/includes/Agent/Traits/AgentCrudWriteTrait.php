@@ -119,7 +119,7 @@ trait AgentCrudWriteTrait {
         $result = $query->exec(self::AGENT_DELETE_QUERY, [$id]);
 
         if ($result->hasError()) {
-            $this->fileLogger->logException($result->error(), 'Failed to remove agent site');
+            $this->fileLogger->logException($result->getError(), 'Failed to remove agent site');
 
             return new WP_Error(WpErrorCodeType::DatabaseError->value, 'Failed to remove agent site');
         }
