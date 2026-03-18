@@ -171,6 +171,26 @@ public function isErrorOrWarn(): bool
 
 ---
 
+## PascalCase Value Exemptions
+
+The following enums are **exempt** from the PascalCase value requirement because their values map to external identifiers defined by WordPress, HTTP standards, or external APIs. Changing these values would break integration.
+
+| Enum | Reason | Value Format |
+|------|--------|--------------|
+| `CapabilityType` | WordPress capability strings | `snake_case` (`'manage_options'`) |
+| `HookType` | WordPress hook names | `snake_case` (`'plugins_loaded'`) |
+| `PostStatusType` | WordPress post status identifiers | `lowercase` (`'publish'`) |
+| `HttpMethodType` | HTTP standard method names | `UPPER_CASE` (`'GET'`) |
+| `WpErrorCodeType` | WordPress `WP_Error` code conventions | `snake_case` (`'rest_forbidden'`) |
+| `UploadSourceType` | Legacy external-facing form field values | `snake_case` (`'upload_script'`) |
+| `BackupType` | WordPress hook-style trigger identifiers | `snake_case` (`'pre_update'`) |
+| `RequestFieldType` | HTTP form field names | `snake_case` (`'plugin_zip'`) |
+| `ContentTypeValueType` | MIME type standards | `mime/format` (`'application/json'`) |
+
+All other enums MUST use PascalCase values (e.g., `case Success = 'Success'`).
+
+---
+
 ## Complete Enum Inventory
 
 ### UploadSourceType — Upload Origin
