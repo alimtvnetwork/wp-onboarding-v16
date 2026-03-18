@@ -22,7 +22,7 @@ func EnsurePortFree(port int) error {
 
 	portStr := strconv.Itoa(port)
 
-	pid, err := findPIDOnPort(port)
+	pid, err := findPidOnPort(port)
 	if err != nil || pid == 0 {
 		return apperror.Wrap(err, apperror.ErrInternal, "port is in use but could not identify the process").
 			WithValue("port", portStr)
