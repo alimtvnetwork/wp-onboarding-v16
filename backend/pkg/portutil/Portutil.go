@@ -113,7 +113,7 @@ func parseNetstatWindows(output string, port int) (int, error) {
 func killProcess(pid int) error {
 	switch runtime.GOOS {
 	case "windows":
-		killErr := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run()
+		killErr := exec.Command("taskkill", "/F", "/PID", strconv.Itoa(pid)).Run() // "/PID" is a Windows CLI flag, not a Go identifier
 
 		if killErr != nil {
 			return apperror.Wrap(killErr, apperror.ErrInternal, "taskkill failed").

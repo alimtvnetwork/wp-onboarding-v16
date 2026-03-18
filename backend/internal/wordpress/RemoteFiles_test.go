@@ -264,7 +264,7 @@ func TestDisablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	if err := c.DisablePluginViaUploader("my-plugin"); err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}
