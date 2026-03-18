@@ -21,7 +21,7 @@
 | `php-file-size`  | File Size Limit     | max: 500 lines   | warning  | PHP files must not exceed line limit        |
 | `php-global-imports` | Global Class Imports | —           | error    | Namespaced files must import global classes  |
 | `php-enum-naming` | Enum Naming Convention | —            | warning  | Enums must be PascalCase + `Type` suffix, file must match |
-| `php-enum-case-values` | Enum Case Values | —            | warning  | Enum case values must be PascalCase strings |
+| `php-enum-case-values` | Enum Case Values | —            | warning  | Enum case values must be PascalCase strings. **Exemptions:** `BackupType.php` (WordPress hook identifiers use snake_case), `RequestFieldType.php` (HTTP form field names use snake_case). |
 | `php-enum-methods` | Enum Required Methods | —            | warning  | Enums must include isEqual, isOtherThan, isAnyOf methods |
 
 ### Markdown Rules
