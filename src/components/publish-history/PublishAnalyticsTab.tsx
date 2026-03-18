@@ -138,25 +138,6 @@ export function PublishAnalyticsTab() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportAnalyticsCsv(data)}>
-              <Download className="h-3.5 w-3.5 mr-2" />
-              Download CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportAnalyticsPdf(data)}>
-              <FileText className="h-3.5 w-3.5 mr-2" />
-              Export as PDF
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
