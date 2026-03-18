@@ -11,6 +11,7 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+?>
 <?php include __DIR__ . '/../shared/modal-styles.php'; ?>
 <style>
 /* Actions bar */
