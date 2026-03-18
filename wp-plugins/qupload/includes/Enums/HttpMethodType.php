@@ -18,4 +18,8 @@ enum HttpMethodType: string
     case Post   = 'POST';
     case Put    = 'PUT';
     case Delete = 'DELETE';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }

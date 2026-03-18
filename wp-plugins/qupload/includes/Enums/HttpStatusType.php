@@ -20,4 +20,8 @@ enum HttpStatusType: int
     case Forbidden    = 403;
     case NotFound     = 404;
     case ServerError  = 500;
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
 }
