@@ -35,7 +35,7 @@ type Variant byte
 
 const (
     Invalid Variant = iota
-    SerpAPI
+    SerpApi
     MapsScraper
     Colly
 )
