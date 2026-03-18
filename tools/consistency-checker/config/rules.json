@@ -141,7 +141,7 @@
       "params": {
         "groups": 2
       },
-      "exclude": ["**/plugins-onboard/**", "**/unused/**"],
+      "exclude": ["**/plugins-onboard/**"],
       "reference": "spec/03-rules.md#php-import-groups"
     },
     {
