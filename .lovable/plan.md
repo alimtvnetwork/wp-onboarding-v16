@@ -130,7 +130,7 @@
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| H-1 | Admin dashboard for licensing server | 🟢 Low | Spec needed | 🔲 Not scoped |
+| H-1 | Admin dashboard for licensing server | 🟢 Low | None | ✅ Done |
 | H-2 | Publish analytics / history reporting | 🟢 Low | Spec needed | 🔲 Not scoped |
 | H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | 🔲 Not scoped |
 

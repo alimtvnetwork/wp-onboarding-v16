@@ -38,6 +38,7 @@ import RequestSessions from "@/pages/RequestSessions";
 import CorePluginDashboard from "@/pages/CorePluginDashboard";
 import ActivityFeed from "@/pages/ActivityFeed";
 import CloudStorage from "@/pages/CloudStorage";
+import Licensing from "@/pages/Licensing";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
@@ -219,6 +220,7 @@ const App = () => (
                         <Route path="publish-history" element={<PublishHistory />} />
                         <Route path="activity" element={<ActivityFeed />} />
                         <Route path="cloud-storage" element={<CloudStorage />} />
+                        <Route path="licensing" element={<Licensing />} />
                         <Route path="site-health" element={<SiteHealth />} />
                         <Route path="tests" element={<Tests />} />
                         <Route path="logs" element={<Logs />} />
