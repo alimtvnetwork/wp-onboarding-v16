@@ -5,7 +5,6 @@ import { api, PublishHistoryEntry } from "@/lib/api";
 import { subDays, startOfDay, format, getDay, getHours, parseISO } from "date-fns";
 
 const ANALYTICS_LIMIT = 500;
-const DAYS = 30;
 
 export interface DailyPublishPoint {
   date: string;          // "Mar 01"
