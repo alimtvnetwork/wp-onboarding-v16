@@ -1,7 +1,31 @@
 # Module: upload-parallel.ps1
-# Parallel upload orchestrator: launches all plugin x site combinations as simultaneous jobs.
+# Upload orchestrator: plugin-sequential, site-parallel.
+# For each plugin (non-cross-upload first), uploads to ALL sites in parallel, then waits.
+# This prevents cross-upload race conditions where a plugin's API is called mid-update.
 # Dot-sourced by run.ps1 - expects upload-single.ps1, plugin-helpers.ps1 loaded.
 # Expects: $ScriptDir, $Config
+
+function Get-PluginUploadOrder {
+    param(
+        [Parameter(Mandatory)][array]$PluginFolders
+    )
+
+    # Non-cross-upload plugins first (they use the default qupload-api/v1),
+    # then cross-upload plugins (they depend on the other plugin's API being stable).
+    $nonCrossUpload = @()
+    $crossUpload = @()
+
+    foreach ($folder in $PluginFolders) {
+        $hasCrossMapping = $script:CrossUploadMap.ContainsKey($folder.Name)
+        if ($hasCrossMapping) {
+            $crossUpload += $folder
+        } else {
+            $nonCrossUpload += $folder
+        }
+    }
+
+    return @($nonCrossUpload + $crossUpload)
+}
 
 function Invoke-ParallelPluginUpload {
     param(
@@ -19,56 +43,52 @@ function Invoke-ParallelPluginUpload {
         return Invoke-SequentialPluginUpload -TargetSites $TargetSites -PluginFolders $PluginFolders -ZipByPlugin $ZipByPlugin -VersionByPlugin $VersionByPlugin -QUploadScript $QUploadScript -UploadLogsDir $UploadLogsDir -LogStamp $LogStamp
     }
 
-    $totalJobs = $TargetSites.Count * $PluginFolders.Count
-    Write-Host "  Uploading $($PluginFolders.Count) plugin(s) to $($TargetSites.Count) site(s) in parallel ($totalJobs job(s))..." -ForegroundColor Yellow
+    # Sort plugins: non-cross-upload first for stability
+    $orderedPlugins = Get-PluginUploadOrder -PluginFolders $PluginFolders
+    $totalJobs = $TargetSites.Count * $orderedPlugins.Count
+
+    Write-Host "  Uploading $($orderedPlugins.Count) plugin(s) to $($TargetSites.Count) site(s) — plugin-sequential, site-parallel ($totalJobs total)..." -ForegroundColor Yellow
+    Write-Host "  Order: $($orderedPlugins | ForEach-Object { $_.Name }) — non-cross-upload first" -ForegroundColor DarkGray
     Write-Host ""
 
-    $uploadJobs = @()
-    $preAllocated = @()
+    $allResults = @()
     $jobIndex = 0
 
+    # ── Pre-resolve credentials per site ──────────────────────────────────
+    $siteCredentials = @{}
     foreach ($targetSite in $TargetSites) {
         $siteName = $targetSite.name
-        $siteUrl = $targetSite.url
         $cred = Get-DefaultSiteCredential $targetSite
+        $siteCredentials[$siteName] = $cred
 
         if (-not $cred) {
-            Write-Host "  [$siteName] SKIPPED: No valid credentials" -ForegroundColor Red
-            foreach ($folder in $PluginFolders) {
-                $pluginVersion = if ($VersionByPlugin.ContainsKey($folder.Name)) { $VersionByPlugin[$folder.Name] } else { "unknown" }
-                $preAllocated += @{
-                    Index    = $jobIndex
-                    Site     = $siteName
-                    SiteUrl  = $siteUrl
-                    Plugin   = $folder.Name
-                    Version  = $pluginVersion
-                    Status   = "SKIPPED (no creds)"
-                    ExitCode = 1
-                    Output   = ""
-                    Error    = "No valid credentials"
-                    Duration = 0
-                }
-                $jobIndex++
-            }
-            continue
+            Write-Host "  [$siteName] WARNING: No valid credentials — will skip all plugins" -ForegroundColor Red
+        } else {
+            Write-Host "    Credential: $($targetSite.credential)" -ForegroundColor DarkGray
+            Write-Host "    Username:   $($cred.Username)" -ForegroundColor DarkGray
         }
+    }
 
-        $decodedUsername = $cred.Username
-        $decodedPassword = $cred.Password
+    # ── Plugin-sequential loop ────────────────────────────────────────────
+    foreach ($folder in $orderedPlugins) {
+        $pluginName = $folder.Name
+        $pluginFullPath = $folder.FullName
+        $prebuiltZipPath = $ZipByPlugin[$pluginName]
+        $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
+        $hasCrossMapping = $script:CrossUploadMap.ContainsKey($pluginName)
+        $crossLabel = if ($hasCrossMapping) { " (cross-upload)" } else { "" }
 
-        foreach ($folder in $PluginFolders) {
-            $pluginName = $folder.Name
-            $pluginFullPath = $folder.FullName
-            $prebuiltZipPath = $ZipByPlugin[$pluginName]
-            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
-            $currentIndex = $jobIndex
+        Write-Host ""
+        Write-Host "  ── Plugin: $pluginName v$pluginVersion$crossLabel ──" -ForegroundColor Cyan
 
-            if (-not $prebuiltZipPath) {
-                Write-Host "  [$pluginName->$siteName] SKIPPED: No ZIP available" -ForegroundColor Yellow
-                $preAllocated += @{
-                    Index    = $currentIndex
-                    Site     = $siteName
-                    SiteUrl  = $siteUrl
+        # Skip if no ZIP
+        if (-not $prebuiltZipPath) {
+            Write-Host "    SKIPPED: No ZIP available" -ForegroundColor Yellow
+            foreach ($targetSite in $TargetSites) {
+                $allResults += @{
+                    Index    = $jobIndex
+                    Site     = $targetSite.name
+                    SiteUrl  = $targetSite.url
                     Plugin   = $pluginName
                     Version  = $pluginVersion
                     Status   = "SKIPPED (no ZIP)"
@@ -78,17 +98,48 @@ function Invoke-ParallelPluginUpload {
                     Duration = 0
                 }
                 $jobIndex++
+            }
+            continue
+        }
+
+        # Launch parallel jobs for all sites
+        $pluginJobs = @()
+        $pluginPreAllocated = @()
+
+        foreach ($targetSite in $TargetSites) {
+            $siteName = $targetSite.name
+            $siteUrl = $targetSite.url
+            $cred = $siteCredentials[$siteName]
+            $currentIndex = $jobIndex
+
+            if (-not $cred) {
+                $pluginPreAllocated += @{
+                    Index    = $currentIndex
+                    Site     = $siteName
+                    SiteUrl  = $siteUrl
+                    Plugin   = $pluginName
+                    Version  = $pluginVersion
+                    Status   = "SKIPPED (no creds)"
+                    ExitCode = 1
+                    Output   = ""
+                    Error    = "No valid credentials"
+                    Duration = 0
+                }
+                $jobIndex++
                 continue
             }
+
+            $decodedUsername = $cred.Username
+            $decodedPassword = $cred.Password
 
             # Determine cross-upload API namespace
             $apiNamespace = Get-UploadApiNamespace -PluginSlug $pluginName -SiteUrl $siteUrl -Username $decodedUsername -Password $decodedPassword
 
             $jobName = "upload-$currentIndex-$pluginName-$siteName"
             $apiLabel = if ($apiNamespace -eq "qupload-api/v1") { "" } else { " [cross-upload: $apiNamespace]" }
-            Write-Host "    [$pluginName->$siteName] ZIP: $prebuiltZipPath$apiLabel" -ForegroundColor DarkGray
+            Write-Host "    [$siteName] ZIP: $prebuiltZipPath$apiLabel" -ForegroundColor DarkGray
 
-            $preAllocated += @{
+            $pluginPreAllocated += @{
                 Index    = $currentIndex
                 Site     = $siteName
                 SiteUrl  = $siteUrl
@@ -101,7 +152,7 @@ function Invoke-ParallelPluginUpload {
                 Duration = 0
             }
 
-            $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
+            $pluginJobs += Start-Job -Name $jobName -ScriptBlock {
                 param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace)
 
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -160,88 +211,91 @@ function Invoke-ParallelPluginUpload {
 
             $jobIndex++
         }
-    }
 
-    # Collect job results
-    $completedResults = @()
+        # ── Wait for all site jobs for this plugin ────────────────────────
+        # Add skipped entries first
+        $skippedForPlugin = @($pluginPreAllocated | Where-Object { $_.Status -match "SKIP" })
+        $allResults += $skippedForPlugin
 
-    # Add pre-resolved skipped entries
-    $skippedResults = @($preAllocated | Where-Object { $_.Status -match "SKIP" })
-    $completedResults += $skippedResults
+        foreach ($job in $pluginJobs) {
+            $result = Receive-Job -Job $job -Wait | Select-Object -First 1
 
-    foreach ($job in $uploadJobs) {
-        $result = Receive-Job -Job $job -Wait | Select-Object -First 1
-
-        if ($null -eq $result) {
-            $idx = [int](($job.Name -split '-')[1])
-            $fallback = $preAllocated | Where-Object { $_.Index -eq $idx } | Select-Object -First 1
-            if ($fallback) {
-                $fallback.Status = "FAILED (job crashed)"
-                $fallback.ExitCode = 1
-                $fallback.Error = "Background job returned no result"
-                $result = $fallback
-            } else {
-                $result = @{
-                    Index    = $idx
-                    Site     = "Unknown"
-                    SiteUrl  = ""
-                    Plugin   = $job.Name
-                    Version  = "unknown"
-                    Status   = "FAILED (job crashed)"
-                    ExitCode = 1
-                    Output   = "No result object returned by upload job."
-                    Error    = "Job crashed"
-                    Duration = 0
+            if ($null -eq $result) {
+                $idx = [int](($job.Name -split '-')[1])
+                $fallback = $pluginPreAllocated | Where-Object { $_.Index -eq $idx } | Select-Object -First 1
+                if ($fallback) {
+                    $fallback.Status = "FAILED (job crashed)"
+                    $fallback.ExitCode = 1
+                    $fallback.Error = "Background job returned no result"
+                    $result = $fallback
+                } else {
+                    $result = @{
+                        Index    = $idx
+                        Site     = "Unknown"
+                        SiteUrl  = ""
+                        Plugin   = $job.Name
+                        Version  = "unknown"
+                        Status   = "FAILED (job crashed)"
+                        ExitCode = 1
+                        Output   = "No result object returned by upload job."
+                        Error    = "Job crashed"
+                        Duration = 0
+                    }
                 }
             }
-        }
 
-        $completedResults += $result
+            $allResults += $result
 
-        $isSuccess = ($result.ExitCode -eq 0)
-        $color = if ($isSuccess) { "Green" } else { "Red" }
-        $vLabel = if ($result.Version -and $result.Version -ne "unknown") { " v$($result.Version)" } else { "" }
-        $icon = if ($isSuccess) { "OK" } else { "FAILED" }
-        Write-Host "  [$($result.Site)] $($result.Plugin)${vLabel}: $icon" -ForegroundColor $color
+            $isSuccess = ($result.ExitCode -eq 0)
+            $color = if ($isSuccess) { "Green" } else { "Red" }
+            $vLabel = if ($result.Version -and $result.Version -ne "unknown") { " v$($result.Version)" } else { "" }
+            $icon = if ($isSuccess) { "OK" } else { "FAILED" }
+            Write-Host "    [$($result.Site)] $($result.Plugin)${vLabel}: $icon" -ForegroundColor $color
 
-        # Write failure log
-        if (-not $isSuccess -and $result.Status -notmatch "SKIP") {
-            $safeSite = ($result.Site -replace '[^A-Za-z0-9_.-]', '_')
-            $safePlugin = ($result.Plugin -replace '[^A-Za-z0-9_.-]', '_')
-            $failureLogPath = Join-Path $UploadLogsDir "$LogStamp-$safePlugin-$safeSite.log"
+            # Write failure log
+            if (-not $isSuccess -and $result.Status -notmatch "SKIP") {
+                $safeSite = ($result.Site -replace '[^A-Za-z0-9_.-]', '_')
+                $safePlugin = ($result.Plugin -replace '[^A-Za-z0-9_.-]', '_')
+                $failureLogPath = Join-Path $UploadLogsDir "$LogStamp-$safePlugin-$safeSite.log"
 
-            $failureLog = @(
-                "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-                "Job: $($job.Name)"
-                "Site: $($result.Site)"
-                "Plugin: $($result.Plugin)"
-                "ZIP: (from parallel job)"
-                "ExitCode: $($result.ExitCode)"
-                "Duration: $($result.Duration)s"
-                ""
-                "Output:"
-                $result.Output
-            ) -join "`r`n"
+                $failureLog = @(
+                    "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+                    "Job: $($job.Name)"
+                    "Site: $($result.Site)"
+                    "Plugin: $($result.Plugin)"
+                    "ZIP: (from parallel job)"
+                    "ExitCode: $($result.ExitCode)"
+                    "Duration: $($result.Duration)s"
+                    ""
+                    "Output:"
+                    $result.Output
+                ) -join "`r`n"
 
-            $failureLog | Out-File -FilePath $failureLogPath -Encoding UTF8
-            Write-Host "    Log file: $failureLogPath" -ForegroundColor Yellow
+                $failureLog | Out-File -FilePath $failureLogPath -Encoding UTF8
+                Write-Host "      Log: $failureLogPath" -ForegroundColor Yellow
 
-            $outputLines = $result.Output -split "`n" | Where-Object { $_ -match '(failed|error|FAILED|Error|REST message|Root cause|Status:)' }
-            foreach ($line in $outputLines) {
-                $trimmed = $line.Trim()
-                if ($trimmed -ne "") { Write-Host "    $trimmed" -ForegroundColor Yellow }
+                $outputLines = $result.Output -split "`n" | Where-Object { $_ -match '(failed|error|FAILED|Error|REST message|Root cause|Status:)' }
+                foreach ($line in $outputLines) {
+                    $trimmed = $line.Trim()
+                    if ($trimmed -ne "") { Write-Host "      $trimmed" -ForegroundColor Yellow }
+                }
             }
+
+            Remove-Job -Job $job -Force
         }
 
-        Remove-Job -Job $job -Force
+        # Plugin batch summary
+        $pluginSuccessCount = ($allResults | Where-Object { $_.Plugin -eq $pluginName -and $_.ExitCode -eq 0 }).Count
+        $pluginTotalSites = $TargetSites.Count
+        Write-Host "    ── $pluginName: $pluginSuccessCount/$pluginTotalSites sites OK ──" -ForegroundColor $(if ($pluginSuccessCount -eq $pluginTotalSites) { "Green" } else { "Yellow" })
     }
 
     # Sort by index for deterministic display order
-    $orderedResults = @($completedResults | Sort-Object { $_.Index })
+    $orderedResults = @($allResults | Sort-Object { $_.Index })
     return $orderedResults
 }
 
-# ── Sequential upload (one site+plugin at a time with full console output) ──
+# ── Sequential upload (plugin-first, then sites — full console output) ──────
 function Invoke-SequentialPluginUpload {
     param(
         [Parameter(Mandatory)][array]$TargetSites,
@@ -253,27 +307,60 @@ function Invoke-SequentialPluginUpload {
         [Parameter(Mandatory)][string]$LogStamp
     )
 
+    # Sort plugins: non-cross-upload first
+    $orderedPlugins = Get-PluginUploadOrder -PluginFolders $PluginFolders
+
+    Write-Host "  Uploading $($orderedPlugins.Count) plugin(s) to $($TargetSites.Count) site(s) sequentially..." -ForegroundColor Yellow
+    Write-Host "  Order: $($orderedPlugins | ForEach-Object { $_.Name }) — non-cross-upload first" -ForegroundColor DarkGray
+
     $results = @()
     $jobIndex = 0
 
-    foreach ($targetSite in $TargetSites) {
-        $siteName = $targetSite.name
-        $siteUrl = $targetSite.url
+    foreach ($folder in $orderedPlugins) {
+        $pluginName = $folder.Name
+        $pluginFullPath = $folder.FullName
+        $prebuiltZipPath = $ZipByPlugin[$pluginName]
+        $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
 
-        Write-Host "  ========================================" -ForegroundColor Cyan
-        Write-Host "  Site: $siteName ($siteUrl)" -ForegroundColor Cyan
-        Write-Host "  ========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  ── Plugin: $pluginName v$pluginVersion ──" -ForegroundColor Cyan
 
-        $cred = Get-DefaultSiteCredential $targetSite
-        if (-not $cred) {
-            Write-Host "  [$siteName] SKIPPED: No valid credentials" -ForegroundColor Red
-            foreach ($folder in $PluginFolders) {
-                $pluginVersion = if ($VersionByPlugin.ContainsKey($folder.Name)) { $VersionByPlugin[$folder.Name] } else { "unknown" }
+        if (-not $prebuiltZipPath) {
+            Write-Host "    SKIPPED: No ZIP available" -ForegroundColor Yellow
+            foreach ($targetSite in $TargetSites) {
+                $results += @{
+                    Index    = $jobIndex
+                    Site     = $targetSite.name
+                    SiteUrl  = $targetSite.url
+                    Plugin   = $pluginName
+                    Version  = $pluginVersion
+                    Status   = "SKIPPED (no ZIP)"
+                    ExitCode = 1
+                    Output   = ""
+                    Error    = "No ZIP file available"
+                    Duration = 0
+                }
+                $jobIndex++
+            }
+            continue
+        }
+
+        foreach ($targetSite in $TargetSites) {
+            $siteName = $targetSite.name
+            $siteUrl = $targetSite.url
+
+            Write-Host ""
+            Write-Host "    Site: $siteName ($siteUrl)" -ForegroundColor Yellow
+            Write-Host "    ZIP:  $prebuiltZipPath" -ForegroundColor DarkGray
+
+            $cred = Get-DefaultSiteCredential $targetSite
+            if (-not $cred) {
+                Write-Host "    SKIPPED: No valid credentials" -ForegroundColor Red
                 $results += @{
                     Index    = $jobIndex
                     Site     = $siteName
                     SiteUrl  = $siteUrl
-                    Plugin   = $folder.Name
+                    Plugin   = $pluginName
                     Version  = $pluginVersion
                     Status   = "SKIPPED (no creds)"
                     ExitCode = 1
@@ -282,19 +369,8 @@ function Invoke-SequentialPluginUpload {
                     Duration = 0
                 }
                 $jobIndex++
+                continue
             }
-            continue
-        }
-
-        foreach ($folder in $PluginFolders) {
-            $pluginName = $folder.Name
-            $pluginFullPath = $folder.FullName
-            $prebuiltZipPath = $ZipByPlugin[$pluginName]
-            $pluginVersion = if ($VersionByPlugin.ContainsKey($pluginName)) { $VersionByPlugin[$pluginName] } else { "unknown" }
-
-            Write-Host ""
-            Write-Host "    Plugin: $pluginName" -ForegroundColor Yellow
-            Write-Host "    ZIP:    $prebuiltZipPath" -ForegroundColor DarkGray
 
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
