@@ -4,6 +4,9 @@
 # Dot-sourced by run.ps1 — expects $Config, $ScriptDir, helpers, plugin-helpers loaded.
 
 function Invoke-CheckMode {
+    param(
+        [switch]$VerboseMode
+    )
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  Preflight Readiness Check (-check)" -ForegroundColor Cyan
