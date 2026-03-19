@@ -1,11 +1,13 @@
 # Memory: architecture/dev-environment/powershell-versioning
-Updated: 2026-03-12
+Updated: 2026-03-19
 
 ---
 
 ## Overview
 
 Version numbers are tracked across multiple files. The `bump-version.ps1` script automates syncing them.
+
+**IMPORTANT**: Always bump the minor version when any functional changes are made (new flags, new commands, bug fixes, etc.). Never skip version bumps.
 
 ---
 
@@ -33,20 +35,35 @@ Version numbers are tracked across multiple files. The `bump-version.ps1` script
 
 ## Versioning Rules
 
-1. **When to bump**: Any functional change to a target area
-2. **Use the script**: Always use `bump-version.ps1` instead of manual edits
-3. **DryRun first**: Use `-DryRun` to preview before applying
-4. **Changelog**: Manually add entry to `spec/12-powershell-integration/changelog.md` after script bumps
+1. **When to bump**: Any functional change to a target area — new commands, flags, bug fixes, refactors
+2. **ALWAYS bump on changes**: Never commit functional changes without a version bump. If you add a flag, command, or fix a bug, bump the minor version
+3. **Use the script**: Always use `bump-version.ps1` instead of manual edits (or update all files manually if script unavailable)
+4. **DryRun first**: Use `-DryRun` to preview before applying
+5. **Changelog**: Manually add entry to `spec/12-powershell-integration/changelog.md` after script bumps
+6. **Don't touch .release folder**: The `.release/` directory is managed separately and should NOT be updated during version bumps
+
+---
+
+## Files to Update on Version Bump
+
+| File | Field/Line |
+|------|------------|
+| `public/version.json` | `version`, `scriptVersion`, `wpPluginVersion`, `quploadVersion`, `releaseDate`, new changelog entry |
+| `run.ps1` | Line 2 comment `# Version: X.Y.Z` |
+| `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` | Plugin header `Version:` |
+| `wp-plugins/riseup-asia-uploader/includes/Enums/PluginConfigType.php` | `case Version = 'X.Y.Z'` |
+| `wp-plugins/qupload/qupload.php` | Plugin header `Version:` |
+| `wp-plugins/qupload/includes/Enums/PluginConfigType.php` | `case Version = 'X.Y.Z'` |
 
 ---
 
 ## Current Versions
 
-- **App Version**: 2.25.0
-- **Plugin Version (QUpload)**: 2.25.0
-- **Plugin Version (Riseup)**: 2.25.0
-- **Script Version**: 2.25.0
-- **Spec Version**: 2.25.0
+- **App Version**: 2.26.0
+- **Plugin Version (QUpload)**: 2.26.0
+- **Plugin Version (Riseup)**: 2.26.0
+- **Script Version**: 2.26.0
+- **Spec Version**: 2.26.0
 
 ---
 
