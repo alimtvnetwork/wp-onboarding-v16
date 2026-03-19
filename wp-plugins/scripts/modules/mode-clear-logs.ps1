@@ -164,6 +164,153 @@ function Invoke-ClearLogsMode {
     exit $(if (($results | Where-Object { $_.Status -ne "OK" }).Count -eq 0) { 0 } else { 1 })
 }
 
+# ── Purge Mode (All Logs + Audit in one command) ────────────────────────
+
+function Invoke-PurgeMode {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host "  PURGE MODE - Clear ALL Logs + Audit" -ForegroundColor Red
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host ""
+
+    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
+        Write-Host "ERROR: No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Red
+        exit 1
+    }
+
+    Show-ConfiguredSites
+
+    # Resolve target sites (supports -site, -i, -xs)
+    $allSites = @($Config.wpPlugins.sites)
+    $excludeNames = @()
+    $hasExclude = ($exclude -ne "")
+
+    if ($hasExclude) {
+        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+    }
+
+    $hasSiteOrIndex = ($site -ne "" -or $index -ne "" -or $hasExclude)
+
+    if ($hasSiteOrIndex) {
+        $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
+    } else {
+        $targetSites = @($allSites | Where-Object { $_.enabled -ne $false })
+        Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
+    }
+
+    if ($targetSites.Count -eq 0) {
+        Write-Host "No enabled sites found." -ForegroundColor Yellow
+        exit 0
+    }
+
+    $machineName = $env:COMPUTERNAME
+    Write-Host "  Machine: $machineName" -ForegroundColor Cyan
+    Write-Host "  Target:  $($targetSites.Count) site(s)" -ForegroundColor Cyan
+    Write-Host "  Scope:   File logs (all plugins) + Audit logs (plugins-onboard)" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Build plugin namespace list for file log clearing
+    $pluginNamespaces = @()
+
+    $hasDefaultUploader = ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader -and $Config.wpPlugins.plugins.$($Config.wpPlugins.defaultUploader))
+    if ($hasDefaultUploader) {
+        $uploaderSlug = $Config.wpPlugins.defaultUploader
+        $uploaderCfg = $Config.wpPlugins.plugins.$uploaderSlug
+        $uploaderNamespace = Get-PluginApiNamespace $uploaderSlug
+        $pluginNamespaces += @{ Slug = $uploaderSlug; Name = $uploaderCfg.name; Namespace = $uploaderNamespace }
+    }
+
+    $hasQUploader = ($Config.wpPlugins -and $Config.wpPlugins.defaultQUploader -and $Config.wpPlugins.plugins.$($Config.wpPlugins.defaultQUploader))
+    if ($hasQUploader) {
+        $qSlug = $Config.wpPlugins.defaultQUploader
+        $qCfg = $Config.wpPlugins.plugins.$qSlug
+        $qNamespace = Get-PluginApiNamespace $qSlug
+        $pluginNamespaces += @{ Slug = $qSlug; Name = $qCfg.name; Namespace = $qNamespace }
+    }
+
+    Write-Host "  Plugins:" -ForegroundColor Cyan
+    foreach ($ns in $pluginNamespaces) {
+        Write-Host "    - $($ns.Name) ($($ns.Namespace))" -ForegroundColor Gray
+    }
+    Write-Host "    - plugins-onboard (audit logs)" -ForegroundColor Gray
+    Write-Host ""
+
+    $results = @()
+
+    foreach ($targetSite in $targetSites) {
+        $siteName = $targetSite.name
+        $siteUrl = $targetSite.url.TrimEnd("/")
+        $cred = Get-DefaultSiteCredential $targetSite
+
+        if (-not $cred) {
+            Write-Host "  [$siteName] SKIPPED: No valid credentials" -ForegroundColor Red
+            foreach ($ns in $pluginNamespaces) {
+                $results += @{ Site = $siteName; Plugin = $ns.Name; Status = "SKIPPED"; Error = "No credentials" }
+            }
+            $results += @{ Site = $siteName; Plugin = "plugins-onboard (audit)"; Status = "SKIPPED"; Error = "No credentials" }
+            continue
+        }
+
+        $authHeader = Build-BasicAuthHeader $cred.Username $cred.Password
+
+        # Phase 1: Clear file logs for all plugins
+        foreach ($ns in $pluginNamespaces) {
+            $pluginLabel = $ns.Name
+            $apiBase = "$siteUrl/wp-json/$($ns.Namespace)"
+
+            Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor Yellow -NoNewline
+
+            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType "all"
+
+            $results += $clearResult
+
+            $isSuccess = ($clearResult.Status -eq "OK")
+            $icon = if ($isSuccess) { " OK" } else { " FAILED" }
+            $color = if ($isSuccess) { "Green" } else { "Red" }
+            Write-Host $icon -ForegroundColor $color
+
+            if (-not $isSuccess -and $clearResult.Error) {
+                Write-Host "    Error: $($clearResult.Error)" -ForegroundColor DarkYellow
+            }
+        }
+
+        # Phase 2: Clear audit logs via plugins-onboard
+        $auditClearUrl = "$siteUrl/wp-json/onboard-plugin/v1/audit-logs/clear"
+        Write-Host "  [$siteName] audit logs..." -ForegroundColor Yellow -NoNewline
+
+        try {
+            $headers = @{
+                "Authorization" = $authHeader
+                "Content-Type"  = "application/json"
+            }
+            $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+            $isSuccess = ($response.success -eq $true)
+
+            if ($isSuccess) {
+                $recordsCleared = if ($response.records_cleared) { $response.records_cleared } else { 0 }
+                Write-Host " OK ($recordsCleared records)" -ForegroundColor Green
+                $results += @{ Site = $siteName; Plugin = "plugins-onboard (audit)"; Status = "OK"; Error = $null }
+            } else {
+                $errorMsg = if ($response.error) { $response.error } else { "Unknown error" }
+                Write-Host " FAILED" -ForegroundColor Red
+                Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
+                $results += @{ Site = $siteName; Plugin = "plugins-onboard (audit)"; Status = "FAILED"; Error = $errorMsg }
+            }
+        } catch {
+            $errorMsg = Get-ClearLogsErrorMessage $_
+            Write-Host " FAILED" -ForegroundColor Red
+            Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
+            $results += @{ Site = $siteName; Plugin = "plugins-onboard (audit)"; Status = "FAILED"; Error = $errorMsg }
+        }
+    }
+
+    # Summary
+    Show-ClearLogsSummary $results $machineName
+
+    exit $(if (($results | Where-Object { $_.Status -ne "OK" }).Count -eq 0) { 0 } else { 1 })
+}
+
 # ── Audit Log Clearing Mode ─────────────────────────────────────────────
 
 function Invoke-ClearAuditLogsMode {
