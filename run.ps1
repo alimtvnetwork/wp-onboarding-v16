@@ -241,6 +241,7 @@ if ($help) {
     Write-Host "  -cas -i 1           Clear everything on site #1"
     Write-Host "  -cas -i 1,2         Clear everything on sites #1 and #2"
     Write-Host "  -cas -xs 'name'     Clear everything on all sites EXCEPT named one(s)"
+    Write-Host "  -cas -yes           Skip confirmation prompt (for scripts/automation)"
     Write-Host "  -purge              Alias for -cas"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
