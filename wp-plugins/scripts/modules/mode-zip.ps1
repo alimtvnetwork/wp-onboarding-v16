@@ -122,38 +122,71 @@ function Invoke-ZipAllParallelMode {
 
     Clear-PluginZips
 
-    # ── Phase 0: PHP Syntax Check ──────────────────────────────────────────
-    $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential:$sync
+    # ── Phase 0+1: PHP Check + ZIP (concurrent) ──────────────────────────
+    Write-Host ""
+    Write-Host "  ── Phase 0+1: PHP Check + ZIP (concurrent) ───────────────" -ForegroundColor Cyan
+
+    if ($sync) {
+        $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential
+        Write-Host ""
+        Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+        $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential
+    } else {
+        $phpJob = Start-Job -Name "phase0-php" -ScriptBlock {
+            param($ModulePath, $PluginPaths)
+            . $ModulePath
+            $folders = @($PluginPaths | ForEach-Object { Get-Item $_ })
+            Invoke-ParallelPhpCheck -PluginFolders $folders -Sequential
+        } -ArgumentList (Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
+
+        Write-Host ""
+        Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+        $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders
+
+        Write-Host ""
+        Write-Host "  ── Phase 0: PHP Check Results ────────────────────────────" -ForegroundColor Cyan
+        $phpResults = Receive-Job -Job $phpJob -Wait
+        Remove-Job -Job $phpJob -Force
+
+        if ($null -eq $phpResults) {
+            Write-Host "    [PHP] Warning: PHP check job returned no results" -ForegroundColor Yellow
+            $phpResults = @()
+        }
+
+        foreach ($r in $phpResults) {
+            $duration = "{0:N1}s" -f $r.Duration
+            $skippedLabel = if ($r.SkippedCount -gt 0) { ", $($r.SkippedCount) skipped" } else { "" }
+            if ($r.Status -eq "OK") {
+                Write-Host "    [PHP] Passed: $($r.Slug) ($($r.FileCount) files$skippedLabel) [$duration]" -ForegroundColor Green
+            } elseif ($r.Status -eq "SKIPPED") {
+                Write-Host "    [PHP] Skipped: $($r.Slug) ($($r.Error)) [$duration]" -ForegroundColor Yellow
+            } else {
+                Write-Host "    [PHP] FAILED: $($r.Slug)" -ForegroundColor Red
+                Write-Host "          $($r.Error)" -ForegroundColor Red
+            }
+        }
+    }
 
     $failedSlugs = @($phpResults | Where-Object { $_.Status -eq "FAILED" } | ForEach-Object { $_.Slug })
-    $passedSlugs = @($phpResults | Where-Object { $_.Status -ne "FAILED" } | ForEach-Object { $_.Slug })
-
     if ($failedSlugs.Count -gt 0) {
         Write-Host ""
         Write-Host "  PHP check failed for: $($failedSlugs -join ', ')" -ForegroundColor Red
-        Write-Host "  These plugins will be excluded from ZIP." -ForegroundColor Yellow
-        $pluginFolders = @($pluginFolders | Where-Object { $_.Name -in $passedSlugs })
+        Write-Host "  ZIPs were still created. Errors logged above." -ForegroundColor Yellow
     }
-
-    if ($pluginFolders.Count -eq 0) {
-        Write-Host "  No plugins passed PHP syntax check. Aborting." -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host ""
-    Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
-
-    $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential:$sync
 
     Write-ZipSummary -ZipResults $zipResults
 
-    $failCount = ($zipResults | Where-Object { $_.Status -ne "OK" }).Count
+    $zipFailCount = ($zipResults | Where-Object { $_.Status -ne "OK" }).Count
+    $phpFailCount = $failedSlugs.Count
 
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  ZIP All Parallel complete!" -ForegroundColor Green
+    if ($phpFailCount -gt 0) {
+        Write-Host "  PHP errors: $phpFailCount plugin(s) — review above" -ForegroundColor Yellow
+    }
     Write-Host "========================================" -ForegroundColor Cyan
 
-    exit $(if ($failCount -eq 0) { 0 } else { 1 })
+    exit $(if ($zipFailCount -eq 0 -and $phpFailCount -eq 0) { 0 } else { 1 })
 }
 
 function Invoke-ZipQUploadMode {
