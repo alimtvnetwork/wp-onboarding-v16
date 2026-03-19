@@ -37,6 +37,7 @@ param(
     [switch]$audit,
     [switch]$purge,
     [Alias('cas')][switch]$clearallsites,
+    [Alias('y')][switch]$yes,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
