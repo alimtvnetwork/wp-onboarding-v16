@@ -27,10 +27,16 @@ trait StatusPayloadTrait {
 
     /** Handle status check. */
     public function handleStatus(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Status endpoint called');
-
         $liveVersion = $this->detectLiveVersion();
         $dbAvailable = $this->db !== null;
+
+        $this->fileLogger->info('Status endpoint called', array(
+            'endpoint'    => 'GET /' . EndpointType::Status->value,
+            'namespace'   => PluginConfigType::apiFullNamespace(),
+            'version'     => $liveVersion,
+            'dbAvailable' => $dbAvailable,
+            'requestedAt' => DateHelper::nowIso(),
+        ));
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
