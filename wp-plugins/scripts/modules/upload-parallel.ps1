@@ -124,7 +124,7 @@ function Invoke-ParallelPluginUpload {
                 try {
                     $ErrorActionPreference = "Stop"
                     $global:LASTEXITCODE = $null
-                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace 2>&1 | Out-String)
+                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace -spc 2>&1 | Out-String)
                     $invokeSucceeded = $true
                 } catch {
                     $output = ($_ | Out-String).Trim()
