@@ -296,8 +296,8 @@ function Invoke-ParallelPluginStatusCheck {
                     }
                 }
 
-                # Error log retrieval
-                if ($IncludeErrors -and $result.Status -eq "OK") {
+                # Error log retrieval (always when status is OK)
+                if ($result.Status -eq "OK") {
                     $logsUrl = "$SiteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
                     try {
                         $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
