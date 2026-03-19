@@ -259,7 +259,16 @@ function Invoke-SinglePluginStatusCheck {
         if ($response.StatusCode -eq 200) {
             $result.Status = "OK"
             try {
-                $body = $response.Content | ConvertFrom-Json
+                $rawStatusBody = $response.Content
+
+                if ($script:pluginStatusVerbose) {
+                    Write-Host "" 
+                    Write-Host "    ── RAW STATUS [$($SiteConfig.Name) / $PluginSlug] ──" -ForegroundColor DarkCyan
+                    Write-Host $rawStatusBody -ForegroundColor Gray
+                    Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
+                }
+
+                $body = $rawStatusBody | ConvertFrom-Json
                 $metadata = Get-PluginStatusMetadata -Body $body
                 $result.Version = $metadata.Version
                 $result.WpVersion = $metadata.WpVersion
