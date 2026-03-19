@@ -472,8 +472,8 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
-if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
-if ($clearlogs) { Invoke-ClearLogsMode }
+if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
+if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 

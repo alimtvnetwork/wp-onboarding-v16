@@ -313,6 +313,13 @@ class OnboardAPI {
                 ),
             ),
         ));
+
+        // Audit log clearing endpoint (remote).
+        register_rest_route($namespace, '/audit-logs/clear', array(
+            'methods' => 'DELETE',
+            'callback' => array($this, 'clear_audit_logs'),
+            'permission_callback' => array($this, 'verify_access_token'),
+        ));
     }
 
     /**
