@@ -236,6 +236,7 @@ if ($help) {
     Write-Host "  -pas                Check plugin status on ALL configured sites"
     Write-Host "  -ps -err            Include error logs and stack traces"
     Write-Host "  -pas -err           Status + error logs for all sites"
+    Write-Host "  -pas -v             Verbose: print raw /status response JSON"
     Write-Host "  -pas -i N           Status for site #N only"
     Write-Host "  -pas -site 'name'   Status for named site only"
     Write-Host "  -pas -sync          Sequential mode"
