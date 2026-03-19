@@ -317,11 +317,13 @@ function Invoke-SinglePluginStatusCheck {
             try {
                 $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
                 $rawContent = $logsResponse.Content
-                $isJsonResponse = $rawContent -and $rawContent.TrimStart().StartsWith("{")
+                $logsJsonStart = if ($rawContent) { $rawContent.IndexOf('{') } else { -1 }
+                $isJsonResponse = $logsJsonStart -ge 0
 
                 if (-not $isJsonResponse) {
                     $result.ErrorLog = "Not available (endpoint returned non-JSON)"
                 } else {
+                    if ($logsJsonStart -gt 0) { $rawContent = $rawContent.Substring($logsJsonStart) }
                     $logsBody = $rawContent | ConvertFrom-Json
                     $logsPayload = Get-PluginStatusPayload -Body $logsBody
                     $safeSiteName = ($SiteConfig.Name -replace '[^a-zA-Z0-9_-]', '_')
