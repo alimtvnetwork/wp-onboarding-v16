@@ -632,7 +632,8 @@ if ($ZipOnly) {
 # STEP 3: Auth pre-check via QUpload /status endpoint
 # =============================================================================
 Write-Status ""
-Write-Status "[3/5] Checking auth via QUpload status endpoint..." -Color Yellow
+$authLabel = if ($ApiNamespace -eq "qupload-api/v1") { "QUpload" } else { $ApiNamespace.Split('/')[0] }
+Write-Status "[3/5] Checking auth via $authLabel status endpoint..." -Color Yellow
 
 $apiBase = "$WordPressSiteURL/wp-json/$ApiNamespace"
 $statusUrl = "$apiBase/status"
