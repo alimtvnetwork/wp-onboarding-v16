@@ -649,7 +649,7 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $pluginTempDir, $OutputZipPath,
-        [System.IO.Compression.CompressionLevel]::Optimal, $true
+        [System.IO.Compression.CompressionLevel]::SmallestSize, $true
     )
     Remove-Item $tempDir -Recurse -Force
 

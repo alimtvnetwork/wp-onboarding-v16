@@ -385,7 +385,7 @@ function New-PluginZipFile($PluginDir, $PluginSlug) {
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $tempDir,
         $zipOutputPath,
-        [System.IO.Compression.CompressionLevel]::Optimal,
+        [System.IO.Compression.CompressionLevel]::SmallestSize,
         $false
     )
 
