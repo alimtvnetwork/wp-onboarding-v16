@@ -169,6 +169,33 @@ class FileLogger {
         $this->dedupHashes = [];
     }
 
+    /**
+     * Clear a specific log file by type (log, error, stacktrace).
+     *
+     * @param string $type One of 'log', 'error', 'stacktrace'.
+     * @return bool True if file was deleted or did not exist.
+     */
+    public function clearLogFileByType(string $type): bool {
+        if ($this->isInitialized === false) {
+            $this->initializePaths();
+        }
+
+        $fileMap = array(
+            'log'        => $this->logFile,
+            'error'      => $this->errorFile,
+            'stacktrace' => $this->stacktraceFile,
+        );
+
+        $file = $fileMap[$type] ?? null;
+        $isFileMissing = ($file === null || !file_exists($file));
+
+        if ($isFileMissing) {
+            return true;
+        }
+
+        return @unlink($file);
+    }
+
     // ── Public Level Methods ────────────────────────────────────────
 
     public function debug(string $message, array $context = []): bool {

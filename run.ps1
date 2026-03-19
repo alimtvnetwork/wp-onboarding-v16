@@ -32,6 +32,9 @@ param(
     [switch]$sync,
     [Alias('cl')][switch]$clearlogs,
     [Alias('cla')][switch]$clearlogsall,
+    [string]$logplugin = "",
+    [string]$logtype = "",
+    [switch]$audit,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
@@ -221,6 +224,10 @@ if ($help) {
     Write-Host "  -cl -i 1,2,3        Clear logs on multiple sites by index"
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
     Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl -logplugin 'q'  Clear logs for QUpload only (q|qupload|r|riseup)"
+    Write-Host "  -cl -logtype 'err'  Clear only error logs (log|err|stack|all, default: all)"
+    Write-Host "  -cl -audit          Clear audit logs (plugins-onboard DB) on default site"
+    Write-Host "  -cla -audit         Clear audit logs on ALL sites"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
@@ -465,8 +472,8 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
-if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
-if ($clearlogs) { Invoke-ClearLogsMode }
+if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
+if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 

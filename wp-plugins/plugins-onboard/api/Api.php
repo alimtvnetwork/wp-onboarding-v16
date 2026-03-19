@@ -313,6 +313,13 @@ class OnboardAPI {
                 ),
             ),
         ));
+
+        // Audit log clearing endpoint (remote).
+        register_rest_route($namespace, '/audit-logs/clear', array(
+            'methods' => 'DELETE',
+            'callback' => array($this, 'clear_audit_logs'),
+            'permission_callback' => array($this, 'verify_access_token'),
+        ));
     }
 
     /**
@@ -993,6 +1000,22 @@ class OnboardAPI {
             'limit' => $limit,
             'offset' => $offset,
             'logs' => $logs,
+        ));
+    }
+
+    /**
+     * Clear all audit logs remotely.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function clear_audit_logs($request) {
+        $count = $this->audit_logger->clear_logs();
+
+        return rest_ensure_response(array(
+            'success'         => true,
+            'records_cleared' => $count,
+            'cleared_at'      => gmdate('Y-m-d\TH:i:s\Z'),
         ));
     }
 }
