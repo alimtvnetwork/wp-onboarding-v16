@@ -5,7 +5,8 @@
 
 function Invoke-ApproveMachineMode {
     param(
-        [string]$MachineNameToApprove
+        [string]$MachineNameToApprove,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
