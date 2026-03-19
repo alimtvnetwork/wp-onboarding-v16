@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.25.0",
+  "version": "2.26.0",
   "releaseDate": "2026-03-19",
   "gitCommit": "dev",
   "buildTime": "2026-03-19T00:00:00Z",
-  "scriptVersion": "2.25.0",
-  "wpPluginVersion": "2.25.0",
-  "quploadVersion": "2.25.0",
+  "scriptVersion": "2.26.0",
+  "wpPluginVersion": "2.26.0",
+  "quploadVersion": "2.26.0",
   "changelog": [
+    {
+      "version": "2.26.0",
+      "date": "2026-03-19",
+      "title": "Clear All Sites Command & Safety Confirmation",
+      "changes": [
+        "💣 -cas (Clear All Sites) command: nuke ALL file logs, stacktraces, errors, and audit/activity logs across both plugins and all sites",
+        "⚠️ Destructive action confirmation prompt before -cas/-purge executes (shows site count and names)",
+        "⏩ -yes/-y flag to skip confirmation prompt for scripted/automated usage",
+        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.26.0"
+      ]
+    },
     {
       "version": "2.25.0",
       "date": "2026-03-19",
