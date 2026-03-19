@@ -76,7 +76,7 @@ function Invoke-PluginStatusMode {
     # ── Plugin → REST namespace mapping ────────────────────────────────
     $pluginNamespaces = @{
         "qupload"               = "qupload-api/v1"
-        "riseup-asia-uploader"  = "riseup-asia-uploader/v1"
+        "riseup-asia-uploader"  = "riseup-asia-api/v1"
     }
 
     $totalChecks = $targetSites.Count * $pluginFolders.Count
