@@ -1,8 +1,8 @@
 # PowerShell Integration for Project Runner
 
-> **Spec Version:** 2.12.0  
-> **Script Version:** 2.12.0  
-> **Updated:** 2026-02-09  
+> **Spec Version:** 2.21.0  
+> **Script Version:** 2.21.0  
+> **Updated:** 2026-03-19  
 > **Status:** Active  
 > **Location:** `spec/powershell-integration/`  
 > **Purpose:** Reusable PowerShell runner for Go backend + React frontend projects with pnpm PnP support

@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.20.0",
+  "version": "2.21.0",
   "releaseDate": "2026-03-19",
   "gitCommit": "dev",
   "buildTime": "2026-03-19T00:00:00Z",
-  "scriptVersion": "2.20.0",
-  "wpPluginVersion": "2.20.0",
-  "quploadVersion": "2.20.0",
+  "scriptVersion": "2.21.0",
+  "wpPluginVersion": "2.21.0",
+  "quploadVersion": "2.21.0",
   "changelog": [
+    {
+      "version": "2.21.0",
+      "date": "2026-03-19",
+      "title": "Parallel PHP Check, Nested Status Output & Version-Gated Logs",
+      "changes": [
+        "⚡ PHP syntax check and ZIP phases now run concurrently in -uas and -zas modes",
+        "📋 Plugin status (-pas) output restructured: nested site → plugin → logs hierarchy",
+        "🔢 Remote plugin version now displayed in -pas status summary",
+        "🎨 Enhanced -pas output with color-coded symbols and box-drawing characters",
+        "🛡️ Log retrieval skipped for remote plugins below v2.18.0 to avoid endpoint errors",
+        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.21.0"
+      ]
+    },
     {
       "version": "2.20.0",
       "date": "2026-03-19",
