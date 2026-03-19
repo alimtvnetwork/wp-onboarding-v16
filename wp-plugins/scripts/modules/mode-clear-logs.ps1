@@ -444,7 +444,8 @@ function Invoke-TwoStepLogClear {
         [string]$MachineName,
         [string]$SiteName,
         [string]$PluginLabel,
-        [string]$LogType = "all"
+        [string]$LogType = "all",
+        [switch]$VerboseMode
     )
 
     $headers = @{
