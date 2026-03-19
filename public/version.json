@@ -17,6 +17,10 @@
         "🔍 -v (verbose) flag shows raw JSON response body for status and log retrieval in both sequential and parallel modes",
         "🏷️ QUpload status response fields now use enum-backed ResponseKeyType for type-safe parsing",
         "📊 Parallel status checks resilient to WP_DEBUG_DISPLAY noise from third-party plugins",
+        "🔌 -logplugin filter: clear logs for a specific plugin only (q|qupload|r|riseup)",
+        "📂 -logtype filter: clear specific log types (log|err|stack|files|db|all)",
+        "🗑️ -audit flag: clear plugins-onboard audit/activity logs from database via REST API",
+        "💣 -purge command: clear ALL file logs + audit logs in one command with site targeting (-site, -i, -xs)",
         "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.25.0"
       ]
     },
