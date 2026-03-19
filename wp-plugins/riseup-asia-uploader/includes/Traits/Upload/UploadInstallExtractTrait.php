@@ -457,7 +457,7 @@ trait UploadInstallExtractTrait
             $this->fileLogger->error('Temp ZIP file does not exist', array('path' => $tempFile));
             $this->deleteDirectory($tempExtractDir);
 
-            return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to open ZIP for extraction — file does not exist', HttpStatusType::ServerError->value);
         }
 
         $tempFileSize = @filesize($tempFile);
@@ -472,17 +472,21 @@ trait UploadInstallExtractTrait
         $isOpened = ($openResult === true);
 
         if ($isOpened === false) {
+            $errorMsg = $this->zipErrorMessage($openResult);
+
             $this->fileLogger->error('ZipArchive::open() failed', array(
                 'path'      => $tempFile,
                 'errorCode' => $openResult,
-                'errorMsg'  => $this->zipErrorMessage($openResult),
+                'errorMsg'  => $errorMsg,
                 'fileSize'  => $tempFileSize,
             ));
 
             @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);
 
-            return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
+            $detail = "Failed to open ZIP for extraction — {$errorMsg} (code: {$openResult}), fileSize: {$tempFileSize} bytes";
+
+            return $this->errorResponse($detail, HttpStatusType::ServerError->value);
         }
 
         $isExtracted = $zip->extractTo($tempExtractDir);
