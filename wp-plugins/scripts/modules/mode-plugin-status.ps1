@@ -310,15 +310,24 @@ function Invoke-ParallelPluginStatusCheck {
                             $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
                             $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
                             $logsBody.ErrorLog.Content | Out-File -FilePath $errorFile -Encoding UTF8
+                        } elseif ($logsBody.ErrorLog) {
+                            $result.ErrorLog = "No errors"
                         }
 
                         if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
                             $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
                             $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
                             $logsBody.StacktraceLog.Content | Out-File -FilePath $stackFile -Encoding UTF8
+                        } elseif ($logsBody.StacktraceLog) {
+                            $result.Stacktrace = "No errors"
                         }
                     } catch {
-                        $result.ErrorLog = "Failed to retrieve"
+                        $restStatus = 0
+                        $restMessage = $_.Exception.Message
+                        if ($_.Exception.Response) {
+                            $restStatus = [int]$_.Exception.Response.StatusCode
+                        }
+                        $result.ErrorLog = if ($restStatus -gt 0) { "REST $restStatus`: $restMessage" } else { "REST error: $restMessage" }
                     }
                 }
 
