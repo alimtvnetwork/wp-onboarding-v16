@@ -201,8 +201,19 @@ function Invoke-ApproveMachineMode {
 
             $body = @{ machine = $MachineNameToApprove } | ConvertTo-Json -Compress
 
+            if ($VerboseMode) {
+                Write-Host ""
+                Write-Host "    [VERBOSE] PUT $approveUrl" -ForegroundColor DarkGray
+                Write-Host "    [VERBOSE] Body: $body" -ForegroundColor DarkGray
+            }
+
             try {
                 $response = Invoke-RestMethod -Uri $approveUrl -Method Put -Headers $headers -Body $body -ErrorAction Stop
+
+                if ($VerboseMode) {
+                    $respJson = $response | ConvertTo-Json -Depth 5 -Compress
+                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                }
 
                 $isSuccess = ($response.Success -eq $true)
 
