@@ -497,6 +497,7 @@ function Invoke-ParallelPluginStatusCheck {
                     ServerTime    = ""
                     DbAvailable   = ""
                     RemoteSiteUrl = ""
+                    RawStatusBody = ""
                     Status        = "ERROR"
                     HttpStatus    = 0
                     Message       = ""
@@ -525,9 +526,7 @@ function Invoke-ParallelPluginStatusCheck {
                         $result.Status = "OK"
                         try {
                             $rawStatusBody = $response.Content
-
-                            if ($IncludeErrors) { }
-                            if ($using:verbose -or $script:pluginStatusVerbose) { }
+                            $result.RawStatusBody = $rawStatusBody
 
                             $body = $rawStatusBody | ConvertFrom-Json
                             $metadata = Get-JobPluginStatusMetadata -Body $body
@@ -539,7 +538,6 @@ function Invoke-ParallelPluginStatusCheck {
                             $result.ServerTime = $metadata.ServerTime
                             $result.DbAvailable = $metadata.DbAvailable
                             $result.RemoteSiteUrl = $metadata.RemoteSiteUrl
-                            $result.RawStatusBody = $rawStatusBody
                         } catch {
                             $result.Message = "Status endpoint returned invalid JSON"
                         }
