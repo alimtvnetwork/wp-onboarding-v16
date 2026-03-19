@@ -465,13 +465,16 @@ function Write-PluginStatusSummary {
         }
     }
 
-    # Error log section
-    $hasLogs = $Results | Where-Object { $_.ErrorLog -or $_.Stacktrace }
-    if ($hasLogs) {
+    # Error log section — only show if there are actual errors or REST failures
+    $hasActualErrors = $Results | Where-Object {
+        ($_.ErrorLog -and $_.ErrorLog -ne "No errors") -or
+        ($_.Stacktrace -and $_.Stacktrace -ne "No errors")
+    }
+    if ($hasActualErrors) {
         Write-Host ""
         Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
 
-        foreach ($r in ($Results | Where-Object { $_.ErrorLog -or $_.Stacktrace })) {
+        foreach ($r in $hasActualErrors) {
             Write-Host ""
             Write-Host "  [$($r.Site) / $($r.Plugin)]" -ForegroundColor White
             $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "No errors" }
@@ -484,6 +487,10 @@ function Write-PluginStatusSummary {
 
         Write-Host ""
         Write-Host "  Logs saved to: $StatusLogsDir" -ForegroundColor Yellow
+    } else {
+        Write-Host ""
+        Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
+        Write-Host "  All plugins: No errors found" -ForegroundColor Green
     }
 
     # Totals
