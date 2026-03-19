@@ -268,7 +268,12 @@ function Invoke-SinglePluginStatusCheck {
                     Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
                 }
 
-                $body = $rawStatusBody | ConvertFrom-Json
+                # Strip PHP warnings/notices before the JSON body
+                $jsonBody = $rawStatusBody
+                $jsonStart = $rawStatusBody.IndexOf('{')
+                if ($jsonStart -gt 0) { $jsonBody = $rawStatusBody.Substring($jsonStart) }
+
+                $body = $jsonBody | ConvertFrom-Json
                 $metadata = Get-PluginStatusMetadata -Body $body
                 $result.Version = $metadata.Version
                 $result.WpVersion = $metadata.WpVersion
@@ -312,11 +317,13 @@ function Invoke-SinglePluginStatusCheck {
             try {
                 $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
                 $rawContent = $logsResponse.Content
-                $isJsonResponse = $rawContent -and $rawContent.TrimStart().StartsWith("{")
+                $logsJsonStart = if ($rawContent) { $rawContent.IndexOf('{') } else { -1 }
+                $isJsonResponse = $logsJsonStart -ge 0
 
                 if (-not $isJsonResponse) {
                     $result.ErrorLog = "Not available (endpoint returned non-JSON)"
                 } else {
+                    if ($logsJsonStart -gt 0) { $rawContent = $rawContent.Substring($logsJsonStart) }
                     $logsBody = $rawContent | ConvertFrom-Json
                     $logsPayload = Get-PluginStatusPayload -Body $logsBody
                     $safeSiteName = ($SiteConfig.Name -replace '[^a-zA-Z0-9_-]', '_')
@@ -528,7 +535,12 @@ function Invoke-ParallelPluginStatusCheck {
                             $rawStatusBody = $response.Content
                             $result.RawStatusBody = $rawStatusBody
 
-                            $body = $rawStatusBody | ConvertFrom-Json
+                            # Strip PHP warnings/notices before the JSON body
+                            $jsonBody = $rawStatusBody
+                            $jsonStart = $rawStatusBody.IndexOf('{')
+                            if ($jsonStart -gt 0) { $jsonBody = $rawStatusBody.Substring($jsonStart) }
+
+                            $body = $jsonBody | ConvertFrom-Json
                             $metadata = Get-JobPluginStatusMetadata -Body $body
                             $result.Version = $metadata.Version
                             $result.WpVersion = $metadata.WpVersion
@@ -571,11 +583,13 @@ function Invoke-ParallelPluginStatusCheck {
                         try {
                             $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
                             $rawContent = $logsResponse.Content
-                            $isJsonResponse = $rawContent -and $rawContent.TrimStart().StartsWith("{")
+                            $logsJsonStart = if ($rawContent) { $rawContent.IndexOf('{') } else { -1 }
+                            $isJsonResponse = $logsJsonStart -ge 0
 
                             if (-not $isJsonResponse) {
                                 $result.ErrorLog = "Not available (endpoint returned non-JSON)"
                             } else {
+                                if ($logsJsonStart -gt 0) { $rawContent = $rawContent.Substring($logsJsonStart) }
                                 $logsBody = $rawContent | ConvertFrom-Json
                                 $logsPayload = Get-JobPluginStatusPayload -Body $logsBody
                                 $safeSiteName = ($SiteName -replace '[^a-zA-Z0-9_-]', '_')
