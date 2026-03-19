@@ -98,18 +98,40 @@ function Invoke-CheckMode {
                     Write-Host "      [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
                 }
 
-                $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+                # Use Invoke-WebRequest to get raw response (Invoke-RestMethod chokes on PHP noise)
+                $rawResp = Invoke-WebRequest -Uri $statusUrl -Method Get -Headers $headers -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+                $rawBody = $rawResp.Content
 
                 if ($VerboseMode) {
-                    $respJson = $statusResp | ConvertTo-Json -Depth 5 -Compress
-                    Write-Host "      [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                    Write-Host "      [VERBOSE] Response: $rawBody" -ForegroundColor DarkGray
                 }
 
                 $sw.Stop()
                 $elapsed = $sw.ElapsedMilliseconds
 
-                $ver = if ($statusResp.version) { $statusResp.version } else { "?" }
-                $wpVer = if ($statusResp.wordpress_version) { $statusResp.wordpress_version } elseif ($statusResp.wp_version) { $statusResp.wp_version } else { "?" }
+                # Strip PHP warnings/notices before JSON
+                $jsonBody = $rawBody
+                $jsonStart = $rawBody.IndexOf('{')
+
+                if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+
+                $statusResp = $jsonBody | ConvertFrom-Json -ErrorAction Stop
+
+                # Extract version from envelope: Results[0].Version
+                $ver = "?"
+                $wpVer = "?"
+                $hasResults = ($null -ne $statusResp.Results -and $statusResp.Results.Count -gt 0)
+
+                if ($hasResults) {
+                    $firstResult = $statusResp.Results[0]
+                    if ($firstResult.Version) { $ver = $firstResult.Version }
+                    if ($firstResult.Wp) { $wpVer = $firstResult.Wp }
+                    elseif ($firstResult.WpVersion) { $wpVer = $firstResult.WpVersion }
+                }
+
+                # Fallback: top-level properties (legacy format)
+                if ($ver -eq "?" -and $statusResp.version) { $ver = $statusResp.version }
+                if ($wpVer -eq "?" -and $statusResp.wordpress_version) { $wpVer = $statusResp.wordpress_version }
 
                 # Check version readiness (v2.17.0+ for full API)
                 $isReady = $false
@@ -125,8 +147,6 @@ function Invoke-CheckMode {
                 $endpointChecks = @("upload", "activate", "deactivate", "plugins", "logs/status", "logs/clear", "logs/email", "machines/approve")
 
                 foreach ($ep in $endpointChecks) {
-                    $epUrl = "$siteUrl/wp-json/$($ns.Namespace)/$ep"
-                    # We don't actually call them — infer from version
                     if ($isReady) {
                         $availableEndpoints += $ep
                     }

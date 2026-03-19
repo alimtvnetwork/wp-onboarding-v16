@@ -107,17 +107,46 @@ function Invoke-ApproveMachineMode {
                     Write-Host "    [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
                 }
 
-                $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+                # Use Invoke-WebRequest to get raw response (Invoke-RestMethod chokes on PHP noise)
+                $rawResp = Invoke-WebRequest -Uri $statusUrl -Method Get -Headers $headers -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+                $rawBody = $rawResp.Content
 
                 if ($VerboseMode) {
-                    $respJson = $statusResp | ConvertTo-Json -Depth 5 -Compress
-                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                    Write-Host "    [VERBOSE] Response: $rawBody" -ForegroundColor DarkGray
                 }
 
-                $hasVersion = ($null -ne $statusResp -and $statusResp.version)
+                # Strip PHP warnings/notices before JSON
+                $jsonBody = $rawBody
+                $jsonStart = $rawBody.IndexOf('{')
+                $hasJsonStart = ($jsonStart -ge 0)
+
+                if (-not $hasJsonStart) {
+                    $readySites[$key] = $false
+                    Write-Host "    [$siteName] $($ns.Name)" -ForegroundColor Yellow -NoNewline
+                    Write-Host " NOT READY (no JSON in response)" -ForegroundColor Yellow
+                    continue
+                }
+
+                if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+
+                $statusResp = $jsonBody | ConvertFrom-Json -ErrorAction Stop
+
+                # Extract version from envelope: Results[0].Version
+                $ver = $null
+                $hasResults = ($null -ne $statusResp.Results -and $statusResp.Results.Count -gt 0)
+
+                if ($hasResults) {
+                    $ver = $statusResp.Results[0].Version
+                }
+
+                # Fallback: check top-level .version (legacy format)
+                if (-not $ver -and $statusResp.version) {
+                    $ver = $statusResp.version
+                }
+
+                $hasVersion = (-not [string]::IsNullOrWhiteSpace($ver))
 
                 if ($hasVersion) {
-                    $ver = $statusResp.version
                     $parts = $ver -split '\.'
                     $major = [int]$parts[0]
                     $minor = if ($parts.Count -gt 1) { [int]$parts[1] } else { 0 }

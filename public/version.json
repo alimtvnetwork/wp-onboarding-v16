@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.27.0",
+  "version": "2.28.0",
   "releaseDate": "2026-03-19",
   "gitCommit": "dev",
   "buildTime": "2026-03-19T00:00:00Z",
-  "scriptVersion": "2.27.0",
-  "wpPluginVersion": "2.27.0",
-  "quploadVersion": "2.27.0",
+  "scriptVersion": "2.28.0",
+  "wpPluginVersion": "2.28.0",
+  "quploadVersion": "2.28.0",
   "changelog": [
+    {
+      "version": "2.28.0",
+      "date": "2026-03-19",
+      "title": "Fix Status Parsing — PHP Noise Resilience & Envelope-Aware Extraction",
+      "changes": [
+        "🐛 Fixed -am and -check showing 'NOT READY (no version in response)' on all sites despite valid API responses",
+        "🛡️ Replaced Invoke-RestMethod with Invoke-WebRequest in mode-approve-machine.ps1 and mode-check.ps1 to handle PHP deprecation notices prepended to JSON",
+        "📦 Version now correctly extracted from envelope Results[0].Version instead of non-existent top-level .version property",
+        "📋 Root cause issue documented in spec/issues/2027-status-parsing-php-noise.md",
+        "🧠 Memory rule added: never use Invoke-RestMethod for WordPress REST calls",
+        "🔢 Version bump across all components to 2.28.0"
+      ]
+    },
     {
       "version": "2.27.0",
       "date": "2026-03-19",
