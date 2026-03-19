@@ -16,7 +16,7 @@ function Invoke-ClearLogsMode {
     Write-Host ""
 
     if ($AuditMode) {
-        Invoke-ClearAuditLogsMode -ForceAll:$ForceAll
+        Invoke-ClearAuditLogsMode -ForceAll:$ForceAll -VerboseMode:$VerboseMode
         return
     }
 
