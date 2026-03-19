@@ -143,27 +143,14 @@ function Invoke-ZipAllParallelMode {
         Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
         $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders
 
-        Write-Host ""
-        Write-Host "  ── Phase 0: PHP Check Results ────────────────────────────" -ForegroundColor Cyan
         $phpResults = Receive-Job -Job $phpJob -Wait
         Remove-Job -Job $phpJob -Force
 
         if ($null -eq $phpResults) {
+            Write-Host ""
+            Write-Host "  ── Phase 0: PHP Syntax Check ──────────────────────────" -ForegroundColor Cyan
             Write-Host "    [PHP] Warning: PHP check job returned no results" -ForegroundColor Yellow
             $phpResults = @()
-        }
-
-        foreach ($r in $phpResults) {
-            $duration = "{0:N1}s" -f $r.Duration
-            $skippedLabel = if ($r.SkippedCount -gt 0) { ", $($r.SkippedCount) skipped" } else { "" }
-            if ($r.Status -eq "OK") {
-                Write-Host "    [PHP] Passed: $($r.Slug) ($($r.FileCount) files$skippedLabel) [$duration]" -ForegroundColor Green
-            } elseif ($r.Status -eq "SKIPPED") {
-                Write-Host "    [PHP] Skipped: $($r.Slug) ($($r.Error)) [$duration]" -ForegroundColor Yellow
-            } else {
-                Write-Host "    [PHP] FAILED: $($r.Slug)" -ForegroundColor Red
-                Write-Host "          $($r.Error)" -ForegroundColor Red
-            }
         }
     }
 
