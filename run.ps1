@@ -230,6 +230,15 @@ if ($help) {
     Write-Host "  -check -site 'name' Check a specific site only"
     Write-Host "  -check -i N         Check site(s) by index"
     Write-Host ""
+    Write-Host "PLUGIN STATUS:" -ForegroundColor Yellow
+    Write-Host "  -ps                 Check plugin status on default site"
+    Write-Host "  -pas                Check plugin status on ALL configured sites"
+    Write-Host "  -ps -err            Include error logs and stack traces"
+    Write-Host "  -pas -err           Status + error logs for all sites"
+    Write-Host "  -pas -i N           Status for site #N only"
+    Write-Host "  -pas -site 'name'   Status for named site only"
+    Write-Host "  -pas -sync          Sequential mode"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
