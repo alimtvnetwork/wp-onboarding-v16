@@ -9,7 +9,8 @@ function Invoke-ClearLogsMode {
         [switch]$ForceAll,
         [string]$PluginFilter = "",
         [string]$TypeFilter = "",
-        [switch]$AuditMode
+        [switch]$AuditMode,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
