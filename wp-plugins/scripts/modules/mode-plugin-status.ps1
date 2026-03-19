@@ -170,28 +170,32 @@ function Invoke-SinglePluginStatusCheck {
 
         try {
             $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
-            $logsBody = $logsResponse.Content | ConvertFrom-Json
+            $rawContent = $logsResponse.Content
+            $isJsonResponse = $rawContent -and $rawContent.TrimStart().StartsWith("{")
 
-            $safeSiteName = ($SiteConfig.Name -replace '[^a-zA-Z0-9_-]', '_')
+            if (-not $isJsonResponse) {
+                $result.ErrorLog = "Not available (endpoint returned non-JSON; plugin may need updating)"
+            } else {
+                $logsBody = $rawContent | ConvertFrom-Json
+                $safeSiteName = ($SiteConfig.Name -replace '[^a-zA-Z0-9_-]', '_')
 
-            # Error log
-            if ($logsBody.ErrorLog -and $logsBody.ErrorLog.Exists -and $logsBody.ErrorLog.Lines -gt 0) {
-                $errorContent = $logsBody.ErrorLog.Content
-                $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
-                $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
-                $errorContent | Out-File -FilePath $errorFile -Encoding UTF8
-            } elseif ($logsBody.ErrorLog) {
-                $result.ErrorLog = "No errors"
-            }
+                if ($logsBody.ErrorLog -and $logsBody.ErrorLog.Exists -and $logsBody.ErrorLog.Lines -gt 0) {
+                    $errorContent = $logsBody.ErrorLog.Content
+                    $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
+                    $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
+                    $errorContent | Out-File -FilePath $errorFile -Encoding UTF8
+                } elseif ($logsBody.ErrorLog) {
+                    $result.ErrorLog = "No errors"
+                }
 
-            # Stacktrace log
-            if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
-                $stackContent = $logsBody.StacktraceLog.Content
-                $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
-                $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
-                $stackContent | Out-File -FilePath $stackFile -Encoding UTF8
-            } elseif ($logsBody.StacktraceLog) {
-                $result.Stacktrace = "No errors"
+                if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
+                    $stackContent = $logsBody.StacktraceLog.Content
+                    $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
+                    $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
+                    $stackContent | Out-File -FilePath $stackFile -Encoding UTF8
+                } elseif ($logsBody.StacktraceLog) {
+                    $result.Stacktrace = "No errors"
+                }
             }
         } catch {
             $restStatus = 0
