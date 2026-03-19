@@ -525,9 +525,10 @@ if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 $modeLabel = if ($ZipOnly) { "ZIP Only" } else { "Upload" }
 
 Write-Status ""
+$apiLabel = if ($ApiNamespace -eq "qupload-api/v1") { "QUpload API" } else { "$ApiNamespace (cross-upload)" }
 Write-Status "========================================" -Color Cyan
 Write-Status "  Quick Upload - Plugin $modeLabel" -Color Cyan
-Write-Status "  Using QUpload API" -Color Cyan
+Write-Status "  Using $apiLabel" -Color Cyan
 Write-Status "========================================" -Color Cyan
 Write-Status ""
 
