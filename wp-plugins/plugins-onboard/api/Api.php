@@ -1002,4 +1002,20 @@ class OnboardAPI {
             'logs' => $logs,
         ));
     }
+
+    /**
+     * Clear all audit logs remotely.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function clear_audit_logs($request) {
+        $count = $this->audit_logger->clear_logs();
+
+        return rest_ensure_response(array(
+            'success'         => true,
+            'records_cleared' => $count,
+            'cleared_at'      => gmdate('Y-m-d\TH:i:s\Z'),
+        ));
+    }
 }

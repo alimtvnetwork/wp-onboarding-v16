@@ -5,8 +5,20 @@
 # Expects: $site, $exclude, $sync, $index
 
 function Invoke-ClearLogsMode {
-    param([switch]$ForceAll)
+    param(
+        [switch]$ForceAll,
+        [string]$PluginFilter = "",
+        [string]$TypeFilter = "",
+        [switch]$AuditMode
+    )
+
     Write-Host ""
+
+    if ($AuditMode) {
+        Invoke-ClearAuditLogsMode -ForceAll:$ForceAll
+        return
+    }
+
     $modeLabel = if ($ForceAll) { "Remote Log Clearing Mode (-cla: ALL sites)" } else { "Remote Log Clearing Mode (-cl)" }
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host "  $modeLabel" -ForegroundColor Magenta
@@ -47,6 +59,15 @@ function Invoke-ClearLogsMode {
     $machineName = $env:COMPUTERNAME
     Write-Host "  Machine: $machineName" -ForegroundColor Cyan
     Write-Host "  Target:  $($targetSites.Count) site(s)" -ForegroundColor Cyan
+
+    # Resolve log type filter
+    $resolvedType = Resolve-LogTypeFilter $TypeFilter
+    $hasTypeFilter = ($resolvedType -ne "all")
+
+    if ($hasTypeFilter) {
+        Write-Host "  Type:    $resolvedType" -ForegroundColor Cyan
+    }
+
     Write-Host ""
 
     # Determine which plugins to clear logs for
@@ -66,6 +87,18 @@ function Invoke-ClearLogsMode {
         $qCfg = $Config.wpPlugins.plugins.$qSlug
         $qNamespace = Get-PluginApiNamespace $qSlug
         $pluginNamespaces += @{ Slug = $qSlug; Name = $qCfg.name; Namespace = $qNamespace }
+    }
+
+    # Apply plugin filter
+    $hasPluginFilter = ($PluginFilter -ne "")
+
+    if ($hasPluginFilter) {
+        $pluginNamespaces = Resolve-PluginFilter $pluginNamespaces $PluginFilter
+
+        if ($pluginNamespaces.Count -eq 0) {
+            Write-Host "ERROR: No matching plugin for filter '$PluginFilter'. Use: q|qupload|r|riseup" -ForegroundColor Red
+            exit 1
+        }
     }
 
     if ($pluginNamespaces.Count -eq 0) {
@@ -103,7 +136,7 @@ function Invoke-ClearLogsMode {
 
             Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor Yellow -NoNewline
 
-            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel
+            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType $resolvedType
 
             $results += $clearResult
 
@@ -126,36 +159,110 @@ function Invoke-ClearLogsMode {
     }
 
     # Summary
+    Show-ClearLogsSummary $results $machineName
+
+    exit $(if (($results | Where-Object { $_.Status -ne "OK" }).Count -eq 0) { 0 } else { 1 })
+}
+
+# ── Audit Log Clearing Mode ─────────────────────────────────────────────
+
+function Invoke-ClearAuditLogsMode {
+    param([switch]$ForceAll)
+
+    $modeLabel = if ($ForceAll) { "Audit Log Clearing Mode (-cla -audit: ALL sites)" } else { "Audit Log Clearing Mode (-cl -audit)" }
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "  $modeLabel" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
     Write-Host ""
-    Write-Host "========================================" -ForegroundColor Magenta
-    Write-Host "  Log Clearing Summary" -ForegroundColor Magenta
-    Write-Host "========================================" -ForegroundColor Magenta
 
-    $successCount = ($results | Where-Object { $_.Status -eq "OK" }).Count
-    $failCount = $results.Count - $successCount
-
-    foreach ($r in $results) {
-        $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
-        $errorSuffix = if ($r.Error -and $r.Status -ne "OK") { " - $($r.Error)" } else { "" }
-        Write-Host "  [$($r.Site)] $($r.Plugin): $($r.Status)$errorSuffix" -ForegroundColor $color
+    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
+        Write-Host "ERROR: No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Red
+        exit 1
     }
 
-    Write-Host ""
-    Write-Host "  Total: $($results.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
+    Show-ConfiguredSites
 
-    if ($failCount -gt 0) {
-        Write-Host ""
-        Write-Host "  TROUBLESHOOTING:" -ForegroundColor Yellow
-        Write-Host "    403 rest_disabled: Enable logs_clear/logs_confirm in Riseup Settings > API Endpoints Configuration" -ForegroundColor Gray
-        Write-Host "    403 Forbidden: Check that the WordPress user has 'activate_plugins' capability" -ForegroundColor Gray
-        Write-Host "    403 machine_not_approved: Add '$machineName' to approved_machines in plugin settings/settings.json" -ForegroundColor Gray
-        Write-Host "    404 Not Found: The plugin may not be installed/activated on that site" -ForegroundColor Gray
-        Write-Host "    401 Unauthorized: Verify Base64 credentials in powershell.json" -ForegroundColor Gray
+    $allSites = @($Config.wpPlugins.sites)
+
+    if ($ForceAll) {
+        $targetSites = @($allSites | Where-Object { $_.enabled -ne $false })
+        Write-Host "  Target: All enabled sites ($($targetSites.Count))" -ForegroundColor Cyan
+    } else {
+        $excludeNames = @()
+        $hasExclude = ($exclude -ne "")
+
+        if ($hasExclude) {
+            $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+        }
+
+        $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
     }
 
-    Write-Host "========================================" -ForegroundColor Magenta
+    if ($targetSites.Count -eq 0) {
+        Write-Host "No enabled sites found." -ForegroundColor Yellow
+        exit 0
+    }
 
-    exit $(if ($failCount -eq 0) { 0 } else { 1 })
+    Write-Host "  Target:  $($targetSites.Count) site(s)" -ForegroundColor Cyan
+    Write-Host "  API:     onboard-plugin/v1/audit-logs/clear" -ForegroundColor Cyan
+    Write-Host ""
+
+    $results = @()
+
+    foreach ($targetSite in $targetSites) {
+        $siteName = $targetSite.name
+        $siteUrl = $targetSite.url.TrimEnd("/")
+        $cred = Get-DefaultSiteCredential $targetSite
+
+        if (-not $cred) {
+            Write-Host "  [$siteName] SKIPPED: No valid credentials" -ForegroundColor Red
+            $results += @{ Site = $siteName; Plugin = "plugins-onboard"; Status = "SKIPPED"; Error = "No credentials" }
+            continue
+        }
+
+        $authHeader = Build-BasicAuthHeader $cred.Username $cred.Password
+        $auditClearUrl = "$siteUrl/wp-json/onboard-plugin/v1/audit-logs/clear"
+
+        Write-Host "  [$siteName] audit logs..." -ForegroundColor Yellow -NoNewline
+
+        try {
+            $headers = @{
+                "Authorization" = $authHeader
+                "Content-Type"  = "application/json"
+            }
+            $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+            $isSuccess = ($response.success -eq $true)
+
+            if ($isSuccess) {
+                $recordsCleared = if ($response.records_cleared) { $response.records_cleared } else { 0 }
+                Write-Host " OK ($recordsCleared records)" -ForegroundColor Green
+                $results += @{ Site = $siteName; Plugin = "plugins-onboard"; Status = "OK"; Error = $null }
+            } else {
+                $errorMsg = if ($response.error) { $response.error } else { "Unknown error" }
+                Write-Host " FAILED" -ForegroundColor Red
+                Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
+                $results += @{ Site = $siteName; Plugin = "plugins-onboard"; Status = "FAILED"; Error = $errorMsg }
+            }
+        } catch {
+            $errorMsg = Get-ClearLogsErrorMessage $_
+            $responseBody = Get-ClearLogsResponseBody $_
+            Write-Host " FAILED" -ForegroundColor Red
+            Write-Host "    Error: $errorMsg" -ForegroundColor DarkYellow
+
+            $hasResponseBody = ($null -ne $responseBody)
+
+            if ($hasResponseBody) {
+                Write-Host "    Response: $responseBody" -ForegroundColor DarkGray
+            }
+            $results += @{ Site = $siteName; Plugin = "plugins-onboard"; Status = "FAILED"; Error = $errorMsg; ResponseBody = $responseBody }
+        }
+    }
+
+    # Summary
+    Show-ClearLogsSummary $results ""
+
+    exit $(if (($results | Where-Object { $_.Status -ne "OK" }).Count -eq 0) { 0 } else { 1 })
 }
 
 # ── Two-step log clear flow ──────────────────────────────────────────────
@@ -166,7 +273,8 @@ function Invoke-TwoStepLogClear {
         [string]$AuthHeader,
         [string]$MachineName,
         [string]$SiteName,
-        [string]$PluginLabel
+        [string]$PluginLabel,
+        [string]$LogType = "all"
     )
 
     $headers = @{
@@ -199,9 +307,17 @@ function Invoke-TwoStepLogClear {
 
     $token = $step1Response.token
 
-    # Step 2: Confirm with token
+    # Step 2: Confirm with token (include type filter)
     $confirmUrl = "$ApiBase/logs/clear/confirm"
-    $confirmBody = @{ token = $token } | ConvertTo-Json -Compress
+    $confirmPayload = @{ token = $token }
+
+    $hasTypeFilter = ($LogType -ne "all")
+
+    if ($hasTypeFilter) {
+        $confirmPayload["type"] = $LogType
+    }
+
+    $confirmBody = $confirmPayload | ConvertTo-Json -Compress
 
     try {
         $step2Response = Invoke-RestMethod -Uri $confirmUrl -Method Post -Headers $headers -Body $confirmBody -ErrorAction Stop
@@ -221,6 +337,100 @@ function Invoke-TwoStepLogClear {
     }
 
     return @{ Site = $SiteName; Plugin = $PluginLabel; Status = "OK"; Error = $null; ResponseBody = $null }
+}
+
+# ── Plugin Filter Resolution ────────────────────────────────────────────
+
+function Resolve-PluginFilter {
+    param(
+        [array]$AllPlugins,
+        [string]$Filter
+    )
+
+    $normalizedFilter = $Filter.Trim().ToLower()
+
+    $isQUpload = ($normalizedFilter -eq "q" -or $normalizedFilter -eq "qupload" -or $normalizedFilter -eq "quick-upload")
+    $isRiseup = ($normalizedFilter -eq "r" -or $normalizedFilter -eq "riseup" -or $normalizedFilter -eq "riseup-asia" -or $normalizedFilter -eq "riseup-asia-uploader")
+
+    if ($isQUpload) {
+        return @($AllPlugins | Where-Object { $_.Slug -eq "qupload" })
+    }
+
+    if ($isRiseup) {
+        return @($AllPlugins | Where-Object { $_.Slug -ne "qupload" })
+    }
+
+    # Fuzzy match on slug or name
+    return @($AllPlugins | Where-Object {
+        $_.Slug.ToLower().Contains($normalizedFilter) -or $_.Name.ToLower().Contains($normalizedFilter)
+    })
+}
+
+# ── Log Type Filter Resolution ──────────────────────────────────────────
+
+function Resolve-LogTypeFilter {
+    param([string]$TypeFilter)
+
+    $hasNoFilter = ([string]::IsNullOrWhiteSpace($TypeFilter))
+
+    if ($hasNoFilter) {
+        return "all"
+    }
+
+    $normalized = $TypeFilter.Trim().ToLower()
+
+    switch ($normalized) {
+        { $_ -eq "log" -or $_ -eq "info" -or $_ -eq "activity" } { return "log" }
+        { $_ -eq "err" -or $_ -eq "error" -or $_ -eq "errors" }  { return "error" }
+        { $_ -eq "stack" -or $_ -eq "stacktrace" -or $_ -eq "trace" } { return "stacktrace" }
+        { $_ -eq "all" }    { return "all" }
+        { $_ -eq "files" }  { return "files" }
+        { $_ -eq "db" -or $_ -eq "database" } { return "database" }
+        default { return "all" }
+    }
+}
+
+# ── Summary ──────────────────────────────────────────────────────────────
+
+function Show-ClearLogsSummary {
+    param(
+        [array]$Results,
+        [string]$MachineName
+    )
+
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "  Log Clearing Summary" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+
+    $successCount = ($Results | Where-Object { $_.Status -eq "OK" }).Count
+    $failCount = $Results.Count - $successCount
+
+    foreach ($r in $Results) {
+        $color = if ($r.Status -eq "OK") { "Green" } else { "Red" }
+        $errorSuffix = if ($r.Error -and $r.Status -ne "OK") { " - $($r.Error)" } else { "" }
+        Write-Host "  [$($r.Site)] $($r.Plugin): $($r.Status)$errorSuffix" -ForegroundColor $color
+    }
+
+    Write-Host ""
+    Write-Host "  Total: $($Results.Count) | Success: $successCount | Failed: $failCount" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Yellow" })
+
+    if ($failCount -gt 0) {
+        Write-Host ""
+        Write-Host "  TROUBLESHOOTING:" -ForegroundColor Yellow
+        Write-Host "    403 rest_disabled: Enable logs_clear/logs_confirm in Riseup Settings > API Endpoints Configuration" -ForegroundColor Gray
+        Write-Host "    403 Forbidden: Check that the WordPress user has 'activate_plugins' capability" -ForegroundColor Gray
+
+        $hasMachineName = ($MachineName -ne "")
+
+        if ($hasMachineName) {
+            Write-Host "    403 machine_not_approved: Add '$MachineName' to approved_machines in plugin settings/settings.json" -ForegroundColor Gray
+        }
+        Write-Host "    404 Not Found: The plugin may not be installed/activated on that site" -ForegroundColor Gray
+        Write-Host "    401 Unauthorized: Verify Base64 credentials in powershell.json" -ForegroundColor Gray
+    }
+
+    Write-Host "========================================" -ForegroundColor Magenta
 }
 
 # ── Error Extraction (PS 5.1 + PS 7+ compatible) ────────────────────────
