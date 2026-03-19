@@ -86,6 +86,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "plugin-helpers.ps1")
 . (Join-Path $ModulesDir "zip-single.ps1")
 . (Join-Path $ModulesDir "zip-parallel.ps1")
+. (Join-Path $ModulesDir "php-check-parallel.ps1")
 . (Join-Path $ModulesDir "upload-single.ps1")
 . (Join-Path $ModulesDir "upload-parallel.ps1")
 . (Join-Path $ModulesDir "summary-printer.ps1")
