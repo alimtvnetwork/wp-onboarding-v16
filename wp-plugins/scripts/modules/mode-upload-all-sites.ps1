@@ -84,53 +84,90 @@ function Invoke-UploadAllSitesMode {
 
     Clear-PluginZips
 
-    # ── Phase 0: PHP Syntax Check ──────────────────────────────────────────
-    $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential:$sync
+    # ── Phase 0+1: PHP Syntax Check + ZIP (parallel) ──────────────────────
+    # PHP check and ZIP run concurrently — ZIP proceeds regardless of PHP errors.
+    # Failed PHP plugins are excluded from upload only, not from ZIP.
+    Write-Host ""
+    Write-Host "  ── Phase 0+1: PHP Check + ZIP (concurrent) ───────────────" -ForegroundColor Cyan
+
+    if ($sync) {
+        # Sequential mode: run PHP check first, then ZIP
+        $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential
+        Write-Host ""
+        Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+        $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential
+    } else {
+        # Parallel mode: start both as background job groups
+        # Start PHP check jobs
+        $phpResults = $null
+        $phpJob = Start-Job -Name "phase0-php" -ScriptBlock {
+            param($ModulePath, $PluginPaths)
+            . $ModulePath
+            # Reconstruct folder objects from paths
+            $folders = @($PluginPaths | ForEach-Object { Get-Item $_ })
+            Invoke-ParallelPhpCheck -PluginFolders $folders -Sequential
+        } -ArgumentList (Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
+
+        # Run ZIP in foreground (it has its own parallel jobs)
+        Write-Host ""
+        Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+        $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders
+
+        # Collect PHP results
+        Write-Host ""
+        Write-Host "  ── Phase 0: PHP Check Results ────────────────────────────" -ForegroundColor Cyan
+        $phpResults = Receive-Job -Job $phpJob -Wait
+        Remove-Job -Job $phpJob -Force
+
+        if ($null -eq $phpResults) {
+            Write-Host "    [PHP] Warning: PHP check job returned no results" -ForegroundColor Yellow
+            $phpResults = @()
+        }
+
+        # Print PHP results
+        foreach ($r in $phpResults) {
+            $duration = "{0:N1}s" -f $r.Duration
+            $skippedLabel = if ($r.SkippedCount -gt 0) { ", $($r.SkippedCount) skipped" } else { "" }
+            if ($r.Status -eq "OK") {
+                Write-Host "    [PHP] Passed: $($r.Slug) ($($r.FileCount) files$skippedLabel) [$duration]" -ForegroundColor Green
+            } elseif ($r.Status -eq "SKIPPED") {
+                Write-Host "    [PHP] Skipped: $($r.Slug) ($($r.Error)) [$duration]" -ForegroundColor Yellow
+            } else {
+                Write-Host "    [PHP] FAILED: $($r.Slug)" -ForegroundColor Red
+                Write-Host "          $($r.Error)" -ForegroundColor Red
+            }
+        }
+    }
 
     $failedSlugs = @($phpResults | Where-Object { $_.Status -eq "FAILED" } | ForEach-Object { $_.Slug })
-    $passedSlugs = @($phpResults | Where-Object { $_.Status -ne "FAILED" } | ForEach-Object { $_.Slug })
 
     if ($failedSlugs.Count -gt 0) {
         Write-Host ""
         Write-Host "  PHP check failed for: $($failedSlugs -join ', ')" -ForegroundColor Red
-        Write-Host "  These plugins will be excluded from ZIP and upload." -ForegroundColor Yellow
-        $pluginFolders = @($pluginFolders | Where-Object { $_.Name -in $passedSlugs })
+        Write-Host "  These plugins will be excluded from upload." -ForegroundColor Yellow
     }
-
-    if ($pluginFolders.Count -eq 0) {
-        Write-Host "  No plugins passed PHP syntax check. Aborting." -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host ""
-    Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
-
-    # ── Phase 1: ZIP ───────────────────────────────────────────────────────
-    $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential:$sync
 
     Write-ZipSummary -ZipResults $zipResults
 
-    # Build ZIP lookup
+    # Build ZIP lookup (exclude PHP-failed plugins from upload)
     $zipByPlugin = @{}
     $versionByPlugin = @{}
     foreach ($zipInfo in $zipResults) {
-        if ($zipInfo.Status -eq "OK") {
+        if ($zipInfo.Status -eq "OK" -and $zipInfo.Slug -notin $failedSlugs) {
             $zipByPlugin[$zipInfo.Slug] = $zipInfo.Path
             $versionByPlugin[$zipInfo.Slug] = $zipInfo.Version
         }
     }
 
-    $missingZipPlugins = @()
-    foreach ($folder in $pluginFolders) {
-        if (-not $zipByPlugin.ContainsKey($folder.Name)) {
-            $missingZipPlugins += $folder.Name
-        }
-    }
+    # Filter plugin folders to only those with valid ZIPs and passing PHP check
+    $uploadablePlugins = @($pluginFolders | Where-Object { $zipByPlugin.ContainsKey($_.Name) })
 
-    if ($missingZipPlugins.Count -gt 0) {
-        Write-Host "ERROR: Missing ZIP for plugin(s): $($missingZipPlugins -join ', ')" -ForegroundColor Red
+    if ($uploadablePlugins.Count -eq 0) {
+        Write-Host "  No plugins available for upload (all failed PHP check or ZIP)." -ForegroundColor Red
         exit 1
     }
+
+    $pluginFolders = $uploadablePlugins
 
     # ── Phase 2: Upload ───────────────────────────────────────────────────
     $uploadLogsDir = Join-Path $ScriptDir "logs" "uas-upload"
