@@ -144,24 +144,36 @@ trait LogClearingTrait
     }
 
     /** Consume the token, execute clearing, and return the result. */
-    private function executeClearConfirm(string $machineName): WP_REST_Response {
+    private function executeClearConfirm(string $machineName, string $type = 'all'): WP_REST_Response {
         $transientKey = $this->buildClearTokenKey($machineName);
         delete_transient($transientKey);
         $this->incrementLogClearCount($machineName);
 
-        $clearResult = $this->executeLogClearing();
-        $dbClearResult = $this->executeDatabaseClearing();
-        $clientIp = $this->resolveClientIp();
-        $mergedResult = array_merge($clearResult, $dbClearResult);
+        $clearResult = array();
 
-        $this->insertClearAuditEntry($machineName, $clientIp, $mergedResult);
+        $shouldClearFiles = ($type === 'all' || $type === 'files' || $type === 'log' || $type === 'error' || $type === 'stacktrace');
+        $shouldClearDb = ($type === 'all' || $type === 'database');
+
+        if ($shouldClearFiles) {
+            $clearResult = $this->executeLogClearing($type);
+        }
+
+        if ($shouldClearDb) {
+            $dbClearResult = $this->executeDatabaseClearing();
+            $clearResult = array_merge($clearResult, $dbClearResult);
+        }
+
+        $clientIp = $this->resolveClientIp();
+
+        $this->insertClearAuditEntry($machineName, $clientIp, $clearResult);
         $this->fileLogger->info('Logs cleared remotely', array(
             'machine' => $machineName,
             'ip'      => $clientIp,
-            'cleared' => $mergedResult,
+            'type'    => $type,
+            'cleared' => $clearResult,
         ));
 
-        return $this->buildClearSuccessResponse($machineName, $clientIp, $mergedResult);
+        return $this->buildClearSuccessResponse($machineName, $clientIp, $clearResult);
     }
 
     /** Build the success response after log clearing. */
@@ -182,16 +194,34 @@ trait LogClearingTrait
 
     // ── Clearing Execution ────────────────────────────────────────────
 
-    /** Execute file-based log clearing. */
-    private function executeLogClearing(): array {
+    /** Execute file-based log clearing, optionally filtered by type. */
+    private function executeLogClearing(string $type = 'all'): array {
         $logger = FileLogger::getInstance();
-        $logger->clearAllLogFiles();
 
-        return array(
-            'log_file'        => true,
-            'error_file'      => true,
-            'stacktrace_file' => true,
-        );
+        $isAllOrUnfiltered = ($type === 'all' || $type === 'files');
+
+        if ($isAllOrUnfiltered) {
+            $logger->clearAllLogFiles();
+
+            return array(
+                'log_file'        => true,
+                'error_file'      => true,
+                'stacktrace_file' => true,
+            );
+        }
+
+        // Selective clearing by type
+        $result = array('log_file' => false, 'error_file' => false, 'stacktrace_file' => false);
+
+        if ($type === 'log') {
+            $result['log_file'] = $logger->clearLogFileByType('log');
+        } elseif ($type === 'error') {
+            $result['error_file'] = $logger->clearLogFileByType('error');
+        } elseif ($type === 'stacktrace') {
+            $result['stacktrace_file'] = $logger->clearLogFileByType('stacktrace');
+        }
+
+        return $result;
     }
 
     /** Truncate Transactions and ErrorSessions tables. */
