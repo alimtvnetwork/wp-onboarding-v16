@@ -259,7 +259,16 @@ function Invoke-SinglePluginStatusCheck {
         if ($response.StatusCode -eq 200) {
             $result.Status = "OK"
             try {
-                $body = $response.Content | ConvertFrom-Json
+                $rawStatusBody = $response.Content
+
+                if ($script:pluginStatusVerbose) {
+                    Write-Host "" 
+                    Write-Host "    ── RAW STATUS [$($SiteConfig.Name) / $PluginSlug] ──" -ForegroundColor DarkCyan
+                    Write-Host $rawStatusBody -ForegroundColor Gray
+                    Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
+                }
+
+                $body = $rawStatusBody | ConvertFrom-Json
                 $metadata = Get-PluginStatusMetadata -Body $body
                 $result.Version = $metadata.Version
                 $result.WpVersion = $metadata.WpVersion
@@ -488,6 +497,7 @@ function Invoke-ParallelPluginStatusCheck {
                     ServerTime    = ""
                     DbAvailable   = ""
                     RemoteSiteUrl = ""
+                    RawStatusBody = ""
                     Status        = "ERROR"
                     HttpStatus    = 0
                     Message       = ""
@@ -515,7 +525,10 @@ function Invoke-ParallelPluginStatusCheck {
                     if ($response.StatusCode -eq 200) {
                         $result.Status = "OK"
                         try {
-                            $body = $response.Content | ConvertFrom-Json
+                            $rawStatusBody = $response.Content
+                            $result.RawStatusBody = $rawStatusBody
+
+                            $body = $rawStatusBody | ConvertFrom-Json
                             $metadata = Get-JobPluginStatusMetadata -Body $body
                             $result.Version = $metadata.Version
                             $result.WpVersion = $metadata.WpVersion
@@ -622,6 +635,7 @@ function Invoke-ParallelPluginStatusCheck {
                 ServerTime    = ""
                 DbAvailable   = ""
                 RemoteSiteUrl = ""
+                RawStatusBody = ""
                 Status        = "FAILED"
                 HttpStatus    = 0
                 Message       = "Background job crashed"
@@ -643,6 +657,13 @@ function Invoke-ParallelPluginStatusCheck {
         $vLabel = if ($result.Version) { "v$($result.Version)" } else { "-" }
         $duration = "{0:N1}s" -f $result.Duration
         Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel $($result.Status) $duration" -ForegroundColor $color
+
+        if ($script:pluginStatusVerbose -and $result.RawStatusBody) {
+            Write-Host "" 
+            Write-Host "    ── RAW STATUS [$($result.Site) / $($result.Plugin)] ──" -ForegroundColor DarkCyan
+            Write-Host $result.RawStatusBody -ForegroundColor Gray
+            Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
+        }
 
         Remove-Job -Job $job -Force
     }

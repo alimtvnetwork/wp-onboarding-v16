@@ -236,6 +236,7 @@ if ($help) {
     Write-Host "  -pas                Check plugin status on ALL configured sites"
     Write-Host "  -ps -err            Include error logs and stack traces"
     Write-Host "  -pas -err           Status + error logs for all sites"
+    Write-Host "  -pas -v             Verbose: print raw /status response JSON"
     Write-Host "  -pas -i N           Status for site #N only"
     Write-Host "  -pas -site 'name'   Status for named site only"
     Write-Host "  -pas -sync          Sequential mode"
@@ -312,6 +313,7 @@ if ($help) {
     Write-Host "  Plugin status:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ps                      # Status on default site"
     Write-Host "    .\run.ps1 -pas                     # Status on all sites"
+    Write-Host "    .\run.ps1 -pas -v                  # Verbose: print raw /status JSON"
     Write-Host "    .\run.ps1 -pas -err                # Status + error logs + stack traces"
     Write-Host "    .\run.ps1 -pas -i 1 -err           # Status + errors for site #1"
     Write-Host "    .\run.ps1 -pas -site 'Test V1'     # Status for specific site"
@@ -376,6 +378,7 @@ if ($pluginstatus -or $pas) {
     Invoke-GitPull
     $pluginstatusall = $pas
     $script:errorFlag = $errorlogs
+    $script:pluginStatusVerbose = $verbose
     Invoke-PluginStatusMode
 }
 # ============================================================================
