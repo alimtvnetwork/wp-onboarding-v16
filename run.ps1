@@ -34,7 +34,10 @@ param(
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
-    [switch]$check
+    [switch]$check,
+    [Alias('ps')][switch]$pluginstatus,
+    [switch]$pas,
+    [Alias('err')][switch]$errorlogs
 )
 
 # -rebuild is a convenience flag that combines -force and -install
