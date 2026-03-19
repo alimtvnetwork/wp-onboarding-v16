@@ -113,7 +113,13 @@ function Invoke-UploadAllSitesMode {
 
     # ── Phase 2: Upload ───────────────────────────────────────────────────
     $uploadLogsDir = Join-Path $ScriptDir "logs" "uas-upload"
-    if (-not (Test-Path $uploadLogsDir)) {
+    if (Test-Path $uploadLogsDir) {
+        $existingLogs = @(Get-ChildItem -Path $uploadLogsDir -File)
+        if ($existingLogs.Count -gt 0) {
+            Write-Host "  Clearing $($existingLogs.Count) previous log file(s) from $uploadLogsDir" -ForegroundColor DarkGray
+            Remove-Item -Path (Join-Path $uploadLogsDir "*") -Force
+        }
+    } else {
         New-Item -ItemType Directory -Path $uploadLogsDir -Force | Out-Null
     }
     $logStamp = Get-Date -Format "yyyyMMdd-HHmmss"
