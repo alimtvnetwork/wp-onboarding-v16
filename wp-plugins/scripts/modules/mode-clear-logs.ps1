@@ -209,6 +209,19 @@ function Invoke-PurgeMode {
     Write-Host "  Scope:   File logs (all plugins) + Audit logs (plugins-onboard)" -ForegroundColor Cyan
     Write-Host ""
 
+    # Confirmation prompt — destructive operation
+    $siteList = ($targetSites | ForEach-Object { $_.name }) -join ', '
+    Write-Host "  WARNING: This will permanently delete ALL logs, stacktraces, and audit data" -ForegroundColor Yellow
+    Write-Host "  on: $siteList" -ForegroundColor Yellow
+    Write-Host ""
+    $confirm = Read-Host "  Type 'yes' to confirm, or anything else to cancel"
+    if ($confirm -ne 'yes') {
+        Write-Host ""
+        Write-Host "  Cancelled." -ForegroundColor Gray
+        return
+    }
+    Write-Host ""
+
     # Build plugin namespace list for file log clearing
     $pluginNamespaces = @()
 
