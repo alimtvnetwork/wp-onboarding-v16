@@ -224,6 +224,10 @@ if ($help) {
     Write-Host "  -cl -i 1,2,3        Clear logs on multiple sites by index"
     Write-Host "  -cl -xs 'name'      Clear logs on all sites EXCEPT the named one(s)"
     Write-Host "  -cla                Clear logs on ALL configured sites (both plugins)"
+    Write-Host "  -cl -logplugin 'q'  Clear logs for QUpload only (q|qupload|r|riseup)"
+    Write-Host "  -cl -logtype 'err'  Clear only error logs (log|err|stack|all, default: all)"
+    Write-Host "  -cl -audit          Clear audit logs (plugins-onboard DB) on default site"
+    Write-Host "  -cla -audit         Clear audit logs on ALL sites"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
