@@ -92,7 +92,12 @@ param(
     # ── API namespace override for cross-upload ──────────────────────────────
     # Default: qupload-api/v1. Set to 'riseup-asia-api/v1' for cross-upload.
     [Alias('api')]
-    [string]$ApiNamespace = "qupload-api/v1"
+    [string]$ApiNamespace = "qupload-api/v1",
+
+    # ── Skip pre-checks (PHP syntax + backed enum + ZIP creation) ─────────
+    # Used by parallel pipeline where Phase 0+1 already validated and zipped.
+    [Alias('spc')]
+    [switch]$SkipPreChecks = $false
 )
 
 # =============================================================================
