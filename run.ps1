@@ -305,6 +305,7 @@ if ($help) {
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
+    Write-Host "    .\run.ps1 -zas         # ZIP all plugins (parallel + PHP check)"
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host ""
