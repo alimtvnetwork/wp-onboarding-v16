@@ -705,12 +705,24 @@ function Write-PluginStatusSummary {
 
             # Show extra details if available
             if ($isOk) {
+                # Line 1: environment info
                 $detailParts = @()
                 if ($r.WpVersion) { $detailParts += "WP $($r.WpVersion)" }
                 if ($r.PhpVersion) { $detailParts += "PHP $($r.PhpVersion)" }
                 if ($r.ApiNamespace) { $detailParts += "API $($r.ApiNamespace)" }
+                if ($r.DbAvailable) {
+                    $dbLabel = if ($r.DbAvailable -eq "True") { "DB ✓" } else { "DB ✗" }
+                    $detailParts += $dbLabel
+                }
                 if ($detailParts.Count -gt 0) {
                     Write-Host ("  │      " + ($detailParts -join " | ")) -ForegroundColor DarkGray
+                }
+                # Line 2: server time and remote site URL
+                $extraParts = @()
+                if ($r.ServerTime) { $extraParts += "Server: $($r.ServerTime)" }
+                if ($r.RemoteSiteUrl) { $extraParts += "URL: $($r.RemoteSiteUrl)" }
+                if ($extraParts.Count -gt 0) {
+                    Write-Host ("  │      " + ($extraParts -join " | ")) -ForegroundColor DarkGray
                 }
             }
 
