@@ -97,6 +97,78 @@ function Invoke-PluginStatusMode {
     exit $(if ($failCount -eq 0) { 0 } else { 1 })
 }
 
+function Get-PluginStatusPayload {
+    param(
+        [Parameter(Mandatory=$false)]
+        [object]$Body
+    )
+
+    if ($null -eq $Body) {
+        return $null
+    }
+
+    if ($Body.PSObject.Properties.Name -contains 'Results') {
+        $results = $Body.Results
+        if ($results -is [System.Array]) {
+            if ($results.Count -gt 0) {
+                return $results[0]
+            }
+        } elseif ($null -ne $results) {
+            return $results
+        }
+    }
+
+    if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
+        return $Body.Result
+    }
+
+    return $Body
+}
+
+function Get-PluginStatusMetadata {
+    param(
+        [Parameter(Mandatory=$false)]
+        [object]$Body
+    )
+
+    $payload = Get-PluginStatusPayload -Body $Body
+    $metadata = @{
+        Payload       = $payload
+        Version       = ""
+        WpVersion     = ""
+        PhpVersion    = ""
+        PluginName    = ""
+        ApiNamespace  = ""
+        ServerTime    = ""
+    }
+
+    if ($null -eq $payload) {
+        return $metadata
+    }
+
+    $versionCandidates = @(
+        $payload.Version,
+        $payload.version,
+        $Body.Version,
+        $Body.version
+    ) | Where-Object { $_ }
+
+    if ($versionCandidates.Count -gt 0) { $metadata.Version = [string]$versionCandidates[0] }
+    if ($payload.Wp) { $metadata.WpVersion = [string]$payload.Wp }
+    elseif ($payload.WpVersion) { $metadata.WpVersion = [string]$payload.WpVersion }
+
+    if ($payload.Php) { $metadata.PhpVersion = [string]$payload.Php }
+    elseif ($payload.PhpVersion) { $metadata.PhpVersion = [string]$payload.PhpVersion }
+
+    if ($payload.Plugin) { $metadata.PluginName = [string]$payload.Plugin }
+    if ($payload.Api) { $metadata.ApiNamespace = [string]$payload.Api }
+    elseif ($payload.ApiNamespace) { $metadata.ApiNamespace = [string]$payload.ApiNamespace }
+
+    if ($payload.ServerTime) { $metadata.ServerTime = [string]$payload.ServerTime }
+
+    return $metadata
+}
+
 function Invoke-SinglePluginStatusCheck {
     param(
         [Parameter(Mandatory)][hashtable]$SiteConfig,
@@ -126,7 +198,6 @@ function Invoke-SinglePluginStatusCheck {
         Stacktrace   = ""
     }
 
-    # Get credential
     $credential = Get-DefaultSiteCredential -SiteConfig $SiteConfig
     if (-not $credential) {
         $result.Status = "AUTH_FAILED"
@@ -140,7 +211,6 @@ function Invoke-SinglePluginStatusCheck {
     $statusUrl = "$siteUrl/wp-json/$Namespace/status"
     $authHeader = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("$($credential.Username):$($credential.Password)"))
 
-    # ── Status check ──────────────────────────────────────────────────
     try {
         $response = Invoke-WebRequest -Uri $statusUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
         $result.HttpStatus = $response.StatusCode
@@ -149,33 +219,16 @@ function Invoke-SinglePluginStatusCheck {
             $result.Status = "OK"
             try {
                 $body = $response.Content | ConvertFrom-Json
-
-                # Envelope format: { Status: {...}, Results: [{Version: "2.21.0", ...}] }
-                $firstResult = $null
-                if ($body.Results -and $body.Results.Count -gt 0) {
-                    $firstResult = $body.Results[0]
-                }
-
-                # Try envelope Results[0].Version first, then top-level fallbacks
-                if ($firstResult -and $firstResult.Version) {
-                    $result.Version = $firstResult.Version
-                } elseif ($body.Version) {
-                    $result.Version = $body.Version
-                } elseif ($body.version) {
-                    $result.Version = $body.version
-                }
-
-                # Extract additional details from envelope
-                if ($firstResult) {
-                    if ($firstResult.Wp) { $result.WpVersion = $firstResult.Wp }
-                    if ($firstResult.WpVersion) { $result.WpVersion = $firstResult.WpVersion }
-                    if ($firstResult.Php) { $result.PhpVersion = $firstResult.Php }
-                    if ($firstResult.PhpVersion) { $result.PhpVersion = $firstResult.PhpVersion }
-                    if ($firstResult.Plugin) { $result.PluginName = $firstResult.Plugin }
-                    if ($firstResult.Api) { $result.ApiNamespace = $firstResult.Api }
-                    if ($firstResult.ServerTime) { $result.ServerTime = $firstResult.ServerTime }
-                }
-            } catch { }
+                $metadata = Get-PluginStatusMetadata -Body $body
+                $result.Version = $metadata.Version
+                $result.WpVersion = $metadata.WpVersion
+                $result.PhpVersion = $metadata.PhpVersion
+                $result.PluginName = $metadata.PluginName
+                $result.ApiNamespace = $metadata.ApiNamespace
+                $result.ServerTime = $metadata.ServerTime
+            } catch {
+                $result.Message = "Status endpoint returned invalid JSON"
+            }
         }
     } catch {
         $statusCode = 0
@@ -193,14 +246,14 @@ function Invoke-SinglePluginStatusCheck {
         }
     }
 
-    # ── Error log retrieval (only if version >= 2.18.0) ────────────
     if ($result.Status -eq "OK") {
         $minLogsVersion = [version]"2.18.0"
         $remoteVersion = $null
         try { if ($result.Version) { $remoteVersion = [version]$result.Version } } catch { }
 
         if (-not $remoteVersion -or $remoteVersion -lt $minLogsVersion) {
-            $result.ErrorLog = "Skipped (remote v$($result.Version) < v$minLogsVersion; update plugin to enable)"
+            $versionLabel = if ($result.Version) { "v$($result.Version)" } else { "unknown" }
+            $result.ErrorLog = "Skipped (remote $versionLabel < v$minLogsVersion; update plugin to enable)"
         } else {
             $logsUrl = "$siteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
 
@@ -213,23 +266,24 @@ function Invoke-SinglePluginStatusCheck {
                     $result.ErrorLog = "Not available (endpoint returned non-JSON)"
                 } else {
                     $logsBody = $rawContent | ConvertFrom-Json
+                    $logsPayload = Get-PluginStatusPayload -Body $logsBody
                     $safeSiteName = ($SiteConfig.Name -replace '[^a-zA-Z0-9_-]', '_')
 
-                    if ($logsBody.ErrorLog -and $logsBody.ErrorLog.Exists -and $logsBody.ErrorLog.Lines -gt 0) {
-                        $errorContent = $logsBody.ErrorLog.Content
-                        $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
+                    if ($logsPayload.ErrorLog -and $logsPayload.ErrorLog.Exists -and $logsPayload.ErrorLog.Lines -gt 0) {
+                        $errorContent = $logsPayload.ErrorLog.Content
+                        $result.ErrorLog = "$($logsPayload.ErrorLog.Lines) lines"
                         $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
                         $errorContent | Out-File -FilePath $errorFile -Encoding UTF8
-                    } elseif ($logsBody.ErrorLog) {
+                    } elseif ($logsPayload.ErrorLog) {
                         $result.ErrorLog = "No errors"
                     }
 
-                    if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
-                        $stackContent = $logsBody.StacktraceLog.Content
-                        $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
+                    if ($logsPayload.StacktraceLog -and $logsPayload.StacktraceLog.Exists -and $logsPayload.StacktraceLog.Lines -gt 0) {
+                        $stackContent = $logsPayload.StacktraceLog.Content
+                        $result.Stacktrace = "$($logsPayload.StacktraceLog.Lines) lines"
                         $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
                         $stackContent | Out-File -FilePath $stackFile -Encoding UTF8
-                    } elseif ($logsBody.StacktraceLog) {
+                    } elseif ($logsPayload.StacktraceLog) {
                         $result.Stacktrace = "No errors"
                     }
                 }
@@ -257,10 +311,6 @@ function Invoke-ParallelPluginStatusCheck {
         [Parameter(Mandatory)][string]$StatusLogsDir
     )
 
-    $statusModulePath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "mode-plugin-status.ps1"
-    $pluginHelpersPath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "plugin-helpers.ps1"
-    $helpersPath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "helpers.ps1"
-
     $jobs = @()
     $jobIndex = 0
 
@@ -282,20 +332,91 @@ function Invoke-ParallelPluginStatusCheck {
             $jobs += Start-Job -Name "status-$currentIndex-$pluginSlug-$siteName" -ScriptBlock {
                 param($SiteUrl, $SiteName, $PluginSlug, $Namespace, $Username, $Password, $StatusLogsDir, $Index, $IncludeErrors)
 
+                function Get-JobPluginStatusPayload {
+                    param([object]$Body)
+
+                    if ($null -eq $Body) {
+                        return $null
+                    }
+
+                    if ($Body.PSObject.Properties.Name -contains 'Results') {
+                        $results = $Body.Results
+                        if ($results -is [System.Array]) {
+                            if ($results.Count -gt 0) {
+                                return $results[0]
+                            }
+                        } elseif ($null -ne $results) {
+                            return $results
+                        }
+                    }
+
+                    if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
+                        return $Body.Result
+                    }
+
+                    return $Body
+                }
+
+                function Get-JobPluginStatusMetadata {
+                    param([object]$Body)
+
+                    $payload = Get-JobPluginStatusPayload -Body $Body
+                    $metadata = @{
+                        Payload       = $payload
+                        Version       = ""
+                        WpVersion     = ""
+                        PhpVersion    = ""
+                        PluginName    = ""
+                        ApiNamespace  = ""
+                        ServerTime    = ""
+                    }
+
+                    if ($null -eq $payload) {
+                        return $metadata
+                    }
+
+                    $versionCandidates = @(
+                        $payload.Version,
+                        $payload.version,
+                        $Body.Version,
+                        $Body.version
+                    ) | Where-Object { $_ }
+
+                    if ($versionCandidates.Count -gt 0) { $metadata.Version = [string]$versionCandidates[0] }
+                    if ($payload.Wp) { $metadata.WpVersion = [string]$payload.Wp }
+                    elseif ($payload.WpVersion) { $metadata.WpVersion = [string]$payload.WpVersion }
+
+                    if ($payload.Php) { $metadata.PhpVersion = [string]$payload.Php }
+                    elseif ($payload.PhpVersion) { $metadata.PhpVersion = [string]$payload.PhpVersion }
+
+                    if ($payload.Plugin) { $metadata.PluginName = [string]$payload.Plugin }
+                    if ($payload.Api) { $metadata.ApiNamespace = [string]$payload.Api }
+                    elseif ($payload.ApiNamespace) { $metadata.ApiNamespace = [string]$payload.ApiNamespace }
+
+                    if ($payload.ServerTime) { $metadata.ServerTime = [string]$payload.ServerTime }
+
+                    return $metadata
+                }
+
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
                 $result = @{
-                    Site       = $SiteName
-                    SiteUrl    = $SiteUrl
-                    Plugin     = $PluginSlug
-                    Version    = ""
-                    Status     = "ERROR"
-                    HttpStatus = 0
-                    Message    = ""
-                    Duration   = 0
-                    ErrorLog   = ""
-                    Stacktrace = ""
-                    Index      = $Index
+                    Site         = $SiteName
+                    SiteUrl      = $SiteUrl
+                    Plugin       = $PluginSlug
+                    Version      = ""
+                    WpVersion    = ""
+                    PhpVersion   = ""
+                    PluginName   = ""
+                    ApiNamespace = ""
+                    ServerTime   = ""
+                    Status       = "ERROR"
+                    HttpStatus   = 0
+                    Message      = ""
+                    Duration     = 0
+                    ErrorLog     = ""
+                    Stacktrace   = ""
+                    Index        = $Index
                 }
 
                 if (-not $Username) {
@@ -317,9 +438,16 @@ function Invoke-ParallelPluginStatusCheck {
                         $result.Status = "OK"
                         try {
                             $body = $response.Content | ConvertFrom-Json
-                            if ($body.Version) { $result.Version = $body.Version }
-                            elseif ($body.version) { $result.Version = $body.version }
-                        } catch { }
+                            $metadata = Get-JobPluginStatusMetadata -Body $body
+                            $result.Version = $metadata.Version
+                            $result.WpVersion = $metadata.WpVersion
+                            $result.PhpVersion = $metadata.PhpVersion
+                            $result.PluginName = $metadata.PluginName
+                            $result.ApiNamespace = $metadata.ApiNamespace
+                            $result.ServerTime = $metadata.ServerTime
+                        } catch {
+                            $result.Message = "Status endpoint returned invalid JSON"
+                        }
                     }
                 } catch {
                     $statusCode = 0
@@ -337,14 +465,14 @@ function Invoke-ParallelPluginStatusCheck {
                     }
                 }
 
-                # Error log retrieval (only if version >= 2.18.0)
                 if ($result.Status -eq "OK") {
                     $minLogsVersion = [version]"2.18.0"
                     $remoteVer = $null
                     try { if ($result.Version) { $remoteVer = [version]$result.Version } } catch { }
 
                     if (-not $remoteVer -or $remoteVer -lt $minLogsVersion) {
-                        $result.ErrorLog = "Skipped (remote v$($result.Version) < v$minLogsVersion; update plugin to enable)"
+                        $versionLabel = if ($result.Version) { "v$($result.Version)" } else { "unknown" }
+                        $result.ErrorLog = "Skipped (remote $versionLabel < v$minLogsVersion; update plugin to enable)"
                     } else {
                         $logsUrl = "$SiteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
                         try {
@@ -356,21 +484,22 @@ function Invoke-ParallelPluginStatusCheck {
                                 $result.ErrorLog = "Not available (endpoint returned non-JSON)"
                             } else {
                                 $logsBody = $rawContent | ConvertFrom-Json
+                                $logsPayload = Get-JobPluginStatusPayload -Body $logsBody
                                 $safeSiteName = ($SiteName -replace '[^a-zA-Z0-9_-]', '_')
 
-                                if ($logsBody.ErrorLog -and $logsBody.ErrorLog.Exists -and $logsBody.ErrorLog.Lines -gt 0) {
-                                    $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
+                                if ($logsPayload.ErrorLog -and $logsPayload.ErrorLog.Exists -and $logsPayload.ErrorLog.Lines -gt 0) {
+                                    $result.ErrorLog = "$($logsPayload.ErrorLog.Lines) lines"
                                     $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
-                                    $logsBody.ErrorLog.Content | Out-File -FilePath $errorFile -Encoding UTF8
-                                } elseif ($logsBody.ErrorLog) {
+                                    $logsPayload.ErrorLog.Content | Out-File -FilePath $errorFile -Encoding UTF8
+                                } elseif ($logsPayload.ErrorLog) {
                                     $result.ErrorLog = "No errors"
                                 }
 
-                                if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
-                                    $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
+                                if ($logsPayload.StacktraceLog -and $logsPayload.StacktraceLog.Exists -and $logsPayload.StacktraceLog.Lines -gt 0) {
+                                    $result.Stacktrace = "$($logsPayload.StacktraceLog.Lines) lines"
                                     $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
-                                    $logsBody.StacktraceLog.Content | Out-File -FilePath $stackFile -Encoding UTF8
-                                } elseif ($logsBody.StacktraceLog) {
+                                    $logsPayload.StacktraceLog.Content | Out-File -FilePath $stackFile -Encoding UTF8
+                                } elseif ($logsPayload.StacktraceLog) {
                                     $result.Stacktrace = "No errors"
                                 }
                             }
@@ -394,7 +523,6 @@ function Invoke-ParallelPluginStatusCheck {
         }
     }
 
-    # Collect results
     $results = @()
     foreach ($job in $jobs) {
         $result = Receive-Job -Job $job -Wait | Select-Object -First 1
@@ -402,17 +530,22 @@ function Invoke-ParallelPluginStatusCheck {
         if ($null -eq $result) {
             $idx = [int](($job.Name -split '-')[1])
             $result = @{
-                Index      = $idx
-                Site       = "unknown"
-                SiteUrl    = ""
-                Plugin     = "unknown"
-                Version    = ""
-                Status     = "FAILED"
-                HttpStatus = 0
-                Message    = "Background job crashed"
-                Duration   = 0
-                ErrorLog   = ""
-                Stacktrace = ""
+                Index        = $idx
+                Site         = "unknown"
+                SiteUrl      = ""
+                Plugin       = "unknown"
+                Version      = ""
+                WpVersion    = ""
+                PhpVersion   = ""
+                PluginName   = ""
+                ApiNamespace = ""
+                ServerTime   = ""
+                Status       = "FAILED"
+                HttpStatus   = 0
+                Message      = "Background job crashed"
+                Duration     = 0
+                ErrorLog     = ""
+                Stacktrace   = ""
             }
         }
 
