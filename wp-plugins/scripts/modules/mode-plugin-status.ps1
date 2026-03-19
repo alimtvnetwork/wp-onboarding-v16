@@ -245,6 +245,8 @@ function Invoke-SinglePluginStatusCheck {
                 $result.PluginName = $metadata.PluginName
                 $result.ApiNamespace = $metadata.ApiNamespace
                 $result.ServerTime = $metadata.ServerTime
+                $result.DbAvailable = $metadata.DbAvailable
+                $result.RemoteSiteUrl = $metadata.RemoteSiteUrl
             } catch {
                 $result.Message = "Status endpoint returned invalid JSON"
             }
