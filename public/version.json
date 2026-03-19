@@ -9,6 +9,18 @@
   "quploadVersion": "2.25.0",
   "changelog": [
     {
+      "version": "2.25.0",
+      "date": "2026-03-19",
+      "title": "PHP Notice Resilience in Status Checks & Version Consolidation",
+      "changes": [
+        "🛡️ -pas/-ps now strips PHP deprecation notices (e.g. UpdraftPlus) before JSON parsing — no more 'version unknown'",
+        "🔍 -v (verbose) flag shows raw JSON response body for status and log retrieval in both sequential and parallel modes",
+        "🏷️ QUpload status response fields now use enum-backed ResponseKeyType for type-safe parsing",
+        "📊 Parallel status checks resilient to WP_DEBUG_DISPLAY noise from third-party plugins",
+        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.25.0"
+      ]
+    },
+    {
       "version": "2.22.0",
       "date": "2026-03-20",
       "title": "PHP Notice Resilience, Verbose Status & Enum-Backed QUpload Keys",
