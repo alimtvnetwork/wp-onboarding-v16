@@ -87,7 +87,12 @@ param(
 
     # ── ZIP-only mode: create ZIP without uploading ──────────────────────────
     [Alias('z')]
-    [switch]$ZipOnly = $false
+    [switch]$ZipOnly = $false,
+
+    # ── API namespace override for cross-upload ──────────────────────────────
+    # Default: qupload-api/v1. Set to 'riseup-asia-api/v1' for cross-upload.
+    [Alias('api')]
+    [string]$ApiNamespace = "qupload-api/v1"
 )
 
 # =============================================================================
