@@ -143,6 +143,7 @@ if ($Help) {
     Write-Host "  -a,  -activate      Activate plugin after install"
     Write-Host "  -dz, -deletezip     Delete ZIP after successful upload"
     Write-Host "  -q,  -quiet         JSON-only output (for scripting)"
+    Write-Host "  -spc,-skipprechecks Skip PHP check + ZIP (used by parallel pipeline)"
     Write-Host "  -jc, -jsonconfig    Inline JSON config string"
     Write-Host "  -z,  -ziponly       Create ZIP only, skip upload"
     Write-Host ""
