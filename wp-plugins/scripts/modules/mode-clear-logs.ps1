@@ -323,7 +323,10 @@ function Invoke-PurgeMode {
 # ── Audit Log Clearing Mode ─────────────────────────────────────────────
 
 function Invoke-ClearAuditLogsMode {
-    param([switch]$ForceAll)
+    param(
+        [switch]$ForceAll,
+        [switch]$VerboseMode
+    )
 
     $modeLabel = if ($ForceAll) { "Audit Log Clearing Mode (-cla -audit: ALL sites)" } else { "Audit Log Clearing Mode (-cl -audit)" }
     Write-Host "========================================" -ForegroundColor Magenta
