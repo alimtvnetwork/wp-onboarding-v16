@@ -83,7 +83,21 @@ trait UploadFileSystemTrait
 
             return $this->handleZipOpenFailure($tempFile, $tempExtractDir, $openResult, $errorMsg, $tempFileSize);
         }
-...
+
+        $isExtracted = $zip->extractTo($tempExtractDir);
+        $zip->close();
+        @unlink($tempFile);
+
+        if ($isExtracted === false) {
+            return $this->handleZipExtractFailure($tempFile, $tempExtractDir);
+        }
+
+        $this->fileLogger->info('ZIP extracted successfully', ['extractDir' => $tempExtractDir]);
+        $this->traceStage('extractZipToTemp:done', ['extractDir' => $tempExtractDir]);
+
+        return null;
+    }
+
     /** Clean up after a failed ZIP open. */
     private function handleZipOpenFailure(
         string $tempFile,
