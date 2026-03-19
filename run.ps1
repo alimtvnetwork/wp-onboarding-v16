@@ -35,6 +35,7 @@ param(
     [string]$logplugin = "",
     [string]$logtype = "",
     [switch]$audit,
+    [switch]$purge,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
