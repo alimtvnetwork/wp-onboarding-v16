@@ -43,6 +43,15 @@ Sensitive or destructive remote operations (e.g., log clearing, ZIP deletion) re
 
 The `-am` command includes a **preflight readiness check** that queries each site's `/status` endpoint and only attempts approval on sites running v2.17.0+. Sites with older versions are skipped with clear "NOT READY" messaging.
 
+## Cross-Upload Resilience
+
+To prevent self-update failures from bricking the deployment pipeline, plugins are uploaded via the **other** plugin's API whenever possible:
+
+- **Uploading QUpload** → uses Riseup Asia API (`riseup-asia-api/v1/upload`) with automatic fallback to QUpload's own endpoint if Riseup Asia is not installed
+- **Uploading Riseup Asia** → uses QUpload API (`qupload-api/v1/upload`), which is the default upload path
+
+The `upload-single.ps1` module probes the cross-upload partner's `/status` endpoint before choosing which API to target. The `upload-plugin-U-Q.ps1` script accepts a `-ApiNamespace` parameter (default: `qupload-api/v1`) to support flexible endpoint targeting.
+
 ## Data Cleanup
 
 - **Deactivation:** Clears `qupload/temp/` directory
