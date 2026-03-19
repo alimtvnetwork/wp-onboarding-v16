@@ -17,6 +17,7 @@ param(
     [switch]$uas,
     [Alias('as')][switch]$allsites,
     [switch]$za,
+    [switch]$zas,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
     [Alias('t')][switch]$test,
