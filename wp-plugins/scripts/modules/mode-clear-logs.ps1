@@ -137,7 +137,7 @@ function Invoke-ClearLogsMode {
 
             Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor Yellow -NoNewline
 
-            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType $resolvedType
+            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType $resolvedType -VerboseMode:$VerboseMode
 
             $results += $clearResult
 
