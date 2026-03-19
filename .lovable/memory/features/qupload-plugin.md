@@ -1,5 +1,5 @@
 # Memory: features/qupload-plugin
-Updated: 2026-03-16
+Updated: 2026-03-19
 
 The 'Quick Upload' (QUpload) WordPress plugin (PHP 8.1+) is a minimal remote deployment system namespaced as `QUpload\`. It uses WordPress Application Passwords (Basic Auth) for security and provides a REST API (`qupload-api/v1`) for ZIP-based plugin deployment (`POST /upload`) and slug-based activation (`PUT /activate`). The upload process includes automatic slug detection, forced replacement of existing versions, and OPcache resetting.
 
@@ -42,6 +42,15 @@ QUpload is designed for maximum simplicity and runtime stability, focusing exclu
 Sensitive or destructive remote operations (e.g., log clearing, ZIP deletion) require the source machine's name to be present in an `approved_machines` allowlist persisted in the WordPress database. The `PUT /machines/approve` endpoint manages this list remotely. PowerShell command: `.\run.ps1 -am [NAME]`.
 
 The `-am` command includes a **preflight readiness check** that queries each site's `/status` endpoint and only attempts approval on sites running v2.17.0+. Sites with older versions are skipped with clear "NOT READY" messaging.
+
+## Cross-Upload Resilience
+
+To prevent self-update failures from bricking the deployment pipeline, plugins are uploaded via the **other** plugin's API whenever possible:
+
+- **Uploading QUpload** → uses Riseup Asia API (`riseup-asia-api/v1/upload`) with automatic fallback to QUpload's own endpoint if Riseup Asia is not installed
+- **Uploading Riseup Asia** → uses QUpload API (`qupload-api/v1/upload`), which is the default upload path
+
+The `upload-single.ps1` module probes the cross-upload partner's `/status` endpoint before choosing which API to target. The `upload-plugin-U-Q.ps1` script accepts a `-ApiNamespace` parameter (default: `qupload-api/v1`) to support flexible endpoint targeting.
 
 ## Data Cleanup
 

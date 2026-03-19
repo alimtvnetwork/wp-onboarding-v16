@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.18.0",
-  "releaseDate": "2026-03-18",
+  "version": "2.20.0",
+  "releaseDate": "2026-03-19",
   "gitCommit": "dev",
-  "buildTime": "2026-03-18T00:00:00Z",
-  "scriptVersion": "2.18.0",
-  "wpPluginVersion": "2.18.0",
-  "quploadVersion": "2.18.0",
+  "buildTime": "2026-03-19T00:00:00Z",
+  "scriptVersion": "2.20.0",
+  "wpPluginVersion": "2.20.0",
+  "quploadVersion": "2.20.0",
   "changelog": [
+    {
+      "version": "2.20.0",
+      "date": "2026-03-19",
+      "title": "Cross-Upload Resilience & Version Bump",
+      "changes": [
+        "🔄 Cross-upload: QUpload is now uploaded via Riseup Asia API for resilience (fallback to self-upload if unavailable)",
+        "🔄 Cross-upload: Riseup Asia uploaded via QUpload API (already default, now documented)",
+        "🛡️ Upload pipeline detects cross-upload partner availability via /status probe before choosing API",
+        "⚙️ upload-plugin-U-Q.ps1 now supports -ApiNamespace parameter for flexible endpoint targeting",
+        "🐛 Fixed PHP syntax error in QUpload UploadFileSystemTrait.php (truncated extractZipToTemp method)",
+        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.20.0"
+      ]
+    },
     {
       "version": "2.18.0",
       "date": "2026-03-18",

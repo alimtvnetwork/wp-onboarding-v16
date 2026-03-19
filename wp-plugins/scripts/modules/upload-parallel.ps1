@@ -81,8 +81,12 @@ function Invoke-ParallelPluginUpload {
                 continue
             }
 
+            # Determine cross-upload API namespace
+            $apiNamespace = Get-UploadApiNamespace -PluginSlug $pluginName -SiteUrl $siteUrl -Username $decodedUsername -Password $decodedPassword
+
             $jobName = "upload-$currentIndex-$pluginName-$siteName"
-            Write-Host "    [$pluginName->$siteName] ZIP: $prebuiltZipPath" -ForegroundColor DarkGray
+            $apiLabel = if ($apiNamespace -eq "qupload-api/v1") { "" } else { " [cross-upload: $apiNamespace]" }
+            Write-Host "    [$pluginName->$siteName] ZIP: $prebuiltZipPath$apiLabel" -ForegroundColor DarkGray
 
             $preAllocated += @{
                 Index    = $currentIndex
@@ -98,7 +102,7 @@ function Invoke-ParallelPluginUpload {
             }
 
             $uploadJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace)
 
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -120,7 +124,7 @@ function Invoke-ParallelPluginUpload {
                 try {
                     $ErrorActionPreference = "Stop"
                     $global:LASTEXITCODE = $null
-                    $output = (& $QUploadScript -jc $jsonConfigStr -a 2>&1 | Out-String)
+                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace 2>&1 | Out-String)
                     $invokeSucceeded = $true
                 } catch {
                     $output = ($_ | Out-String).Trim()
@@ -152,7 +156,7 @@ function Invoke-ParallelPluginUpload {
                     Error    = $null
                     Duration = $sw.Elapsed.TotalSeconds
                 }
-            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex
+            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex, $apiNamespace
 
             $jobIndex++
         }

@@ -87,7 +87,12 @@ param(
 
     # ── ZIP-only mode: create ZIP without uploading ──────────────────────────
     [Alias('z')]
-    [switch]$ZipOnly = $false
+    [switch]$ZipOnly = $false,
+
+    # ── API namespace override for cross-upload ──────────────────────────────
+    # Default: qupload-api/v1. Set to 'riseup-asia-api/v1' for cross-upload.
+    [Alias('api')]
+    [string]$ApiNamespace = "qupload-api/v1"
 )
 
 # =============================================================================
@@ -520,9 +525,10 @@ if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 $modeLabel = if ($ZipOnly) { "ZIP Only" } else { "Upload" }
 
 Write-Status ""
+$apiLabel = if ($ApiNamespace -eq "qupload-api/v1") { "QUpload API" } else { "$ApiNamespace (cross-upload)" }
 Write-Status "========================================" -Color Cyan
 Write-Status "  Quick Upload - Plugin $modeLabel" -Color Cyan
-Write-Status "  Using QUpload API" -Color Cyan
+Write-Status "  Using $apiLabel" -Color Cyan
 Write-Status "========================================" -Color Cyan
 Write-Status ""
 
@@ -626,9 +632,10 @@ if ($ZipOnly) {
 # STEP 3: Auth pre-check via QUpload /status endpoint
 # =============================================================================
 Write-Status ""
-Write-Status "[3/5] Checking auth via QUpload status endpoint..." -Color Yellow
+$authLabel = if ($ApiNamespace -eq "qupload-api/v1") { "QUpload" } else { $ApiNamespace.Split('/')[0] }
+Write-Status "[3/5] Checking auth via $authLabel status endpoint..." -Color Yellow
 
-$apiBase = "$WordPressSiteURL/wp-json/qupload-api/v1"
+$apiBase = "$WordPressSiteURL/wp-json/$ApiNamespace"
 $statusUrl = "$apiBase/status"
 $uploadUrl = "$apiBase/upload"
 
@@ -751,10 +758,10 @@ try {
 }
 
 # =============================================================================
-# STEP 4: Upload to QUpload API
+# STEP 4: Upload via $ApiNamespace
 # =============================================================================
 Write-Status ""
-Write-Status "[4/5] Uploading to QUpload API..." -Color Yellow
+Write-Status "[4/5] Uploading via $apiLabel..." -Color Yellow
 Write-Status "      Endpoint: $uploadUrl" -Color Gray
 
 try {
