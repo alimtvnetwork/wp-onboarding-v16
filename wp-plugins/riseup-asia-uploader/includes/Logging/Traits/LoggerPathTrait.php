@@ -228,4 +228,33 @@ trait LoggerPathTrait {
 
         return array('deleted' => $deletedFiles, 'failed' => $failedFiles);
     }
+
+    /**
+     * Clear a specific log file by type (log, error, stacktrace).
+     *
+     * @param string $type One of 'log', 'error', 'stacktrace'.
+     * @return bool True if file was deleted or did not exist.
+     */
+    public function clearLogFileByType(string $type): bool {
+        $isInitFailed = ($this->isInitialized === false && $this->initializePaths() === false);
+
+        if ($isInitFailed) {
+            return false;
+        }
+
+        $fileMap = array(
+            'log'        => $this->logFile,
+            'error'      => $this->errorFile,
+            'stacktrace' => $this->stacktraceFile,
+        );
+
+        $file = $fileMap[$type] ?? null;
+        $isFileMissing = ($file === null || !file_exists($file));
+
+        if ($isFileMissing) {
+            return true;
+        }
+
+        return $this->clearLogFile($file);
+    }
 }
