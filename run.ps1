@@ -390,7 +390,7 @@ if ($listsites) {
 # PREFLIGHT CHECK (early exit)
 # ============================================================================
 if ($check) {
-    Invoke-CheckMode
+    Invoke-CheckMode -VerboseMode:$verbose
 }
 
 # ============================================================================
