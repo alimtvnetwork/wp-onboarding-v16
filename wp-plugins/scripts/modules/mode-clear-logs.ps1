@@ -457,8 +457,18 @@ function Invoke-TwoStepLogClear {
     # Step 1: Request token
     $clearUrl = "$ApiBase/logs/clear"
 
+    if ($VerboseMode) {
+        Write-Host ""
+        Write-Host "    [VERBOSE] DELETE $clearUrl" -ForegroundColor DarkGray
+    }
+
     try {
         $step1Response = Invoke-RestMethod -Uri $clearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+        if ($VerboseMode) {
+            $respJson = $step1Response | ConvertTo-Json -Depth 5 -Compress
+            Write-Host "    [VERBOSE] Step 1 Response: $respJson" -ForegroundColor DarkGray
+        }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
         $responseBody = Get-ClearLogsResponseBody $_
