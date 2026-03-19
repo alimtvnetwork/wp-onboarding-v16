@@ -506,7 +506,7 @@ if ($approvemachine) {
         }
     }
 
-    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval
+    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval -VerboseMode:$verbose
 }
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }
