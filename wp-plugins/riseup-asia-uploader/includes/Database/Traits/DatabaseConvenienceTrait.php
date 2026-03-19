@@ -151,4 +151,34 @@ trait DatabaseConvenienceTrait {
             return false;
         }
     }
+
+    /**
+     * Execute SQL only if the given column does not yet exist on the table.
+     *
+     * Used by migration traits to safely ADD COLUMN without failing on
+     * re-runs or partial migrations.
+     *
+     * @param string $table  Table name.
+     * @param string $column Column name to check.
+     * @param string $sql    DDL statement to execute when the column is missing.
+     */
+    private function execIfColumnMissing(string $table, string $column, string $sql): void {
+        $rows = $this->pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as $row) {
+            if (strcasecmp($row['name'], $column) === 0) {
+                $this->fileLogger->debug("Column already exists, skipping", [
+                    'table'  => $table,
+                    'column' => $column,
+                ]);
+                return;
+            }
+        }
+
+        $this->pdo->exec($sql);
+        $this->fileLogger->info("Column added via migration", [
+            'table'  => $table,
+            'column' => $column,
+        ]);
+    }
 }
