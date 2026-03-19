@@ -164,9 +164,8 @@ function Invoke-SinglePluginStatusCheck {
         }
     }
 
-    # ── Error log retrieval (if requested and status is OK) ───────────
-    $isErrorMode = $IncludeErrors -or $script:errorFlag
-    if ($isErrorMode -and $result.Status -eq "OK") {
+    # ── Error log retrieval (always when status is OK) ───────────────
+    if ($result.Status -eq "OK") {
         $logsUrl = "$siteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
 
         try {
