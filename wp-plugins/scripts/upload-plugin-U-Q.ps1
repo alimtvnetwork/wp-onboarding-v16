@@ -25,6 +25,7 @@
 #   -q,  -quiet         Suppress output (JSON-only output)
 #   -jc, -jsonconfig    Inline JSON config string (overrides all other config)
 #   -z,  -ziponly       Create ZIP only, do not upload
+#   -spc,-skipprechecks  Skip PHP syntax check + ZIP creation (pipeline mode)
 #
 # CONFIGURATION (qupload-config.json):
 #   {
