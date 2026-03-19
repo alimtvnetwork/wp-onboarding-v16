@@ -149,27 +149,25 @@ function Invoke-UploadAllSitesMode {
 
     Write-ZipSummary -ZipResults $zipResults
 
-    # Build ZIP lookup
+    # Build ZIP lookup (exclude PHP-failed plugins from upload)
     $zipByPlugin = @{}
     $versionByPlugin = @{}
     foreach ($zipInfo in $zipResults) {
-        if ($zipInfo.Status -eq "OK") {
+        if ($zipInfo.Status -eq "OK" -and $zipInfo.Slug -notin $failedSlugs) {
             $zipByPlugin[$zipInfo.Slug] = $zipInfo.Path
             $versionByPlugin[$zipInfo.Slug] = $zipInfo.Version
         }
     }
 
-    $missingZipPlugins = @()
-    foreach ($folder in $pluginFolders) {
-        if (-not $zipByPlugin.ContainsKey($folder.Name)) {
-            $missingZipPlugins += $folder.Name
-        }
-    }
+    # Filter plugin folders to only those with valid ZIPs and passing PHP check
+    $uploadablePlugins = @($pluginFolders | Where-Object { $zipByPlugin.ContainsKey($_.Name) })
 
-    if ($missingZipPlugins.Count -gt 0) {
-        Write-Host "ERROR: Missing ZIP for plugin(s): $($missingZipPlugins -join ', ')" -ForegroundColor Red
+    if ($uploadablePlugins.Count -eq 0) {
+        Write-Host "  No plugins available for upload (all failed PHP check or ZIP)." -ForegroundColor Red
         exit 1
     }
+
+    $pluginFolders = $uploadablePlugins
 
     # ── Phase 2: Upload ───────────────────────────────────────────────────
     $uploadLogsDir = Join-Path $ScriptDir "logs" "uas-upload"
