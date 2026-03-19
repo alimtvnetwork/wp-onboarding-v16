@@ -1016,12 +1016,12 @@ try {
 
     # Compress with maximum compression (SmallestSize)
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    Write-Status "      Compressing (SmallestSize)..." -Color Gray -NoNewline
+    Write-Status "      Compressing (Optimal)..." -Color Gray -NoNewline
 
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $pluginTempDir,
         $OutputZipPath,
-        [System.IO.Compression.CompressionLevel]::SmallestSize,
+        [System.IO.Compression.CompressionLevel]::Optimal,
         $true  # includeBaseDirectory — keeps the slug folder as root
     )
 

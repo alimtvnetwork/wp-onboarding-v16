@@ -434,12 +434,12 @@ try {
     New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
     Copy-Item -Path "$PluginFolderPath\*" -Destination $pluginTempDir -Recurse
     
-    # Use System.IO.Compression for SmallestSize (better than Compress-Archive Optimal)
+    # Use System.IO.Compression for Optimal (PHP-compatible, good compression)
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $pluginTempDir,
         $OutputZipPath,
-        [System.IO.Compression.CompressionLevel]::SmallestSize,
+        [System.IO.Compression.CompressionLevel]::Optimal,
         $true  # includeBaseDirectory — keeps the slug folder as root
     )
     
