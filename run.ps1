@@ -378,6 +378,7 @@ if ($pluginstatus -or $pas) {
     Invoke-GitPull
     $pluginstatusall = $pas
     $script:errorFlag = $errorlogs
+    $script:pluginStatusVerbose = $verbose
     Invoke-PluginStatusMode
 }
 # ============================================================================
