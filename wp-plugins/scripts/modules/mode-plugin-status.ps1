@@ -109,16 +109,21 @@ function Invoke-SinglePluginStatusCheck {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
     $result = @{
-        Site       = $SiteConfig.Name
-        SiteUrl    = $SiteConfig.Url
-        Plugin     = $PluginSlug
-        Version    = ""
-        Status     = "ERROR"
-        HttpStatus = 0
-        Message    = ""
-        Duration   = 0
-        ErrorLog   = ""
-        Stacktrace = ""
+        Site         = $SiteConfig.Name
+        SiteUrl      = $SiteConfig.Url
+        Plugin       = $PluginSlug
+        Version      = ""
+        WpVersion    = ""
+        PhpVersion   = ""
+        PluginName   = ""
+        ApiNamespace = ""
+        ServerTime   = ""
+        Status       = "ERROR"
+        HttpStatus   = 0
+        Message      = ""
+        Duration     = 0
+        ErrorLog     = ""
+        Stacktrace   = ""
     }
 
     # Get credential
