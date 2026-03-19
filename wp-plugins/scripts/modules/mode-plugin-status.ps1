@@ -181,6 +181,8 @@ function Invoke-SinglePluginStatusCheck {
                 $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
                 $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
                 $errorContent | Out-File -FilePath $errorFile -Encoding UTF8
+            } elseif ($logsBody.ErrorLog) {
+                $result.ErrorLog = "No errors"
             }
 
             # Stacktrace log
@@ -189,9 +191,16 @@ function Invoke-SinglePluginStatusCheck {
                 $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
                 $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
                 $stackContent | Out-File -FilePath $stackFile -Encoding UTF8
+            } elseif ($logsBody.StacktraceLog) {
+                $result.Stacktrace = "No errors"
             }
         } catch {
-            $result.ErrorLog = "Failed to retrieve"
+            $restStatus = 0
+            $restMessage = $_.Exception.Message
+            if ($_.Exception.Response) {
+                $restStatus = [int]$_.Exception.Response.StatusCode
+            }
+            $result.ErrorLog = if ($restStatus -gt 0) { "REST $restStatus`: $restMessage" } else { "REST error: $restMessage" }
         }
     }
 
@@ -301,15 +310,24 @@ function Invoke-ParallelPluginStatusCheck {
                             $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
                             $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
                             $logsBody.ErrorLog.Content | Out-File -FilePath $errorFile -Encoding UTF8
+                        } elseif ($logsBody.ErrorLog) {
+                            $result.ErrorLog = "No errors"
                         }
 
                         if ($logsBody.StacktraceLog -and $logsBody.StacktraceLog.Exists -and $logsBody.StacktraceLog.Lines -gt 0) {
                             $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
                             $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
                             $logsBody.StacktraceLog.Content | Out-File -FilePath $stackFile -Encoding UTF8
+                        } elseif ($logsBody.StacktraceLog) {
+                            $result.Stacktrace = "No errors"
                         }
                     } catch {
-                        $result.ErrorLog = "Failed to retrieve"
+                        $restStatus = 0
+                        $restMessage = $_.Exception.Message
+                        if ($_.Exception.Response) {
+                            $restStatus = [int]$_.Exception.Response.StatusCode
+                        }
+                        $result.ErrorLog = if ($restStatus -gt 0) { "REST $restStatus`: $restMessage" } else { "REST error: $restMessage" }
                     }
                 }
 
@@ -457,10 +475,10 @@ function Write-PluginStatusSummary {
         foreach ($r in ($Results | Where-Object { $_.ErrorLog -or $_.Stacktrace })) {
             Write-Host ""
             Write-Host "  [$($r.Site) / $($r.Plugin)]" -ForegroundColor White
-            $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "empty" }
-            $stackLabel = if ($r.Stacktrace) { $r.Stacktrace } else { "empty" }
-            $errorColor = if ($r.ErrorLog -and $r.ErrorLog -ne "empty") { "Yellow" } else { "DarkGray" }
-            $stackColor = if ($r.Stacktrace -and $r.Stacktrace -ne "empty") { "Yellow" } else { "DarkGray" }
+            $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "No errors" }
+            $stackLabel = if ($r.Stacktrace) { $r.Stacktrace } else { "No errors" }
+            $errorColor = if ($r.ErrorLog -match '^\d+ lines$') { "Yellow" } elseif ($r.ErrorLog -match '^REST ') { "Red" } else { "DarkGray" }
+            $stackColor = if ($r.Stacktrace -match '^\d+ lines$') { "Yellow" } elseif ($r.Stacktrace -match '^REST ') { "Red" } else { "DarkGray" }
             Write-Host "    Error log:  $errorLabel" -ForegroundColor $errorColor
             Write-Host "    Stacktrace: $stackLabel" -ForegroundColor $stackColor
         }
