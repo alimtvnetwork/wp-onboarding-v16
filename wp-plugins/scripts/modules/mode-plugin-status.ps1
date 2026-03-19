@@ -355,10 +355,6 @@ function Invoke-ParallelPluginStatusCheck {
                         }
                     }
                 }
-                        }
-                        $result.ErrorLog = if ($restStatus -gt 0) { "REST $restStatus`: $restMessage" } else { "REST error: $restMessage" }
-                    }
-                }
 
                 $sw.Stop()
                 $result.Duration = $sw.Elapsed.TotalSeconds
