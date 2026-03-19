@@ -1021,7 +1021,7 @@ try {
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $pluginTempDir,
         $OutputZipPath,
-        [System.IO.Compression.CompressionLevel]::Optimal,
+        [System.IO.Compression.CompressionLevel]::SmallestSize,
         $true  # includeBaseDirectory — keeps the slug folder as root
     )
 
