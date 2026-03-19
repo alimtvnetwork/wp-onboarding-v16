@@ -84,6 +84,27 @@ function Invoke-UploadAllSitesMode {
 
     Clear-PluginZips
 
+    # ── Phase 0: PHP Syntax Check ──────────────────────────────────────────
+    $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential:$sync
+
+    $failedSlugs = @($phpResults | Where-Object { $_.Status -eq "FAILED" } | ForEach-Object { $_.Slug })
+    $passedSlugs = @($phpResults | Where-Object { $_.Status -ne "FAILED" } | ForEach-Object { $_.Slug })
+
+    if ($failedSlugs.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  PHP check failed for: $($failedSlugs -join ', ')" -ForegroundColor Red
+        Write-Host "  These plugins will be excluded from ZIP and upload." -ForegroundColor Yellow
+        $pluginFolders = @($pluginFolders | Where-Object { $_.Name -in $passedSlugs })
+    }
+
+    if ($pluginFolders.Count -eq 0) {
+        Write-Host "  No plugins passed PHP syntax check. Aborting." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+
     # ── Phase 1: ZIP ───────────────────────────────────────────────────────
     $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential:$sync
 
