@@ -381,11 +381,11 @@ function New-PluginZipFile($PluginDir, $PluginSlug) {
     New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
     Copy-Item -Path "$PluginDir\*" -Destination $pluginTempDir -Recurse
 
-    # Best compression: SmallestSize (level 9)
+    # Optimal compression (PHP-compatible)
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $tempDir,
         $zipOutputPath,
-        [System.IO.Compression.CompressionLevel]::SmallestSize,
+        [System.IO.Compression.CompressionLevel]::Optimal,
         $false
     )
 
