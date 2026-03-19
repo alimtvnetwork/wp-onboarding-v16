@@ -43,6 +43,9 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 |------|-------|-------------|
 | `-clearlogs` | `-cl` | Clear logs on default site (both plugins) |
 | `-clearlogsall` | `-cla` | Clear logs on ALL sites (both plugins) |
+| `-logplugin 'q'` | | Filter to specific plugin (`q`\|`qupload`\|`r`\|`riseup`) |
+| `-logtype 'err'` | | Clear specific log type (`log`\|`err`\|`stack`\|`files`\|`db`\|`all`) |
+| `-audit` | | Clear audit/activity logs (plugins-onboard DB) instead of file logs |
 
 ### Machine Management
 | Flag | Alias | Description |
