@@ -564,22 +564,24 @@ function Invoke-ParallelPluginStatusCheck {
         if ($null -eq $result) {
             $idx = [int](($job.Name -split '-')[1])
             $result = @{
-                Index        = $idx
-                Site         = "unknown"
-                SiteUrl      = ""
-                Plugin       = "unknown"
-                Version      = ""
-                WpVersion    = ""
-                PhpVersion   = ""
-                PluginName   = ""
-                ApiNamespace = ""
-                ServerTime   = ""
-                Status       = "FAILED"
-                HttpStatus   = 0
-                Message      = "Background job crashed"
-                Duration     = 0
-                ErrorLog     = ""
-                Stacktrace   = ""
+                Index         = $idx
+                Site          = "unknown"
+                SiteUrl       = ""
+                Plugin        = "unknown"
+                Version       = ""
+                WpVersion     = ""
+                PhpVersion    = ""
+                PluginName    = ""
+                ApiNamespace  = ""
+                ServerTime    = ""
+                DbAvailable   = ""
+                RemoteSiteUrl = ""
+                Status        = "FAILED"
+                HttpStatus    = 0
+                Message       = "Background job crashed"
+                Duration      = 0
+                ErrorLog      = ""
+                Stacktrace    = ""
             }
         }
 
