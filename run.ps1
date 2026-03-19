@@ -313,6 +313,7 @@ if ($help) {
     Write-Host "  Plugin status:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ps                      # Status on default site"
     Write-Host "    .\run.ps1 -pas                     # Status on all sites"
+    Write-Host "    .\run.ps1 -pas -v                  # Verbose: print raw /status JSON"
     Write-Host "    .\run.ps1 -pas -err                # Status + error logs + stack traces"
     Write-Host "    .\run.ps1 -pas -i 1 -err           # Status + errors for site #1"
     Write-Host "    .\run.ps1 -pas -site 'Test V1'     # Status for specific site"
