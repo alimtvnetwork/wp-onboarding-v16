@@ -306,6 +306,14 @@ if ($help) {
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host ""
+    Write-Host "  Plugin status:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -ps                      # Status on default site"
+    Write-Host "    .\run.ps1 -pas                     # Status on all sites"
+    Write-Host "    .\run.ps1 -pas -err                # Status + error logs + stack traces"
+    Write-Host "    .\run.ps1 -pas -i 1 -err           # Status + errors for site #1"
+    Write-Host "    .\run.ps1 -pas -site 'Test V1'     # Status for specific site"
+    Write-Host "    .\run.ps1 -pas -sync               # Status on all sites (sequential)"
+    Write-Host ""
     Write-Host "  Info:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ls          # List all sites (deploy + backend)"
     Write-Host "    .\run.ps1 -lr          # Same as -ls"
