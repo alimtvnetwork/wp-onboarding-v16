@@ -635,6 +635,7 @@ function Invoke-ParallelPluginStatusCheck {
                 ServerTime    = ""
                 DbAvailable   = ""
                 RemoteSiteUrl = ""
+                RawStatusBody = ""
                 Status        = "FAILED"
                 HttpStatus    = 0
                 Message       = "Background job crashed"
@@ -656,6 +657,13 @@ function Invoke-ParallelPluginStatusCheck {
         $vLabel = if ($result.Version) { "v$($result.Version)" } else { "-" }
         $duration = "{0:N1}s" -f $result.Duration
         Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel $($result.Status) $duration" -ForegroundColor $color
+
+        if ($script:pluginStatusVerbose -and $result.RawStatusBody) {
+            Write-Host "" 
+            Write-Host "    ── RAW STATUS [$($result.Site) / $($result.Plugin)] ──" -ForegroundColor DarkCyan
+            Write-Host $result.RawStatusBody -ForegroundColor Gray
+            Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
+        }
 
         Remove-Job -Job $job -Force
     }
