@@ -36,6 +36,7 @@ param(
     [string]$logtype = "",
     [switch]$audit,
     [switch]$purge,
+    [Alias('cas')][switch]$clearallsites,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
@@ -233,12 +234,13 @@ if ($help) {
     Write-Host "  -cla -audit         Clear audit logs on ALL sites"
     Write-Host "  -cla -logplugin 'r' -logtype 'stack'  Clear stacktraces for Riseup only on ALL sites"
     Write-Host ""
-    Write-Host "  PURGE (clear ALL logs + audit in one command):" -ForegroundColor DarkYellow
-    Write-Host "  -purge              Purge all logs + audit on ALL sites"
-    Write-Host "  -purge -site 'name' Purge all logs + audit on a specific site"
-    Write-Host "  -purge -i 1         Purge all logs + audit on site #1"
-    Write-Host "  -purge -i 1,2       Purge all logs + audit on sites #1 and #2"
-    Write-Host "  -purge -xs 'name'   Purge all logs + audit on all sites EXCEPT named one(s)"
+    Write-Host "  CLEAR ALL (nuke everything in one command):" -ForegroundColor DarkYellow
+    Write-Host "  -cas                Clear ALL logs + audit + stacktraces on ALL sites (both plugins)"
+    Write-Host "  -cas -site 'name'   Clear everything on a specific site"
+    Write-Host "  -cas -i 1           Clear everything on site #1"
+    Write-Host "  -cas -i 1,2         Clear everything on sites #1 and #2"
+    Write-Host "  -cas -xs 'name'     Clear everything on all sites EXCEPT named one(s)"
+    Write-Host "  -purge              Alias for -cas"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
@@ -483,7 +485,7 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
-if ($purge) { Invoke-PurgeMode }
+if ($purge -or $clearallsites) { Invoke-PurgeMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($approvemachine) {
