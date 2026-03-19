@@ -141,17 +141,18 @@ trait LogClearingTrait
     }
 
     /** Consume the token, execute clearing, and return the result. */
-    private function executeClearConfirm(string $machineName): WP_REST_Response {
+    private function executeClearConfirm(string $machineName, string $type = 'all'): WP_REST_Response {
         $transientKey = $this->buildClearTokenKey($machineName);
         delete_transient($transientKey);
         $this->incrementLogClearCount($machineName);
 
-        $clearResult = $this->executeLogClearing();
+        $clearResult = $this->executeLogClearing($type);
         $clientIp = $this->resolveClientIp();
 
         $this->fileLogger->info('Logs cleared remotely', array(
             'machine' => $machineName,
             'ip'      => $clientIp,
+            'type'    => $type,
             'cleared' => $clearResult,
         ));
 
@@ -176,16 +177,34 @@ trait LogClearingTrait
 
     // ── Clearing Execution ────────────────────────────────────────────
 
-    /** Execute the actual log file deletion. */
-    private function executeLogClearing(): array {
+    /** Execute the actual log file deletion, optionally filtered by type. */
+    private function executeLogClearing(string $type = 'all'): array {
         $logger = FileLogger::getInstance();
-        $logger->clearAllLogFiles();
 
-        return array(
-            'log_file'        => true,
-            'error_file'      => true,
-            'stacktrace_file' => true,
-        );
+        $isAllOrUnfiltered = ($type === 'all' || $type === 'files');
+
+        if ($isAllOrUnfiltered) {
+            $logger->clearAllLogFiles();
+
+            return array(
+                'log_file'        => true,
+                'error_file'      => true,
+                'stacktrace_file' => true,
+            );
+        }
+
+        // Selective clearing by type
+        $result = array('log_file' => false, 'error_file' => false, 'stacktrace_file' => false);
+
+        if ($type === 'log') {
+            $result['log_file'] = $logger->clearLogFileByType('log');
+        } elseif ($type === 'error') {
+            $result['error_file'] = $logger->clearLogFileByType('error');
+        } elseif ($type === 'stacktrace') {
+            $result['stacktrace_file'] = $logger->clearLogFileByType('stacktrace');
+        }
+
+        return $result;
     }
 
     // ── Machine Validation ────────────────────────────────────────────
