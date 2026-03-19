@@ -436,9 +436,12 @@ function Write-PluginStatusSummary {
         [string]$StatusLogsDir
     )
 
+    $checkTimestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host "  Plugin Status Summary" -ForegroundColor Magenta
+    Write-Host "  Checked: $checkTimestamp" -ForegroundColor DarkGray
     Write-Host "========================================" -ForegroundColor Magenta
 
     $sorted = @($Results | Sort-Object { $_.Index })
@@ -447,60 +450,66 @@ function Write-PluginStatusSummary {
     foreach ($group in $grouped) {
         $siteName = $group.Name
         $siteUrl = if ($group.Group[0].SiteUrl) { $group.Group[0].SiteUrl } else { "" }
-        $siteLabel = if ($siteUrl) { "$siteName ($siteUrl)" } else { $siteName }
 
         Write-Host ""
-        Write-Host "  $siteLabel" -ForegroundColor Cyan
+        Write-Host "  ┌─────────────────────────────────────────────────────────" -ForegroundColor DarkCyan
+        Write-Host "  │ $siteName" -ForegroundColor Cyan -NoNewline
+        if ($siteUrl) { Write-Host "  $siteUrl" -ForegroundColor DarkGray } else { Write-Host "" }
+        Write-Host "  ├─────────────────────────────────────────────────────────" -ForegroundColor DarkCyan
 
         foreach ($r in $group.Group) {
             $isOk = ($r.Status -eq "OK")
+            $isNotInstalled = ($r.Status -eq "NOT_INSTALLED")
 
+            # Plugin status line
             if ($isOk) {
                 $symbol = [char]0x2713  # ✓
-                $color = "Green"
-            } elseif ($r.Status -eq "NOT_INSTALLED") {
-                $symbol = "o"
-                $color = "Yellow"
+                $statusColor = "Green"
+            } elseif ($isNotInstalled) {
+                $symbol = "○"
+                $statusColor = "Yellow"
             } else {
-                $symbol = "x"
-                $color = "Red"
+                $symbol = "✗"
+                $statusColor = "Red"
             }
 
-            $vLabel = if ($r.Version) { "v$($r.Version)" } else { "-" }
+            $vLabel = if ($r.Version) { "v$($r.Version)" } else { "version unknown" }
+            $vColor = if ($r.Version) { "White" } else { "DarkYellow" }
             $duration = "{0:N1}s" -f $r.Duration
-            $statusLabel = $r.Status
-            if ($r.Message -and $r.Status -ne "OK") { $statusLabel += " ($($r.Message))" }
 
-            Write-Host ("    $symbol {0,-24} {1,-10} {2,-30} {3}" -f $r.Plugin, $vLabel, $statusLabel, $duration) -ForegroundColor $color
+            Write-Host "  │" -ForegroundColor DarkCyan -NoNewline
+            Write-Host "  $symbol " -ForegroundColor $statusColor -NoNewline
+            Write-Host "$($r.Plugin)" -ForegroundColor White -NoNewline
+            Write-Host "  " -NoNewline
+            Write-Host "$vLabel" -ForegroundColor $vColor -NoNewline
+            Write-Host "  " -NoNewline
+            Write-Host "$($r.Status)" -ForegroundColor $statusColor -NoNewline
+            Write-Host "  [$duration]" -ForegroundColor DarkGray
+            if ($r.Message -and -not $isOk) {
+                Write-Host "  │      $($r.Message)" -ForegroundColor $statusColor
+            }
+
+            # Nested logs under each plugin
+            $hasError = ($r.ErrorLog -and $r.ErrorLog -ne "No errors")
+            $hasStack = ($r.Stacktrace -and $r.Stacktrace -ne "No errors")
+
+            if ($hasError -or $hasStack) {
+                if ($hasError) {
+                    $errorColor = if ($r.ErrorLog -match '^\d+ lines$') { "Yellow" } elseif ($r.ErrorLog -match '^REST |^Not available') { "DarkYellow" } else { "DarkGray" }
+                    Write-Host "  │      ├ Error log:  $($r.ErrorLog)" -ForegroundColor $errorColor
+                }
+                if ($hasStack) {
+                    $stackColor = if ($r.Stacktrace -match '^\d+ lines$') { "Yellow" } elseif ($r.Stacktrace -match '^REST |^Not available') { "DarkYellow" } else { "DarkGray" }
+                    Write-Host "  │      └ Stacktrace: $($r.Stacktrace)" -ForegroundColor $stackColor
+                } elseif ($hasError) {
+                    Write-Host "  │      └ Stacktrace: Clean" -ForegroundColor DarkGreen
+                }
+            } else {
+                Write-Host "  │      └ Logs: Clean" -ForegroundColor DarkGreen
+            }
         }
-    }
 
-    # Error log section — only show if there are actual errors or REST failures
-    $hasActualErrors = $Results | Where-Object {
-        ($_.ErrorLog -and $_.ErrorLog -ne "No errors") -or
-        ($_.Stacktrace -and $_.Stacktrace -ne "No errors")
-    }
-    if ($hasActualErrors) {
-        Write-Host ""
-        Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
-
-        foreach ($r in $hasActualErrors) {
-            Write-Host ""
-            Write-Host "  [$($r.Site) / $($r.Plugin)]" -ForegroundColor White
-            $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "No errors" }
-            $stackLabel = if ($r.Stacktrace) { $r.Stacktrace } else { "No errors" }
-            $errorColor = if ($r.ErrorLog -match '^\d+ lines$') { "Yellow" } elseif ($r.ErrorLog -match '^REST ') { "Red" } else { "DarkGray" }
-            $stackColor = if ($r.Stacktrace -match '^\d+ lines$') { "Yellow" } elseif ($r.Stacktrace -match '^REST ') { "Red" } else { "DarkGray" }
-            Write-Host "    Error log:  $errorLabel" -ForegroundColor $errorColor
-            Write-Host "    Stacktrace: $stackLabel" -ForegroundColor $stackColor
-        }
-
-        Write-Host ""
-        Write-Host "  Logs saved to: $StatusLogsDir" -ForegroundColor Yellow
-    } else {
-        Write-Host ""
-        Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
-        Write-Host "  All plugins: No errors found" -ForegroundColor Green
+        Write-Host "  └─────────────────────────────────────────────────────────" -ForegroundColor DarkCyan
     }
 
     # Totals
@@ -509,13 +518,20 @@ function Write-PluginStatusSummary {
     $notInstalledCount = ($Results | Where-Object { $_.Status -eq "NOT_INSTALLED" }).Count
 
     Write-Host ""
-    Write-Host "  $('-' * 40)" -ForegroundColor DarkGray
-    Write-Host "  Sites: $TotalSites | Plugins: $TotalPlugins | Total: $($Results.Count)" -ForegroundColor White
+    Write-Host "  ── Totals ─────────────────────────────────────────────" -ForegroundColor Magenta
+    Write-Host "  Sites: $TotalSites | Plugins: $TotalPlugins | Checks: $($Results.Count)" -ForegroundColor White
 
     $summaryColor = if ($failCount -eq 0) { "Green" } else { "Yellow" }
     $summaryLine = "  OK: $okCount | Failed: $failCount"
     if ($notInstalledCount -gt 0) { $summaryLine += " | Not Installed: $notInstalledCount" }
     Write-Host $summaryLine -ForegroundColor $summaryColor
+
+    if ($StatusLogsDir -and (Test-Path $StatusLogsDir)) {
+        $savedLogs = @(Get-ChildItem -Path $StatusLogsDir -File -ErrorAction SilentlyContinue)
+        if ($savedLogs.Count -gt 0) {
+            Write-Host "  Log files: $StatusLogsDir ($($savedLogs.Count) file(s))" -ForegroundColor DarkGray
+        }
+    }
 
     Write-Host "========================================" -ForegroundColor Magenta
 
@@ -523,11 +539,13 @@ function Write-PluginStatusSummary {
     $logStamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $summaryFile = Join-Path $StatusLogsDir "status-summary-$logStamp.txt"
     $summaryContent = @()
-    $summaryContent += "Plugin Status Summary - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+    $summaryContent += "Plugin Status Summary - $checkTimestamp"
     $summaryContent += "=" * 50
     foreach ($r in $sorted) {
         $vLabel = if ($r.Version) { "v$($r.Version)" } else { "-" }
-        $summaryContent += "$($r.Site) | $($r.Plugin) | $vLabel | $($r.Status) | $($r.Message)"
+        $errorLabel = if ($r.ErrorLog -and $r.ErrorLog -ne "No errors") { $r.ErrorLog } else { "clean" }
+        $stackLabel = if ($r.Stacktrace -and $r.Stacktrace -ne "No errors") { $r.Stacktrace } else { "clean" }
+        $summaryContent += "$($r.Site) | $($r.Plugin) | $vLabel | $($r.Status) | errors=$errorLabel | stack=$stackLabel | $($r.Message)"
     }
     $summaryContent += ""
     $summaryContent += "OK: $okCount | Failed: $failCount | Not Installed: $notInstalledCount"
