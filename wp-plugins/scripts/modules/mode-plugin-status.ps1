@@ -164,9 +164,8 @@ function Invoke-SinglePluginStatusCheck {
         }
     }
 
-    # ── Error log retrieval (if requested and status is OK) ───────────
-    $isErrorMode = $IncludeErrors -or $script:errorFlag
-    if ($isErrorMode -and $result.Status -eq "OK") {
+    # ── Error log retrieval (always when status is OK) ───────────────
+    if ($result.Status -eq "OK") {
         $logsUrl = "$siteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
 
         try {
@@ -297,8 +296,8 @@ function Invoke-ParallelPluginStatusCheck {
                     }
                 }
 
-                # Error log retrieval
-                if ($IncludeErrors -and $result.Status -eq "OK") {
+                # Error log retrieval (always when status is OK)
+                if ($result.Status -eq "OK") {
                     $logsUrl = "$SiteUrl/wp-json/$Namespace/logs/retrieve?include_info_log=false&include_error_log=true&include_stacktrace=true&max_lines=100"
                     try {
                         $logsResponse = Invoke-WebRequest -Uri $logsUrl -Method GET -Headers @{ Authorization = $authHeader } -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
@@ -466,13 +465,16 @@ function Write-PluginStatusSummary {
         }
     }
 
-    # Error log section
-    $hasLogs = $Results | Where-Object { $_.ErrorLog -or $_.Stacktrace }
-    if ($hasLogs) {
+    # Error log section — only show if there are actual errors or REST failures
+    $hasActualErrors = $Results | Where-Object {
+        ($_.ErrorLog -and $_.ErrorLog -ne "No errors") -or
+        ($_.Stacktrace -and $_.Stacktrace -ne "No errors")
+    }
+    if ($hasActualErrors) {
         Write-Host ""
         Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
 
-        foreach ($r in ($Results | Where-Object { $_.ErrorLog -or $_.Stacktrace })) {
+        foreach ($r in $hasActualErrors) {
             Write-Host ""
             Write-Host "  [$($r.Site) / $($r.Plugin)]" -ForegroundColor White
             $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "No errors" }
@@ -485,6 +487,10 @@ function Write-PluginStatusSummary {
 
         Write-Host ""
         Write-Host "  Logs saved to: $StatusLogsDir" -ForegroundColor Yellow
+    } else {
+        Write-Host ""
+        Write-Host "  ── Error Logs ─────────────────────────────────────────" -ForegroundColor Cyan
+        Write-Host "  All plugins: No errors found" -ForegroundColor Green
     }
 
     # Totals
