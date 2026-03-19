@@ -475,10 +475,10 @@ function Write-PluginStatusSummary {
         foreach ($r in ($Results | Where-Object { $_.ErrorLog -or $_.Stacktrace })) {
             Write-Host ""
             Write-Host "  [$($r.Site) / $($r.Plugin)]" -ForegroundColor White
-            $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "empty" }
-            $stackLabel = if ($r.Stacktrace) { $r.Stacktrace } else { "empty" }
-            $errorColor = if ($r.ErrorLog -and $r.ErrorLog -ne "empty") { "Yellow" } else { "DarkGray" }
-            $stackColor = if ($r.Stacktrace -and $r.Stacktrace -ne "empty") { "Yellow" } else { "DarkGray" }
+            $errorLabel = if ($r.ErrorLog) { $r.ErrorLog } else { "No errors" }
+            $stackLabel = if ($r.Stacktrace) { $r.Stacktrace } else { "No errors" }
+            $errorColor = if ($r.ErrorLog -match '^\d+ lines$') { "Yellow" } elseif ($r.ErrorLog -match '^REST ') { "Red" } else { "DarkGray" }
+            $stackColor = if ($r.Stacktrace -match '^\d+ lines$') { "Yellow" } elseif ($r.Stacktrace -match '^REST ') { "Red" } else { "DarkGray" }
             Write-Host "    Error log:  $errorLabel" -ForegroundColor $errorColor
             Write-Host "    Stacktrace: $stackLabel" -ForegroundColor $stackColor
         }
