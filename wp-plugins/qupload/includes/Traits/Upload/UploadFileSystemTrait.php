@@ -72,36 +72,40 @@ trait UploadFileSystemTrait
         $isOpened = ($openResult === true);
 
         if ($isOpened === false) {
+            $errorMsg = $this->zipErrorMessage($openResult);
+
             $this->fileLogger->error('ZipArchive::open() failed', [
                 'path'      => $tempFile,
                 'errorCode' => $openResult,
-                'errorMsg'  => $this->zipErrorMessage($openResult),
+                'errorMsg'  => $errorMsg,
                 'fileSize'  => $tempFileSize,
             ]);
 
-            return $this->handleZipOpenFailure($tempFile, $tempExtractDir);
+            return $this->handleZipOpenFailure($tempFile, $tempExtractDir, $openResult, $errorMsg, $tempFileSize);
         }
-
-        $isExtracted = $zip->extractTo($tempExtractDir);
-        $zip->close();
-        @unlink($tempFile);
-
-        if ($isExtracted === false) {
-            return $this->handleZipExtractFailure($tempFile, $tempExtractDir);
-        }
-
-        $this->traceStage('extractZipToTemp:success', ['extractDir' => $tempExtractDir]);
-
-        return null;
-    }
-
+...
     /** Clean up after a failed ZIP open. */
-    private function handleZipOpenFailure(string $tempFile, string $tempExtractDir): WP_REST_Response
-    {
+    private function handleZipOpenFailure(
+        string $tempFile,
+        string $tempExtractDir,
+        int|bool $errorCode = 0,
+        string $errorMsg = '',
+        int|false $fileSize = false,
+    ): WP_REST_Response {
         @unlink($tempFile);
         $this->deleteDirectory($tempExtractDir);
 
-        return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
+        $detail = 'Failed to open ZIP for extraction';
+
+        if ($errorMsg !== '') {
+            $detail .= " — {$errorMsg} (code: {$errorCode})";
+        }
+
+        if ($fileSize !== false) {
+            $detail .= ", fileSize: {$fileSize} bytes";
+        }
+
+        return $this->errorResponse($detail, HttpStatusType::ServerError->value);
     }
 
     /** Translate ZipArchive error code to human-readable message. */

@@ -57,7 +57,7 @@ function Invoke-SinglePluginZip {
         [System.IO.Compression.ZipFile]::CreateFromDirectory(
             $pluginTempDir,
             $zipOutputPath,
-            [System.IO.Compression.CompressionLevel]::SmallestSize,
+            [System.IO.Compression.CompressionLevel]::Optimal,
             $true
         )
 
