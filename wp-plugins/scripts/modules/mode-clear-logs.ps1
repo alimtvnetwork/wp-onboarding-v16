@@ -511,8 +511,18 @@ function Invoke-TwoStepLogClear {
 
     $confirmBody = $confirmPayload | ConvertTo-Json -Compress
 
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] POST $confirmUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Body: $confirmBody" -ForegroundColor DarkGray
+    }
+
     try {
         $step2Response = Invoke-RestMethod -Uri $confirmUrl -Method Post -Headers $headers -Body $confirmBody -ErrorAction Stop
+
+        if ($VerboseMode) {
+            $respJson = $step2Response | ConvertTo-Json -Depth 5 -Compress
+            Write-Host "    [VERBOSE] Step 2 Response: $respJson" -ForegroundColor DarkGray
+        }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
         $responseBody = Get-ClearLogsResponseBody $_
