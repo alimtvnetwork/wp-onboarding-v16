@@ -102,7 +102,18 @@ function Invoke-ApproveMachineMode {
 
             try {
                 $headers = @{ "Authorization" = $authHeader }
+
+                if ($VerboseMode) {
+                    Write-Host "    [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
+                }
+
                 $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+
+                if ($VerboseMode) {
+                    $respJson = $statusResp | ConvertTo-Json -Depth 5 -Compress
+                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                }
+
                 $hasVersion = ($null -ne $statusResp -and $statusResp.version)
 
                 if ($hasVersion) {
