@@ -2,9 +2,80 @@
 # Parallel PHP syntax + backed enum check: validates all plugins before ZIP phase.
 # Dot-sourced by run.ps1 — expects plugin-helpers.ps1 loaded.
 
+function Get-PhpCheckSkipFolders {
+    param(
+        [Parameter(Mandatory)][string]$PluginDir
+    )
+
+    $skipFolders = @()
+
+    # Global defaults from powershell.json
+    if ($Config -and $Config.wpPlugins -and $Config.wpPlugins.phpCheckSkipFolders) {
+        $skipFolders += @($Config.wpPlugins.phpCheckSkipFolders)
+    }
+
+    # Per-plugin settings.json overrides
+    $settingsPath = Join-Path $PluginDir "settings.json"
+    if (Test-Path $settingsPath) {
+        try {
+            $pluginSettings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+            if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                $skipFolders += @($pluginSettings.phpCheck.skipFolders)
+            }
+        } catch {
+            # Silently ignore malformed settings.json
+        }
+    }
+
+    return @($skipFolders | Select-Object -Unique)
+}
+
+function Get-FilteredPhpFiles {
+    param(
+        [Parameter(Mandatory)][string]$PluginDir,
+        [string[]]$SkipFolders = @()
+    )
+
+    $allFiles = @(Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName)
+
+    if ($SkipFolders.Count -eq 0) {
+        return @{
+            Files       = $allFiles
+            SkippedCount = 0
+        }
+    }
+
+    $filtered = @()
+    $skippedCount = 0
+
+    foreach ($file in $allFiles) {
+        $relativePath = $file.FullName.Substring($PluginDir.Length + 1)
+        $isSkipped = $false
+
+        foreach ($skip in $SkipFolders) {
+            if ($relativePath -like "$skip\*" -or $relativePath -like "$skip/*") {
+                $isSkipped = $true
+                break
+            }
+        }
+
+        if ($isSkipped) {
+            $skippedCount++
+        } else {
+            $filtered += $file
+        }
+    }
+
+    return @{
+        Files        = $filtered
+        SkippedCount = $skippedCount
+    }
+}
+
 function Test-PluginPhpSyntaxStandalone {
     param(
         [Parameter(Mandatory)][string]$PluginDir,
+        [string[]]$SkipFolders = @(),
         [switch]$Quiet
     )
 
@@ -12,11 +83,12 @@ function Test-PluginPhpSyntaxStandalone {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
     $result = @{
-        Slug       = $pluginName
-        Status     = "FAILED"
-        Error      = $null
-        FileCount  = 0
-        Duration   = 0
+        Slug         = $pluginName
+        Status       = "FAILED"
+        Error        = $null
+        FileCount    = 0
+        SkippedCount = 0
+        Duration     = 0
     }
 
     if (-not (Test-Path $PluginDir)) {
@@ -35,8 +107,23 @@ function Test-PluginPhpSyntaxStandalone {
         return $result
     }
 
-    $phpFiles = @(Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName)
+    # Load skip folders if not passed (standalone mode)
+    if ($SkipFolders.Count -eq 0) {
+        $settingsPath = Join-Path $PluginDir "settings.json"
+        if (Test-Path $settingsPath) {
+            try {
+                $pluginSettings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+                if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                    $SkipFolders = @($pluginSettings.phpCheck.skipFolders)
+                }
+            } catch { }
+        }
+    }
+
+    $fileResult = Get-FilteredPhpFiles -PluginDir $PluginDir -SkipFolders $SkipFolders
+    $phpFiles = $fileResult.Files
     $result.FileCount = $phpFiles.Count
+    $result.SkippedCount = $fileResult.SkippedCount
 
     # Phase A: php -l syntax check
     foreach ($file in $phpFiles) {
@@ -116,8 +203,18 @@ function Invoke-ParallelPhpCheck {
     Write-Host ""
     Write-Host "  ── Phase 0: PHP Syntax Check ──────────────────────────" -ForegroundColor Cyan
 
+    # Resolve global skip folders
+    $globalSkipFolders = @()
+    if ($Config -and $Config.wpPlugins -and $Config.wpPlugins.phpCheckSkipFolders) {
+        $globalSkipFolders = @($Config.wpPlugins.phpCheckSkipFolders)
+    }
+
+    if ($globalSkipFolders.Count -gt 0) {
+        Write-Host "  Skipping folders: $($globalSkipFolders -join ', ')" -ForegroundColor DarkGray
+    }
+
     if ($Sequential) {
-        return Invoke-SequentialPhpCheck -PluginFolders $PluginFolders
+        return Invoke-SequentialPhpCheck -PluginFolders $PluginFolders -GlobalSkipFolders $globalSkipFolders
     }
 
     Write-Host "  Checking $($PluginFolders.Count) plugin(s) in parallel..." -ForegroundColor Yellow
@@ -134,13 +231,30 @@ function Invoke-ParallelPhpCheck {
         $folderPath = $folder.FullName
         $currentIndex = $jobIndex
 
+        # Resolve per-plugin skip folders and merge with global
+        $pluginSkipFolders = @() + $globalSkipFolders
+        $settingsPath = Join-Path $folderPath "settings.json"
+        if (Test-Path $settingsPath) {
+            try {
+                $pluginSettings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+                if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                    $pluginSkipFolders += @($pluginSettings.phpCheck.skipFolders)
+                }
+            } catch { }
+        }
+        $pluginSkipFolders = @($pluginSkipFolders | Select-Object -Unique)
+
         $jobs += Start-Job -Name "php-$currentIndex-$($folder.Name)" -ScriptBlock {
-            param($ModulePath, $PluginPath, $Index)
+            param($ModulePath, $PluginPath, $Index, $SkipFoldersJson)
             . $ModulePath
-            $result = Test-PluginPhpSyntaxStandalone -PluginDir $PluginPath -Quiet
+            $skipFolders = @()
+            if ($SkipFoldersJson) {
+                $skipFolders = @($SkipFoldersJson | ConvertFrom-Json)
+            }
+            $result = Test-PluginPhpSyntaxStandalone -PluginDir $PluginPath -SkipFolders $skipFolders -Quiet
             $result.Index = $Index
             return $result
-        } -ArgumentList $phpCheckModulePath, $folderPath, $currentIndex
+        } -ArgumentList $phpCheckModulePath, $folderPath, $currentIndex, ($pluginSkipFolders | ConvertTo-Json -Compress)
 
         $jobIndex++
     }
@@ -153,20 +267,22 @@ function Invoke-ParallelPhpCheck {
             $idx = [int](($job.Name -split '-')[1])
             $folderName = ($job.Name -replace "^php-\d+-", "")
             $result = @{
-                Index     = $idx
-                Slug      = $folderName
-                Status    = "FAILED"
-                Error     = "Background job returned no result"
-                FileCount = 0
-                Duration  = 0
+                Index        = $idx
+                Slug         = $folderName
+                Status       = "FAILED"
+                Error        = "Background job returned no result"
+                FileCount    = 0
+                SkippedCount = 0
+                Duration     = 0
             }
         }
 
         $results += $result
         $duration = "{0:N1}s" -f $result.Duration
+        $skippedLabel = if ($result.SkippedCount -gt 0) { ", $($result.SkippedCount) skipped" } else { "" }
 
         if ($result.Status -eq "OK") {
-            Write-Host "    [PHP] Passed: $($result.Slug) ($($result.FileCount) files) [$duration]" -ForegroundColor Green
+            Write-Host "    [PHP] Passed: $($result.Slug) ($($result.FileCount) files$skippedLabel) [$duration]" -ForegroundColor Green
         } elseif ($result.Status -eq "SKIPPED") {
             Write-Host "    [PHP] Skipped: $($result.Slug) ($($result.Error)) [$duration]" -ForegroundColor Yellow
         } else {
@@ -182,7 +298,8 @@ function Invoke-ParallelPhpCheck {
 
 function Invoke-SequentialPhpCheck {
     param(
-        [Parameter(Mandatory)][array]$PluginFolders
+        [Parameter(Mandatory)][array]$PluginFolders,
+        [string[]]$GlobalSkipFolders = @()
     )
 
     Write-Host "  Checking $($PluginFolders.Count) plugin(s) sequentially..." -ForegroundColor Yellow
@@ -192,12 +309,28 @@ function Invoke-SequentialPhpCheck {
 
     foreach ($folder in $PluginFolders) {
         Write-Host "    [PHP] Checking: $($folder.Name)..." -ForegroundColor DarkGray
-        $result = Test-PluginPhpSyntaxStandalone -PluginDir $folder.FullName -Quiet
+
+        # Merge global + per-plugin skip folders
+        $pluginSkipFolders = @() + $GlobalSkipFolders
+        $settingsPath = Join-Path $folder.FullName "settings.json"
+        if (Test-Path $settingsPath) {
+            try {
+                $pluginSettings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+                if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                    $pluginSkipFolders += @($pluginSettings.phpCheck.skipFolders)
+                }
+            } catch { }
+        }
+        $pluginSkipFolders = @($pluginSkipFolders | Select-Object -Unique)
+
+        $result = Test-PluginPhpSyntaxStandalone -PluginDir $folder.FullName -SkipFolders $pluginSkipFolders -Quiet
         $result.Index = $jobIndex
 
         $duration = "{0:N1}s" -f $result.Duration
+        $skippedLabel = if ($result.SkippedCount -gt 0) { ", $($result.SkippedCount) skipped" } else { "" }
+
         if ($result.Status -eq "OK") {
-            Write-Host "    [PHP] Passed: $($result.Slug) ($($result.FileCount) files) [$duration]" -ForegroundColor Green
+            Write-Host "    [PHP] Passed: $($result.Slug) ($($result.FileCount) files$skippedLabel) [$duration]" -ForegroundColor Green
         } elseif ($result.Status -eq "SKIPPED") {
             Write-Host "    [PHP] Skipped: $($result.Slug) ($($result.Error)) [$duration]" -ForegroundColor Yellow
         } else {
