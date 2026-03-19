@@ -181,6 +181,8 @@ function Invoke-SinglePluginStatusCheck {
                 $result.ErrorLog = "$($logsBody.ErrorLog.Lines) lines"
                 $errorFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-error.txt"
                 $errorContent | Out-File -FilePath $errorFile -Encoding UTF8
+            } elseif ($logsBody.ErrorLog) {
+                $result.ErrorLog = "No errors"
             }
 
             # Stacktrace log
@@ -189,9 +191,16 @@ function Invoke-SinglePluginStatusCheck {
                 $result.Stacktrace = "$($logsBody.StacktraceLog.Lines) lines"
                 $stackFile = Join-Path $StatusLogsDir "$safeSiteName-$PluginSlug-stacktrace.txt"
                 $stackContent | Out-File -FilePath $stackFile -Encoding UTF8
+            } elseif ($logsBody.StacktraceLog) {
+                $result.Stacktrace = "No errors"
             }
         } catch {
-            $result.ErrorLog = "Failed to retrieve"
+            $restStatus = 0
+            $restMessage = $_.Exception.Message
+            if ($_.Exception.Response) {
+                $restStatus = [int]$_.Exception.Response.StatusCode
+            }
+            $result.ErrorLog = if ($restStatus -gt 0) { "REST $restStatus`: $restMessage" } else { "REST error: $restMessage" }
         }
     }
 
