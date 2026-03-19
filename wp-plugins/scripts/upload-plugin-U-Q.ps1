@@ -25,6 +25,7 @@
 #   -q,  -quiet         Suppress output (JSON-only output)
 #   -jc, -jsonconfig    Inline JSON config string (overrides all other config)
 #   -z,  -ziponly       Create ZIP only, do not upload
+#   -spc,-skipprechecks  Skip PHP syntax check + ZIP creation (pipeline mode)
 #
 # CONFIGURATION (qupload-config.json):
 #   {
@@ -92,7 +93,12 @@ param(
     # ── API namespace override for cross-upload ──────────────────────────────
     # Default: qupload-api/v1. Set to 'riseup-asia-api/v1' for cross-upload.
     [Alias('api')]
-    [string]$ApiNamespace = "qupload-api/v1"
+    [string]$ApiNamespace = "qupload-api/v1",
+
+    # ── Skip pre-checks (PHP syntax + backed enum + ZIP creation) ─────────
+    # Used by parallel pipeline where Phase 0+1 already validated and zipped.
+    [Alias('spc')]
+    [switch]$SkipPreChecks = $false
 )
 
 # =============================================================================
@@ -137,6 +143,7 @@ if ($Help) {
     Write-Host "  -a,  -activate      Activate plugin after install"
     Write-Host "  -dz, -deletezip     Delete ZIP after successful upload"
     Write-Host "  -q,  -quiet         JSON-only output (for scripting)"
+    Write-Host "  -spc,-skipprechecks Skip PHP check + ZIP (used by parallel pipeline)"
     Write-Host "  -jc, -jsonconfig    Inline JSON config string"
     Write-Host "  -z,  -ziponly       Create ZIP only, skip upload"
     Write-Host ""
@@ -546,61 +553,80 @@ Write-Status "      Version: $LocalVersion" -Color Gray
 # STEP 2: Local PHP syntax check + ZIP creation
 # =============================================================================
 Write-Status ""
-Write-Status "[2/5] Running local PHP syntax check + creating ZIP..." -Color Yellow
 
-$syntaxResult = Test-PluginPhpSyntax $PluginFolderPath
-$isSyntaxChecked = $syntaxResult.IsChecked
-$isSyntaxSuccess = $syntaxResult.IsSuccess
+if ($SkipPreChecks) {
+    Write-Status "[2/5] Pre-checks skipped (already validated by pipeline)" -Color DarkGray
 
-if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
-    Write-Host "      Syntax check FAILED" -ForegroundColor Red
-    Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
-    Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
-    exit 1
-}
-
-if ($isSyntaxChecked) {
-    Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
-} else {
-    Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
-}
-
-$enumLintResult = Test-BackedEnumDuplicateValues $PluginFolderPath
-$isEnumLintSuccess = $enumLintResult.IsSuccess
-
-if (-not $isEnumLintSuccess) {
-    Write-Host "      Duplicate backed enum values detected:" -ForegroundColor Red
-    foreach ($issue in $enumLintResult.Issues) {
-        Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
-    }
-    Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
-    exit 1
-}
-
-Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
-
-$hasPrebuiltZip = -not [string]::IsNullOrWhiteSpace($ConfiguredOutputZipPath)
-
-if ($hasPrebuiltZip) {
-    if (-not (Test-Path $ConfiguredOutputZipPath)) {
-        Write-Host "Error: Prebuilt ZIP not found at: $ConfiguredOutputZipPath" -ForegroundColor Red
-        exit 1
-    }
-
-    $OutputZipPath = $ConfiguredOutputZipPath
-    $zipSize = (Get-Item $OutputZipPath).Length
-    $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Status "      ZIP reused: $OutputZipPath ($zipSizeMB MB)" -Color Green
-} else {
-    try {
-        $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
-        $OutputZipPath = $zipResult.Path
+    $hasPrebuiltZip = -not [string]::IsNullOrWhiteSpace($ConfiguredOutputZipPath)
+    if ($hasPrebuiltZip -and (Test-Path $ConfiguredOutputZipPath)) {
+        $OutputZipPath = $ConfiguredOutputZipPath
         $zipSize = (Get-Item $OutputZipPath).Length
         $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-        Write-Status "      ZIP created: $($zipResult.FileName) ($zipSizeMB MB)" -Color Green
-    } catch {
-        Write-Host "Error creating ZIP: $_" -ForegroundColor Red
+        Write-Status "      ZIP reused: $OutputZipPath ($zipSizeMB MB)" -Color Green
+    } elseif ($hasPrebuiltZip) {
+        Write-Host "Error: Prebuilt ZIP not found at: $ConfiguredOutputZipPath" -ForegroundColor Red
         exit 1
+    } else {
+        Write-Host "Error: -SkipPreChecks requires a prebuilt ZIP (outputZipPath)" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Status "[2/5] Running local PHP syntax check + creating ZIP..." -Color Yellow
+
+    $syntaxResult = Test-PluginPhpSyntax $PluginFolderPath
+    $isSyntaxChecked = $syntaxResult.IsChecked
+    $isSyntaxSuccess = $syntaxResult.IsSuccess
+
+    if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
+        Write-Host "      Syntax check FAILED" -ForegroundColor Red
+        Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
+        Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
+        exit 1
+    }
+
+    if ($isSyntaxChecked) {
+        Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
+    } else {
+        Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
+    }
+
+    $enumLintResult = Test-BackedEnumDuplicateValues $PluginFolderPath
+    $isEnumLintSuccess = $enumLintResult.IsSuccess
+
+    if (-not $isEnumLintSuccess) {
+        Write-Host "      Duplicate backed enum values detected:" -ForegroundColor Red
+        foreach ($issue in $enumLintResult.Issues) {
+            Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
+        }
+        Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Status "      Backed enums OK ($($enumLintResult.Checked) PHP files scanned)" -Color Green
+
+    $hasPrebuiltZip = -not [string]::IsNullOrWhiteSpace($ConfiguredOutputZipPath)
+
+    if ($hasPrebuiltZip) {
+        if (-not (Test-Path $ConfiguredOutputZipPath)) {
+            Write-Host "Error: Prebuilt ZIP not found at: $ConfiguredOutputZipPath" -ForegroundColor Red
+            exit 1
+        }
+
+        $OutputZipPath = $ConfiguredOutputZipPath
+        $zipSize = (Get-Item $OutputZipPath).Length
+        $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
+        Write-Status "      ZIP reused: $OutputZipPath ($zipSizeMB MB)" -Color Green
+    } else {
+        try {
+            $zipResult = New-PluginZipFile $PluginFolderPath $PluginSlug
+            $OutputZipPath = $zipResult.Path
+            $zipSize = (Get-Item $OutputZipPath).Length
+            $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
+            Write-Status "      ZIP created: $($zipResult.FileName) ($zipSizeMB MB)" -Color Green
+        } catch {
+            Write-Host "Error creating ZIP: $_" -ForegroundColor Red
+            exit 1
+        }
     }
 }
 

@@ -113,10 +113,10 @@ function Invoke-SinglePluginUpload {
         if ($Quiet) {
             $ErrorActionPreference = "Stop"
             $global:LASTEXITCODE = $null
-            $result.Output = (& $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace 2>&1 | Out-String)
+            $result.Output = (& $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc 2>&1 | Out-String)
             $invokeSucceeded = $true
         } else {
-            & $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace
+            & $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc
             $invokeSucceeded = $true
         }
     } catch {
