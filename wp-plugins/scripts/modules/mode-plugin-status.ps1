@@ -533,7 +533,12 @@ function Invoke-ParallelPluginStatusCheck {
                             $rawStatusBody = $response.Content
                             $result.RawStatusBody = $rawStatusBody
 
-                            $body = $rawStatusBody | ConvertFrom-Json
+                            # Strip PHP warnings/notices before the JSON body
+                            $jsonBody = $rawStatusBody
+                            $jsonStart = $rawStatusBody.IndexOf('{')
+                            if ($jsonStart -gt 0) { $jsonBody = $rawStatusBody.Substring($jsonStart) }
+
+                            $body = $jsonBody | ConvertFrom-Json
                             $metadata = Get-JobPluginStatusMetadata -Body $body
                             $result.Version = $metadata.Version
                             $result.WpVersion = $metadata.WpVersion
