@@ -4,5 +4,8 @@
     "maxRotations": 10,
     "archiveEnabled": true
   },
-  "approved_machines": ["ALIM-DESKTOP"]
+  "approved_machines": ["ALIM-DESKTOP"],
+  "phpCheck": {
+    "skipFolders": ["vendor", "tests", "node_modules"]
+  }
 }
