@@ -37,6 +37,7 @@ param(
     [switch]$audit,
     [switch]$purge,
     [Alias('cas')][switch]$clearallsites,
+    [Alias('y')][switch]$yes,
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
@@ -240,6 +241,7 @@ if ($help) {
     Write-Host "  -cas -i 1           Clear everything on site #1"
     Write-Host "  -cas -i 1,2         Clear everything on sites #1 and #2"
     Write-Host "  -cas -xs 'name'     Clear everything on all sites EXCEPT named one(s)"
+    Write-Host "  -cas -yes           Skip confirmation prompt (for scripts/automation)"
     Write-Host "  -purge              Alias for -cas"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
@@ -485,7 +487,7 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
-if ($purge -or $clearallsites) { Invoke-PurgeMode }
+if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
 if ($approvemachine) {

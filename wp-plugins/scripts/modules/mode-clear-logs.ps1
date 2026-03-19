@@ -167,31 +167,20 @@ function Invoke-ClearLogsMode {
 # ── Purge Mode (All Logs + Audit in one command) ────────────────────────
 
 function Invoke-PurgeMode {
+    param(
+        [switch]$SkipConfirm
+    )
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Red
     Write-Host "  PURGE MODE - Clear ALL Logs + Audit" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
     Write-Host ""
 
-    if (-not $Config.wpPlugins -or -not $Config.wpPlugins.sites -or $Config.wpPlugins.sites.Count -eq 0) {
-        Write-Host "ERROR: No sites configured in powershell.json (wpPlugins.sites)" -ForegroundColor Red
-        exit 1
-    }
+    $allSites = $Config.wpPlugins.sites
+    $excludeNames = if ($exclude) { $exclude -split ',' | ForEach-Object { $_.Trim() } } else { @() }
 
-    Show-ConfiguredSites
-
-    # Resolve target sites (supports -site, -i, -xs)
-    $allSites = @($Config.wpPlugins.sites)
-    $excludeNames = @()
-    $hasExclude = ($exclude -ne "")
-
-    if ($hasExclude) {
-        $excludeNames = @($exclude -split ',' | ForEach-Object { $_.Trim() })
-    }
-
-    $hasSiteOrIndex = ($site -ne "" -or $index -ne "" -or $hasExclude)
-
-    if ($hasSiteOrIndex) {
+    if ($site -or $index -or $exclude) {
         $targetSites = Resolve-TargetSites -Index $index -SiteName $site -ExcludedSiteNames $excludeNames -AllSites $allSites
     } else {
         $targetSites = @($allSites | Where-Object { $_.enabled -ne $false })
@@ -209,18 +198,23 @@ function Invoke-PurgeMode {
     Write-Host "  Scope:   File logs (all plugins) + Audit logs (plugins-onboard)" -ForegroundColor Cyan
     Write-Host ""
 
-    # Confirmation prompt — destructive operation
-    $siteList = ($targetSites | ForEach-Object { $_.name }) -join ', '
-    Write-Host "  WARNING: This will permanently delete ALL logs, stacktraces, and audit data" -ForegroundColor Yellow
-    Write-Host "  on: $siteList" -ForegroundColor Yellow
-    Write-Host ""
-    $confirm = Read-Host "  Type 'yes' to confirm, or anything else to cancel"
-    if ($confirm -ne 'yes') {
+    # Confirmation prompt — destructive operation (skip with -yes)
+    if (-not $SkipConfirm) {
+        $siteList = ($targetSites | ForEach-Object { $_.name }) -join ', '
+        Write-Host "  WARNING: This will permanently delete ALL logs, stacktraces, and audit data" -ForegroundColor Yellow
+        Write-Host "  on: $siteList" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  Cancelled." -ForegroundColor Gray
-        return
+        $confirm = Read-Host "  Type 'yes' to confirm, or anything else to cancel"
+        if ($confirm -ne 'yes') {
+            Write-Host ""
+            Write-Host "  Cancelled." -ForegroundColor Gray
+            return
+        }
+        Write-Host ""
+    } else {
+        Write-Host "  Skipping confirmation (-yes flag)" -ForegroundColor DarkGray
+        Write-Host ""
     }
-    Write-Host ""
 
     # Build plugin namespace list for file log clearing
     $pluginNamespaces = @()
