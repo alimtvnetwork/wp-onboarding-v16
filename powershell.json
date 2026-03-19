@@ -46,6 +46,7 @@
     "defaultQUploader": "qupload",
     "pluginsDir": "wp-plugins",
     "skipPlugins": ["plugins-onboard"],
+    "phpCheckSkipFolders": ["vendor"],
     "sites": [
       {
         "name": "Atto Property Demo",

@@ -34,7 +34,10 @@ param(
     [Alias('am')][switch]$approvemachine,
     [Alias('machine','mn')][string]$approvemachinename = "",
     [Alias('i')][string]$index = "",
-    [switch]$check
+    [switch]$check,
+    [Alias('ps')][switch]$pluginstatus,
+    [switch]$pas,
+    [Alias('err')][switch]$errorlogs
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -100,6 +103,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-clear-logs.ps1")
 . (Join-Path $ModulesDir "mode-approve-machine.ps1")
 . (Join-Path $ModulesDir "mode-check.ps1")
+. (Join-Path $ModulesDir "mode-plugin-status.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -226,6 +230,15 @@ if ($help) {
     Write-Host "  -check -site 'name' Check a specific site only"
     Write-Host "  -check -i N         Check site(s) by index"
     Write-Host ""
+    Write-Host "PLUGIN STATUS:" -ForegroundColor Yellow
+    Write-Host "  -ps                 Check plugin status on default site"
+    Write-Host "  -pas                Check plugin status on ALL configured sites"
+    Write-Host "  -ps -err            Include error logs and stack traces"
+    Write-Host "  -pas -err           Status + error logs for all sites"
+    Write-Host "  -pas -i N           Status for site #N only"
+    Write-Host "  -pas -site 'name'   Status for named site only"
+    Write-Host "  -pas -sync          Sequential mode"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
@@ -345,6 +358,14 @@ if ($check) {
     Invoke-CheckMode
 }
 
+# ============================================================================
+# PLUGIN STATUS CHECK (early exit)
+# ============================================================================
+if ($pluginstatus -or $pas) {
+    $pluginstatusall = $pas
+    $script:errorFlag = $errorlogs
+    Invoke-PluginStatusMode
+}
 # ============================================================================
 # BANNER
 # ============================================================================
