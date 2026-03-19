@@ -287,7 +287,8 @@ function Invoke-ParallelPluginUpload {
         # Plugin batch summary
         $pluginSuccessCount = ($allResults | Where-Object { $_.Plugin -eq $pluginName -and $_.ExitCode -eq 0 }).Count
         $pluginTotalSites = $TargetSites.Count
-        Write-Host "    ── $pluginName: $pluginSuccessCount/$pluginTotalSites sites OK ──" -ForegroundColor $(if ($pluginSuccessCount -eq $pluginTotalSites) { "Green" } else { "Yellow" })
+        $summaryColor = if ($pluginSuccessCount -eq $pluginTotalSites) { "Green" } else { "Yellow" }
+        Write-Host ("    -- {0}: {1}/{2} sites OK --" -f $pluginName, $pluginSuccessCount, $pluginTotalSites) -ForegroundColor $summaryColor
     }
 
     # Sort by index for deterministic display order
