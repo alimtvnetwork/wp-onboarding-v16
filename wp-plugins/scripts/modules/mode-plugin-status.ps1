@@ -144,8 +144,32 @@ function Invoke-SinglePluginStatusCheck {
             $result.Status = "OK"
             try {
                 $body = $response.Content | ConvertFrom-Json
-                if ($body.Version) { $result.Version = $body.Version }
-                elseif ($body.version) { $result.Version = $body.version }
+
+                # Envelope format: { Status: {...}, Results: [{Version: "2.21.0", ...}] }
+                $firstResult = $null
+                if ($body.Results -and $body.Results.Count -gt 0) {
+                    $firstResult = $body.Results[0]
+                }
+
+                # Try envelope Results[0].Version first, then top-level fallbacks
+                if ($firstResult -and $firstResult.Version) {
+                    $result.Version = $firstResult.Version
+                } elseif ($body.Version) {
+                    $result.Version = $body.Version
+                } elseif ($body.version) {
+                    $result.Version = $body.version
+                }
+
+                # Extract additional details from envelope
+                if ($firstResult) {
+                    if ($firstResult.Wp) { $result.WpVersion = $firstResult.Wp }
+                    if ($firstResult.WpVersion) { $result.WpVersion = $firstResult.WpVersion }
+                    if ($firstResult.Php) { $result.PhpVersion = $firstResult.Php }
+                    if ($firstResult.PhpVersion) { $result.PhpVersion = $firstResult.PhpVersion }
+                    if ($firstResult.Plugin) { $result.PluginName = $firstResult.Plugin }
+                    if ($firstResult.Api) { $result.ApiNamespace = $firstResult.Api }
+                    if ($firstResult.ServerTime) { $result.ServerTime = $firstResult.ServerTime }
+                }
             } catch { }
         }
     } catch {
