@@ -243,6 +243,7 @@ if ($help) {
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
+    Write-Host "  -zas                ZIP ALL plugins (parallel, with PHP syntax check)"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin only"
     Write-Host "  -c,  -clear         (Legacy) Clear is now automatic before all ZIP operations"
     Write-Host ""
