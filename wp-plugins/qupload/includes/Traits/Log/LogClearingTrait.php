@@ -105,7 +105,9 @@ trait LogClearingTrait
             return $tokenError;
         }
 
-        return $this->executeClearConfirm($machineName);
+        $type = $body['type'] ?? 'all';
+
+        return $this->executeClearConfirm($machineName, $type);
     }
 
     /** Validate the clear token against stored transient data. */
