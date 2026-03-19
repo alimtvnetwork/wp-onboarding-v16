@@ -24,15 +24,28 @@ use QUpload\Helpers\EnvelopeBuilder;
 trait StatusHandlerTrait
 {
     public function handleStatus(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Status endpoint called');
+        $dbAvailable = property_exists($this, 'db') && $this->db !== null;
+
+        $this->fileLogger->info('Status endpoint called', [
+            'endpoint' => 'GET /' . EndpointType::Status->route(),
+            'namespace' => PluginConfigType::apiFullNamespace(),
+            'version' => PluginConfigType::Version->value,
+            'dbAvailable' => $dbAvailable,
+            'requestedAt' => DateHelper::nowIso(),
+        ]);
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Status->route())
             ->setSingleResult([
                 ResponseKeyType::Plugin->value      => PluginConfigType::Name->value,
                 ResponseKeyType::Version->value     => PluginConfigType::Version->value,
+                'Slug'                              => PluginConfigType::Slug->value,
+                'Api'                               => PluginConfigType::apiFullNamespace(),
+                'SiteUrl'                           => get_site_url(),
                 ResponseKeyType::PhpVersion->value  => PHP_VERSION,
                 ResponseKeyType::WpVersion->value   => get_bloginfo('version'),
+                'DbAvailable'                       => $dbAvailable,
+                'ServerTime'                        => DateHelper::nowIso(),
                 ResponseKeyType::Timestamp->value   => DateHelper::nowIso(),
                 ResponseKeyType::UploadMaxFilesize->value      => ini_get('upload_max_filesize'),
                 ResponseKeyType::PostMaxSize->value             => ini_get('post_max_size'),

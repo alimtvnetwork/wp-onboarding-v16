@@ -97,6 +97,37 @@ function Invoke-PluginStatusMode {
     exit $(if ($failCount -eq 0) { 0 } else { 1 })
 }
 
+function Test-HasProperty {
+    param([object]$Obj, [string]$Name)
+
+    if ($null -eq $Obj) { return $false }
+    if ($Obj -is [System.Collections.IDictionary]) { return $Obj.Contains($Name) }
+
+    try {
+        return ($Obj.PSObject.Properties.Name -contains $Name)
+    } catch {
+        return $false
+    }
+}
+
+function Get-PropertyValue {
+    param([object]$Obj, [string]$Name)
+
+    if ($null -eq $Obj) { return $null }
+    if ($Obj -is [System.Collections.IDictionary]) {
+        if ($Obj.Contains($Name)) { return $Obj[$Name] }
+        return $null
+    }
+
+    try {
+        if ($Obj.PSObject.Properties.Name -contains $Name) {
+            return $Obj.$Name
+        }
+    } catch { }
+
+    return $null
+}
+
 function Get-PluginStatusPayload {
     param(
         [Parameter(Mandatory=$false)]
@@ -107,44 +138,36 @@ function Get-PluginStatusPayload {
         return $null
     }
 
-    # Try Results array first
-    try {
-        if ($Body.PSObject.Properties.Name -contains 'Results') {
-            $results = $Body.Results
-            if ($null -ne $results) {
-                if ($results -is [System.Array] -and $results.Count -gt 0) {
-                    return $results[0]
-                }
-                # PowerShell unwraps single-element arrays to scalar
-                if ($results -isnot [System.Array]) {
-                    return $results
-                }
-            }
+    $results = Get-PropertyValue -Obj $Body -Name 'Results'
+    if ($null -ne $results) {
+        if ($results -is [System.Array]) {
+            if ($results.Count -gt 0) { return $results[0] }
+        } elseif ($results -is [System.Collections.IEnumerable] -and $results -isnot [string]) {
+            $items = @($results)
+            if ($items.Count -gt 0) { return $items[0] }
+        } else {
+            return $results
         }
-    } catch { }
+    }
 
-    # Try Result (singular)
-    try {
-        if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
-            return $Body.Result
-        }
-    } catch { }
+    $result = Get-PropertyValue -Obj $Body -Name 'Result'
+    if ($null -ne $result) {
+        return $result
+    }
 
     return $Body
 }
 
 function Get-SafeProperty {
     param([object]$Obj, [string[]]$Names)
+
     foreach ($name in $Names) {
-        try {
-            if ($null -ne $Obj -and $Obj.PSObject.Properties.Name -contains $name) {
-                $val = $Obj.$name
-                if ($null -ne $val -and "$val" -ne "") {
-                    return "$val"
-                }
-            }
-        } catch { }
+        $val = Get-PropertyValue -Obj $Obj -Name $name
+        if ($null -ne $val -and "$val" -ne "") {
+            return "$val"
+        }
     }
+
     return ""
 }
 
@@ -171,17 +194,16 @@ function Get-PluginStatusMetadata {
         return $metadata
     }
 
-    # Extract with multiple fallback property names
-    $metadata.Version      = Get-SafeProperty $payload @("Version", "version")
-    if (-not $metadata.Version) { $metadata.Version = Get-SafeProperty $Body @("Version", "version") }
+    $metadata.Version       = Get-SafeProperty $payload @('Version', 'version')
+    if (-not $metadata.Version) { $metadata.Version = Get-SafeProperty $Body @('Version', 'version') }
 
-    $metadata.WpVersion    = Get-SafeProperty $payload @("Wp", "WpVersion", "wp", "wpVersion")
-    $metadata.PhpVersion   = Get-SafeProperty $payload @("Php", "PhpVersion", "php", "phpVersion")
-    $metadata.PluginName   = Get-SafeProperty $payload @("Plugin", "plugin")
-    $metadata.ApiNamespace = Get-SafeProperty $payload @("Api", "ApiNamespace", "api")
-    $metadata.ServerTime   = Get-SafeProperty $payload @("ServerTime", "serverTime", "Timestamp", "timestamp")
-    $metadata.DbAvailable  = Get-SafeProperty $payload @("DbAvailable", "dbAvailable")
-    $metadata.RemoteSiteUrl = Get-SafeProperty $payload @("SiteUrl", "siteUrl")
+    $metadata.WpVersion     = Get-SafeProperty $payload @('Wp', 'WpVersion', 'wp', 'wpVersion')
+    $metadata.PhpVersion    = Get-SafeProperty $payload @('Php', 'PhpVersion', 'php', 'phpVersion')
+    $metadata.PluginName    = Get-SafeProperty $payload @('Plugin', 'plugin')
+    $metadata.ApiNamespace  = Get-SafeProperty $payload @('Api', 'ApiNamespace', 'api')
+    $metadata.ServerTime    = Get-SafeProperty $payload @('ServerTime', 'serverTime', 'Timestamp', 'timestamp')
+    $metadata.DbAvailable   = Get-SafeProperty $payload @('DbAvailable', 'dbAvailable')
+    $metadata.RemoteSiteUrl = Get-SafeProperty $payload @('SiteUrl', 'siteUrl')
 
     return $metadata
 }
