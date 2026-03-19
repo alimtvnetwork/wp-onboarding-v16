@@ -459,6 +459,7 @@ Write-Host ""
 # ============================================================================
 if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
+if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }
