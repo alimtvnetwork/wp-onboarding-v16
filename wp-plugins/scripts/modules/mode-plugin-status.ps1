@@ -534,6 +534,17 @@ function Write-PluginStatusSummary {
                 Write-Host "  │      $($r.Message)" -ForegroundColor $statusColor
             }
 
+            # Show extra details if available
+            if ($isOk) {
+                $detailParts = @()
+                if ($r.WpVersion) { $detailParts += "WP $($r.WpVersion)" }
+                if ($r.PhpVersion) { $detailParts += "PHP $($r.PhpVersion)" }
+                if ($r.ApiNamespace) { $detailParts += "API $($r.ApiNamespace)" }
+                if ($detailParts.Count -gt 0) {
+                    Write-Host ("  │      " + ($detailParts -join " | ")) -ForegroundColor DarkGray
+                }
+            }
+
             # Nested logs under each plugin
             $hasError = ($r.ErrorLog -and $r.ErrorLog -ne "No errors")
             $hasStack = ($r.Stacktrace -and $r.Stacktrace -ne "No errors")
