@@ -48,12 +48,16 @@ enum ResponseKeyType: string
     case Settings      = 'Settings';
     case RequestedAt   = 'RequestedAt';
 
-    /** Server limit keys. */
+    /** Server/environment keys. */
     case UploadMaxFilesize = 'UploadMaxFilesize';
     case PostMaxSize       = 'PostMaxSize';
     case MemoryLimit       = 'MemoryLimit';
     case UploadMaxFilesizeBytes = 'UploadMaxFilesizeBytes';
     case PostMaxSizeBytes       = 'PostMaxSizeBytes';
+    case Api            = 'Api';
+    case SiteUrl        = 'SiteUrl';
+    case DbAvailable    = 'DbAvailable';
+    case ServerTime     = 'ServerTime';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
