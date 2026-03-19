@@ -353,27 +353,45 @@ function Invoke-ParallelPluginStatusCheck {
             $jobs += Start-Job -Name "status-$currentIndex-$pluginSlug-$siteName" -ScriptBlock {
                 param($SiteUrl, $SiteName, $PluginSlug, $Namespace, $Username, $Password, $StatusLogsDir, $Index, $IncludeErrors)
 
+                function Get-JobSafeProperty {
+                    param([object]$Obj, [string[]]$Names)
+                    foreach ($name in $Names) {
+                        try {
+                            if ($null -ne $Obj -and $Obj.PSObject.Properties.Name -contains $name) {
+                                $val = $Obj.$name
+                                if ($null -ne $val -and "$val" -ne "") {
+                                    return "$val"
+                                }
+                            }
+                        } catch { }
+                    }
+                    return ""
+                }
+
                 function Get-JobPluginStatusPayload {
                     param([object]$Body)
 
-                    if ($null -eq $Body) {
-                        return $null
-                    }
+                    if ($null -eq $Body) { return $null }
 
-                    if ($Body.PSObject.Properties.Name -contains 'Results') {
-                        $results = $Body.Results
-                        if ($results -is [System.Array]) {
-                            if ($results.Count -gt 0) {
-                                return $results[0]
+                    try {
+                        if ($Body.PSObject.Properties.Name -contains 'Results') {
+                            $results = $Body.Results
+                            if ($null -ne $results) {
+                                if ($results -is [System.Array] -and $results.Count -gt 0) {
+                                    return $results[0]
+                                }
+                                if ($results -isnot [System.Array]) {
+                                    return $results
+                                }
                             }
-                        } elseif ($null -ne $results) {
-                            return $results
                         }
-                    }
+                    } catch { }
 
-                    if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
-                        return $Body.Result
-                    }
+                    try {
+                        if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
+                            return $Body.Result
+                        }
+                    } catch { }
 
                     return $Body
                 }
@@ -390,31 +408,22 @@ function Invoke-ParallelPluginStatusCheck {
                         PluginName    = ""
                         ApiNamespace  = ""
                         ServerTime    = ""
+                        DbAvailable   = ""
+                        RemoteSiteUrl = ""
                     }
 
-                    if ($null -eq $payload) {
-                        return $metadata
-                    }
+                    if ($null -eq $payload) { return $metadata }
 
-                    $versionCandidates = @(
-                        $payload.Version,
-                        $payload.version,
-                        $Body.Version,
-                        $Body.version
-                    ) | Where-Object { $_ }
+                    $metadata.Version       = Get-JobSafeProperty $payload @("Version", "version")
+                    if (-not $metadata.Version) { $metadata.Version = Get-JobSafeProperty $Body @("Version", "version") }
 
-                    if ($versionCandidates.Count -gt 0) { $metadata.Version = [string]$versionCandidates[0] }
-                    if ($payload.Wp) { $metadata.WpVersion = [string]$payload.Wp }
-                    elseif ($payload.WpVersion) { $metadata.WpVersion = [string]$payload.WpVersion }
-
-                    if ($payload.Php) { $metadata.PhpVersion = [string]$payload.Php }
-                    elseif ($payload.PhpVersion) { $metadata.PhpVersion = [string]$payload.PhpVersion }
-
-                    if ($payload.Plugin) { $metadata.PluginName = [string]$payload.Plugin }
-                    if ($payload.Api) { $metadata.ApiNamespace = [string]$payload.Api }
-                    elseif ($payload.ApiNamespace) { $metadata.ApiNamespace = [string]$payload.ApiNamespace }
-
-                    if ($payload.ServerTime) { $metadata.ServerTime = [string]$payload.ServerTime }
+                    $metadata.WpVersion     = Get-JobSafeProperty $payload @("Wp", "WpVersion", "wp", "wpVersion")
+                    $metadata.PhpVersion    = Get-JobSafeProperty $payload @("Php", "PhpVersion", "php", "phpVersion")
+                    $metadata.PluginName    = Get-JobSafeProperty $payload @("Plugin", "plugin")
+                    $metadata.ApiNamespace  = Get-JobSafeProperty $payload @("Api", "ApiNamespace", "api")
+                    $metadata.ServerTime    = Get-JobSafeProperty $payload @("ServerTime", "serverTime", "Timestamp", "timestamp")
+                    $metadata.DbAvailable   = Get-JobSafeProperty $payload @("DbAvailable", "dbAvailable")
+                    $metadata.RemoteSiteUrl = Get-JobSafeProperty $payload @("SiteUrl", "siteUrl")
 
                     return $metadata
                 }
@@ -422,22 +431,24 @@ function Invoke-ParallelPluginStatusCheck {
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
                 $result = @{
-                    Site         = $SiteName
-                    SiteUrl      = $SiteUrl
-                    Plugin       = $PluginSlug
-                    Version      = ""
-                    WpVersion    = ""
-                    PhpVersion   = ""
-                    PluginName   = ""
-                    ApiNamespace = ""
-                    ServerTime   = ""
-                    Status       = "ERROR"
-                    HttpStatus   = 0
-                    Message      = ""
-                    Duration     = 0
-                    ErrorLog     = ""
-                    Stacktrace   = ""
-                    Index        = $Index
+                    Site          = $SiteName
+                    SiteUrl       = $SiteUrl
+                    Plugin        = $PluginSlug
+                    Version       = ""
+                    WpVersion     = ""
+                    PhpVersion    = ""
+                    PluginName    = ""
+                    ApiNamespace  = ""
+                    ServerTime    = ""
+                    DbAvailable   = ""
+                    RemoteSiteUrl = ""
+                    Status        = "ERROR"
+                    HttpStatus    = 0
+                    Message       = ""
+                    Duration      = 0
+                    ErrorLog      = ""
+                    Stacktrace    = ""
+                    Index         = $Index
                 }
 
                 if (-not $Username) {
@@ -466,6 +477,8 @@ function Invoke-ParallelPluginStatusCheck {
                             $result.PluginName = $metadata.PluginName
                             $result.ApiNamespace = $metadata.ApiNamespace
                             $result.ServerTime = $metadata.ServerTime
+                            $result.DbAvailable = $metadata.DbAvailable
+                            $result.RemoteSiteUrl = $metadata.RemoteSiteUrl
                         } catch {
                             $result.Message = "Status endpoint returned invalid JSON"
                         }
