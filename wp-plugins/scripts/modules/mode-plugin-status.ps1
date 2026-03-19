@@ -268,7 +268,12 @@ function Invoke-SinglePluginStatusCheck {
                     Write-Host "    ───────────────────────────────────────────────" -ForegroundColor DarkCyan
                 }
 
-                $body = $rawStatusBody | ConvertFrom-Json
+                # Strip PHP warnings/notices before the JSON body
+                $jsonBody = $rawStatusBody
+                $jsonStart = $rawStatusBody.IndexOf('{')
+                if ($jsonStart -gt 0) { $jsonBody = $rawStatusBody.Substring($jsonStart) }
+
+                $body = $jsonBody | ConvertFrom-Json
                 $metadata = Get-PluginStatusMetadata -Body $body
                 $result.Version = $metadata.Version
                 $result.WpVersion = $metadata.WpVersion
