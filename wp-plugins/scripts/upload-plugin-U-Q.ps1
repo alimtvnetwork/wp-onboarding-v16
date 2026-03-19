@@ -758,10 +758,10 @@ try {
 }
 
 # =============================================================================
-# STEP 4: Upload to QUpload API
+# STEP 4: Upload via $ApiNamespace
 # =============================================================================
 Write-Status ""
-Write-Status "[4/5] Uploading to QUpload API..." -Color Yellow
+Write-Status "[4/5] Uploading via $apiLabel..." -Color Yellow
 Write-Status "      Endpoint: $uploadUrl" -Color Gray
 
 try {
