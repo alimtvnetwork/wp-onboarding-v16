@@ -17,6 +17,7 @@ param(
     [switch]$uas,
     [Alias('as')][switch]$allsites,
     [switch]$za,
+    [switch]$zas,
     [Alias('zq')][switch]$zipqupload,
     [Alias('z')][switch]$zip,
     [Alias('t')][switch]$test,
@@ -242,6 +243,7 @@ if ($help) {
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
+    Write-Host "  -zas                ZIP ALL plugins (parallel, with PHP syntax check)"
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin only"
     Write-Host "  -c,  -clear         (Legacy) Clear is now automatic before all ZIP operations"
     Write-Host ""
@@ -303,6 +305,7 @@ if ($help) {
     Write-Host "  ZIP only:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -z           # ZIP default plugin (Riseup Asia)"
     Write-Host "    .\run.ps1 -za          # ZIP all plugins in wp-plugins/"
+    Write-Host "    .\run.ps1 -zas         # ZIP all plugins (parallel + PHP check)"
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host ""
@@ -456,6 +459,7 @@ Write-Host ""
 # ============================================================================
 if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
+if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll }

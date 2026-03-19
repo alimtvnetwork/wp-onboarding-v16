@@ -1,5 +1,5 @@
 # Module: mode-zip.ps1
-# ZIP modes: -z, -za, -zq
+# ZIP modes: -z, -za, -zas, -zq
 # Dot-sourced by run.ps1 — expects all helpers and plugin-helpers loaded.
 
 function Invoke-ZipMode {
@@ -85,6 +85,75 @@ function Invoke-ZipAllMode {
     Write-Host "========================================" -ForegroundColor Cyan
 
     exit 0
+}
+
+function Invoke-ZipAllParallelMode {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ZIP All Parallel Mode (-zas)" -ForegroundColor Cyan
+    if ($sync) {
+        Write-Host "  Mode: SEQUENTIAL (-sync)" -ForegroundColor Yellow
+    } else {
+        Write-Host "  Mode: PARALLEL (use -sync for sequential)" -ForegroundColor DarkGray
+    }
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $excludedPluginSlugs = @()
+    if ($exclude -ne "") {
+        $excludedPluginSlugs = @($exclude -split ',' | ForEach-Object { $_.Trim() })
+    }
+
+    $discovery = Get-UploadablePlugins -ExtraSkipList $excludedPluginSlugs
+    $pluginFolders = $discovery.Plugins
+    $skipList = $discovery.SkipList
+
+    if ($pluginFolders.Count -eq 0) {
+        Write-Host "No plugins found to ZIP." -ForegroundColor Yellow
+        exit 0
+    }
+
+    Write-Host "  Preparing $($pluginFolders.Count) plugin(s):" -ForegroundColor Cyan
+    foreach ($folder in $pluginFolders) {
+        Write-Host "    - $($folder.Name)" -ForegroundColor Gray
+    }
+    Write-Host "  Excluded: $($skipList -join ', ')" -ForegroundColor DarkGray
+    Write-Host ""
+
+    Clear-PluginZips
+
+    # ── Phase 0: PHP Syntax Check ──────────────────────────────────────────
+    $phpResults = Invoke-ParallelPhpCheck -PluginFolders $pluginFolders -Sequential:$sync
+
+    $failedSlugs = @($phpResults | Where-Object { $_.Status -eq "FAILED" } | ForEach-Object { $_.Slug })
+    $passedSlugs = @($phpResults | Where-Object { $_.Status -ne "FAILED" } | ForEach-Object { $_.Slug })
+
+    if ($failedSlugs.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  PHP check failed for: $($failedSlugs -join ', ')" -ForegroundColor Red
+        Write-Host "  These plugins will be excluded from ZIP." -ForegroundColor Yellow
+        $pluginFolders = @($pluginFolders | Where-Object { $_.Name -in $passedSlugs })
+    }
+
+    if ($pluginFolders.Count -eq 0) {
+        Write-Host "  No plugins passed PHP syntax check. Aborting." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan
+
+    $zipResults = Invoke-ParallelPluginZip -PluginFolders $pluginFolders -Sequential:$sync
+
+    Write-ZipSummary -ZipResults $zipResults
+
+    $failCount = ($zipResults | Where-Object { $_.Status -ne "OK" }).Count
+
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ZIP All Parallel complete!" -ForegroundColor Green
+    Write-Host "========================================" -ForegroundColor Cyan
+
+    exit $(if ($failCount -eq 0) { 0 } else { 1 })
 }
 
 function Invoke-ZipQUploadMode {
