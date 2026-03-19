@@ -292,7 +292,18 @@ function Invoke-PurgeMode {
                 "Authorization" = $authHeader
                 "Content-Type"  = "application/json"
             }
+
+            if ($VerboseMode) {
+                Write-Host ""
+                Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
+            }
+
             $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+            if ($VerboseMode) {
+                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
+                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+            }
 
             $isSuccess = ($response.success -eq $true)
 
