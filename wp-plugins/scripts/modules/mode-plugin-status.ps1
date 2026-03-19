@@ -375,17 +375,44 @@ function Invoke-ParallelPluginStatusCheck {
             $jobs += Start-Job -Name "status-$currentIndex-$pluginSlug-$siteName" -ScriptBlock {
                 param($SiteUrl, $SiteName, $PluginSlug, $Namespace, $Username, $Password, $StatusLogsDir, $Index, $IncludeErrors)
 
+                function Test-JobHasProperty {
+                    param([object]$Obj, [string]$Name)
+
+                    if ($null -eq $Obj) { return $false }
+                    if ($Obj -is [System.Collections.IDictionary]) { return $Obj.Contains($Name) }
+
+                    try {
+                        return ($Obj.PSObject.Properties.Name -contains $Name)
+                    } catch {
+                        return $false
+                    }
+                }
+
+                function Get-JobPropertyValue {
+                    param([object]$Obj, [string]$Name)
+
+                    if ($null -eq $Obj) { return $null }
+                    if ($Obj -is [System.Collections.IDictionary]) {
+                        if ($Obj.Contains($Name)) { return $Obj[$Name] }
+                        return $null
+                    }
+
+                    try {
+                        if ($Obj.PSObject.Properties.Name -contains $Name) {
+                            return $Obj.$Name
+                        }
+                    } catch { }
+
+                    return $null
+                }
+
                 function Get-JobSafeProperty {
                     param([object]$Obj, [string[]]$Names)
                     foreach ($name in $Names) {
-                        try {
-                            if ($null -ne $Obj -and $Obj.PSObject.Properties.Name -contains $name) {
-                                $val = $Obj.$name
-                                if ($null -ne $val -and "$val" -ne "") {
-                                    return "$val"
-                                }
-                            }
-                        } catch { }
+                        $val = Get-JobPropertyValue -Obj $Obj -Name $name
+                        if ($null -ne $val -and "$val" -ne "") {
+                            return "$val"
+                        }
                     }
                     return ""
                 }
@@ -395,25 +422,22 @@ function Invoke-ParallelPluginStatusCheck {
 
                     if ($null -eq $Body) { return $null }
 
-                    try {
-                        if ($Body.PSObject.Properties.Name -contains 'Results') {
-                            $results = $Body.Results
-                            if ($null -ne $results) {
-                                if ($results -is [System.Array] -and $results.Count -gt 0) {
-                                    return $results[0]
-                                }
-                                if ($results -isnot [System.Array]) {
-                                    return $results
-                                }
-                            }
+                    $results = Get-JobPropertyValue -Obj $Body -Name 'Results'
+                    if ($null -ne $results) {
+                        if ($results -is [System.Array]) {
+                            if ($results.Count -gt 0) { return $results[0] }
+                        } elseif ($results -is [System.Collections.IEnumerable] -and $results -isnot [string]) {
+                            $items = @($results)
+                            if ($items.Count -gt 0) { return $items[0] }
+                        } else {
+                            return $results
                         }
-                    } catch { }
+                    }
 
-                    try {
-                        if (($Body.PSObject.Properties.Name -contains 'Result') -and $null -ne $Body.Result) {
-                            return $Body.Result
-                        }
-                    } catch { }
+                    $result = Get-JobPropertyValue -Obj $Body -Name 'Result'
+                    if ($null -ne $result) {
+                        return $result
+                    }
 
                     return $Body
                 }
@@ -436,16 +460,16 @@ function Invoke-ParallelPluginStatusCheck {
 
                     if ($null -eq $payload) { return $metadata }
 
-                    $metadata.Version       = Get-JobSafeProperty $payload @("Version", "version")
-                    if (-not $metadata.Version) { $metadata.Version = Get-JobSafeProperty $Body @("Version", "version") }
+                    $metadata.Version       = Get-JobSafeProperty $payload @('Version', 'version')
+                    if (-not $metadata.Version) { $metadata.Version = Get-JobSafeProperty $Body @('Version', 'version') }
 
-                    $metadata.WpVersion     = Get-JobSafeProperty $payload @("Wp", "WpVersion", "wp", "wpVersion")
-                    $metadata.PhpVersion    = Get-JobSafeProperty $payload @("Php", "PhpVersion", "php", "phpVersion")
-                    $metadata.PluginName    = Get-JobSafeProperty $payload @("Plugin", "plugin")
-                    $metadata.ApiNamespace  = Get-JobSafeProperty $payload @("Api", "ApiNamespace", "api")
-                    $metadata.ServerTime    = Get-JobSafeProperty $payload @("ServerTime", "serverTime", "Timestamp", "timestamp")
-                    $metadata.DbAvailable   = Get-JobSafeProperty $payload @("DbAvailable", "dbAvailable")
-                    $metadata.RemoteSiteUrl = Get-JobSafeProperty $payload @("SiteUrl", "siteUrl")
+                    $metadata.WpVersion     = Get-JobSafeProperty $payload @('Wp', 'WpVersion', 'wp', 'wpVersion')
+                    $metadata.PhpVersion    = Get-JobSafeProperty $payload @('Php', 'PhpVersion', 'php', 'phpVersion')
+                    $metadata.PluginName    = Get-JobSafeProperty $payload @('Plugin', 'plugin')
+                    $metadata.ApiNamespace  = Get-JobSafeProperty $payload @('Api', 'ApiNamespace', 'api')
+                    $metadata.ServerTime    = Get-JobSafeProperty $payload @('ServerTime', 'serverTime', 'Timestamp', 'timestamp')
+                    $metadata.DbAvailable   = Get-JobSafeProperty $payload @('DbAvailable', 'dbAvailable')
+                    $metadata.RemoteSiteUrl = Get-JobSafeProperty $payload @('SiteUrl', 'siteUrl')
 
                     return $metadata
                 }
