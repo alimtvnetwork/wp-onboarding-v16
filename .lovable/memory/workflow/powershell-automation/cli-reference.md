@@ -47,6 +47,7 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 | `-logtype 'err'` | | Clear specific log type (`log`\|`err`\|`stack`\|`files`\|`db`\|`all`) |
 | `-audit` | | Clear audit/activity logs (plugins-onboard DB) instead of file logs |
 | `-purge` | | Clear ALL logs + audit logs in one command (all sites by default) |
+| `-clearallsites` | `-cas` | Clear ALL logs + audit + stacktraces on ALL sites (both plugins) — alias for `-purge` |
 
 ### Machine Management
 | Flag | Alias | Description |
