@@ -370,6 +370,7 @@ if ($check) {
 # PLUGIN STATUS CHECK (early exit)
 # ============================================================================
 if ($pluginstatus -or $pas) {
+    Invoke-GitPull
     $pluginstatusall = $pas
     $script:errorFlag = $errorlogs
     Invoke-PluginStatusMode
