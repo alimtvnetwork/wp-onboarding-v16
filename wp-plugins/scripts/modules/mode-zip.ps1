@@ -1,5 +1,5 @@
 # Module: mode-zip.ps1
-# ZIP modes: -z, -za, -zq
+# ZIP modes: -z, -za, -zas, -zq
 # Dot-sourced by run.ps1 — expects all helpers and plugin-helpers loaded.
 
 function Invoke-ZipMode {
