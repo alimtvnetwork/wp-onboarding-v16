@@ -169,7 +169,8 @@ function Invoke-ClearLogsMode {
 
 function Invoke-PurgeMode {
     param(
-        [switch]$SkipConfirm
+        [switch]$SkipConfirm,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
