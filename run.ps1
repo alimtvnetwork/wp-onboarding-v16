@@ -230,6 +230,13 @@ if ($help) {
     Write-Host "  -cl -audit          Clear audit logs (plugins-onboard DB) on default site"
     Write-Host "  -cla -audit         Clear audit logs on ALL sites"
     Write-Host ""
+    Write-Host "  PURGE (clear ALL logs + audit in one command):" -ForegroundColor DarkYellow
+    Write-Host "  -purge              Purge all logs + audit on ALL sites"
+    Write-Host "  -purge -site 'name' Purge all logs + audit on a specific site"
+    Write-Host "  -purge -i 1         Purge all logs + audit on site #1"
+    Write-Host "  -purge -i 1,2       Purge all logs + audit on sites #1 and #2"
+    Write-Host "  -purge -xs 'name'   Purge all logs + audit on all sites EXCEPT named one(s)"
+    Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
