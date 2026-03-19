@@ -9,13 +9,14 @@ function Invoke-ClearLogsMode {
         [switch]$ForceAll,
         [string]$PluginFilter = "",
         [string]$TypeFilter = "",
-        [switch]$AuditMode
+        [switch]$AuditMode,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
 
     if ($AuditMode) {
-        Invoke-ClearAuditLogsMode -ForceAll:$ForceAll
+        Invoke-ClearAuditLogsMode -ForceAll:$ForceAll -VerboseMode:$VerboseMode
         return
     }
 
@@ -136,7 +137,7 @@ function Invoke-ClearLogsMode {
 
             Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor Yellow -NoNewline
 
-            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType $resolvedType
+            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType $resolvedType -VerboseMode:$VerboseMode
 
             $results += $clearResult
 
@@ -168,7 +169,8 @@ function Invoke-ClearLogsMode {
 
 function Invoke-PurgeMode {
     param(
-        [switch]$SkipConfirm
+        [switch]$SkipConfirm,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
@@ -267,7 +269,7 @@ function Invoke-PurgeMode {
 
             Write-Host "  [$siteName] $pluginLabel..." -ForegroundColor Yellow -NoNewline
 
-            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType "all"
+            $clearResult = Invoke-TwoStepLogClear -ApiBase $apiBase -AuthHeader $authHeader -MachineName $machineName -SiteName $siteName -PluginLabel $pluginLabel -LogType "all" -VerboseMode:$VerboseMode
 
             $results += $clearResult
 
@@ -290,7 +292,18 @@ function Invoke-PurgeMode {
                 "Authorization" = $authHeader
                 "Content-Type"  = "application/json"
             }
+
+            if ($VerboseMode) {
+                Write-Host ""
+                Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
+            }
+
             $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+            if ($VerboseMode) {
+                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
+                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+            }
 
             $isSuccess = ($response.success -eq $true)
 
@@ -321,7 +334,10 @@ function Invoke-PurgeMode {
 # ── Audit Log Clearing Mode ─────────────────────────────────────────────
 
 function Invoke-ClearAuditLogsMode {
-    param([switch]$ForceAll)
+    param(
+        [switch]$ForceAll,
+        [switch]$VerboseMode
+    )
 
     $modeLabel = if ($ForceAll) { "Audit Log Clearing Mode (-cla -audit: ALL sites)" } else { "Audit Log Clearing Mode (-cl -audit)" }
     Write-Host "========================================" -ForegroundColor Magenta
@@ -384,7 +400,18 @@ function Invoke-ClearAuditLogsMode {
                 "Authorization" = $authHeader
                 "Content-Type"  = "application/json"
             }
+
+            if ($VerboseMode) {
+                Write-Host ""
+                Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
+            }
+
             $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+            if ($VerboseMode) {
+                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
+                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+            }
 
             $isSuccess = ($response.success -eq $true)
 
@@ -428,7 +455,8 @@ function Invoke-TwoStepLogClear {
         [string]$MachineName,
         [string]$SiteName,
         [string]$PluginLabel,
-        [string]$LogType = "all"
+        [string]$LogType = "all",
+        [switch]$VerboseMode
     )
 
     $headers = @{
@@ -440,8 +468,18 @@ function Invoke-TwoStepLogClear {
     # Step 1: Request token
     $clearUrl = "$ApiBase/logs/clear"
 
+    if ($VerboseMode) {
+        Write-Host ""
+        Write-Host "    [VERBOSE] DELETE $clearUrl" -ForegroundColor DarkGray
+    }
+
     try {
         $step1Response = Invoke-RestMethod -Uri $clearUrl -Method Delete -Headers $headers -ErrorAction Stop
+
+        if ($VerboseMode) {
+            $respJson = $step1Response | ConvertTo-Json -Depth 5 -Compress
+            Write-Host "    [VERBOSE] Step 1 Response: $respJson" -ForegroundColor DarkGray
+        }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
         $responseBody = Get-ClearLogsResponseBody $_
@@ -473,8 +511,18 @@ function Invoke-TwoStepLogClear {
 
     $confirmBody = $confirmPayload | ConvertTo-Json -Compress
 
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] POST $confirmUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Body: $confirmBody" -ForegroundColor DarkGray
+    }
+
     try {
         $step2Response = Invoke-RestMethod -Uri $confirmUrl -Method Post -Headers $headers -Body $confirmBody -ErrorAction Stop
+
+        if ($VerboseMode) {
+            $respJson = $step2Response | ConvertTo-Json -Depth 5 -Compress
+            Write-Host "    [VERBOSE] Step 2 Response: $respJson" -ForegroundColor DarkGray
+        }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
         $responseBody = Get-ClearLogsResponseBody $_

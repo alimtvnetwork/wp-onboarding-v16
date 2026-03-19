@@ -242,16 +242,21 @@ if ($help) {
     Write-Host "  -cas -i 1,2         Clear everything on sites #1 and #2"
     Write-Host "  -cas -xs 'name'     Clear everything on all sites EXCEPT named one(s)"
     Write-Host "  -cas -yes           Skip confirmation prompt (for scripts/automation)"
+    Write-Host "  -cas -v             Verbose: show raw JSON request/response for each REST call"
     Write-Host "  -purge              Alias for -cas"
+    Write-Host ""
+    Write-Host "  -v with log commands: -cl -v, -cla -v, -cas -v show raw JSON sent/received"
     Write-Host ""
     Write-Host "MACHINE MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -am                 Approve current machine ($($env:COMPUTERNAME)) on ALL sites"
     Write-Host "  -am 'MACHINE-NAME'  Approve a specific machine name on ALL sites"
+    Write-Host "  -am -v              Verbose: show raw JSON request/response"
     Write-Host ""
     Write-Host "DIAGNOSTICS:" -ForegroundColor Yellow
     Write-Host "  -check              Preflight readiness check across all sites (read-only)"
     Write-Host "  -check -site 'name' Check a specific site only"
     Write-Host "  -check -i N         Check site(s) by index"
+    Write-Host "  -check -v           Verbose: show raw JSON /status response"
     Write-Host ""
     Write-Host "PLUGIN STATUS:" -ForegroundColor Yellow
     Write-Host "  -ps                 Check plugin status on default site"
@@ -390,7 +395,7 @@ if ($listsites) {
 # PREFLIGHT CHECK (early exit)
 # ============================================================================
 if ($check) {
-    Invoke-CheckMode
+    Invoke-CheckMode -VerboseMode:$verbose
 }
 
 # ============================================================================
@@ -487,9 +492,9 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) { Invoke-UploadAllSitesMode }
-if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes }
-if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
-if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit }
+if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose }
+if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
+if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
 if ($approvemachine) {
     $machineNameForApproval = $approvemachinename
 
@@ -506,7 +511,7 @@ if ($approvemachine) {
         }
     }
 
-    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval
+    Invoke-ApproveMachineMode -MachineNameToApprove $machineNameForApproval -VerboseMode:$verbose
 }
 if ($upload -and $allsites) { Invoke-UploadDefaultAllSitesMode }
 if ($uploadall) { Invoke-UploadAllMode }

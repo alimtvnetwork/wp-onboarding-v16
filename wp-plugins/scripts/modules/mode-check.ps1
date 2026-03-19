@@ -4,6 +4,9 @@
 # Dot-sourced by run.ps1 — expects $Config, $ScriptDir, helpers, plugin-helpers loaded.
 
 function Invoke-CheckMode {
+    param(
+        [switch]$VerboseMode
+    )
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  Preflight Readiness Check (-check)" -ForegroundColor Cyan
@@ -90,7 +93,18 @@ function Invoke-CheckMode {
 
             try {
                 $headers = @{ "Authorization" = $authHeader }
+
+                if ($VerboseMode) {
+                    Write-Host "      [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
+                }
+
                 $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+
+                if ($VerboseMode) {
+                    $respJson = $statusResp | ConvertTo-Json -Depth 5 -Compress
+                    Write-Host "      [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                }
+
                 $sw.Stop()
                 $elapsed = $sw.ElapsedMilliseconds
 

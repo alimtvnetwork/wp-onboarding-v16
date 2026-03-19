@@ -5,7 +5,8 @@
 
 function Invoke-ApproveMachineMode {
     param(
-        [string]$MachineNameToApprove
+        [string]$MachineNameToApprove,
+        [switch]$VerboseMode
     )
 
     Write-Host ""
@@ -101,7 +102,18 @@ function Invoke-ApproveMachineMode {
 
             try {
                 $headers = @{ "Authorization" = $authHeader }
+
+                if ($VerboseMode) {
+                    Write-Host "    [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
+                }
+
                 $statusResp = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+
+                if ($VerboseMode) {
+                    $respJson = $statusResp | ConvertTo-Json -Depth 5 -Compress
+                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                }
+
                 $hasVersion = ($null -ne $statusResp -and $statusResp.version)
 
                 if ($hasVersion) {
@@ -189,8 +201,19 @@ function Invoke-ApproveMachineMode {
 
             $body = @{ machine = $MachineNameToApprove } | ConvertTo-Json -Compress
 
+            if ($VerboseMode) {
+                Write-Host ""
+                Write-Host "    [VERBOSE] PUT $approveUrl" -ForegroundColor DarkGray
+                Write-Host "    [VERBOSE] Body: $body" -ForegroundColor DarkGray
+            }
+
             try {
                 $response = Invoke-RestMethod -Uri $approveUrl -Method Put -Headers $headers -Body $body -ErrorAction Stop
+
+                if ($VerboseMode) {
+                    $respJson = $response | ConvertTo-Json -Depth 5 -Compress
+                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                }
 
                 $isSuccess = ($response.Success -eq $true)
 
