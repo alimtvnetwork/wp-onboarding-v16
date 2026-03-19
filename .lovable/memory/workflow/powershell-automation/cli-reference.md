@@ -1,5 +1,5 @@
 # Memory: workflow/powershell-automation/cli-reference
-Updated: 2026-03-16
+Updated: 2026-03-19
 
 The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot-sourced components from `wp-plugins/scripts/modules/`. Configuration is loaded from `powershell.json`.
 
@@ -16,7 +16,7 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 | `-rebuild` | `-r` | Complete clean reinstall (`-force` + `-install`) |
 | `-openfirewall` | `-fw` | Add Windows Firewall inbound rules |
 | `-test` | `-t` | Run Go backend tests and exit |
-| `-verbose` | `-v` | Show detailed debug output |
+| `-verbose` | `-v` | Show raw JSON request/response for REST commands (`-am`, `-cas`, `-cl`, `-cla`, `-check`, `-pas`) |
 | `-debug` | `-d` | Enable debug logging (endpoints, paths, responses) |
 
 ### Upload — Single
@@ -68,11 +68,30 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 |------|-------|-------------|
 | `-check` | | Preflight readiness check across all sites (read-only) |
 
+### Plugin Status
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-pluginstatus` | `-ps` | Check plugin status on default site |
+| `-pas` | | Check plugin status on ALL configured sites |
+| `-errorlogs` | `-err` | Include error logs and stack traces (use with `-ps`/`-pas`) |
+
 ### Info
 | Flag | Alias | Description |
 |------|-------|-------------|
 | `-listsites` | `-ls`, `-lr` | List configured sites |
 | `-help` | `-h` | Show help |
+
+## Verbose Mode (-v)
+
+The `-v` flag shows raw JSON request bodies and response bodies for all REST API commands:
+
+| Command | What `-v` shows |
+|---------|----------------|
+| `-am -v` | GET /status request+response, PUT /machines/approve body+response |
+| `-check -v` | GET /status response JSON for each site/plugin |
+| `-cl -v`, `-cla -v` | DELETE /logs/clear and POST /logs/clear/confirm request+response |
+| `-cas -v`, `-purge -v` | All log clear + audit clear request+response |
+| `-pas -v` | Raw /status response JSON |
 
 ## Deployment Order (First-Time)
 
