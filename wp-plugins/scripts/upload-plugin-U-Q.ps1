@@ -633,7 +633,7 @@ if ($ZipOnly) {
 Write-Status ""
 Write-Status "[3/5] Checking auth via QUpload status endpoint..." -Color Yellow
 
-$apiBase = "$WordPressSiteURL/wp-json/qupload-api/v1"
+$apiBase = "$WordPressSiteURL/wp-json/$ApiNamespace"
 $statusUrl = "$apiBase/status"
 $uploadUrl = "$apiBase/upload"
 
