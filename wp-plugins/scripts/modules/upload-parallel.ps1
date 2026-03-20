@@ -308,7 +308,8 @@ function Invoke-SequentialPluginUpload {
         [Parameter(Mandatory)][hashtable]$VersionByPlugin,
         [Parameter(Mandatory)][string]$QUploadScript,
         [Parameter(Mandatory)][string]$UploadLogsDir,
-        [Parameter(Mandatory)][string]$LogStamp
+        [Parameter(Mandatory)][string]$LogStamp,
+        [switch]$VerboseMode
     )
 
     # Sort plugins: non-cross-upload first
