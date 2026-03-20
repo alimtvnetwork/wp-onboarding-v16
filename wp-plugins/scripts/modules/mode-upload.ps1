@@ -44,7 +44,9 @@ function Invoke-UploadComboMode {
         Write-Host "  Path:   $riseupPath" -ForegroundColor Gray
         Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
-        & $quploadScript -jc $jsonConfigStr -a
+        $verboseArgs = @()
+        if ($verbose) { $verboseArgs += "-vb" }
+        & $quploadScript -jc $jsonConfigStr -a @verboseArgs
     } else {
         Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
         exit 1
