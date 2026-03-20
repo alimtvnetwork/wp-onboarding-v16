@@ -675,6 +675,12 @@ function Invoke-ParallelPluginStatusCheck {
             }
         }
 
+        # Attach local version (not available inside job)
+        $plugSlug = $result.Plugin
+        if ($script:localPluginVersions -and $script:localPluginVersions[$plugSlug]) {
+            $result.LocalVersion = $script:localPluginVersions[$plugSlug]
+        }
+
         $results += $result
 
         $color = switch ($result.Status) {
@@ -685,8 +691,9 @@ function Invoke-ParallelPluginStatusCheck {
         }
         $symbol = if ($result.Status -eq "OK") { "+" } elseif ($result.Status -match "SKIP|NOT_INSTALLED") { "o" } else { "x" }
         $vLabel = if ($result.Version) { "v$($result.Version)" } else { "-" }
+        $localLabel = if ($result.LocalVersion -and $result.LocalVersion -ne "unknown") { " (local v$($result.LocalVersion))" } else { "" }
         $duration = "{0:N1}s" -f $result.Duration
-        Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel $($result.Status) $duration" -ForegroundColor $color
+        Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel$localLabel $($result.Status) $duration" -ForegroundColor $color
 
         if ($script:pluginStatusVerbose -and $result.RawStatusBody) {
             Write-Host "" 
