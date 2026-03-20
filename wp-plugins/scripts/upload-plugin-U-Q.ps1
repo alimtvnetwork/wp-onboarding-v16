@@ -98,7 +98,11 @@ param(
     # ── Skip pre-checks (PHP syntax + backed enum + ZIP creation) ─────────
     # Used by parallel pipeline where Phase 0+1 already validated and zipped.
     [Alias('spc')]
-    [switch]$SkipPreChecks = $false
+    [switch]$SkipPreChecks = $false,
+
+    # ── Verbose mode: show raw JSON request/response ─────────────────────
+    [Alias('vb')]
+    [switch]$VerboseMode = $false
 )
 
 # =============================================================================
