@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.28.3",
+  "version": "2.28.4",
   "releaseDate": "2026-03-20",
   "gitCommit": "dev",
   "buildTime": "2026-03-20T00:00:00Z",
-  "scriptVersion": "2.28.3",
-  "wpPluginVersion": "2.28.3",
-  "quploadVersion": "2.28.3",
+  "scriptVersion": "2.28.4",
+  "wpPluginVersion": "2.28.4",
+  "quploadVersion": "2.28.4",
   "changelog": [
+    {
+      "version": "2.28.4",
+      "date": "2026-03-20",
+      "title": "Changelog & Documentation Enhancements",
+      "changes": [
+        "📋 Plugin CHANGELOGs created for both Riseup Asia Uploader and QUpload",
+        "📖 Root README, plugin READMEs, and PowerShell CLI README overhauled",
+        "🔢 run.ps1 startup banner shows version, release date, and 3 recent changelog entries",
+        "📊 Local vs remote version comparison in -ps/-pas commands"
+      ]
+    },
     {
       "version": "2.28.3",
       "date": "2026-03-20",
