@@ -152,6 +152,7 @@ function Invoke-UploadMode {
             Write-Host ""
             $debugArgs = @()
             if ($debug) { $debugArgs += "-DebugMode" }
+            if ($verbose) { $debugArgs += "-vb" }
             & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
         } else {
             Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
