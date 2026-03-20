@@ -473,11 +473,55 @@ function Invoke-TwoStepLogClear {
         "Content-Type"            = "application/json"
     }
 
+    # Pre-clear: Retrieve current log state in verbose mode
+    if ($VerboseMode) {
+        Write-Host ""
+        $retrieveUrl = "$ApiBase/logs/retrieve?max_lines=50"
+        Write-Host "    [VERBOSE] GET $retrieveUrl" -ForegroundColor DarkGray
+
+        try {
+            $rawRetrieve = Invoke-WebRequest -Uri $retrieveUrl -Method Get -Headers $headers -UseBasicParsing -ErrorAction Stop
+            $rawRetrieveBody = $rawRetrieve.Content
+            $jsonRetrieveBody = $rawRetrieveBody
+            $jsonRetrieveStart = $rawRetrieveBody.IndexOf('{')
+            if ($jsonRetrieveStart -gt 0) { $jsonRetrieveBody = $rawRetrieveBody.Substring($jsonRetrieveStart) }
+
+            $retrieveObj = $jsonRetrieveBody | ConvertFrom-Json -ErrorAction SilentlyContinue
+
+            if ($retrieveObj) {
+                Write-Host "    [VERBOSE] Current logs before clearing:" -ForegroundColor DarkGray
+
+                $hasInfoLog = ($retrieveObj.InfoLog -and $retrieveObj.InfoLog.Exists -eq $true)
+                if ($hasInfoLog) {
+                    Write-Host "      info.txt: $($retrieveObj.InfoLog.TotalLines) lines, $($retrieveObj.InfoLog.TotalSize) bytes" -ForegroundColor DarkGray
+                }
+
+                $hasErrorLog = ($retrieveObj.ErrorLog -and $retrieveObj.ErrorLog.Exists -eq $true)
+                if ($hasErrorLog) {
+                    Write-Host "      error.txt: $($retrieveObj.ErrorLog.TotalLines) lines, $($retrieveObj.ErrorLog.TotalSize) bytes" -ForegroundColor DarkGray
+                }
+
+                $hasStacktrace = ($retrieveObj.StacktraceLog -and $retrieveObj.StacktraceLog.Exists -eq $true)
+                if ($hasStacktrace) {
+                    Write-Host "      stacktrace.txt: $($retrieveObj.StacktraceLog.TotalLines) lines, $($retrieveObj.StacktraceLog.TotalSize) bytes" -ForegroundColor DarkGray
+                }
+
+                $noLogs = (-not $hasInfoLog -and -not $hasErrorLog -and -not $hasStacktrace)
+                if ($noLogs) {
+                    Write-Host "      (no log files found)" -ForegroundColor DarkGray
+                }
+            } else {
+                Write-Host "    [VERBOSE] Retrieve response: $jsonRetrieveBody" -ForegroundColor DarkGray
+            }
+        } catch {
+            Write-Host "    [VERBOSE] logs/retrieve failed (endpoint may not exist): $($_.Exception.Message)" -ForegroundColor DarkGray
+        }
+    }
+
     # Step 1: Request token
     $clearUrl = "$ApiBase/logs/clear"
 
     if ($VerboseMode) {
-        Write-Host ""
         Write-Host "    [VERBOSE] DELETE $clearUrl" -ForegroundColor DarkGray
     }
 
