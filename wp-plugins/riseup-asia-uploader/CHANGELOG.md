@@ -6,6 +6,14 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 
 ---
 
+## [2.28.4] — 2026-03-20
+
+### Changelog & Documentation Enhancements
+- 📋 Plugin CHANGELOGs created for both Riseup Asia Uploader and QUpload
+- 📖 Root README, plugin READMEs, and PowerShell CLI README overhauled
+- 🔢 run.ps1 startup banner shows version, release date, and 3 recent changelog entries
+- 📊 Local vs remote version comparison in -ps/-pas commands
+
 ## [2.28.3] — 2026-03-20
 
 ### Verbose Mode for Log Clearing — Pre-Clear Retrieval
