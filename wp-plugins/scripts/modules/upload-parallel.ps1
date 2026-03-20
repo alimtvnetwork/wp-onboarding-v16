@@ -210,7 +210,7 @@ function Invoke-ParallelPluginUpload {
                     Error    = $null
                     Duration = $sw.Elapsed.TotalSeconds
                 }
-            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex, $apiNamespace
+            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex, $apiNamespace, $VerboseMode.IsPresent
 
             $jobIndex++
         }
