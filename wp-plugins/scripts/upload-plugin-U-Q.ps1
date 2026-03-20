@@ -815,8 +815,24 @@ try {
         activate = $ActivateAfterInstall
     } | ConvertTo-Json
 
+    if ($VerboseMode) {
+        $bodySizeKB = [math]::Round($body.Length / 1KB, 1)
+        Write-Host "    [VERBOSE] POST $uploadUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Request body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, plugin_zip: `"<base64 $bodySizeKB KB>`"}" -ForegroundColor DarkGray
+    }
+
     $response = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $authHeaders -Body $body -ContentType "application/json" -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
-    $parsed = $response.Content | ConvertFrom-Json
+    $rawUploadBody = $response.Content
+
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] Response: `"$rawUploadBody`"" -ForegroundColor DarkGray
+    }
+
+    # Strip PHP noise before parsing
+    $jsonUploadBody = $rawUploadBody
+    $jsonUploadStart = $rawUploadBody.IndexOf('{')
+    if ($jsonUploadStart -gt 0) { $jsonUploadBody = $rawUploadBody.Substring($jsonUploadStart) }
+    $parsed = $jsonUploadBody | ConvertFrom-Json
 
     $isSuccess = $parsed.Status.IsSuccess
 
