@@ -702,7 +702,12 @@ if (-not $uploadSuccess) {
             "Content-Type" = "multipart/form-data; boundary=$boundary"
         }
 
-        $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $body
+        $rawResp = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $body -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
         $uploadSuccess = $true
 
         $pluginSlugResult = $response.plugin
@@ -721,7 +726,7 @@ if (-not $uploadSuccess) {
             }
 
             try {
-                Invoke-RestMethod -Uri $activateUrl -Method Put -Headers $activateHeaders -Body $activateBody | Out-Null
+                $rawActivateResp = Invoke-WebRequest -Uri $activateUrl -Method Put -Headers $activateHeaders -Body $activateBody -UseBasicParsing -ErrorAction Stop | Out-Null
                 Write-Status "      ✓ Plugin activated!" -Color Green
             } catch {
                 Write-Status "      ⚠ Could not activate plugin automatically" -Color Yellow

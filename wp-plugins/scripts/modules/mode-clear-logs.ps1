@@ -298,11 +298,15 @@ function Invoke-PurgeMode {
                 Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
             }
 
-            $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+            $rawResp = Invoke-WebRequest -Uri $auditClearUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+            $rawBody = $rawResp.Content
+            $jsonBody = $rawBody
+            $jsonStart = $rawBody.IndexOf('{')
+            if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+            $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
             if ($VerboseMode) {
-                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
-                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                Write-Host "    [VERBOSE] Response: $jsonBody" -ForegroundColor DarkGray
             }
 
             $isSuccess = ($response.success -eq $true)
@@ -406,11 +410,15 @@ function Invoke-ClearAuditLogsMode {
                 Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
             }
 
-            $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+            $rawResp = Invoke-WebRequest -Uri $auditClearUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+            $rawBody = $rawResp.Content
+            $jsonBody = $rawBody
+            $jsonStart = $rawBody.IndexOf('{')
+            if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+            $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
             if ($VerboseMode) {
-                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
-                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                Write-Host "    [VERBOSE] Response: $jsonBody" -ForegroundColor DarkGray
             }
 
             $isSuccess = ($response.success -eq $true)
@@ -474,11 +482,15 @@ function Invoke-TwoStepLogClear {
     }
 
     try {
-        $step1Response = Invoke-RestMethod -Uri $clearUrl -Method Delete -Headers $headers -ErrorAction Stop
+        $rawResp = Invoke-WebRequest -Uri $clearUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $step1Response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
         if ($VerboseMode) {
-            $respJson = $step1Response | ConvertTo-Json -Depth 5 -Compress
-            Write-Host "    [VERBOSE] Step 1 Response: $respJson" -ForegroundColor DarkGray
+            Write-Host "    [VERBOSE] Step 1 Response: $jsonBody" -ForegroundColor DarkGray
         }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
@@ -517,11 +529,15 @@ function Invoke-TwoStepLogClear {
     }
 
     try {
-        $step2Response = Invoke-RestMethod -Uri $confirmUrl -Method Post -Headers $headers -Body $confirmBody -ErrorAction Stop
+        $rawResp = Invoke-WebRequest -Uri $confirmUrl -Method Post -Headers $headers -Body $confirmBody -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $step2Response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
         if ($VerboseMode) {
-            $respJson = $step2Response | ConvertTo-Json -Depth 5 -Compress
-            Write-Host "    [VERBOSE] Step 2 Response: $respJson" -ForegroundColor DarkGray
+            Write-Host "    [VERBOSE] Step 2 Response: $jsonBody" -ForegroundColor DarkGray
         }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_

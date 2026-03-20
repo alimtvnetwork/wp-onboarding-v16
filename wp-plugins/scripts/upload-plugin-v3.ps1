@@ -170,7 +170,12 @@ if ($Status) {
             "Authorization" = $authHeader
             "Accept" = "application/json"
         }
-        $response = Invoke-RestMethod -Uri $statusEndpoint -Method GET -Headers $headers -TimeoutSec 15
+        $rawResp = Invoke-WebRequest -Uri $statusEndpoint -Method GET -Headers $headers -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
         # If we have specific plugin paths, filter to those
         if ($paths.Count -gt 0) {
