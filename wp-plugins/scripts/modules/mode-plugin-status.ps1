@@ -61,6 +61,20 @@ function Invoke-PluginStatusMode {
         exit 0
     }
 
+    # ── Detect local plugin versions ───────────────────────────────────
+    $script:localPluginVersions = @{}
+    foreach ($folder in $pluginFolders) {
+        $localVer = Get-PluginVersion $folder.FullName
+        $script:localPluginVersions[$folder.Name] = $localVer
+    }
+
+    Write-Host "  Local plugin versions:" -ForegroundColor Cyan
+    foreach ($folder in $pluginFolders) {
+        $lv = $script:localPluginVersions[$folder.Name]
+        Write-Host "    $($folder.Name): v$lv" -ForegroundColor White
+    }
+    Write-Host ""
+
     # ── Prepare log folder ─────────────────────────────────────────────
     $statusLogsDir = Join-Path $ScriptDir "logs" "plugin-status"
     if (Test-Path $statusLogsDir) {
