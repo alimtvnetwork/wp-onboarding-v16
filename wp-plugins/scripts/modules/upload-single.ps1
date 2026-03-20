@@ -76,7 +76,8 @@ function Invoke-SinglePluginUpload {
         [Parameter(Mandatory)][string]$PluginSlug,
         [Parameter(Mandatory)][string]$SiteName,
         [Parameter(Mandatory)][string]$PluginVersion,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$VerboseMode
     )
 
     $result = @{
