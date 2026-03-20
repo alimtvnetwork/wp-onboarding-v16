@@ -381,7 +381,7 @@ function Invoke-SequentialPluginUpload {
 
             $uploadExitCode = 1
             try {
-                $result = Invoke-SinglePluginUpload -QUploadScript $QUploadScript -PluginPath $pluginFullPath -ZipPath $prebuiltZipPath -SiteUrl $siteUrl -Username $cred.Username -Password $cred.Password -PluginSlug $pluginName -SiteName $siteName -PluginVersion $pluginVersion
+                $result = Invoke-SinglePluginUpload -QUploadScript $QUploadScript -PluginPath $pluginFullPath -ZipPath $prebuiltZipPath -SiteUrl $siteUrl -Username $cred.Username -Password $cred.Password -PluginSlug $pluginName -SiteName $siteName -PluginVersion $pluginVersion -VerboseMode:$VerboseMode
                 $uploadExitCode = $result.ExitCode
             } catch {
                 Write-Host "    ERROR: $_" -ForegroundColor Red
