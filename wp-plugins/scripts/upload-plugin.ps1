@@ -702,7 +702,12 @@ if (-not $uploadSuccess) {
             "Content-Type" = "multipart/form-data; boundary=$boundary"
         }
 
-        $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $body
+        $rawResp = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $body -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
         $uploadSuccess = $true
 
         $pluginSlugResult = $response.plugin
