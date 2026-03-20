@@ -9,6 +9,19 @@
   "quploadVersion": "2.28.2",
   "changelog": [
     {
+      "version": "2.28.2",
+      "date": "2026-03-20",
+      "title": "Verbose Mode for Upload Commands (-u, -q, -ua, -uas)",
+      "changes": [
+        "🔍 Added -v (verbose) support to all upload commands: -u, -q, -ua, -uas, -u -as",
+        "📡 Shows raw JSON request/response for status check and upload POST endpoints",
+        "🔗 Verbose flag wired through upload-plugin-U-Q.ps1, upload-single.ps1, upload-parallel.ps1, and all mode scripts",
+        "🛡️ Also added PHP noise stripping to upload-plugin-U-Q.ps1 status and upload responses",
+        "📋 Updated help text with -v examples for upload commands",
+        "🔢 Version bump to 2.28.2"
+      ]
+    },
+    {
       "version": "2.28.1",
       "date": "2026-03-20",
       "title": "Invoke-RestMethod Audit — Full Codebase Migration to Invoke-WebRequest",

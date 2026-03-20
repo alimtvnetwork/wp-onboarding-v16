@@ -46,6 +46,10 @@ if ($resp.Results -and $resp.Results.Count -gt 0) {
 
 When `-v` is active, show the raw string response BEFORE parsing, so the user can see exactly what the server sent (including any PHP noise).
 
+### Rule 5: Upload scripts must support -vb flag
+
+`upload-plugin-U-Q.ps1` accepts `-vb` (VerboseMode) to show raw request/response JSON at the status check (step 3) and upload POST (step 4). All callers (mode-upload.ps1, mode-upload-all.ps1, upload-single.ps1, upload-parallel.ps1) must wire through the verbose flag from run.ps1's `-v` parameter.
+
 ## Incident Reference
 
 See `spec/issues/2027-status-parsing-php-noise.md` for the full root cause analysis.
