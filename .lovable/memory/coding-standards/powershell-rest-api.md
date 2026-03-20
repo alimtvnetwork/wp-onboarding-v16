@@ -1,5 +1,5 @@
 # Memory: coding-standards/powershell-rest-api
-Updated: 2026-03-19
+Updated: 2026-03-20
 
 ## CRITICAL: WordPress REST API Calls in PowerShell
 
