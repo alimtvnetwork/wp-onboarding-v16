@@ -787,11 +787,42 @@ function Write-PluginStatusSummary {
             $vColor = if ($r.Version) { "White" } else { "DarkYellow" }
             $duration = "{0:N1}s" -f $r.Duration
 
+            # Version comparison: local vs remote
+            $localVer = $r.LocalVersion
+            $versionCompare = ""
+            $versionCompareColor = "DarkGray"
+            if ($r.Version -and $localVer -and $localVer -ne "unknown") {
+                if ($r.Version -eq $localVer) {
+                    $versionCompare = "(up to date)"
+                    $versionCompareColor = "DarkGreen"
+                } else {
+                    try {
+                        $remoteV = [version]$r.Version
+                        $localV  = [version]$localVer
+                        if ($localV -gt $remoteV) {
+                            $versionCompare = "(local v$localVer → needs deploy)"
+                            $versionCompareColor = "Yellow"
+                        } else {
+                            $versionCompare = "(local v$localVer ← remote is newer)"
+                            $versionCompareColor = "Cyan"
+                        }
+                    } catch {
+                        $versionCompare = "(local v$localVer)"
+                        $versionCompareColor = "DarkGray"
+                    }
+                }
+            } elseif ($localVer -and $localVer -ne "unknown") {
+                $versionCompare = "(local v$localVer)"
+            }
+
             Write-Host "  │" -ForegroundColor DarkCyan -NoNewline
             Write-Host "  $symbol " -ForegroundColor $statusColor -NoNewline
             Write-Host "$($r.Plugin)" -ForegroundColor White -NoNewline
             Write-Host "  " -NoNewline
             Write-Host "$vLabel" -ForegroundColor $vColor -NoNewline
+            if ($versionCompare) {
+                Write-Host " $versionCompare" -ForegroundColor $versionCompareColor -NoNewline
+            }
             Write-Host "  " -NoNewline
             Write-Host "$($r.Status)" -ForegroundColor $statusColor -NoNewline
             Write-Host "  [$duration]" -ForegroundColor DarkGray
