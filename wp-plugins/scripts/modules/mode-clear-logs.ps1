@@ -482,11 +482,15 @@ function Invoke-TwoStepLogClear {
     }
 
     try {
-        $step1Response = Invoke-RestMethod -Uri $clearUrl -Method Delete -Headers $headers -ErrorAction Stop
+        $rawResp = Invoke-WebRequest -Uri $clearUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+        $rawBody = $rawResp.Content
+        $jsonBody = $rawBody
+        $jsonStart = $rawBody.IndexOf('{')
+        if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+        $step1Response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
         if ($VerboseMode) {
-            $respJson = $step1Response | ConvertTo-Json -Depth 5 -Compress
-            Write-Host "    [VERBOSE] Step 1 Response: $respJson" -ForegroundColor DarkGray
+            Write-Host "    [VERBOSE] Step 1 Response: $jsonBody" -ForegroundColor DarkGray
         }
     } catch {
         $errorMsg = Get-ClearLogsErrorMessage $_
