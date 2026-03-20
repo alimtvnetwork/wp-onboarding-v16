@@ -139,6 +139,7 @@ function Invoke-UploadMode {
         $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
         $debugArgs = @()
         if ($debug) { $debugArgs += "-DebugMode" }
+        if ($verbose) { $debugArgs += "-vb" }
         & $quploadScript -jc $jsonConfigStr -a @debugArgs
     } else {
         $wpConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "wp-plugin-config.json"
