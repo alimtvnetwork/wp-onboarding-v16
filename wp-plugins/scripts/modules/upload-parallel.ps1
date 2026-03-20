@@ -154,7 +154,7 @@ function Invoke-ParallelPluginUpload {
             }
 
             $pluginJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace, $IsVerbose)
 
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -176,7 +176,9 @@ function Invoke-ParallelPluginUpload {
                 try {
                     $ErrorActionPreference = "Stop"
                     $global:LASTEXITCODE = $null
-                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace -spc 2>&1 | Out-String)
+                    $verboseFlag = @()
+                    if ($IsVerbose) { $verboseFlag += "-vb" }
+                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace -spc @verboseFlag 2>&1 | Out-String)
                     $invokeSucceeded = $true
                 } catch {
                     $output = ($_ | Out-String).Trim()
