@@ -142,12 +142,20 @@ function Invoke-CheckMode {
                     $isReady = ($major -gt 2 -or ($major -eq 2 -and $minor -ge 17))
                 }
 
-                # Detect available endpoints from status response
+                # Parse registered routes from status response
+                $registeredRoutes = @()
+                if ($hasResults -and $firstResult.RegisteredRoutes) {
+                    $registeredRoutes = @($firstResult.RegisteredRoutes)
+                }
+
+                # Detect available endpoints from registered routes
                 $availableEndpoints = @()
-                $endpointChecks = @("upload", "activate", "deactivate", "plugins", "logs/status", "logs/clear", "logs/email", "machines/approve")
+                $endpointChecks = @("upload", "plugins", "logs/status", "logs/clear", "logs/retrieve", "machines/approve")
 
                 foreach ($ep in $endpointChecks) {
-                    if ($isReady) {
+                    $pattern = "/$($ns.Namespace)/$ep"
+                    $found = $registeredRoutes | Where-Object { $_.Route -eq $pattern }
+                    if ($found -or $isReady) {
                         $availableEndpoints += $ep
                     }
                 }
@@ -157,14 +165,78 @@ function Invoke-CheckMode {
                 $readyLabel = if ($isReady) { "READY" } else { "OUTDATED (needs v2.17.0+)" }
                 $readyColor = if ($isReady) { "Green" } else { "Yellow" }
 
+                # Extract extra info for verbose
+                $phpVer = "-"
+                $dbAvail = $false
+                $serverTime = "-"
+                $uploadMax = "-"
+                $memLimit = "-"
+                if ($hasResults) {
+                    if ($firstResult.Php) { $phpVer = $firstResult.Php }
+                    elseif ($firstResult.PhpVersion) { $phpVer = $firstResult.PhpVersion }
+                    if ($null -ne $firstResult.DbAvailable) { $dbAvail = $firstResult.DbAvailable }
+                    if ($firstResult.ServerTime) { $serverTime = $firstResult.ServerTime }
+                    if ($firstResult.UploadMaxFilesize) { $uploadMax = $firstResult.UploadMaxFilesize }
+                    if ($firstResult.MemoryLimit) { $memLimit = $firstResult.MemoryLimit }
+                }
+
                 Write-Host "    $($ns.Name)" -NoNewline -ForegroundColor Gray
                 Write-Host " v$ver" -NoNewline -ForegroundColor $vColor
                 Write-Host " | WP $wpVer" -NoNewline -ForegroundColor Gray
                 Write-Host " | ${elapsed}ms" -NoNewline -ForegroundColor DarkGray
                 Write-Host " | $readyLabel" -ForegroundColor $readyColor
 
-                if ($isReady) {
-                    Write-Host "      Endpoints: $($endpointChecks -join ', ')" -ForegroundColor DarkGray
+                if ($VerboseMode) {
+                    # Server details
+                    Write-Host "      PHP: $phpVer | DB: $dbAvail | Memory: $memLimit | Upload Max: $uploadMax" -ForegroundColor DarkGray
+                    Write-Host "      Server Time: $serverTime" -ForegroundColor DarkGray
+
+                    # Registered routes grouped by category
+                    if ($registeredRoutes.Count -gt 0) {
+                        Write-Host "      Registered Routes ($($registeredRoutes.Count)):" -ForegroundColor DarkGray
+
+                        # Group by method for a compact view
+                        $coreRoutes = @($registeredRoutes | Where-Object { $_.Route -match '(status|openapi|opcache)' })
+                        $pluginRoutes = @($registeredRoutes | Where-Object { $_.Route -match '/plugins' })
+                        $logRoutes = @($registeredRoutes | Where-Object { $_.Route -match '/(logs|error)' })
+                        $machineRoutes = @($registeredRoutes | Where-Object { $_.Route -match '/machines' })
+                        $otherRoutes = @($registeredRoutes | Where-Object {
+                            $_.Route -notmatch '(status|openapi|opcache|/plugins|/(logs|error)|/machines|/agents|/snapshots|/users|/cloud-storage|/posts|/categories|/media|/upload)'
+                        })
+
+                        $categories = @(
+                            @{ Label = "Core";     Routes = $coreRoutes },
+                            @{ Label = "Plugins";  Routes = $pluginRoutes },
+                            @{ Label = "Logs";     Routes = $logRoutes },
+                            @{ Label = "Machines"; Routes = $machineRoutes }
+                        )
+
+                        foreach ($cat in $categories) {
+                            if ($cat.Routes.Count -gt 0) {
+                                $routeSummary = ($cat.Routes | ForEach-Object {
+                                    $shortRoute = $_.Route -replace ".*/$($ns.Namespace)/", ""
+                                    $methods = $_.Methods -join ","
+                                    "$shortRoute [$methods]"
+                                }) -join ", "
+                                Write-Host "        $($cat.Label): $routeSummary" -ForegroundColor DarkGray
+                            }
+                        }
+
+                        # Features (if present in Riseup response)
+                        if ($firstResult.Features) {
+                            $enabledFeatures = @()
+                            $firstResult.Features.PSObject.Properties | ForEach-Object {
+                                if ($_.Value -eq $true) { $enabledFeatures += $_.Name }
+                            }
+                            if ($enabledFeatures.Count -gt 0) {
+                                Write-Host "      Features: $($enabledFeatures -join ', ')" -ForegroundColor DarkGray
+                            }
+                        }
+                    } else {
+                        Write-Host "      No registered routes in response" -ForegroundColor DarkYellow
+                    }
+                } elseif ($isReady) {
+                    Write-Host "      Endpoints: $($availableEndpoints -join ', ')" -ForegroundColor DarkGray
                 }
 
                 $results += @{
