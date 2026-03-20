@@ -61,6 +61,20 @@ function Invoke-PluginStatusMode {
         exit 0
     }
 
+    # ── Detect local plugin versions ───────────────────────────────────
+    $script:localPluginVersions = @{}
+    foreach ($folder in $pluginFolders) {
+        $localVer = Get-PluginVersion $folder.FullName
+        $script:localPluginVersions[$folder.Name] = $localVer
+    }
+
+    Write-Host "  Local plugin versions:" -ForegroundColor Cyan
+    foreach ($folder in $pluginFolders) {
+        $lv = $script:localPluginVersions[$folder.Name]
+        Write-Host "    $($folder.Name): v$lv" -ForegroundColor White
+    }
+    Write-Host ""
+
     # ── Prepare log folder ─────────────────────────────────────────────
     $statusLogsDir = Join-Path $ScriptDir "logs" "plugin-status"
     if (Test-Path $statusLogsDir) {
@@ -224,6 +238,7 @@ function Invoke-SinglePluginStatusCheck {
         SiteUrl       = $SiteConfig.Url
         Plugin        = $PluginSlug
         Version       = ""
+        LocalVersion  = if ($script:localPluginVersions -and $script:localPluginVersions[$PluginSlug]) { $script:localPluginVersions[$PluginSlug] } else { "" }
         WpVersion     = ""
         PhpVersion    = ""
         PluginName    = ""
@@ -642,6 +657,7 @@ function Invoke-ParallelPluginStatusCheck {
                 SiteUrl       = ""
                 Plugin        = "unknown"
                 Version       = ""
+                LocalVersion  = ""
                 WpVersion     = ""
                 PhpVersion    = ""
                 PluginName    = ""
@@ -659,6 +675,12 @@ function Invoke-ParallelPluginStatusCheck {
             }
         }
 
+        # Attach local version (not available inside job)
+        $plugSlug = $result.Plugin
+        if ($script:localPluginVersions -and $script:localPluginVersions[$plugSlug]) {
+            $result.LocalVersion = $script:localPluginVersions[$plugSlug]
+        }
+
         $results += $result
 
         $color = switch ($result.Status) {
@@ -669,8 +691,9 @@ function Invoke-ParallelPluginStatusCheck {
         }
         $symbol = if ($result.Status -eq "OK") { "+" } elseif ($result.Status -match "SKIP|NOT_INSTALLED") { "o" } else { "x" }
         $vLabel = if ($result.Version) { "v$($result.Version)" } else { "-" }
+        $localLabel = if ($result.LocalVersion -and $result.LocalVersion -ne "unknown") { " (local v$($result.LocalVersion))" } else { "" }
         $duration = "{0:N1}s" -f $result.Duration
-        Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel $($result.Status) $duration" -ForegroundColor $color
+        Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel$localLabel $($result.Status) $duration" -ForegroundColor $color
 
         if ($script:pluginStatusVerbose -and $result.RawStatusBody) {
             Write-Host "" 
@@ -712,8 +735,9 @@ function Invoke-SequentialPluginStatusCheck {
             }
             $symbol = if ($result.Status -eq "OK") { "+" } elseif ($result.Status -match "SKIP|NOT_INSTALLED") { "o" } else { "x" }
             $vLabel = if ($result.Version) { "v$($result.Version)" } else { "-" }
+            $localLabel = if ($result.LocalVersion -and $result.LocalVersion -ne "unknown") { " (local v$($result.LocalVersion))" } else { "" }
             $duration = "{0:N1}s" -f $result.Duration
-            Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel $($result.Status) $duration" -ForegroundColor $color
+            Write-Host "    $symbol [$($result.Site)] $($result.Plugin) $vLabel$localLabel $($result.Status) $duration" -ForegroundColor $color
 
             $results += $result
             $jobIndex++
@@ -772,11 +796,42 @@ function Write-PluginStatusSummary {
             $vColor = if ($r.Version) { "White" } else { "DarkYellow" }
             $duration = "{0:N1}s" -f $r.Duration
 
+            # Version comparison: local vs remote
+            $localVer = $r.LocalVersion
+            $versionCompare = ""
+            $versionCompareColor = "DarkGray"
+            if ($r.Version -and $localVer -and $localVer -ne "unknown") {
+                if ($r.Version -eq $localVer) {
+                    $versionCompare = "(up to date)"
+                    $versionCompareColor = "DarkGreen"
+                } else {
+                    try {
+                        $remoteV = [version]$r.Version
+                        $localV  = [version]$localVer
+                        if ($localV -gt $remoteV) {
+                            $versionCompare = "(local v$localVer → needs deploy)"
+                            $versionCompareColor = "Yellow"
+                        } else {
+                            $versionCompare = "(local v$localVer ← remote is newer)"
+                            $versionCompareColor = "Cyan"
+                        }
+                    } catch {
+                        $versionCompare = "(local v$localVer)"
+                        $versionCompareColor = "DarkGray"
+                    }
+                }
+            } elseif ($localVer -and $localVer -ne "unknown") {
+                $versionCompare = "(local v$localVer)"
+            }
+
             Write-Host "  │" -ForegroundColor DarkCyan -NoNewline
             Write-Host "  $symbol " -ForegroundColor $statusColor -NoNewline
             Write-Host "$($r.Plugin)" -ForegroundColor White -NoNewline
             Write-Host "  " -NoNewline
             Write-Host "$vLabel" -ForegroundColor $vColor -NoNewline
+            if ($versionCompare) {
+                Write-Host " $versionCompare" -ForegroundColor $versionCompareColor -NoNewline
+            }
             Write-Host "  " -NoNewline
             Write-Host "$($r.Status)" -ForegroundColor $statusColor -NoNewline
             Write-Host "  [$duration]" -ForegroundColor DarkGray
@@ -861,13 +916,14 @@ function Write-PluginStatusSummary {
     $summaryContent += "=" * 50
     foreach ($r in $sorted) {
         $vLabel = if ($r.Version) { "v$($r.Version)" } else { "-" }
+        $localLabel = if ($r.LocalVersion -and $r.LocalVersion -ne "unknown") { "local=v$($r.LocalVersion)" } else { "" }
         $errorLabel = if ($r.ErrorLog -and $r.ErrorLog -ne "No errors") { $r.ErrorLog } else { "clean" }
         $stackLabel = if ($r.Stacktrace -and $r.Stacktrace -ne "No errors") { $r.Stacktrace } else { "clean" }
         $wpLabel = if ($r.WpVersion) { "WP $($r.WpVersion)" } else { "" }
         $phpLabel = if ($r.PhpVersion) { "PHP $($r.PhpVersion)" } else { "" }
         $dbLabel = if ($r.DbAvailable) { "DB=$($r.DbAvailable)" } else { "" }
         $serverLabel = if ($r.ServerTime) { "Server=$($r.ServerTime)" } else { "" }
-        $summaryContent += "$($r.Site) | $($r.Plugin) | $vLabel | $($r.Status) | $wpLabel | $phpLabel | $dbLabel | $serverLabel | errors=$errorLabel | stack=$stackLabel | $($r.Message)"
+        $summaryContent += "$($r.Site) | $($r.Plugin) | remote=$vLabel | $localLabel | $($r.Status) | $wpLabel | $phpLabel | $dbLabel | $serverLabel | errors=$errorLabel | stack=$stackLabel | $($r.Message)"
     }
     $summaryContent += ""
     $summaryContent += "OK: $okCount | Failed: $failCount | Not Installed: $notInstalledCount"
