@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.28.2",
+  "version": "2.28.3",
   "releaseDate": "2026-03-20",
   "gitCommit": "dev",
   "buildTime": "2026-03-20T00:00:00Z",
-  "scriptVersion": "2.28.2",
-  "wpPluginVersion": "2.28.2",
-  "quploadVersion": "2.28.2",
+  "scriptVersion": "2.28.3",
+  "wpPluginVersion": "2.28.3",
+  "quploadVersion": "2.28.3",
   "changelog": [
+    {
+      "version": "2.28.3",
+      "date": "2026-03-20",
+      "title": "Verbose Mode for Log Clearing — Pre-Clear Retrieval",
+      "changes": [
+        "🔍 -cl -v and -cla -v now call GET /logs/retrieve before clearing to show current log state",
+        "📊 Displays info.txt, error.txt, stacktrace.txt line counts and sizes before deletion",
+        "🛡️ Gracefully handles missing /logs/retrieve endpoint (v2.18.0+ only)"
+      ]
+    },
     {
       "version": "2.28.2",
       "date": "2026-03-20",

@@ -94,8 +94,8 @@ The `-v` flag shows raw JSON request bodies and response bodies for all REST API
 | `-u -as -v` | Status check GET + upload POST for default plugin × each site |
 | `-am -v` | GET /status request+response, PUT /machines/approve body+response |
 | `-check -v` | GET /status response JSON for each site/plugin |
-| `-cl -v`, `-cla -v` | DELETE /logs/clear and POST /logs/clear/confirm request+response |
-| `-cas -v`, `-purge -v` | All log clear + audit clear request+response |
+| `-cl -v`, `-cla -v` | Pre-clear: GET /logs/retrieve (line counts + sizes), then DELETE /logs/clear and POST /logs/clear/confirm request+response |
+| `-cas -v`, `-purge -v` | Pre-clear retrieval + all log clear + audit clear request+response |
 | `-pas -v` | Raw /status response JSON |
 
 ## Deployment Order (First-Time)
