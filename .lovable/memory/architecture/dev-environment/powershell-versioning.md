@@ -1,5 +1,5 @@
 # Memory: architecture/dev-environment/powershell-versioning
-Updated: 2026-03-19
+Updated: 2026-03-20
 
 ---
 
