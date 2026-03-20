@@ -71,7 +71,9 @@ function Invoke-UploadAllMode {
         $jsonConfigStr = ($qConfig | ConvertTo-Json -Compress)
 
         try {
-            & $quploadScript -jc $jsonConfigStr -a
+            $verboseArgs = @()
+            if ($verbose) { $verboseArgs += "-vb" }
+            & $quploadScript -jc $jsonConfigStr -a @verboseArgs
             $uploadExitCode = $LASTEXITCODE
             if ($uploadExitCode -eq 0) {
                 $uploadResults += @{ Name = $pluginName; Status = "OK" }
