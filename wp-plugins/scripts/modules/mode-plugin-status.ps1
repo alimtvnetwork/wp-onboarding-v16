@@ -916,13 +916,14 @@ function Write-PluginStatusSummary {
     $summaryContent += "=" * 50
     foreach ($r in $sorted) {
         $vLabel = if ($r.Version) { "v$($r.Version)" } else { "-" }
+        $localLabel = if ($r.LocalVersion -and $r.LocalVersion -ne "unknown") { "local=v$($r.LocalVersion)" } else { "" }
         $errorLabel = if ($r.ErrorLog -and $r.ErrorLog -ne "No errors") { $r.ErrorLog } else { "clean" }
         $stackLabel = if ($r.Stacktrace -and $r.Stacktrace -ne "No errors") { $r.Stacktrace } else { "clean" }
         $wpLabel = if ($r.WpVersion) { "WP $($r.WpVersion)" } else { "" }
         $phpLabel = if ($r.PhpVersion) { "PHP $($r.PhpVersion)" } else { "" }
         $dbLabel = if ($r.DbAvailable) { "DB=$($r.DbAvailable)" } else { "" }
         $serverLabel = if ($r.ServerTime) { "Server=$($r.ServerTime)" } else { "" }
-        $summaryContent += "$($r.Site) | $($r.Plugin) | $vLabel | $($r.Status) | $wpLabel | $phpLabel | $dbLabel | $serverLabel | errors=$errorLabel | stack=$stackLabel | $($r.Message)"
+        $summaryContent += "$($r.Site) | $($r.Plugin) | remote=$vLabel | $localLabel | $($r.Status) | $wpLabel | $phpLabel | $dbLabel | $serverLabel | errors=$errorLabel | stack=$stackLabel | $($r.Message)"
     }
     $summaryContent += ""
     $summaryContent += "OK: $okCount | Failed: $failCount | Not Installed: $notInstalledCount"
