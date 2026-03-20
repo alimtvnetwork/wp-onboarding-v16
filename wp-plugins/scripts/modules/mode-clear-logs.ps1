@@ -410,11 +410,15 @@ function Invoke-ClearAuditLogsMode {
                 Write-Host "    [VERBOSE] DELETE $auditClearUrl" -ForegroundColor DarkGray
             }
 
-            $response = Invoke-RestMethod -Uri $auditClearUrl -Method Delete -Headers $headers -ErrorAction Stop
+            $rawResp = Invoke-WebRequest -Uri $auditClearUrl -Method Delete -Headers $headers -UseBasicParsing -ErrorAction Stop
+            $rawBody = $rawResp.Content
+            $jsonBody = $rawBody
+            $jsonStart = $rawBody.IndexOf('{')
+            if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+            $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
             if ($VerboseMode) {
-                $respJson = $response | ConvertTo-Json -Depth 5 -Compress
-                Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                Write-Host "    [VERBOSE] Response: $jsonBody" -ForegroundColor DarkGray
             }
 
             $isSuccess = ($response.success -eq $true)
