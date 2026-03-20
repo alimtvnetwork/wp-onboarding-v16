@@ -218,7 +218,9 @@ function Invoke-QUploadMode {
         Write-Host "  Path:   $qPluginPath" -ForegroundColor Gray
         Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
-        & $quploadScript -jc $jsonConfigStr -a
+        $verboseArgs = @()
+        if ($verbose) { $verboseArgs += "-vb" }
+        & $quploadScript -jc $jsonConfigStr -a @verboseArgs
     } else {
         Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
         Write-Host "Create it with pluginFolderPath, wordPressSiteURL, username, and appPassword." -ForegroundColor Yellow
