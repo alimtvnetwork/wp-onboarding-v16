@@ -684,7 +684,18 @@ $authHeaders = @{
 
 try {
     $statusResponse = Invoke-WebRequest -Uri $statusUrl -Method Get -Headers $authHeaders -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop
-    $statusParsed = $statusResponse.Content | ConvertFrom-Json
+    $rawStatusBody = $statusResponse.Content
+
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Response: `"$rawStatusBody`"" -ForegroundColor DarkGray
+    }
+
+    # Strip PHP noise before parsing
+    $jsonStatusBody = $rawStatusBody
+    $jsonStatusStart = $rawStatusBody.IndexOf('{')
+    if ($jsonStatusStart -gt 0) { $jsonStatusBody = $rawStatusBody.Substring($jsonStatusStart) }
+    $statusParsed = $jsonStatusBody | ConvertFrom-Json
 
     $isStatusSuccess = $statusParsed.Status.IsSuccess
 
