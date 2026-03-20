@@ -41,7 +41,7 @@ function Invoke-ParallelPluginUpload {
     )
 
     if ($Sequential) {
-        return Invoke-SequentialPluginUpload -TargetSites $TargetSites -PluginFolders $PluginFolders -ZipByPlugin $ZipByPlugin -VersionByPlugin $VersionByPlugin -QUploadScript $QUploadScript -UploadLogsDir $UploadLogsDir -LogStamp $LogStamp
+        return Invoke-SequentialPluginUpload -TargetSites $TargetSites -PluginFolders $PluginFolders -ZipByPlugin $ZipByPlugin -VersionByPlugin $VersionByPlugin -QUploadScript $QUploadScript -UploadLogsDir $UploadLogsDir -LogStamp $LogStamp -VerboseMode:$VerboseMode
     }
 
     # Sort plugins: non-cross-upload first for stability
