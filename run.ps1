@@ -422,6 +422,26 @@ Write-Host "  $ProjectName - Build & Run Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
+# ── Show recent changelog (latest 3 entries from version.json) ─────────────
+$versionJsonPath = Join-Path $ScriptDir "public" "version.json"
+if (Test-Path $versionJsonPath) {
+    try {
+        $versionData = Get-Content $versionJsonPath -Raw | ConvertFrom-Json
+        $currentVer = $versionData.version
+        Write-Host "  Version: v$currentVer" -ForegroundColor White -NoNewline
+        Write-Host "  ($($versionData.releaseDate))" -ForegroundColor DarkGray
+        if ($versionData.changelog -and $versionData.changelog.Count -gt 0) {
+            $recentEntries = @($versionData.changelog | Select-Object -First 3)
+            Write-Host "  Recent changes:" -ForegroundColor DarkCyan
+            foreach ($entry in $recentEntries) {
+                $entryVer = if ($entry.version) { "v$($entry.version)" } else { "" }
+                Write-Host "    $entryVer $($entry.title)" -ForegroundColor DarkGray
+            }
+        }
+        Write-Host ""
+    } catch { }
+}
+
 if ($verbose) {
     Write-Host "Configuration:" -ForegroundColor Gray
     Write-Host "  Script Dir: $ScriptDir" -ForegroundColor Gray
