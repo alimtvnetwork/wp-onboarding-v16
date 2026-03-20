@@ -237,11 +237,15 @@ function Invoke-ApproveMachineMode {
             }
 
             try {
-                $response = Invoke-RestMethod -Uri $approveUrl -Method Put -Headers $headers -Body $body -ErrorAction Stop
+                $rawResp = Invoke-WebRequest -Uri $approveUrl -Method Put -Headers $headers -Body $body -UseBasicParsing -ErrorAction Stop
+                $rawBody = $rawResp.Content
+                $jsonBody = $rawBody
+                $jsonStart = $rawBody.IndexOf('{')
+                if ($jsonStart -gt 0) { $jsonBody = $rawBody.Substring($jsonStart) }
+                $response = $jsonBody | ConvertFrom-Json -ErrorAction Stop
 
                 if ($VerboseMode) {
-                    $respJson = $response | ConvertTo-Json -Depth 5 -Compress
-                    Write-Host "    [VERBOSE] Response: $respJson" -ForegroundColor DarkGray
+                    Write-Host "    [VERBOSE] Response: $jsonBody" -ForegroundColor DarkGray
                 }
 
                 $isSuccess = ($response.Success -eq $true)

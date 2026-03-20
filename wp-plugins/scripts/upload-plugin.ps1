@@ -726,7 +726,7 @@ if (-not $uploadSuccess) {
             }
 
             try {
-                Invoke-RestMethod -Uri $activateUrl -Method Put -Headers $activateHeaders -Body $activateBody | Out-Null
+                $rawActivateResp = Invoke-WebRequest -Uri $activateUrl -Method Put -Headers $activateHeaders -Body $activateBody -UseBasicParsing -ErrorAction Stop | Out-Null
                 Write-Status "      ✓ Plugin activated!" -Color Green
             } catch {
                 Write-Status "      ⚠ Could not activate plugin automatically" -Color Yellow
