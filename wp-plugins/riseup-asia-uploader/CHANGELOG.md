@@ -13,6 +13,7 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 - 📖 Root README, plugin READMEs, and PowerShell CLI README overhauled
 - 🔢 run.ps1 startup banner shows version, release date, and 3 recent changelog entries
 - 📊 Local vs remote version comparison in -ps/-pas commands
+- 🔍 `-check -v` verbose mode shows detailed endpoint availability info per site
 
 ## [2.28.3] — 2026-03-20
 
