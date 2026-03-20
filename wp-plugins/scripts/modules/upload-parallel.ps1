@@ -36,7 +36,8 @@ function Invoke-ParallelPluginUpload {
         [Parameter(Mandatory)][string]$QUploadScript,
         [Parameter(Mandatory)][string]$UploadLogsDir,
         [Parameter(Mandatory)][string]$LogStamp,
-        [switch]$Sequential
+        [switch]$Sequential,
+        [switch]$VerboseMode
     )
 
     if ($Sequential) {
