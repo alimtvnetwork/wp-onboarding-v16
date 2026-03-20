@@ -238,6 +238,7 @@ function Invoke-SinglePluginStatusCheck {
         SiteUrl       = $SiteConfig.Url
         Plugin        = $PluginSlug
         Version       = ""
+        LocalVersion  = if ($script:localPluginVersions -and $script:localPluginVersions[$PluginSlug]) { $script:localPluginVersions[$PluginSlug] } else { "" }
         WpVersion     = ""
         PhpVersion    = ""
         PluginName    = ""
