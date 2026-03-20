@@ -117,7 +117,7 @@ function Invoke-UploadDefaultAllSitesMode {
     }
     $logStamp = Get-Date -Format "yyyyMMdd-HHmmss"
 
-    $globalResults = Invoke-ParallelPluginUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp -Sequential:$sync
+    $globalResults = Invoke-ParallelPluginUpload -TargetSites $targetSites -PluginFolders $pluginFolders -ZipByPlugin $zipByPlugin -VersionByPlugin $versionByPlugin -QUploadScript $quploadScript -UploadLogsDir $uploadLogsDir -LogStamp $logStamp -Sequential:$sync -VerboseMode:$verbose
 
     # ── Phase 3: Summary ──────────────────────────────────────────────────
     $failCount = ($globalResults | Where-Object { $_.Status -match "FAIL" }).Count

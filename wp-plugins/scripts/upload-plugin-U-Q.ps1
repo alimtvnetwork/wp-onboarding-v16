@@ -98,7 +98,11 @@ param(
     # ── Skip pre-checks (PHP syntax + backed enum + ZIP creation) ─────────
     # Used by parallel pipeline where Phase 0+1 already validated and zipped.
     [Alias('spc')]
-    [switch]$SkipPreChecks = $false
+    [switch]$SkipPreChecks = $false,
+
+    # ── Verbose mode: show raw JSON request/response ─────────────────────
+    [Alias('vb')]
+    [switch]$VerboseMode = $false
 )
 
 # =============================================================================
@@ -680,7 +684,18 @@ $authHeaders = @{
 
 try {
     $statusResponse = Invoke-WebRequest -Uri $statusUrl -Method Get -Headers $authHeaders -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop
-    $statusParsed = $statusResponse.Content | ConvertFrom-Json
+    $rawStatusBody = $statusResponse.Content
+
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] GET $statusUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Response: `"$rawStatusBody`"" -ForegroundColor DarkGray
+    }
+
+    # Strip PHP noise before parsing
+    $jsonStatusBody = $rawStatusBody
+    $jsonStatusStart = $rawStatusBody.IndexOf('{')
+    if ($jsonStatusStart -gt 0) { $jsonStatusBody = $rawStatusBody.Substring($jsonStatusStart) }
+    $statusParsed = $jsonStatusBody | ConvertFrom-Json
 
     $isStatusSuccess = $statusParsed.Status.IsSuccess
 
@@ -800,8 +815,24 @@ try {
         activate = $ActivateAfterInstall
     } | ConvertTo-Json
 
+    if ($VerboseMode) {
+        $bodySizeKB = [math]::Round($body.Length / 1KB, 1)
+        Write-Host "    [VERBOSE] POST $uploadUrl" -ForegroundColor DarkGray
+        Write-Host "    [VERBOSE] Request body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, plugin_zip: `"<base64 $bodySizeKB KB>`"}" -ForegroundColor DarkGray
+    }
+
     $response = Invoke-WebRequest -Uri $uploadUrl -Method Post -Headers $authHeaders -Body $body -ContentType "application/json" -TimeoutSec 120 -UseBasicParsing -ErrorAction Stop
-    $parsed = $response.Content | ConvertFrom-Json
+    $rawUploadBody = $response.Content
+
+    if ($VerboseMode) {
+        Write-Host "    [VERBOSE] Response: `"$rawUploadBody`"" -ForegroundColor DarkGray
+    }
+
+    # Strip PHP noise before parsing
+    $jsonUploadBody = $rawUploadBody
+    $jsonUploadStart = $rawUploadBody.IndexOf('{')
+    if ($jsonUploadStart -gt 0) { $jsonUploadBody = $rawUploadBody.Substring($jsonUploadStart) }
+    $parsed = $jsonUploadBody | ConvertFrom-Json
 
     $isSuccess = $parsed.Status.IsSuccess
 

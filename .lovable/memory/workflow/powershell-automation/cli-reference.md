@@ -87,6 +87,11 @@ The `-v` flag shows raw JSON request bodies and response bodies for all REST API
 
 | Command | What `-v` shows |
 |---------|----------------|
+| `-u -v` | Status check GET + upload POST request/response JSON |
+| `-q -v` | Status check GET + upload POST request/response JSON |
+| `-ua -v` | Status check GET + upload POST for each plugin |
+| `-uas -v` | Status check GET + upload POST for each plugin × each site |
+| `-u -as -v` | Status check GET + upload POST for default plugin × each site |
 | `-am -v` | GET /status request+response, PUT /machines/approve body+response |
 | `-check -v` | GET /status response JSON for each site/plugin |
 | `-cl -v`, `-cla -v` | DELETE /logs/clear and POST /logs/clear/confirm request+response |

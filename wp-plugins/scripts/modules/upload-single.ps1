@@ -76,7 +76,8 @@ function Invoke-SinglePluginUpload {
         [Parameter(Mandatory)][string]$PluginSlug,
         [Parameter(Mandatory)][string]$SiteName,
         [Parameter(Mandatory)][string]$PluginVersion,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$VerboseMode
     )
 
     $result = @{
@@ -113,10 +114,14 @@ function Invoke-SinglePluginUpload {
         if ($Quiet) {
             $ErrorActionPreference = "Stop"
             $global:LASTEXITCODE = $null
-            $result.Output = (& $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc 2>&1 | Out-String)
+            $verboseFlag = @()
+            if ($VerboseMode) { $verboseFlag += "-vb" }
+            $result.Output = (& $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc @verboseFlag 2>&1 | Out-String)
             $invokeSucceeded = $true
         } else {
-            & $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc
+            $verboseFlag = @()
+            if ($VerboseMode) { $verboseFlag += "-vb" }
+            & $QUploadScript -jc $jsonConfigStr -a -api $apiNamespace -spc @verboseFlag
             $invokeSucceeded = $true
         }
     } catch {

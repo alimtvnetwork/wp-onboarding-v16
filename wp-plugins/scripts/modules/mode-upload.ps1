@@ -44,7 +44,9 @@ function Invoke-UploadComboMode {
         Write-Host "  Path:   $riseupPath" -ForegroundColor Gray
         Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
-        & $quploadScript -jc $jsonConfigStr -a
+        $verboseArgs = @()
+        if ($verbose) { $verboseArgs += "-vb" }
+        & $quploadScript -jc $jsonConfigStr -a @verboseArgs
     } else {
         Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
         exit 1
@@ -137,6 +139,7 @@ function Invoke-UploadMode {
         $jsonConfigStr = ($uploadConfig | ConvertTo-Json -Compress)
         $debugArgs = @()
         if ($debug) { $debugArgs += "-DebugMode" }
+        if ($verbose) { $debugArgs += "-vb" }
         & $quploadScript -jc $jsonConfigStr -a @debugArgs
     } else {
         $wpConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "wp-plugin-config.json"
@@ -149,6 +152,7 @@ function Invoke-UploadMode {
             Write-Host ""
             $debugArgs = @()
             if ($debug) { $debugArgs += "-DebugMode" }
+            if ($verbose) { $debugArgs += "-vb" }
             & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
         } else {
             Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
@@ -214,7 +218,9 @@ function Invoke-QUploadMode {
         Write-Host "  Path:   $qPluginPath" -ForegroundColor Gray
         Write-Host "  Site:   $($qConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
-        & $quploadScript -jc $jsonConfigStr -a
+        $verboseArgs = @()
+        if ($verbose) { $verboseArgs += "-vb" }
+        & $quploadScript -jc $jsonConfigStr -a @verboseArgs
     } else {
         Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
         Write-Host "Create it with pluginFolderPath, wordPressSiteURL, username, and appPassword." -ForegroundColor Yellow

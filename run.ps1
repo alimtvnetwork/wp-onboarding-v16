@@ -1,5 +1,5 @@
 # WP Plugin Publish - PowerShell Build & Run Script
-# Version: 2.28.1
+# Version: 2.28.2
 # Supports pnpm with PnP for disk-efficient Node.js dependency management
 # All paths are relative to script location (working directory)
 
@@ -219,6 +219,10 @@ if ($help) {
     Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
+    Write-Host "  -u -v               Verbose: show raw JSON request/response during upload"
+    Write-Host "  -q -v               Verbose: show raw JSON request/response during upload"
+    Write-Host "  -uas -v             Verbose: show raw JSON request/response for all uploads"
+    Write-Host "  -ua -v              Verbose: show raw JSON request/response for all uploads"
     Write-Host ""
     Write-Host "LOG MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "  -cl, -clearlogs     Clear logs on default site (both plugins)"

@@ -36,11 +36,12 @@ function Invoke-ParallelPluginUpload {
         [Parameter(Mandatory)][string]$QUploadScript,
         [Parameter(Mandatory)][string]$UploadLogsDir,
         [Parameter(Mandatory)][string]$LogStamp,
-        [switch]$Sequential
+        [switch]$Sequential,
+        [switch]$VerboseMode
     )
 
     if ($Sequential) {
-        return Invoke-SequentialPluginUpload -TargetSites $TargetSites -PluginFolders $PluginFolders -ZipByPlugin $ZipByPlugin -VersionByPlugin $VersionByPlugin -QUploadScript $QUploadScript -UploadLogsDir $UploadLogsDir -LogStamp $LogStamp
+        return Invoke-SequentialPluginUpload -TargetSites $TargetSites -PluginFolders $PluginFolders -ZipByPlugin $ZipByPlugin -VersionByPlugin $VersionByPlugin -QUploadScript $QUploadScript -UploadLogsDir $UploadLogsDir -LogStamp $LogStamp -VerboseMode:$VerboseMode
     }
 
     # Sort plugins: non-cross-upload first for stability
@@ -153,7 +154,7 @@ function Invoke-ParallelPluginUpload {
             }
 
             $pluginJobs += Start-Job -Name $jobName -ScriptBlock {
-                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace)
+                param($QUploadScript, $PluginPath, $PrebuiltZipPath, $SiteUrl, $Username, $Password, $PluginName, $SiteName, $PluginVersion, $Index, $ApiNamespace, $IsVerbose)
 
                 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -175,7 +176,9 @@ function Invoke-ParallelPluginUpload {
                 try {
                     $ErrorActionPreference = "Stop"
                     $global:LASTEXITCODE = $null
-                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace -spc 2>&1 | Out-String)
+                    $verboseFlag = @()
+                    if ($IsVerbose) { $verboseFlag += "-vb" }
+                    $output = (& $QUploadScript -jc $jsonConfigStr -a -api $ApiNamespace -spc @verboseFlag 2>&1 | Out-String)
                     $invokeSucceeded = $true
                 } catch {
                     $output = ($_ | Out-String).Trim()
@@ -207,7 +210,7 @@ function Invoke-ParallelPluginUpload {
                     Error    = $null
                     Duration = $sw.Elapsed.TotalSeconds
                 }
-            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex, $apiNamespace
+            } -ArgumentList $QUploadScript, $pluginFullPath, $prebuiltZipPath, $siteUrl, $decodedUsername, $decodedPassword, $pluginName, $siteName, $pluginVersion, $currentIndex, $apiNamespace, $VerboseMode.IsPresent
 
             $jobIndex++
         }
@@ -305,7 +308,8 @@ function Invoke-SequentialPluginUpload {
         [Parameter(Mandatory)][hashtable]$VersionByPlugin,
         [Parameter(Mandatory)][string]$QUploadScript,
         [Parameter(Mandatory)][string]$UploadLogsDir,
-        [Parameter(Mandatory)][string]$LogStamp
+        [Parameter(Mandatory)][string]$LogStamp,
+        [switch]$VerboseMode
     )
 
     # Sort plugins: non-cross-upload first
@@ -377,7 +381,7 @@ function Invoke-SequentialPluginUpload {
 
             $uploadExitCode = 1
             try {
-                $result = Invoke-SinglePluginUpload -QUploadScript $QUploadScript -PluginPath $pluginFullPath -ZipPath $prebuiltZipPath -SiteUrl $siteUrl -Username $cred.Username -Password $cred.Password -PluginSlug $pluginName -SiteName $siteName -PluginVersion $pluginVersion
+                $result = Invoke-SinglePluginUpload -QUploadScript $QUploadScript -PluginPath $pluginFullPath -ZipPath $prebuiltZipPath -SiteUrl $siteUrl -Username $cred.Username -Password $cred.Password -PluginSlug $pluginName -SiteName $siteName -PluginVersion $pluginVersion -VerboseMode:$VerboseMode
                 $uploadExitCode = $result.ExitCode
             } catch {
                 Write-Host "    ERROR: $_" -ForegroundColor Red
