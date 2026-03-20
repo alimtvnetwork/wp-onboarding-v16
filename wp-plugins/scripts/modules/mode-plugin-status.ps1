@@ -657,6 +657,7 @@ function Invoke-ParallelPluginStatusCheck {
                 SiteUrl       = ""
                 Plugin        = "unknown"
                 Version       = ""
+                LocalVersion  = ""
                 WpVersion     = ""
                 PhpVersion    = ""
                 PluginName    = ""
