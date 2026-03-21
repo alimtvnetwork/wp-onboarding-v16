@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { GripVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
