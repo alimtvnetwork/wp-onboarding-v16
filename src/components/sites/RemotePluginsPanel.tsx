@@ -396,7 +396,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     meta: { suppressGlobalError: true },
     mutationFn: async (plugin: RemotePlugin) => {
       if (!(await validatePluginExists(plugin.plugin, "delete"))) {
-        throw new Error(`Plugin "${plugin.plugin}" not found — delete blocked by pre-flight check`);
+        throw new PreFlightBlockedError(plugin.plugin, "delete");
       }
       // If plugin is active, deactivate first, then delete
       if (plugin.status === RemotePluginStatus.Active) {
