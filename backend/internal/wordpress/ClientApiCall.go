@@ -10,8 +10,8 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// apiCallInput holds common parameters for a WordPress REST API call.
-type apiCallInput struct {
+// ApiCallInput holds common parameters for a WordPress REST API call.
+type ApiCallInput struct {
 	Method     httpmethodtype.Variant
 	Endpoint   string
 	Body       any
