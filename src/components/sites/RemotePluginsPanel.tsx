@@ -241,6 +241,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     }
   }, [isError, queryError, captureException, site.id]);
 
+  // Auto-update relative time every 30s
+  useEffect(() => {
+    if (!open || !lastFetchedAt) return;
+    const interval = setInterval(() => setTimeTick((t) => t + 1), 30_000);
+    return () => clearInterval(interval);
+  }, [open, lastFetchedAt]);
+
   // Force sync mutation (bypasses cache)
   const forceSyncMutation = useMutation({
     meta: { suppressGlobalError: true },
