@@ -42,7 +42,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 	endpoint := "/" + namespace + input.Endpoint.String()
 
 	callInput := ApiCallInput{
-		Method:     httpmethod.Put,
+		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
 		Operation:  input.Operation,
