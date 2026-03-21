@@ -61,6 +61,18 @@ import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
 import { FolderOpen, AlertTriangle } from "lucide-react";
 import { compareVersions } from "@/lib/versionUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { isApiClientError } from "@/lib/api/client";
+
+/** Detect if an error is a remote WordPress site 500 (server-side crash). */
+function isRemoteSiteError(err: unknown): boolean {
+  if (isApiClientError(err)) {
+    return String(err.apiError.code) === "500" || /status 500/.test(err.message);
+  }
+  if (err instanceof Error) {
+    return /status 500/.test(err.message);
+  }
+  return false;
+}
 
 interface RemotePluginsPanelProps {
   site: Site;
@@ -304,10 +316,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
       });
+      const isRemote500 = isRemoteSiteError(error);
       toast.error(`Failed to ${enable ? "activate" : "deactivate"} ${plugin.name}`, {
-        description: "Click for details",
+        description: isRemote500
+          ? `The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details.`
+          : "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
-        duration: 10000,
+        duration: isRemote500 ? 15000 : 10000,
       });
     },
     onSettled: () => {
@@ -458,7 +473,15 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Activated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) toast.error(`Failed to activate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`);
+    if (failedResults.length > 0) {
+      const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      toast.error(`Failed to activate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+        description: hasRemote500
+          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
+          : undefined,
+        duration: hasRemote500 ? 15000 : 5000,
+      });
+    }
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
@@ -496,7 +519,15 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Deactivated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) toast.error(`Failed to deactivate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`);
+    if (failedResults.length > 0) {
+      const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      toast.error(`Failed to deactivate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+        description: hasRemote500
+          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
+          : undefined,
+        duration: hasRemote500 ? 15000 : 5000,
+      });
+    }
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
