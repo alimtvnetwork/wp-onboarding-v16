@@ -1233,12 +1233,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                   <span className="hidden sm:inline"> (of {plugins?.length} total)</span>
                 )}
               </span>
-              {isFromCache && (
-                <Badge variant="secondary" className="text-xs gap-1">
-                  <Database className="h-3 w-3" />
-                  Cached
-                </Badge>
-              )}
+              <Badge variant="secondary" className={`text-xs gap-1 ${cacheSource === "live" ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}>
+                {cacheSource === "live" ? <Zap className="h-3 w-3" /> : <Database className="h-3 w-3" />}
+                {cacheSource === "live" ? "Live" : "Cached"}
+              </Badge>
             </div>
             <a
               href={`${site.url}/wp-admin/plugins.php`}
