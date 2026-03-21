@@ -6,6 +6,15 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 
 ---
 
+## [2.28.7] — 2026-03-21
+
+### HTML Response Detection & Endpoint Mismatch Error Improvement
+- 🛡️ Added early HTML response detection in WordPress API call pipeline (`doApiCallRaw` + `decodeApiResponse`)
+- 🔍 New `E3013 ErrWPEndpointMismatch` error code replaces cryptic `invalid character '<'` JSON decode errors
+- 📋 Clear error message surfaces endpoint path and advises verifying plugin installation and namespace
+- 🚀 Added startup namespace validation check (`validateNamespaces`) to prevent silent 404s
+- 🔧 Fixed standalone `snapshotEndpoint()` calls in `SnapshotsBackup.go` to use receiver method
+
 ## [2.28.6] — 2026-03-21
 
 ### Critical Namespace Mismatch Fix
