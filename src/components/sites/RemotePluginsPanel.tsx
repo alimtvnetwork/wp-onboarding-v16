@@ -252,7 +252,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       toast.success("Plugin list refreshed from site");
       queryClient.setQueryData(queryKey, data);
       setLastFetchedAt(new Date());
-      setIsFromCache(false);
+      setCacheSource("live");
     },
     onError: (error) => {
       const captured = captureException(error, {
