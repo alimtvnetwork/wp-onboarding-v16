@@ -27,6 +27,7 @@ type ErrorHistoryServiceInterface interface {
 	GetByErrorId(errorId string) (*models.ErrorHistory, *apperror.AppError)
 	Delete(id int64) *apperror.AppError
 	Clear() (int64, *apperror.AppError)
+	ClearOlderThan(threshold string) (int64, *apperror.AppError)
 	BulkExport(ids []int64) (string, *apperror.AppError)
 	GetStats() (*models.ErrorHistoryStats, *apperror.AppError)
 }
@@ -126,6 +127,14 @@ func (a *ErrorHistoryServiceAdapter) Delete(id int64) *apperror.AppError {
 
 func (a *ErrorHistoryServiceAdapter) Clear() (int64, *apperror.AppError) {
 	result := a.Service.Clear()
+	if result.HasError() {
+		return 0, result.AppError()
+	}
+	return result.Value(), nil
+}
+
+func (a *ErrorHistoryServiceAdapter) ClearOlderThan(threshold string) (int64, *apperror.AppError) {
+	result := a.Service.ClearOlderThan(threshold)
 	if result.HasError() {
 		return 0, result.AppError()
 	}
