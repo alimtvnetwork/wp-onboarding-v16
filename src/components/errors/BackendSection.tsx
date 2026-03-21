@@ -291,6 +291,12 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
             Stack traces available
           </Badge>
         )}
+        {hasDelegatedContent && (
+          <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 text-orange-600">
+            <Globe className="h-3 w-3" />
+            Delegated logs available
+          </Badge>
+        )}
         {hasExecutionContent && (
           <Badge variant="outline" className="text-xs gap-1">
             <Activity className="h-3 w-3" />
