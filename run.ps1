@@ -317,6 +317,8 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -i 1,2              # Upload all plugins to sites #1 and #2"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
+    Write-Host "    .\run.ps1 -uas -pas                 # Upload all, then check plugin status"
+    Write-Host "    .\run.ps1 -uas -pas -v              # Upload all + status check (verbose)"
     Write-Host ""
     Write-Host "  Upload (default plugin, multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
