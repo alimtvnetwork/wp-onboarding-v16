@@ -581,7 +581,7 @@ function DelegatedContent({ error, phpStackFrames, envelopeDelegatedStack, deleg
   error: CapturedError;
   phpStackFrames: PHPStackFrame[];
   envelopeDelegatedStack: string[] | undefined;
-  delegatedServer: import('@/lib/api').DelegatedRequestServer | undefined;
+  delegatedServer: DelegatedRequestServer | undefined;
   sessionPhpFrames: SessionStackFrame[] | undefined;
   sessionDiag: SessionDiagnostics | undefined;
   sessionLoading: boolean;
