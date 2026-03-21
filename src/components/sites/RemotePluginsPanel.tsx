@@ -563,9 +563,22 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6">
-          <DialogHeader className="pb-2 shrink-0">
+        <DialogContent
+          className="w-screen h-screen max-w-none max-h-none sm:w-[90vw] sm:h-[90vh] sm:max-w-[1200px] sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6"
+          style={{
+            transform: `translate(calc(-50% + ${dragOffset.x}px), calc(-50% + ${dragOffset.y}px))`,
+          }}
+          onPointerDownOutside={(e) => {
+            // Prevent closing when dragging outside
+            if (isDragging.current) e.preventDefault();
+          }}
+        >
+          <DialogHeader
+            className="pb-2 shrink-0 cursor-move select-none"
+            onMouseDown={handleDragStart}
+          >
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 opacity-50" />
               <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
               <span className="truncate">Plugins on {site.name}</span>
             </DialogTitle>
