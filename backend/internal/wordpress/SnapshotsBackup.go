@@ -32,7 +32,7 @@ type SnapshotBackupResult struct {
 func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
 	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsFullBackup),
 		Body:       opts,
 		Operation:  operation.FullBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
