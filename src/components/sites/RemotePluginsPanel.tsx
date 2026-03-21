@@ -64,6 +64,17 @@ import { compareVersions } from "@/lib/versionUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { isApiClientError } from "@/lib/api/client";
 
+/**
+ * Sentinel error for pre-flight blocks — NOT a real error.
+ * Used to short-circuit mutations without triggering error capture or notifications.
+ */
+class PreFlightBlockedError extends Error {
+  constructor(pluginIdentifier: string, action: string) {
+    super(`Plugin "${pluginIdentifier}" not found — ${action} blocked by pre-flight check`);
+    this.name = "PreFlightBlockedError";
+  }
+}
+
 /** Detect if an error is a remote WordPress site 500 (server-side crash). */
 function isRemoteSiteError(err: unknown): boolean {
   if (isApiClientError(err)) {
@@ -249,22 +260,25 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
    * Pre-flight guard: validates a plugin identifier exists both in the local cache
    * AND on the remote WordPress site via a lightweight server-side check.
    * Prevents unnecessary 404s from stale UI state or cache mismatches.
+   *
+   * This is an informational guard, NOT an error — blocked actions are logged
+   * as warnings and never captured in the error store.
    */
   const validatePluginExists = useCallback(async (pluginIdentifier: string, actionLabel: string): Promise<boolean> => {
     if (!pluginIdentifier || pluginIdentifier.trim() === "") {
-      toast.error(`Cannot ${actionLabel}: plugin identifier is empty`);
-      console.warn(`[guard] Blocked ${actionLabel} — empty plugin identifier`);
+      toast.warning(`Cannot ${actionLabel}: plugin identifier is empty`);
+      console.info(`[guard] Blocked ${actionLabel} — empty plugin identifier`);
       return false;
     }
 
     // Fast local check first
     const cachedPlugins = queryClient.getQueryData<RemotePlugin[]>(queryKey);
     if (cachedPlugins && !cachedPlugins.some((p) => p.plugin === pluginIdentifier)) {
-      toast.error(`Cannot ${actionLabel}: plugin not found in current list`, {
+      toast.warning(`Cannot ${actionLabel}: plugin not found in current list`, {
         description: `"${pluginIdentifier}" is not in the synced plugin list. Try Force Sync first.`,
         duration: 8000,
       });
-      console.warn(`[guard] Blocked ${actionLabel} — "${pluginIdentifier}" not in cached list of ${cachedPlugins.length} plugins`);
+      console.info(`[guard] Blocked ${actionLabel} — "${pluginIdentifier}" not in cached list of ${cachedPlugins.length} plugins`);
       return false;
     }
 
@@ -273,15 +287,26 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       const response = await api.checkRemotePluginExists(site.id, pluginIdentifier);
       const result = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/exists`, method: "POST" });
       if (!result.exists) {
-        toast.error(`Cannot ${actionLabel}: plugin not installed on remote site`, {
+        toast.warning(`Cannot ${actionLabel}: plugin not installed on remote site`, {
           description: `"${pluginIdentifier}" was not found on the WordPress site. It may have been removed externally.`,
           duration: 8000,
         });
-        console.warn(`[guard] Server pre-flight blocked ${actionLabel} — "${pluginIdentifier}" not installed remotely`);
+        console.info(`[guard] Server pre-flight blocked ${actionLabel} — "${pluginIdentifier}" not installed remotely`);
         // Invalidate local cache since it's stale
         queryClient.invalidateQueries({ queryKey });
         return false;
       }
+
+      // Update cached plugin status from the exists check response (keeps active/inactive fresh)
+      if (result.status) {
+        const freshStatus = result.status === "active" ? RemotePluginStatus.Active : RemotePluginStatus.Inactive;
+        queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+          old?.map((p) =>
+            p.plugin === pluginIdentifier ? { ...p, status: freshStatus } : p
+          )
+        );
+      }
+
       return true;
     } catch (err: unknown) {
       // If pre-flight check itself fails, log but allow the action to proceed
@@ -296,7 +321,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     mutationFn: async ({ plugin, enable }: { plugin: RemotePlugin; enable: boolean }) => {
       const action = enable ? "activate" : "deactivate";
       if (!(await validatePluginExists(plugin.plugin, action))) {
-        throw new Error(`Plugin "${plugin.plugin}" not found — ${action} blocked by pre-flight check`);
+        throw new PreFlightBlockedError(plugin.plugin, action);
       }
       if (enable) {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
@@ -342,6 +367,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       if (context?.previousPlugins) {
         queryClient.setQueryData(queryKey, context.previousPlugins);
       }
+      // Pre-flight blocks are informational, not errors — skip capture
+      if (error instanceof PreFlightBlockedError) return;
       const captured = captureException(error, {
         endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
@@ -369,7 +396,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     meta: { suppressGlobalError: true },
     mutationFn: async (plugin: RemotePlugin) => {
       if (!(await validatePluginExists(plugin.plugin, "delete"))) {
-        throw new Error(`Plugin "${plugin.plugin}" not found — delete blocked by pre-flight check`);
+        throw new PreFlightBlockedError(plugin.plugin, "delete");
       }
       // If plugin is active, deactivate first, then delete
       if (plugin.status === RemotePluginStatus.Active) {
@@ -391,6 +418,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     },
     onError: (error, plugin) => {
+      // Pre-flight blocks are informational, not errors — skip capture
+      if (error instanceof PreFlightBlockedError) { setPluginToDelete(null); return; }
       const captured = captureException(error, {
         endpoint: `/sites/${site.id}/remote-plugins/delete`,
         method: "POST",
@@ -496,7 +525,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk activate"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk activate blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk activate");
         }
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
@@ -506,7 +535,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    failedResults.forEach((r) => {
+    const realFailedResults = failedResults.filter((r) => !(r.reason instanceof PreFlightBlockedError));
+    realFailedResults.forEach((r) => {
       captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
         endpoint: `/sites/${site.id}/remote-plugins/enable`,
         method: "POST",
@@ -514,11 +544,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Activated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) {
-      const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
-      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+    if (realFailedResults.length > 0) {
+      const hasRemote500 = realFailedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = realFailedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
       const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
-      toast.error(`Failed to activate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+      toast.error(`Failed to activate ${realFailedResults.length} plugin${realFailedResults.length !== 1 ? "s" : ""}`, {
         description: hasRemote500
           ? phpSnippet
             ? `Remote site error: ${phpSnippet}`
@@ -546,7 +576,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk deactivate"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk deactivate blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk deactivate");
         }
         const response = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
@@ -556,7 +586,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    failedResults.forEach((r) => {
+    const realFailedResults = failedResults.filter((r) => !(r.reason instanceof PreFlightBlockedError));
+    realFailedResults.forEach((r) => {
       captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
         endpoint: `/sites/${site.id}/remote-plugins/disable`,
         method: "POST",
@@ -564,11 +595,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Deactivated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) {
-      const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
-      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+    if (realFailedResults.length > 0) {
+      const hasRemote500 = realFailedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = realFailedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
       const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
-      toast.error(`Failed to deactivate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+      toast.error(`Failed to deactivate ${realFailedResults.length} plugin${realFailedResults.length !== 1 ? "s" : ""}`, {
         description: hasRemote500
           ? phpSnippet
             ? `Remote site error: ${phpSnippet}`
@@ -596,7 +627,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk delete"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk delete blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk delete");
         }
         if (plugin.status === RemotePluginStatus.Active) {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
@@ -610,7 +641,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    failedResults.forEach((r) => {
+    const realFailedResults = failedResults.filter((r) => !(r.reason instanceof PreFlightBlockedError));
+    realFailedResults.forEach((r) => {
       captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
         endpoint: `/sites/${site.id}/remote-plugins/delete`,
         method: "POST",
@@ -618,11 +650,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Deleted ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) {
-      const anyRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
-      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+    if (realFailedResults.length > 0) {
+      const anyRemote500 = realFailedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = realFailedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
       const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
-      toast.error(`Failed to delete ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+      toast.error(`Failed to delete ${realFailedResults.length} plugin${realFailedResults.length !== 1 ? "s" : ""}`, {
         description: anyRemote500
           ? phpSnippet
             ? `Remote site error: ${phpSnippet}`
