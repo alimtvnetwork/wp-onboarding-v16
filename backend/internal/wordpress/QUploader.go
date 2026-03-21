@@ -91,7 +91,7 @@ func (c *Client) DisablePluginViaQUpload(slug string) *apperror.AppError {
 	endpoint := "/" + QUploadNamespace + ep.Disable.String()
 
 	callInput := ApiCallInput{
-		Method:     httpmethod.Put,
+		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
 		Operation:  operationtype.DisablePlugin,
