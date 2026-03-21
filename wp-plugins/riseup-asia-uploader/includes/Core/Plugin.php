@@ -90,6 +90,7 @@ class Plugin {
     use LogStatusTrait;
     use LogRotationStatusTrait;
     use LogClearingTrait;
+    use LogClearAllTrait;
     use LogEmailTrait;
     use LogRetrievalTrait;
     use MachineApprovalTrait;
