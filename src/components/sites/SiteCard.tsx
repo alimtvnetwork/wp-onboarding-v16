@@ -60,6 +60,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const [showSiteSettings, setShowSiteSettings] = useState(false);
+  const [showHealthSummary, setShowHealthSummary] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
