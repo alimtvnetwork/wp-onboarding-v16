@@ -465,6 +465,22 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <RemoteLogsPanel siteId={site.id} siteName={site.name} />
         </DialogContent>
       </Dialog>
+      <Dialog open={showSiteSettings} onOpenChange={setShowSiteSettings}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Site Settings — {site.name}</DialogTitle>
+          </DialogHeader>
+          <SiteSettingsPanel site={site} open={showSiteSettings} />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showHealthSummary} onOpenChange={setShowHealthSummary}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Health Summary — {site.name}</DialogTitle>
+          </DialogHeader>
+          <SiteHealthSummaryPanel site={site} open={showHealthSummary} />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
