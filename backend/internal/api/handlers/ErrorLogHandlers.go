@@ -4,15 +4,20 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
+
+// timestampPattern matches the [YYYY-MM-DD HH:MM:SS] prefix in error log entries.
+var timestampPattern = regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
 
 // --- Error/Log Handlers ---
 
@@ -57,7 +62,7 @@ type logContentInput struct {
 	FileStat *pathutil.FileInfo
 }
 
-// respondErrorLogContent reads and responds with log file content.
+// respondErrorLogContent reads and responds with log file content (filtered to current session).
 func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
 	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
@@ -66,8 +71,10 @@ func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
 		return
 	}
 
+	filtered := filterToCurrentSession(string(content))
+
 	respondSuccess(w, LogFileResponse{
-		Content:    string(content),
+		Content:    filtered,
 		Path:       input.LogPath,
 		IsExists:   true,
 		LogType:    input.LogType,
@@ -159,7 +166,7 @@ type streamLinesInput struct {
 	TailLines int
 }
 
-// respondStreamedLines reads the file, tails lines, and responds.
+// respondStreamedLines reads the file, filters to current session, tails lines, and responds.
 func respondStreamedLines(w http.ResponseWriter, input streamLinesInput) {
 	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
@@ -168,7 +175,8 @@ func respondStreamedLines(w http.ResponseWriter, input streamLinesInput) {
 		return
 	}
 
-	allLines := splitLines(string(content))
+	filtered := filterToCurrentSession(string(content))
+	allLines := splitLines(filtered)
 	lines := tailSlice(allLines, input.TailLines)
 	fi, _ := pathutil.StatFile(input.LogPath)
 
@@ -256,7 +264,7 @@ type logFileContentInput struct {
 	FileStat *pathutil.FileInfo
 }
 
-// respondLogFileContent reads file and responds with LogFileResponse.
+// respondLogFileContent reads file and responds with LogFileResponse (filtered to current session).
 func respondLogFileContent(w http.ResponseWriter, input logFileContentInput) {
 	content, err := os.ReadFile(input.Path)
 	if err != nil {
@@ -265,8 +273,10 @@ func respondLogFileContent(w http.ResponseWriter, input logFileContentInput) {
 		return
 	}
 
+	filtered := filterToCurrentSession(string(content))
+
 	respondSuccess(w, LogFileResponse{
-		Content:    string(content),
+		Content:    filtered,
 		Filename:   input.Filename,
 		Size:       input.FileStat.Info.Size(),
 		ModifiedAt: input.FileStat.Info.ModTime().Format(time.RFC3339),
@@ -290,4 +300,63 @@ func splitLines(content string) []string {
 
 func fileExists(path string) bool {
 	return pathutil.IsFileExists(path)
+}
+
+// filterToCurrentSession splits the error log into entry blocks (delimited by ─── lines)
+// and returns only those whose timestamp is at or after the current server session start.
+func filterToCurrentSession(content string) string {
+	sessionStart := middleware.SessionStartTime
+	lines := strings.Split(content, "\n")
+
+	var currentBlock []string
+	var sessionBlocks []string
+
+	for _, line := range lines {
+		isDivider := strings.HasPrefix(line, "───")
+
+		if isDivider {
+			// End of a block — check if it belongs to this session
+			if len(currentBlock) > 0 {
+				blockText := strings.Join(currentBlock, "\n")
+				if isBlockInSession(currentBlock, sessionStart) {
+					sessionBlocks = append(sessionBlocks, blockText)
+				}
+				currentBlock = nil
+			}
+			continue
+		}
+
+		currentBlock = append(currentBlock, line)
+	}
+
+	// Handle last block (no trailing divider)
+	if len(currentBlock) > 0 && isBlockInSession(currentBlock, sessionStart) {
+		sessionBlocks = append(sessionBlocks, strings.Join(currentBlock, "\n"))
+	}
+
+	if len(sessionBlocks) == 0 {
+		return ""
+	}
+
+	divider := "───────────────────────────────────────────────────────────────────────────────"
+	return strings.Join(sessionBlocks, "\n"+divider+"\n") + "\n" + divider
+}
+
+// isBlockInSession checks if any line in the block has a timestamp >= session start.
+func isBlockInSession(blockLines []string, sessionStart time.Time) bool {
+	for _, line := range blockLines {
+		match := timestampPattern.FindStringSubmatch(line)
+		if len(match) < 2 {
+			continue
+		}
+
+		entryTime, err := time.Parse("2006-01-02 15:04:05", match[1])
+		if err != nil {
+			continue
+		}
+
+		return !entryTime.Before(sessionStart)
+	}
+
+	return false
 }

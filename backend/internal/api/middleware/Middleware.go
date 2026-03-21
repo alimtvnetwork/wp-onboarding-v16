@@ -18,6 +18,10 @@ import (
 // (e.g. "backend/data/errors"). When empty, error-log persistence is disabled.
 var ErrorLogDir string
 
+// SessionStartTime records when this server session started.
+// Used to filter error log entries to only show current-session errors.
+var SessionStartTime = time.Now()
+
 // CORS adds CORS headers for local development
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
