@@ -166,7 +166,7 @@ type streamLinesInput struct {
 	TailLines int
 }
 
-// respondStreamedLines reads the file, tails lines, and responds.
+// respondStreamedLines reads the file, filters to current session, tails lines, and responds.
 func respondStreamedLines(w http.ResponseWriter, input streamLinesInput) {
 	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
@@ -175,7 +175,8 @@ func respondStreamedLines(w http.ResponseWriter, input streamLinesInput) {
 		return
 	}
 
-	allLines := splitLines(string(content))
+	filtered := filterToCurrentSession(string(content))
+	allLines := splitLines(filtered)
 	lines := tailSlice(allLines, input.TailLines)
 	fi, _ := pathutil.StatFile(input.LogPath)
 
