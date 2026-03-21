@@ -572,7 +572,15 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Deleted ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) toast.error(`Failed to delete ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`);
+    if (failedResults.length > 0) {
+      const anyRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      toast.error(`Failed to delete ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+        description: anyRemote500
+          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
+          : undefined,
+        duration: anyRemote500 ? 15000 : 5000,
+      });
+    }
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
