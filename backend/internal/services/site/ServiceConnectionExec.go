@@ -8,6 +8,7 @@ import (
 	connectionstatus "wp-plugin-publish/internal/enums/connectionstatustype"
 	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
