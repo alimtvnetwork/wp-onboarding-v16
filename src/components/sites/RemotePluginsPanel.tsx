@@ -221,7 +221,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         throw new Error(msg);
       }
       setLastFetchedAt(new Date());
-      setIsFromCache(false);
+      setCacheSource("cached");
       return response.data as RemotePlugin[];
     },
     enabled: open,
