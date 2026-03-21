@@ -87,6 +87,8 @@ const (
 	CloudStorageBackupHistory
 	CloudStorageBackupHistoryId
 	CloudStorageRestore
+	SiteSettings
+	SiteHealthSummary
 )
 
 var variantLabels = [...]string{
