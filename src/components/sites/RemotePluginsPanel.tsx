@@ -122,10 +122,14 @@ interface RemotePluginsPanelProps {
 
 const ITEMS_PER_PAGE = 10;
 
-// The expected latest version of the Riseup Asia Uploader plugin.
-// Keep this in sync with wp-plugins/riseup-asia-uploader/includes/constants.php RISEUP_VERSION.
-const EXPECTED_UPLOADER_VERSION = "1.21.0";
+// Plugin slugs for managed plugins
 const UPLOADER_SLUG = "riseup-asia-uploader";
+const QUPLOAD_SLUG = "qupload";
+
+interface VersionJson {
+  wpPluginVersion: string;
+  quploadVersion: string;
+}
 
 // Format relative time (e.g., "2m ago", "1h ago")
 function formatTimeAgo(date: Date): string {
@@ -477,21 +481,78 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     return filteredPlugins.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPlugins, currentPage]);
 
-  // Check if the Riseup Asia Uploader on the remote site is outdated
-  const uploaderVersionInfo = useMemo(() => {
-    if (!plugins) return null;
+  // Fetch expected versions from version.json
+  const { data: expectedVersions } = useQuery({
+    queryKey: ["version-json"],
+    queryFn: async () => {
+      const resp = await fetch("/version.json");
+      if (!resp.ok) return null;
+      return resp.json() as Promise<VersionJson>;
+    },
+    staleTime: Infinity,
+  });
+
+  // Check if managed plugins on the remote site are outdated
+  const managedPluginVersions = useMemo(() => {
+    if (!plugins || !expectedVersions) return [];
+
+    const checks: Array<{
+      slug: string;
+      label: string;
+      found: boolean;
+      version: string | null;
+      expectedVersion: string;
+      isOutdated: boolean;
+      isActive: boolean;
+    }> = [];
+
+    const uploaderExpected = expectedVersions.wpPluginVersion;
+    const quploadExpected = expectedVersions.quploadVersion;
+
+    // Riseup Asia Uploader
     const uploader = plugins.find(
       (p) => p.slug === UPLOADER_SLUG || p.plugin.startsWith(UPLOADER_SLUG + "/")
     );
-    if (!uploader) return { found: false, version: null, isOutdated: false } as const;
-    const cmp = compareVersions(uploader.version, EXPECTED_UPLOADER_VERSION);
-    return {
-      found: true,
-      version: uploader.version,
-      isOutdated: cmp < 0,
-      isActive: isRemotePluginActive(uploader.status),
-    } as const;
-  }, [plugins]);
+    if (uploader && uploaderExpected) {
+      checks.push({
+        slug: UPLOADER_SLUG,
+        label: "Riseup Asia Uploader",
+        found: true,
+        version: uploader.version,
+        expectedVersion: uploaderExpected,
+        isOutdated: compareVersions(uploader.version, uploaderExpected) < 0,
+        isActive: isRemotePluginActive(uploader.status),
+      });
+    } else if (!uploader && uploaderExpected) {
+      checks.push({
+        slug: UPLOADER_SLUG,
+        label: "Riseup Asia Uploader",
+        found: false,
+        version: null,
+        expectedVersion: uploaderExpected,
+        isOutdated: false,
+        isActive: false,
+      });
+    }
+
+    // QUpload
+    const qupload = plugins.find(
+      (p) => p.slug === QUPLOAD_SLUG || p.plugin.startsWith(QUPLOAD_SLUG + "/")
+    );
+    if (qupload && quploadExpected) {
+      checks.push({
+        slug: QUPLOAD_SLUG,
+        label: "Quick Upload",
+        found: true,
+        version: qupload.version,
+        expectedVersion: quploadExpected,
+        isOutdated: compareVersions(qupload.version, quploadExpected) < 0,
+        isActive: isRemotePluginActive(qupload.status),
+      });
+    }
+
+    return checks;
+  }, [plugins, expectedVersions]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -780,27 +841,34 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             </div>
           </div>
 
-          {/* Uploader Version Warning */}
-          {uploaderVersionInfo && uploaderVersionInfo.isOutdated && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 shrink-0">
-              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm">
-                <p className="font-medium text-amber-300">
-                  Riseup Asia Uploader is outdated (v{uploaderVersionInfo.version} → v{EXPECTED_UPLOADER_VERSION})
-                </p>
-                <p className="text-amber-400/80 mt-0.5">
-                  Some features like enable/disable/delete may not work. Republish the uploader to this site to update.
+          {/* Managed Plugin Version Warnings */}
+          {managedPluginVersions.some((p) => p.isOutdated) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 text-warning-foreground shrink-0">
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm space-y-1">
+                {managedPluginVersions.filter((p) => p.isOutdated).map((p) => (
+                  <p key={p.slug} className="font-medium">
+                    {p.label} is outdated{" "}
+                    <Badge variant="outline" className="text-[10px] font-mono mx-0.5 px-1 py-0">v{p.version}</Badge>
+                    {" → "}
+                    <Badge variant="outline" className="text-[10px] font-mono mx-0.5 px-1 py-0 border-primary/50 text-primary">v{p.expectedVersion}</Badge>
+                  </p>
+                ))}
+                <p className="text-muted-foreground mt-0.5">
+                  Some features may not work correctly. Deploy the latest version to this site.
                 </p>
               </div>
             </div>
           )}
-          {uploaderVersionInfo && !uploaderVersionInfo.found && !isLoading && !isError && (
+          {managedPluginVersions.some((p) => !p.found) && !isLoading && !isError && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive shrink-0">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm">
-                <p className="font-medium">Riseup Asia Uploader not found</p>
+                {managedPluginVersions.filter((p) => !p.found).map((p) => (
+                  <p key={p.slug} className="font-medium">{p.label} not found on this site</p>
+                ))}
                 <p className="text-destructive/80 mt-0.5">
-                  The companion plugin is not installed on this site. Deploy it to enable full plugin management.
+                  Deploy the plugin to enable full management capabilities.
                 </p>
               </div>
             </div>
