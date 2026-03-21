@@ -537,6 +537,36 @@ if ($uas) {
         Invoke-PluginStatusMode
     }
 
+    # Chain into clear-logs-all if -cla was also given (e.g. .\run.ps1 -uas -pas -cla)
+    if ($clearlogsall) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Status complete — clearing logs on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose
+    }
+
+    # Chain into clear-all-sites (purge) if -cas was also given
+    if ($clearallsites -or $purge) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Chained — purging all logs on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose
+    }
+
+    # Chain into single-site clear-logs if -cl was also given
+    if ($clearlogs) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Chained — clearing logs..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose
+    }
+
     exit $script:uasExitCode
 }
 if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose }
