@@ -14,8 +14,9 @@ if (!defined('ABSPATH')) {
 
 enum AjaxActionType: string
 {
-    case ReadLogFile  = 'qupload_read_log_file';
-    case ClearLogFile = 'qupload_clear_log_file';
+    case ReadLogFile   = 'qupload_read_log_file';
+    case ClearLogFile  = 'qupload_clear_log_file';
+    case ClearAllLogs  = 'qupload_clear_all_logs';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

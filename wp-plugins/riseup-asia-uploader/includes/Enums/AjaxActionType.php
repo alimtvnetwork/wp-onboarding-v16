@@ -29,8 +29,9 @@ enum AjaxActionType: string
     case ClearErrorSessions = 'riseup_clear_error_sessions';
 
     // ── Log Actions ─────────────────────────────────────────────
-    case ReadLogFile  = 'riseup_read_log_file';
-    case ClearLogFile = 'riseup_clear_log_file';
+    case ReadLogFile     = 'riseup_read_log_file';
+    case ClearLogFile    = 'riseup_clear_log_file';
+    case ClearAllLogs    = 'riseup_clear_all_logs';
 
     // ── Feedback Actions ────────────────────────────────────────
     case SendFeedback        = 'riseup_send_feedback';

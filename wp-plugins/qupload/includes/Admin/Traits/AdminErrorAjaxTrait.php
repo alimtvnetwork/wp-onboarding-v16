@@ -108,4 +108,21 @@ trait AdminErrorAjaxTrait {
 
         wp_send_json_success(['message' => 'File cleared', 'file_type' => $type]);
     }
+
+    /** AJAX handler: Clear ALL QUpload log files at once. */
+    public function ajaxClearAllLogs(): void {
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
+
+        if (!current_user_can(CapabilityType::ManageOptions->value)) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+
+        try {
+            $logger = FileLogger::getInstance();
+            $logger->clearAllLogFiles();
+            wp_send_json_success(['message' => 'All log files cleared']);
+        } catch (\Throwable $e) {
+            wp_send_json_error(['message' => 'Failed to clear logs: ' . $e->getMessage()]);
+        }
+    }
 }

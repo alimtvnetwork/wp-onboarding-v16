@@ -62,6 +62,35 @@ jQuery(document).ready(function($) {
     });
 
     // =====================================================================
+    // CLEAR ALL LOGS (both plugins — file logs + DB error sessions)
+    // =====================================================================
+    $('#btn-clear-all-logs').on('click', function() {
+        if (!confirm(C.i18n.confirmClearAllLogs)) {
+            return;
+        }
+
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+
+        $.post(ajaxurl, {
+            action: C.actions.clearAllLogs,
+            nonce: ajaxNonce
+        }, function(response) {
+            if (response.success) {
+                location.reload();
+                return;
+            }
+
+            $btn.prop('disabled', false);
+            var msg = (response.data && response.data[C.responseKeys.message]) ? response.data[C.responseKeys.message] : C.i18n.clearAllLogsFailed;
+            alert(msg);
+        }).fail(function() {
+            $btn.prop('disabled', false);
+            alert(C.i18n.clearAllLogsFailed);
+        });
+    });
+
+    // =====================================================================
     // FILE VIEWER — Load, Refresh, Copy, Download, Clear
     // =====================================================================
     if (activeTab !== C.tabs.sessions) {

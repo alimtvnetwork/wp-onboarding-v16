@@ -130,6 +130,7 @@ trait AdminMenuTrait {
             'actions'   => [
                 'readLogFile'  => AjaxActionType::ReadLogFile->value,
                 'clearLogFile' => AjaxActionType::ClearLogFile->value,
+                'clearAllLogs' => AjaxActionType::ClearAllLogs->value,
             ],
             'tabs'      => [
                 'log'        => AdminTabType::Log->value,
@@ -138,8 +139,10 @@ trait AdminMenuTrait {
             ],
             'i18n'      => [
                 'copied'          => __('Copied!', $pluginSlug),
-                'confirmClearLog' => __('Are you sure you want to clear this log file?', $pluginSlug),
-                'clearFailed'     => __('Failed to clear log file.', $pluginSlug),
+                'confirmClearLog'     => __('Are you sure you want to clear this log file?', $pluginSlug),
+                'confirmClearAllLogs' => __('Are you sure you want to clear ALL QUpload log files? This cannot be undone.', $pluginSlug),
+                'clearAllLogsFailed'  => __('Failed to clear all logs.', $pluginSlug),
+                'clearFailed'         => __('Failed to clear log file.', $pluginSlug),
             ],
         ]);
     }

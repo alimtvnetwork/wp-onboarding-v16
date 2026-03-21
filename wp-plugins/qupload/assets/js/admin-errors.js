@@ -29,6 +29,7 @@
         $('#btn-copy-log').on('click', copyLogToClipboard);
         $('#btn-download-log').on('click', downloadLogFile);
         $('#btn-clear-log').on('click', clearLogFile);
+        $('#btn-clear-all-logs').on('click', clearAllLogs);
         $('#chk-auto-refresh').on('change', toggleAutoRefresh);
     }
 
@@ -149,6 +150,33 @@
             }
         }).fail(function () {
             alert(config.i18n.clearFailed);
+        });
+    }
+
+    // ─── Clear All Logs ────────────────────────────────────────────
+
+    function clearAllLogs() {
+        if (!confirm(config.i18n.confirmClearAllLogs)) {
+            return;
+        }
+
+        var $btn = $('#btn-clear-all-logs');
+        $btn.prop('disabled', true);
+
+        $.post(ajaxurl, {
+            action: config.actions.clearAllLogs,
+            nonce: config.nonce
+        }, function (response) {
+            if (response.success) {
+                loadLogFile();
+                $btn.prop('disabled', false);
+            } else {
+                $btn.prop('disabled', false);
+                alert(config.i18n.clearAllLogsFailed || config.i18n.clearFailed);
+            }
+        }).fail(function () {
+            $btn.prop('disabled', false);
+            alert(config.i18n.clearAllLogsFailed || config.i18n.clearFailed);
         });
     }
 

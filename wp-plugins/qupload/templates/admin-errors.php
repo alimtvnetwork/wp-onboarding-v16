@@ -24,6 +24,10 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
         <span class="dashicons dashicons-warning" style="font-size: 28px; margin-right: 8px;"></span>
         <?php echo esc_html($pluginName); ?> — <?php esc_html_e('Error Logs', $pluginSlug); ?>
         <span class="qupload-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
+        <button type="button" id="btn-clear-all-logs" class="button button-link-delete" style="margin-left: 12px; vertical-align: middle;">
+            <span class="dashicons dashicons-trash" style="vertical-align: middle;"></span>
+            <?php esc_html_e('Clear All Logs', $pluginSlug); ?>
+        </button>
     </h1>
 
     <!-- Tab Navigation -->
