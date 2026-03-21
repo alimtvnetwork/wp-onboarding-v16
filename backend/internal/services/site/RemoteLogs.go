@@ -37,7 +37,7 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, appErr
 	}
 
-	result := doApiCall[map[string]any](client, apiCallInput{
+	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.LogsRotationStatus.String(),
 		Operation: operationtype.GetLogsRotationStatus,
