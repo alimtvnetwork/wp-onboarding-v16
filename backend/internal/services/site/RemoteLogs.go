@@ -111,3 +111,65 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 
 	return result.Value(), nil
 }
+
+// ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.
+type ClearAllPluginLogsResult struct {
+	Riseup  *pluginClearResult `json:"riseup"`
+	QUpload *pluginClearResult `json:"qupload"`
+}
+
+type pluginClearResult struct {
+	Cleared bool   `json:"cleared"`
+	Error   string `json:"error,omitempty"`
+}
+
+// ClearAllRemoteLogs clears logs for both WP plugins (riseup-asia + qupload) on a site.
+// Performs the two-step clear (request token → confirm) for each namespace.
+func (s *Service) ClearAllRemoteLogs(ctx context.Context, siteId int64) (*ClearAllPluginLogsResult, *apperror.AppError) {
+	client, appErr := s.createWPClient(ctx, siteId)
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	result := &ClearAllPluginLogsResult{
+		Riseup:  clearLogsForNamespace(client, wordpress.RiseupAsiaNamespace),
+		QUpload: clearLogsForNamespace(client, wordpress.QUploadNamespace),
+	}
+
+	return result, nil
+}
+
+// clearLogsForNamespace performs the two-step log clear for a single namespace.
+func clearLogsForNamespace(client *wordpress.Client, namespace string) *pluginClearResult {
+	clearEndpoint := "/" + namespace + ep.LogsClear.String()
+	confirmEndpoint := "/" + namespace + ep.LogsConfirm.String()
+
+	// Step 1: Request token
+	tokenResult := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+		Method:    httpmethod.Delete,
+		Endpoint:  clearEndpoint,
+		Operation: operationtype.RequestLogsClear,
+	})
+	if tokenResult.HasError() {
+		return &pluginClearResult{Cleared: false, Error: tokenResult.AppError().Error()}
+	}
+
+	tokenData := tokenResult.Value()
+	token, ok := tokenData["token"].(string)
+	if !ok || token == "" {
+		return &pluginClearResult{Cleared: false, Error: "no token returned from clear request"}
+	}
+
+	// Step 2: Confirm with token
+	confirmResult := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+		Method:    httpmethod.Post,
+		Endpoint:  confirmEndpoint,
+		Body:      wordpress.ClearTokenRequest{Token: token},
+		Operation: operationtype.ConfirmLogsClear,
+	})
+	if confirmResult.HasError() {
+		return &pluginClearResult{Cleared: false, Error: confirmResult.AppError().Error()}
+	}
+
+	return &pluginClearResult{Cleared: true}
+}

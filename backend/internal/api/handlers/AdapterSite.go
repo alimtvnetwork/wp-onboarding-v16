@@ -67,6 +67,7 @@ type SiteServiceInterface interface {
 	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
 	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
 	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError)
+	ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError)
 
 	// User management proxy
 	ListRemoteUsers(ctx context.Context, siteId int64, query string) (any, *apperror.AppError)
@@ -302,4 +303,12 @@ func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId 
 
 func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
 	return a.Service.EmailRemoteLogs(ctx, siteId, body)
+}
+
+func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	result, appErr := a.Service.ClearAllRemoteLogs(ctx, siteId)
+	if appErr != nil {
+		return nil, appErr
+	}
+	return result, nil
 }

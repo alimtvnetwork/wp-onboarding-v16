@@ -101,3 +101,11 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	respondSuccess(w, result)
 }
+
+// ClearAllRemoteLogs clears logs for both plugins (riseup-asia + qupload) in one call
+var ClearAllRemoteLogs = handleSiteActionById(
+	apperror.ErrWPConnection,
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+		return Services.SiteService.ClearAllRemoteLogs(ctx, siteId)
+	},
+)
