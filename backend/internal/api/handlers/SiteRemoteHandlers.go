@@ -141,8 +141,51 @@ func checkPluginExistsOrFail(w http.ResponseWriter, r *http.Request, parsed *rem
 }
 
 // respondRemotePluginError writes an error response for remote plugin actions.
+// Extracts the remote WordPress response body from the error chain if available.
 func respondRemotePluginError(w http.ResponseWriter, errCode apperror.ErrorCode, appErr *apperror.AppError) {
-	respondErrorWithSession(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), errCode, appErr.Error(), appErr)
+	resp := envelope.ErrorWithStack(resolveHttpStatus(appErr, wordpress.HttpStatusServerError).Int(), errCode.String(), appErr.Error())
+
+	if appErr != nil {
+		hasSessionId := appErr.Diagnostic.SessionId != ""
+		if hasSessionId {
+			resp = resp.WithSessionId(appErr.Diagnostic.SessionId)
+		}
+	}
+
+	remoteBody := extractRemoteResponseBody(appErr)
+	hasRemoteBody := remoteBody != ""
+
+	if hasRemoteBody {
+		resp = resp.WithRemoteResponseBody(remoteBody)
+	}
+
+	envelope.Write(w, resp)
+}
+
+// extractRemoteResponseBody walks the error chain to find a wordpress.ApiError
+// and returns its ResponseBody field.
+func extractRemoteResponseBody(appErr *apperror.AppError) string {
+	if appErr == nil {
+		return ""
+	}
+
+	var apiErr *wordpress.ApiError
+
+	// Walk cause chain: AppError.Cause may be another AppError or a *wordpress.ApiError
+	var current error = appErr
+	for current != nil {
+		if ae, ok := current.(*wordpress.ApiError); ok {
+			apiErr = ae
+			break
+		}
+		current = errors.Unwrap(current)
+	}
+
+	if apiErr == nil {
+		return ""
+	}
+
+	return apiErr.ResponseBody
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
