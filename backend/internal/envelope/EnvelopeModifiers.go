@@ -88,6 +88,26 @@ func (r Response) WithMethodsStack(frames []MethodFrame) Response {
 	return r
 }
 
+// WithRemoteResponseBody attaches the raw response body from a remote service.
+// Truncated to 4096 bytes to prevent oversized payloads.
+func (r Response) WithRemoteResponseBody(body string) Response {
+	isBodyEmpty := body == ""
+
+	if isBodyEmpty {
+		return r
+	}
+
+	isOverLimit := len(body) > 4096
+	if isOverLimit {
+		body = body[:4096] + "...(truncated)"
+	}
+
+	r.ensureErrors()
+	r.Errors.RemoteResponseBody = body
+
+	return r
+}
+
 // ensureErrors initializes the Errors block if nil.
 func (r *Response) ensureErrors() {
 	if r.Errors == nil {

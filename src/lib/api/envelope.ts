@@ -88,6 +88,7 @@ export function parseEnvelope<T>(env: RawEnvelope<unknown>): ApiResponse<T> {
           ...(errBlock?.Backend?.length ? { backendTrace: errBlock.Backend } : {}),
           ...(errBlock?.DelegatedServiceErrorStack?.length ? { delegatedServiceErrorStack: errBlock.DelegatedServiceErrorStack } : {}),
           ...(errBlock?.DelegatedRequestServer ? { delegatedRequestServer: errBlock.DelegatedRequestServer } : {}),
+          ...(errBlock?.RemoteResponseBody ? { remoteResponseBody: errBlock.RemoteResponseBody } : {}),
           ...(env.MethodsStack ? { methodsStack: env.MethodsStack } : {}),
         },
         timestamp: env.Status.Timestamp,

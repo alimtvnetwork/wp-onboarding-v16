@@ -57,6 +57,7 @@ type Errors struct {
 	DelegatedServiceErrorStack []string `json:",omitempty"`
 	Backend                    []string `json:",omitempty"`
 	Frontend                   []string `json:",omitempty"`
+	RemoteResponseBody         string   `json:",omitempty"`
 }
 
 // MethodsStack carries debug call-chain traces. Top-level, conditionally included.

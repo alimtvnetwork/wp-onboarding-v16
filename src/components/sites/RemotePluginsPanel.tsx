@@ -75,6 +75,34 @@ function isRemoteSiteError(err: unknown): boolean {
   return false;
 }
 
+/** Extract the remote WordPress response body from an API error if available. */
+function extractRemoteResponseBody(err: unknown): string | null {
+  if (!isApiClientError(err)) return null;
+  const ctx = err.apiError.context;
+  if (!ctx || typeof ctx !== "object") return null;
+  const body = (ctx as Record<string, unknown>).remoteResponseBody;
+  return typeof body === "string" && body.length > 0 ? body : null;
+}
+
+/** Try to extract a human-readable PHP error snippet from a remote response body. */
+function extractPhpErrorSnippet(body: string): string | null {
+  // Try to parse as JSON first (WordPress REST error envelope)
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed?.message) return parsed.message;
+    if (parsed?.data?.message) return parsed.data.message;
+  } catch {
+    // Not JSON — try extracting from HTML/plain text
+  }
+  // Look for common PHP fatal error patterns
+  const fatalMatch = body.match(/Fatal error:.*?(?:\n|$)/i)
+    || body.match(/Call to undefined (?:method|function).*?(?:\n|$)/i)
+    || body.match(/Class ['"].*?['"] not found/i);
+  if (fatalMatch) return fatalMatch[0].trim();
+  // Truncate raw body as fallback
+  return body.length > 300 ? body.slice(0, 300) + "..." : body;
+}
+
 interface RemotePluginsPanelProps {
   site: Site;
   open: boolean;
@@ -319,9 +347,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         method: "POST",
       });
       const isRemote500 = isRemoteSiteError(error);
+      const remoteBody = extractRemoteResponseBody(error);
+      const phpSnippet = remoteBody ? extractPhpErrorSnippet(remoteBody) : null;
       toast.error(`Failed to ${enable ? "activate" : "deactivate"} ${plugin.name}`, {
         description: isRemote500
-          ? `The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details.`
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : `The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details.`
           : "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
         duration: isRemote500 ? 15000 : 10000,
@@ -364,9 +396,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         method: "POST",
       });
       const isRemote500 = isRemoteSiteError(error);
+      const remoteBody = extractRemoteResponseBody(error);
+      const phpSnippet = remoteBody ? extractPhpErrorSnippet(remoteBody) : null;
       toast.error(`Failed to delete ${plugin.name}`, {
         description: isRemote500
-          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
           : "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
         duration: isRemote500 ? 15000 : 10000,
@@ -480,9 +516,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     if (succeeded > 0) toast.success(`Activated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
     if (failedResults.length > 0) {
       const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+      const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
       toast.error(`Failed to activate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
         description: hasRemote500
-          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
           : undefined,
         duration: hasRemote500 ? 15000 : 5000,
       });
@@ -526,9 +566,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     if (succeeded > 0) toast.success(`Deactivated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
     if (failedResults.length > 0) {
       const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+      const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
       toast.error(`Failed to deactivate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
         description: hasRemote500
-          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log."
           : undefined,
         duration: hasRemote500 ? 15000 : 5000,
       });
@@ -576,9 +620,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     if (succeeded > 0) toast.success(`Deleted ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
     if (failedResults.length > 0) {
       const anyRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+      const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
       toast.error(`Failed to delete ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
         description: anyRemote500
-          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
           : undefined,
         duration: anyRemote500 ? 15000 : 5000,
       });
