@@ -243,6 +243,8 @@ trait AdminMenuTrait {
                 'clearLogFailed'  => __('Failed to clear log file.', $pluginSlug),
                 'copied'          => __('Copied!', $pluginSlug),
                 'confirmClearLog' => __('Are you sure you want to clear this log file?', $pluginSlug),
+                'confirmClearAllLogs' => __('Are you sure you want to clear ALL log files for both Riseup Asia and QUpload? This includes file logs and error sessions. This cannot be undone.', $pluginSlug),
+                'clearAllLogsFailed'  => __('Failed to clear all logs.', $pluginSlug),
                 'noStackTrace'    => __('No stack trace available.', $pluginSlug),
                 'noContextData'   => __('No context data', $pluginSlug),
             ),

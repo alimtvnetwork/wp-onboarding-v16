@@ -216,4 +216,70 @@ trait AdminErrorAjaxTrait {
             ResponseKeyType::Count->value    => count($deletedFiles),
         ));
     }
+
+    /**
+     * AJAX handler: Clear ALL log files for both Riseup Asia and QUpload plugins.
+     *
+     * Clears Riseup Asia file logs, DB error sessions, and QUpload file logs if available.
+     */
+    public function ajaxClearAllLogs() {
+        check_ajax_referer(NonceType::Admin->value, 'nonce');
+
+        if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
+            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+        }
+
+        $riseupResult = array('files' => false, 'database' => false, 'error' => '');
+        $quploadResult = array('cleared' => false, 'error' => '');
+
+        // Clear Riseup Asia log files
+        try {
+            $logger = FileLogger::getInstance();
+            $logger->clearAllLogFiles();
+            $riseupResult['files'] = true;
+        } catch (\Throwable $e) {
+            $riseupResult['error'] = $e->getMessage();
+        }
+
+        // Clear Riseup Asia DB error sessions
+        try {
+            $db = Database::getInstance();
+
+            if ($db->isReady()) {
+                $pdo = $db->getPdo();
+
+                if ($pdo !== null) {
+                    $pdo->exec('DELETE FROM ' . TableType::ErrorSessions->value);
+                    $now = DateHelper::nowUtc();
+                    $flashTable = TableType::FlashState->value;
+                    $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '0', '{$now}')");
+                    $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
+                    $riseupResult['database'] = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            $riseupResult['error'] .= ($riseupResult['error'] ? '; ' : '') . $e->getMessage();
+        }
+
+        // Clear QUpload log files if the plugin is active
+        $quploadLoggerClass = 'QUpload\\Logging\\FileLogger';
+
+        if (class_exists($quploadLoggerClass)) {
+            try {
+                $quploadLogger = $quploadLoggerClass::getInstance();
+                $quploadLogger->clearAllLogFiles();
+                $quploadResult['cleared'] = true;
+            } catch (\Throwable $e) {
+                $quploadResult['error'] = $e->getMessage();
+            }
+        } else {
+            $quploadResult['error'] = 'QUpload plugin not active';
+        }
+
+        wp_send_json_success(array(
+            ResponseKeyType::Message->value => 'All logs cleared for both plugins',
+            'riseup'  => $riseupResult,
+            'qupload' => $quploadResult,
+        ));
+    }
 }
