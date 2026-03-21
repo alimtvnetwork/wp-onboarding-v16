@@ -74,6 +74,7 @@ function isRemoteSiteError(err: unknown): boolean {
   return false;
 }
 
+interface RemotePluginsPanelProps {
   site: Site;
   open: boolean;
   onOpenChange: (open: boolean) => void;
