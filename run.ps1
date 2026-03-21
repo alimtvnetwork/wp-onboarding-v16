@@ -306,7 +306,7 @@ if ($help) {
     Write-Host "    .\run.ps1 -u           # Upload default plugin (Riseup Asia API)"
     Write-Host "    .\run.ps1 -q           # Upload default plugin (QUpload API)"
     Write-Host "    .\run.ps1 -u -q        # Upload Riseup Asia Uploader via QUpload"
-    Write-Host "    .\run.ps1 -u -d        # Upload with debug logging"
+    Write-Host "    .\run.ps1 -u -dbg       # Upload with debug logging"
     Write-Host "    .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload specific plugin"
     Write-Host "    .\run.ps1 -q -pp 'wp-plugins/qupload' # Upload specific via QUpload"
     Write-Host ""
