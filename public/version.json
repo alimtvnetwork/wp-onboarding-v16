@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.28.7",
+  "version": "2.29.0",
   "releaseDate": "2026-03-21",
   "gitCommit": "dev",
   "buildTime": "2026-03-21T00:00:00Z",
-  "scriptVersion": "2.28.7",
-  "wpPluginVersion": "2.28.7",
-  "quploadVersion": "2.28.7",
+  "scriptVersion": "2.29.0",
+  "wpPluginVersion": "2.29.0",
+  "quploadVersion": "2.29.0",
   "changelog": [
+    {
+      "version": "2.29.0",
+      "date": "2026-03-21",
+      "title": "Clear All Logs Button & Error History Cleanup",
+      "changes": [
+        "🗑️ New 'Clear All Plugins' button in Remote Logs panel clears logs for both Riseup Asia and QUpload in one click",
+        "🔧 Go backend orchestrates two-step clear (token + confirm) for both plugin namespaces atomically",
+        "🧹 Error History drawer now has configurable cleanup (1h, 6h, 24h, 7d, 30d thresholds)",
+        "📡 New DELETE /sites/{id}/remote-logs/clear-all endpoint",
+        "📡 New DELETE /error-history/clear-old?threshold= endpoint",
+        "🔢 Version bump across all components to 2.29.0"
+      ]
+    },
     {
       "version": "2.28.7",
       "date": "2026-03-21",
