@@ -108,7 +108,7 @@ func UpdateRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.UpdateRemoteUser(r.Context(), siteId, userId, input)
 	if appErr != nil {
-		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
+		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
 		return
 	}
 
