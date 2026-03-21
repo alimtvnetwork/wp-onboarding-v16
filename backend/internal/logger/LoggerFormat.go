@@ -28,6 +28,7 @@ func (l *Logger) buildLogLine(level Level, msg string, caller callerContext, key
 
 	l.writeHeader(&builder, level, msg, caller)
 	writeKeyvals(&builder, level, keyvals)
+	writeLocation(&builder, caller)
 	appendStackIfError(&builder, level)
 
 	if isColorEnabled {
@@ -38,19 +39,22 @@ func (l *Logger) buildLogLine(level Level, msg string, caller callerContext, key
 	return builder.String()
 }
 
-// writeHeader writes the timestamp, package, message, level, and location.
+// writeLocation appends the caller file and line at the end of the log line.
+func writeLocation(b *strings.Builder, caller callerContext) {
+	b.WriteString(fmt.Sprintf(" [%s:%d]", caller.file, caller.line))
+}
+
+// writeHeader writes the timestamp, level, message prefix. Location is appended after keyvals.
 func (l *Logger) writeHeader(b *strings.Builder, level Level, msg string, caller callerContext) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	levelStr := levelNames[level]
 	hasPrefix := l.prefix != ""
 
 	if hasPrefix {
-		b.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, caller.funcName, msg))
+		b.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, levelStr, msg))
 	} else {
-		b.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, caller.funcName, msg))
+		b.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, levelStr, msg))
 	}
-
-	b.WriteString(fmt.Sprintf(" [%s] [%s:%d]", levelStr, caller.file, caller.line))
 }
 
 // writeKeyvals writes key-value pairs in multi-line or compact format.
