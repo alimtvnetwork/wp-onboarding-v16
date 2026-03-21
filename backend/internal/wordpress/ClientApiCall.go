@@ -130,8 +130,8 @@ func isErrorStatus(statusCode int, okStatuses []int) bool {
 	return !isOkStatus(statusCode, okStatuses)
 }
 
-// doApiCall sends a request, checks status, and JSON-decodes the response into T.
-func doApiCall[T any](c *Client, input ApiCallInput) apperror.Result[T] {
+// DoApiCall sends a request, checks status, and JSON-decodes the response into T.
+func DoApiCall[T any](c *Client, input ApiCallInput) apperror.Result[T] {
 	rawResult := c.doApiCallRaw(input)
 	if rawResult.HasError() {
 		return apperror.Fail[T](rawResult.AppError())
