@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -50,6 +50,7 @@ import {
   Upload,
   FileArchive,
   X,
+  GripVertical,
 } from "lucide-react";
 import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { RemotePluginStatus } from "@/lib/constants";
@@ -105,6 +106,40 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Draggable dialog state
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  // Reset drag position when dialog opens
+  useEffect(() => {
+    if (open) setDragOffset({ x: 0, y: 0 });
+  }, [open]);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    // Only drag from the header area, not from buttons/inputs inside it
+    if ((e.target as HTMLElement).closest('button, input, [role="combobox"]')) return;
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging.current) return;
+      setDragOffset({
+        x: moveEvent.clientX - dragStart.current.x,
+        y: moveEvent.clientY - dragStart.current.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [dragOffset]);
 
   // Subscribe to remote plugin WebSocket events for this site
   useRemotePluginEvents(site.id);
@@ -528,9 +563,22 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6">
-          <DialogHeader className="pb-2 shrink-0">
+        <DialogContent
+          className="w-screen h-screen max-w-none max-h-none sm:w-[90vw] sm:h-[90vh] sm:max-w-[1200px] sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6"
+          style={{
+            transform: `translate(calc(-50% + ${dragOffset.x}px), calc(-50% + ${dragOffset.y}px))`,
+          }}
+          onPointerDownOutside={(e) => {
+            // Prevent closing when dragging outside
+            if (isDragging.current) e.preventDefault();
+          }}
+        >
+          <DialogHeader
+            className="pb-2 shrink-0 cursor-move select-none"
+            onMouseDown={handleDragStart}
+          >
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 opacity-50" />
               <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
               <span className="truncate">Plugins on {site.name}</span>
             </DialogTitle>

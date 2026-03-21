@@ -366,6 +366,19 @@ All colors MUST be HSL.
   }
 }
 
+/* Z-index hierarchy: Toast (99999) > Error Modal (9999) > Regular modals (50) */
+
+/* Error modal overlay and content sit above all other dialogs */
+[data-error-modal],
+[data-error-modal] ~ [data-radix-dialog-overlay] {
+  z-index: 9999 !important;
+}
+
+/* Ensure the error modal's portal overlay is above everything except toasts */
+:has(> [data-error-modal]) > [data-radix-dialog-overlay] {
+  z-index: 9998 !important;
+}
+
 /* Ensure Sonner toasts are always clickable above modals/dialogs */
 [data-sonner-toaster] {
   z-index: 99999 !important;
