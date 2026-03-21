@@ -191,9 +191,9 @@ export function BackendSection({
 
 // --- Internal sub-components (not exported — only used within BackendSection) ---
 
-function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent }: {
+function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent, hasDelegatedContent }: {
   error: CapturedError; formatTs: (ts: string) => string;
-  hasStackContent: boolean; hasExecutionContent: boolean;
+  hasStackContent: boolean; hasExecutionContent: boolean; hasDelegatedContent: boolean;
 }) {
   return (
     <>
