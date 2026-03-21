@@ -133,6 +133,14 @@ func (a *ErrorHistoryServiceAdapter) Clear() (int64, *apperror.AppError) {
 	return result.Value(), nil
 }
 
+func (a *ErrorHistoryServiceAdapter) ClearOlderThan(threshold string) (int64, *apperror.AppError) {
+	result := a.Service.ClearOlderThan(threshold)
+	if result.HasError() {
+		return 0, result.AppError()
+	}
+	return result.Value(), nil
+}
+
 func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, *apperror.AppError) {
 	result := a.Service.BulkExport(ids)
 	if result.HasError() {
