@@ -175,5 +175,6 @@ function Invoke-UploadAllSitesMode {
 
     Write-UploadSummary -Results $globalResults -TotalSites $targetSites.Count -TotalPlugins $pluginFolders.Count -FailureLogsDir $(if ($failCount -gt 0) { $uploadLogsDir } else { "" })
 
-    exit $(if ($failCount -eq 0) { 0 } else { 1 })
+    $script:uasExitCode = if ($failCount -eq 0) { 0 } else { 1 }
+    return
 }

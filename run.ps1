@@ -521,6 +521,7 @@ if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
 if ($uas) {
+    $script:uasExitCode = 0
     Invoke-UploadAllSitesMode
 
     # Chain into plugin-status-all if -pas was also given (e.g. .\run.ps1 -uas -pas)
@@ -535,6 +536,8 @@ if ($uas) {
         $script:pluginStatusVerbose = $verbose
         Invoke-PluginStatusMode
     }
+
+    exit $script:uasExitCode
 }
 if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
