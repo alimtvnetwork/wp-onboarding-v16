@@ -75,10 +75,10 @@ type FileContentResponse struct {
 
 // PluginExistsResponse is the response for remote plugin existence checks.
 type PluginExistsResponse struct {
-	IsExists   bool
-	Status     string
-	PluginFile string
-	Plugin     string
+	IsExists   bool   `json:"exists"`      // external key (frontend contract)
+	Status     string `json:"status"`      // external key
+	PluginFile string `json:"plugin_file"` // external key
+	Plugin     string `json:"plugin"`      // external key
 }
 
 // SessionLogsResponse is the response for session log retrieval.

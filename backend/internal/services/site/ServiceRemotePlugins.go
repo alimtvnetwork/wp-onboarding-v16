@@ -125,9 +125,9 @@ func (s *Service) convertSingleUploaderPlugin(siteId int64, p wordpress.Uploader
 	slug := resolvePluginSlug(p)
 	pluginFile := s.resolvePluginFile(siteId, p, slug)
 
-	status := "inactive"
+	status := "Inactive"
 	if p.Active {
-		status = "active"
+		status = "Active"
 	}
 
 	return &RemotePlugin{

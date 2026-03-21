@@ -299,7 +299,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
       // Update cached plugin status from the exists check response (keeps active/inactive fresh)
       if (result.status) {
-        const freshStatus = result.status === "active" ? RemotePluginStatus.Active : RemotePluginStatus.Inactive;
+        const freshStatus = result.status.toLowerCase() === "active" ? RemotePluginStatus.Active : RemotePluginStatus.Inactive;
         queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
           old?.map((p) =>
             p.plugin === pluginIdentifier ? { ...p, status: freshStatus } : p
