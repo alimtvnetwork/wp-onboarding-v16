@@ -27,6 +27,7 @@ type ErrorHistoryServiceInterface interface {
 	GetByErrorId(errorId string) (*models.ErrorHistory, *apperror.AppError)
 	Delete(id int64) *apperror.AppError
 	Clear() (int64, *apperror.AppError)
+	ClearOlderThan(threshold string) (int64, *apperror.AppError)
 	BulkExport(ids []int64) (string, *apperror.AppError)
 	GetStats() (*models.ErrorHistoryStats, *apperror.AppError)
 }
