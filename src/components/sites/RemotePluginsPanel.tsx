@@ -75,6 +75,34 @@ function isRemoteSiteError(err: unknown): boolean {
   return false;
 }
 
+/** Extract the remote WordPress response body from an API error if available. */
+function extractRemoteResponseBody(err: unknown): string | null {
+  if (!isApiClientError(err)) return null;
+  const ctx = err.apiError.context;
+  if (!ctx || typeof ctx !== "object") return null;
+  const body = (ctx as Record<string, unknown>).remoteResponseBody;
+  return typeof body === "string" && body.length > 0 ? body : null;
+}
+
+/** Try to extract a human-readable PHP error snippet from a remote response body. */
+function extractPhpErrorSnippet(body: string): string | null {
+  // Try to parse as JSON first (WordPress REST error envelope)
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed?.message) return parsed.message;
+    if (parsed?.data?.message) return parsed.data.message;
+  } catch {
+    // Not JSON — try extracting from HTML/plain text
+  }
+  // Look for common PHP fatal error patterns
+  const fatalMatch = body.match(/Fatal error:.*?(?:\n|$)/i)
+    || body.match(/Call to undefined (?:method|function).*?(?:\n|$)/i)
+    || body.match(/Class ['"].*?['"] not found/i);
+  if (fatalMatch) return fatalMatch[0].trim();
+  // Truncate raw body as fallback
+  return body.length > 300 ? body.slice(0, 300) + "..." : body;
+}
+
 interface RemotePluginsPanelProps {
   site: Site;
   open: boolean;
