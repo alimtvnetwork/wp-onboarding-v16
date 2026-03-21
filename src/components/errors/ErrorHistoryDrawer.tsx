@@ -142,6 +142,18 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
       toast.success("Error history cleared");
     }
   };
+
+  // Clear old entries by threshold
+  const handleClearOld = async (threshold: string, label: string) => {
+    try {
+      const response = await clearOldErrors(threshold);
+      const count = response?.data?.count ?? 0;
+      setSelectedIds(new Set());
+      toast.success(`Cleared ${count} error(s) older than ${label}`);
+    } catch {
+      toast.error("Failed to clear old errors");
+    }
+  };
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
