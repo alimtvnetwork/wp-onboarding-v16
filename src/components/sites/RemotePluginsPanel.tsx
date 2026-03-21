@@ -481,21 +481,78 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     return filteredPlugins.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPlugins, currentPage]);
 
-  // Check if the Riseup Asia Uploader on the remote site is outdated
-  const uploaderVersionInfo = useMemo(() => {
-    if (!plugins) return null;
+  // Fetch expected versions from version.json
+  const { data: expectedVersions } = useQuery({
+    queryKey: ["version-json"],
+    queryFn: async () => {
+      const resp = await fetch("/version.json");
+      if (!resp.ok) return null;
+      return resp.json() as Promise<VersionJson>;
+    },
+    staleTime: Infinity,
+  });
+
+  // Check if managed plugins on the remote site are outdated
+  const managedPluginVersions = useMemo(() => {
+    if (!plugins || !expectedVersions) return [];
+
+    const checks: Array<{
+      slug: string;
+      label: string;
+      found: boolean;
+      version: string | null;
+      expectedVersion: string;
+      isOutdated: boolean;
+      isActive: boolean;
+    }> = [];
+
+    const uploaderExpected = expectedVersions.wpPluginVersion;
+    const quploadExpected = expectedVersions.quploadVersion;
+
+    // Riseup Asia Uploader
     const uploader = plugins.find(
       (p) => p.slug === UPLOADER_SLUG || p.plugin.startsWith(UPLOADER_SLUG + "/")
     );
-    if (!uploader) return { found: false, version: null, isOutdated: false } as const;
-    const cmp = compareVersions(uploader.version, EXPECTED_UPLOADER_VERSION);
-    return {
-      found: true,
-      version: uploader.version,
-      isOutdated: cmp < 0,
-      isActive: isRemotePluginActive(uploader.status),
-    } as const;
-  }, [plugins]);
+    if (uploader && uploaderExpected) {
+      checks.push({
+        slug: UPLOADER_SLUG,
+        label: "Riseup Asia Uploader",
+        found: true,
+        version: uploader.version,
+        expectedVersion: uploaderExpected,
+        isOutdated: compareVersions(uploader.version, uploaderExpected) < 0,
+        isActive: isRemotePluginActive(uploader.status),
+      });
+    } else if (!uploader && uploaderExpected) {
+      checks.push({
+        slug: UPLOADER_SLUG,
+        label: "Riseup Asia Uploader",
+        found: false,
+        version: null,
+        expectedVersion: uploaderExpected,
+        isOutdated: false,
+        isActive: false,
+      });
+    }
+
+    // QUpload
+    const qupload = plugins.find(
+      (p) => p.slug === QUPLOAD_SLUG || p.plugin.startsWith(QUPLOAD_SLUG + "/")
+    );
+    if (qupload && quploadExpected) {
+      checks.push({
+        slug: QUPLOAD_SLUG,
+        label: "Quick Upload",
+        found: true,
+        version: qupload.version,
+        expectedVersion: quploadExpected,
+        isOutdated: compareVersions(qupload.version, quploadExpected) < 0,
+        isActive: isRemotePluginActive(qupload.status),
+      });
+    }
+
+    return checks;
+  }, [plugins, expectedVersions]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
