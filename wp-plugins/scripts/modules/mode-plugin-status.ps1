@@ -108,7 +108,11 @@ function Invoke-PluginStatusMode {
     Write-PluginStatusSummary -Results $allResults -TotalSites $targetSites.Count -TotalPlugins $pluginFolders.Count -StatusLogsDir $statusLogsDir
 
     $failCount = ($allResults | Where-Object { $_.Status -ne "OK" -and $_.Status -ne "SKIPPED" }).Count
-    exit $(if ($failCount -eq 0) { 0 } else { 1 })
+    $script:pluginStatusExitCode = if ($failCount -eq 0) { 0 } else { 1 }
+
+    # In deploy mode (-d), return to caller instead of exiting so the build & run phase can proceed
+    if ($script:deployMode) { return }
+    exit $script:pluginStatusExitCode
 }
 
 function Test-HasProperty {

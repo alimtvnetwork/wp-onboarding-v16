@@ -429,6 +429,8 @@ if (($pluginstatus -or $pas) -and -not $uas) {
 # DEPLOY MODE: git pull -> upload all sites -> plugin status -> build & run
 # ============================================================================
 if ($deploy) {
+    $script:deployMode = $true
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  DEPLOY MODE (-d)" -ForegroundColor Cyan
@@ -459,15 +461,16 @@ if ($deploy) {
     $script:pluginStatusVerbose = $verbose
     Invoke-PluginStatusMode
 
-    # Phase 4: Continue to regular build & run (fall through)
+    # Phase 4: Continue to regular build & run (fall through to banner + steps 2-5)
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  [Deploy 3/3] Building and starting backend..." -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    # Skip git pull again since we already did it
+    # Skip git pull again in the regular flow since we already did it
     $skippull = $true
+    $script:deployMode = $false
 }
 
 # ============================================================================
