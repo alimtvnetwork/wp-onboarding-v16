@@ -106,6 +106,40 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Draggable dialog state
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  // Reset drag position when dialog opens
+  useEffect(() => {
+    if (open) setDragOffset({ x: 0, y: 0 });
+  }, [open]);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    // Only drag from the header area, not from buttons/inputs inside it
+    if ((e.target as HTMLElement).closest('button, input, [role="combobox"]')) return;
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging.current) return;
+      setDragOffset({
+        x: moveEvent.clientX - dragStart.current.x,
+        y: moveEvent.clientY - dragStart.current.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [dragOffset]);
+
   // Subscribe to remote plugin WebSocket events for this site
   useRemotePluginEvents(site.id);
 
