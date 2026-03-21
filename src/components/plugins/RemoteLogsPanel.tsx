@@ -136,6 +136,39 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
     setClearToken(null);
   };
 
+  // ── Clear All (both plugins) ──────────────────────────────────
+
+  const handleClearAllPlugins = async () => {
+    if (!confirm("Clear all logs for both plugins (Riseup Asia + QUpload)?")) return;
+
+    setIsClearingAll(true);
+
+    try {
+      const response = await api.clearAllRemoteLogs(siteId);
+      const data = response.data;
+
+      if (data) {
+        const rOk = data.riseup?.cleared;
+        const qOk = data.qupload?.cleared;
+
+        if (rOk && qOk) {
+          toast.success("All logs cleared for both plugins");
+        } else {
+          const failures: string[] = [];
+          if (!rOk) failures.push(`Riseup: ${data.riseup?.error || "failed"}`);
+          if (!qOk) failures.push(`QUpload: ${data.qupload?.error || "failed"}`);
+          toast.warning(`Partial clear: ${failures.join("; ")}`);
+        }
+
+        await fetchStatus();
+      }
+    } catch {
+      toast.error("Failed to clear logs for both plugins");
+    } finally {
+      setIsClearingAll(false);
+    }
+  };
+
   // ── Email Logs ────────────────────────────────────────────────
 
   const handleSendEmail = async () => {
