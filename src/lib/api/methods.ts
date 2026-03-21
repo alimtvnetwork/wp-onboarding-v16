@@ -805,4 +805,15 @@ export const api = {
       "/cloud-storage/restore",
       { method: "POST", body: JSON.stringify({ BackupId: backupId }) },
     ),
+
+  // Site settings & health summary
+  getRemoteSiteSettings: (siteId: number) =>
+    request<SiteSettingsResponse>(`/sites/${siteId}/site-settings`),
+  updateRemoteSiteSettings: (siteId: number, settings: Partial<SiteSettingsUpdate>) =>
+    request<SiteSettingsUpdateResponse>(
+      `/sites/${siteId}/site-settings`,
+      { method: "PUT", body: JSON.stringify(settings) },
+    ),
+  getRemoteSiteHealthSummary: (siteId: number) =>
+    request<SiteHealthSummaryResponse>(`/sites/${siteId}/site-health-summary`),
 };
