@@ -8,7 +8,8 @@ import "fmt"
 
 const (
 	// RiseupAsiaNamespace is the REST API namespace for the Riseup Asia Uploader plugin.
-	RiseupAsiaNamespace = "riseup-asia-uploader/v1"
+	// NOTE: The namespace is "riseup-asia-api/v1", NOT "riseup-asia-uploader/v1" (the plugin slug).
+	RiseupAsiaNamespace = "riseup-asia-api/v1"
 
 	// RiseUpUploaderNamespace is the legacy namespace (kept for backward compatibility).
 	RiseUpUploaderNamespace = "riseup-uploader/v1"
