@@ -293,6 +293,7 @@ if ($help) {
     Write-Host ""
     Write-Host "  Build & Run:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1              # Full build and run"
+    Write-Host "    .\run.ps1 -d           # Deploy: git pull, upload all sites, plugin status, build & run"
     Write-Host "    .\run.ps1 -r           # Complete clean reinstall and build"
     Write-Host "    .\run.ps1 -s           # Just start the backend (skip build)"
     Write-Host "    .\run.ps1 -b           # Build only, don't start server"
