@@ -516,7 +516,22 @@ if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
-if ($uas) { Invoke-UploadAllSitesMode }
+if ($uas) {
+    Invoke-UploadAllSitesMode
+
+    # Chain into plugin-status-all if -pas was also given (e.g. .\run.ps1 -uas -pas)
+    if ($pas) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Upload complete — running plugin status check on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        $pluginstatusall = $true
+        $script:errorFlag = $errorlogs
+        $script:pluginStatusVerbose = $verbose
+        Invoke-PluginStatusMode
+    }
+}
 if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
 if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
