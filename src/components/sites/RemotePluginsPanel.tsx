@@ -396,9 +396,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         method: "POST",
       });
       const isRemote500 = isRemoteSiteError(error);
+      const remoteBody = extractRemoteResponseBody(error);
+      const phpSnippet = remoteBody ? extractPhpErrorSnippet(remoteBody) : null;
       toast.error(`Failed to delete ${plugin.name}`, {
         description: isRemote500
-          ? "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
+          ? phpSnippet
+            ? `Remote site error: ${phpSnippet}`
+            : "The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details."
           : "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
         duration: isRemote500 ? 15000 : 10000,
