@@ -239,14 +239,42 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearAll}
-              className="text-destructive hover:text-destructive"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={isClearingOld}
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Clean up
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleClearOld("1h", "1 hour")}>
+                  Older than 1 hour
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("6h", "6 hours")}>
+                  Older than 6 hours
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("24h", "24 hours")}>
+                  Older than 24 hours
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("7d", "7 days")}>
+                  Older than 7 days
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("30d", "30 days")}>
+                  Older than 30 days
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleClearAll}
+                  className="text-destructive focus:text-destructive"
+                >
+                  Clear all
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         
