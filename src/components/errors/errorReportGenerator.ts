@@ -401,6 +401,7 @@ ${error.requestBody ? `### Request Body\n\`\`\`json\n${JSON.stringify(error.requ
 ${backendLogsSection}
 ${backendStackSection}
 ${phpStackFramesSection}
+${(() => { const dl = buildDelegatedLogsSection(error); return dl ? `### Delegated Logs (Remote WordPress)\n\`\`\`\n${dl}\n\`\`\`\n` : ''; })()}
 ${executionChainSection}
 ${framesSection}
 ${error.file ? `### Location\n\`${error.file}:${error.line}\` (${error.function})\n` : ""}
