@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { GripVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -898,6 +899,37 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   const [customTables, setCustomTables] = useState<string[]>([]);
   const [showTablePicker, setShowTablePicker] = useState(false);
   const [restoreMode, setRestoreMode] = useState<"full" | "selective">("full");
+
+  // Draggable dialog state
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (open) setDragOffset({ x: 0, y: 0 });
+  }, [open]);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, [role="combobox"]')) return;
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging.current) return;
+      setDragOffset({
+        x: moveEvent.clientX - dragStart.current.x,
+        y: moveEvent.clientY - dragStart.current.y,
+      });
+    };
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [dragOffset]);
   const [restoreTables, setRestoreTables] = useState<string[]>([]);
 
   // C5: Initial load flag — suppress error on first fetch
@@ -1045,9 +1077,21 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent
+          className="max-w-2xl max-h-[85vh] flex flex-col"
+          style={{
+            transform: `translate(calc(-50% + ${dragOffset.x}px), calc(-50% + ${dragOffset.y}px))`,
+          }}
+          onPointerDownOutside={(e) => {
+            if (isDragging.current) e.preventDefault();
+          }}
+        >
+          <DialogHeader
+            className="pb-2 shrink-0 cursor-move select-none"
+            onMouseDown={handleDragStart}
+          >
             <DialogTitle className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
               <Database className="h-5 w-5 text-primary" />
               Snapshots — {site.name}
               {hasRunningSnapshots && (
