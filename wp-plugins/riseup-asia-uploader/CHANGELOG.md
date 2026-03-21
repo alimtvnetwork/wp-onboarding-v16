@@ -6,6 +6,13 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 
 ---
 
+## [2.28.6] — 2026-03-21
+
+### Critical Namespace Mismatch Fix
+- 🐛 Fixed `RiseupAsiaNamespace` constant using plugin slug instead of API namespace (`riseup-asia-api/v1`)
+- 🔧 Resolved 404 errors on remote-plugins, snapshots, and all Riseup Asia API endpoints
+- 🛠️ Aligned Go backend `Constants.go` with PHP `PluginConfigType::ApiNamespace`
+
 ## [2.28.5] — 2026-03-21
 
 ### Compilation & Error Handling Fixes
