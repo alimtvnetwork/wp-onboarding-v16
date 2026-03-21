@@ -304,10 +304,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
       });
+      const isRemote500 = isRemoteSiteError(error);
       toast.error(`Failed to ${enable ? "activate" : "deactivate"} ${plugin.name}`, {
-        description: "Click for details",
+        description: isRemote500
+          ? `The remote WordPress site returned a server error (500). Check the site's PHP error logs or wp-content/debug.log for details.`
+          : "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
-        duration: 10000,
+        duration: isRemote500 ? 15000 : 10000,
       });
     },
     onSettled: () => {
