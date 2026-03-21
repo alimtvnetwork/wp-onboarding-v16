@@ -51,6 +51,7 @@ export interface EnvelopeErrors {
   Backend?: string[];
   Frontend?: string[];
   DelegatedRequestServer?: DelegatedRequestServer;
+  RemoteResponseBody?: string;
 }
 
 export interface EnvelopeMethodFrame {
