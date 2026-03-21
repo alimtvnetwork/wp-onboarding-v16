@@ -94,6 +94,13 @@ export function BackendSection({
             <Network className="h-3 w-3" />
             Request
           </TabsTrigger>
+          {hasDelegatedContent && (
+            <TabsTrigger value="delegated" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+              <Globe className="h-3 w-3 text-orange-500" />
+              <span className="hidden sm:inline">Delegated</span>
+              <span className="sm:hidden">PHP</span>
+            </TabsTrigger>
+          )}
           {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
             <TabsTrigger value="traversal" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
               <Route className="h-3 w-3" />
