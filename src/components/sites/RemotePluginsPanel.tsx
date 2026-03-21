@@ -66,7 +66,7 @@ import { isApiClientError } from "@/lib/api/client";
 /** Detect if an error is a remote WordPress site 500 (server-side crash). */
 function isRemoteSiteError(err: unknown): boolean {
   if (isApiClientError(err)) {
-    return err.apiError.code === 500 || /status 500/.test(err.message);
+    return String(err.apiError.code) === "500" || /status 500/.test(err.message);
   }
   if (err instanceof Error) {
     return /status 500/.test(err.message);
