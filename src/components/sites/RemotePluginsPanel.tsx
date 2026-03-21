@@ -535,7 +535,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    failedResults.forEach((r) => {
+    const realFailedResults = failedResults.filter((r) => !(r.reason instanceof PreFlightBlockedError));
+    realFailedResults.forEach((r) => {
       captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
         endpoint: `/sites/${site.id}/remote-plugins/enable`,
         method: "POST",
