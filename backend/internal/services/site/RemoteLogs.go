@@ -18,7 +18,7 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 		return nil, appErr
 	}
 
-	result := doApiCall[map[string]any](client, apiCallInput{
+	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.LogsStatus.String(),
 		Operation: operationtype.GetLogsStatus,
