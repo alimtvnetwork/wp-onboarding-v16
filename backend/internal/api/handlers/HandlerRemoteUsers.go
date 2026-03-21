@@ -42,7 +42,7 @@ func GetRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.GetRemoteUser(r.Context(), siteId, userId)
 	if appErr != nil {
-		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
+		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
 		return
 	}
 
