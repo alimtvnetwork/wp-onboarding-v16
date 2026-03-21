@@ -178,7 +178,7 @@ type CleanupStuckResult struct {
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) apperror.Result[SnapshotCleanupResult] {
 	return DoApiCall[SnapshotCleanupResult](c, ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsCleanup),
 		Body:      opts,
 		Operation: operation.SnapshotCleanup,
 	})
