@@ -107,6 +107,8 @@ export function useErrorHistory() {
     saveError,
     deleteError: deleteMutation.mutate,
     clearErrors: clearMutation.mutate,
+    clearOldErrors: clearOldMutation.mutateAsync,
+    isClearingOld: clearOldMutation.isPending,
     exportErrors: exportMutation.mutateAsync,
     isExporting: exportMutation.isPending,
   };

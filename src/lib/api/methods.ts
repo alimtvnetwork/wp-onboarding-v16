@@ -710,6 +710,8 @@ export const api = {
     request<{ deleted: boolean; id: number }>(`/error-history/${id}`, { method: "DELETE" }),
   clearErrorHistory: () =>
     request<{ cleared: boolean; deleted: number }>("/error-history", { method: "DELETE" }),
+  clearOldErrorHistory: (threshold: string) =>
+    request<{ cleared: boolean; count: number }>(`/error-history/clear-old?threshold=${encodeURIComponent(threshold)}`, { method: "DELETE" }),
   bulkExportErrorHistory: (ids: number[]) =>
     request<{ report: string; count: number }>("/error-history/bulk-export", { 
       method: "POST", 
