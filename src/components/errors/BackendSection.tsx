@@ -49,12 +49,14 @@ export function BackendSection({
   const sessionGoFrames = sessionDiag?.stackTrace?.golang;
   const sessionPhpFrames = sessionDiag?.stackTrace?.php;
 
-  const hasStackContent = phpStackFrames.length > 0 
-    || !!error.backendStackTrace 
+  const hasStackContent = !!error.backendStackTrace 
     || (envelopeBackendStack && envelopeBackendStack.length > 0)
+    || (sessionGoFrames && sessionGoFrames.length > 0);
+
+  const hasDelegatedContent = phpStackFrames.length > 0
     || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
     || (delegatedStackTrace && delegatedStackTrace.length > 0)
-    || (sessionGoFrames && sessionGoFrames.length > 0)
+    || !!delegatedServer
     || (sessionPhpFrames && sessionPhpFrames.length > 0)
     || !!sessionDiag?.phpStackTraceLog;
 
