@@ -544,11 +544,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Activated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) {
-      const hasRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
-      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+    if (realFailedResults.length > 0) {
+      const hasRemote500 = realFailedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = realFailedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
       const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
-      toast.error(`Failed to activate ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+      toast.error(`Failed to activate ${realFailedResults.length} plugin${realFailedResults.length !== 1 ? "s" : ""}`, {
         description: hasRemote500
           ? phpSnippet
             ? `Remote site error: ${phpSnippet}`
