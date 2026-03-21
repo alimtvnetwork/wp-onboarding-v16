@@ -665,6 +665,16 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0 h-8 w-8 sm:h-9 sm:w-9" title="Refresh (may use cache)">
                 <RefreshCw className={`h-4 w-4 shrink-0 will-change-transform ${isFetching ? "animate-spin" : ""}`} />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebugLogs(true)}
+                className="shrink-0 gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
+                title="View remote PHP debug logs"
+              >
+                <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Debug</span> Logs
+              </Button>
             </div>
           </div>
 
