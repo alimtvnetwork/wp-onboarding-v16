@@ -181,6 +181,7 @@ func registerHistoryRoutes(api *mux.Router) {
 	api.HandleFunc("/error-history", handlers.ListErrorHistory).Methods("GET")
 	api.HandleFunc("/error-history", handlers.SaveErrorHistory).Methods("POST")
 	api.HandleFunc("/error-history", handlers.ClearErrorHistory).Methods("DELETE")
+	api.HandleFunc("/error-history/clear-old", handlers.ClearOldErrorHistory).Methods("DELETE")
 	api.HandleFunc("/error-history/stats", handlers.GetErrorHistoryStats).Methods("GET")
 	api.HandleFunc("/error-history/bulk-export", handlers.BulkExportErrorHistory).Methods("POST")
 	api.HandleFunc("/error-history/{id}", handlers.GetErrorHistoryById).Methods("GET")
