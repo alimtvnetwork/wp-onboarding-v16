@@ -1,5 +1,5 @@
 import { CapturedError } from '@/stores/errorStore';
-import type { ErrorDiagnosticContext, SessionStackFrame, SessionDiagnostics, EnvelopeMethodFrame } from '@/lib/api';
+import type { ErrorDiagnosticContext, SessionStackFrame, SessionDiagnostics, EnvelopeMethodFrame, DelegatedRequestServer } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -49,12 +49,14 @@ export function BackendSection({
   const sessionGoFrames = sessionDiag?.stackTrace?.golang;
   const sessionPhpFrames = sessionDiag?.stackTrace?.php;
 
-  const hasStackContent = phpStackFrames.length > 0 
-    || !!error.backendStackTrace 
+  const hasStackContent = !!error.backendStackTrace 
     || (envelopeBackendStack && envelopeBackendStack.length > 0)
+    || (sessionGoFrames && sessionGoFrames.length > 0);
+
+  const hasDelegatedContent = phpStackFrames.length > 0
     || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
     || (delegatedStackTrace && delegatedStackTrace.length > 0)
-    || (sessionGoFrames && sessionGoFrames.length > 0)
+    || !!delegatedServer
     || (sessionPhpFrames && sessionPhpFrames.length > 0)
     || !!sessionDiag?.phpStackTraceLog;
 
@@ -92,6 +94,13 @@ export function BackendSection({
             <Network className="h-3 w-3" />
             Request
           </TabsTrigger>
+          {hasDelegatedContent && (
+            <TabsTrigger value="delegated" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+              <Globe className="h-3 w-3 text-orange-500" />
+              <span className="hidden sm:inline">Delegated</span>
+              <span className="sm:hidden">PHP</span>
+            </TabsTrigger>
+          )}
           {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
             <TabsTrigger value="traversal" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
               <Route className="h-3 w-3" />
@@ -130,16 +139,12 @@ export function BackendSection({
         />
       </TabsContent>
 
-      {/* Stack Traces Tab */}
+      {/* Stack Traces Tab (Go only) */}
       <TabsContent value="stack" className="space-y-4 m-0">
         <StackContent
           error={error}
-          phpStackFrames={phpStackFrames}
           envelopeBackendStack={envelopeBackendStack}
-          envelopeDelegatedStack={envelopeDelegatedStack}
           sessionGoFrames={sessionGoFrames}
-          sessionPhpFrames={sessionPhpFrames}
-          sessionDiag={sessionDiag}
           sessionLoading={sessionLoading}
           hasStackContent={hasStackContent}
           copySection={copySection}
@@ -157,6 +162,22 @@ export function BackendSection({
       <TabsContent value="request" className="space-y-4 m-0">
         <RequestDetails error={error} copySection={copySection} sessionDiagnostics={sessionDiag} />
       </TabsContent>
+
+      {/* Delegated Logs Tab (PHP) */}
+      {hasDelegatedContent && (
+        <TabsContent value="delegated" className="space-y-4 m-0">
+          <DelegatedContent
+            error={error}
+            phpStackFrames={phpStackFrames}
+            envelopeDelegatedStack={envelopeDelegatedStack}
+            delegatedServer={delegatedServer}
+            sessionPhpFrames={sessionPhpFrames}
+            sessionDiag={sessionDiag}
+            sessionLoading={sessionLoading}
+            copySection={copySection}
+          />
+        </TabsContent>
+      )}
 
       {/* Traversal Tab */}
       {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
@@ -458,135 +479,16 @@ function ExecutionContent({ error, envelopeMethodsBackend, hasExecutionContent, 
   );
 }
 
-function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDelegatedStack, sessionGoFrames, sessionPhpFrames, sessionDiag, sessionLoading, hasStackContent, copySection }: {
+function StackContent({ error, envelopeBackendStack, sessionGoFrames, sessionLoading, hasStackContent, copySection }: {
   error: CapturedError;
-  phpStackFrames: PHPStackFrame[];
   envelopeBackendStack: string[] | undefined;
-  envelopeDelegatedStack: string[] | undefined;
   sessionGoFrames: SessionStackFrame[] | undefined;
-  sessionPhpFrames: SessionStackFrame[] | undefined;
-  sessionDiag: SessionDiagnostics | undefined;
   sessionLoading: boolean;
   hasStackContent: boolean;
   copySection: (label: string, content: string) => void;
 }) {
   return (
     <>
-      {envelopeDelegatedStack && envelopeDelegatedStack.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              PHP Delegated Error Stack ({envelopeDelegatedStack.length} lines)
-            </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("PHP delegated stack", envelopeDelegatedStack.join('\n'))}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
-              {envelopeDelegatedStack.join('\n')}
-            </pre>
-          </ScrollArea>
-        </div>
-      )}
-
-      {/* DelegatedRequestServer.StackTrace — PHP stack from the delegated 3rd-party server */}
-      {error.envelopeErrors?.DelegatedRequestServer?.StackTrace && error.envelopeErrors.DelegatedRequestServer.StackTrace.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              PHP Stack Trace — Delegated Server ({error.envelopeErrors.DelegatedRequestServer.StackTrace.length} frames)
-              {error.envelopeErrors.DelegatedRequestServer.DelegatedEndpoint && (
-                <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono truncate max-w-[250px]">
-                  {error.envelopeErrors.DelegatedRequestServer.DelegatedEndpoint}
-                </code>
-              )}
-            </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated PHP stack", error.envelopeErrors!.DelegatedRequestServer!.StackTrace!.join('\n'))}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          {error.envelopeErrors.DelegatedRequestServer.StatusCode && (
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant={error.envelopeErrors.DelegatedRequestServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs">
-                {error.envelopeErrors.DelegatedRequestServer.Method} {error.envelopeErrors.DelegatedRequestServer.StatusCode}
-              </Badge>
-              {error.envelopeErrors.DelegatedRequestServer.AdditionalMessages && (
-                <span className="text-xs text-muted-foreground truncate">{error.envelopeErrors.DelegatedRequestServer.AdditionalMessages}</span>
-              )}
-            </div>
-          )}
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
-              {error.envelopeErrors.DelegatedRequestServer.StackTrace.join('\n')}
-            </pre>
-          </ScrollArea>
-          {error.envelopeErrors.DelegatedRequestServer.Response && (
-            <details className="mt-2">
-              <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground">
-                PHP Response Body
-              </summary>
-              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all mt-1 rounded-md border bg-muted">
-                {typeof error.envelopeErrors.DelegatedRequestServer.Response === 'string'
-                  ? error.envelopeErrors.DelegatedRequestServer.Response
-                  : JSON.stringify(error.envelopeErrors.DelegatedRequestServer.Response, null, 2)}
-              </pre>
-            </details>
-          )}
-        </div>
-      )}
-
-
-      {phpStackFrames.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              PHP Stack Trace ({phpStackFrames.length} frames)
-            </h4>
-            <Button variant="ghost" size="sm" onClick={() => {
-              const text = phpStackFrames.map((f, i) => {
-                const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
-                return `#${i} ${fn}() at ${f.file || f.fileBase || 'unknown'}:${f.line || '?'}`;
-              }).join('\n');
-              copySection("PHP stack trace", text);
-            }}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="border rounded-md overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-orange-500/10">
-                <tr>
-                  <th className="text-left p-2 font-medium text-muted-foreground">#</th>
-                  <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
-                  <th className="text-left p-2 font-medium text-muted-foreground">File</th>
-                  <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
-                </tr>
-              </thead>
-              <tbody>
-                {phpStackFrames.map((frame, index) => (
-                  <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-orange-500/5")}>
-                    <td className="p-2 font-mono text-muted-foreground">{index}</td>
-                    <td className="p-2 font-mono">
-                      <span className={cn(index === 0 && "text-orange-600 dark:text-orange-400 font-semibold")}>
-                        {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
-                      </span>
-                    </td>
-                    <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
-                      {frame.fileBase || frame.file || 'unknown'}
-                    </td>
-                    <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {envelopeBackendStack && envelopeBackendStack.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -657,6 +559,205 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
         </div>
       )}
 
+      {sessionLoading && !hasStackContent && (
+        <div className="text-center py-4 text-muted-foreground">
+          <RefreshCw className="h-5 w-5 mx-auto mb-1 animate-spin" />
+          <p className="text-xs">Loading session stack traces...</p>
+        </div>
+      )}
+
+      {!hasStackContent && !sessionLoading && (
+        <div className="text-center py-8 text-muted-foreground">
+          <Code2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No Go stack traces available</p>
+          <p className="text-xs mt-1">Enable <strong>includeStackTrace</strong> in Settings → Developer for Go stacks</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function DelegatedContent({ error, phpStackFrames, envelopeDelegatedStack, delegatedServer, sessionPhpFrames, sessionDiag, sessionLoading, copySection }: {
+  error: CapturedError;
+  phpStackFrames: PHPStackFrame[];
+  envelopeDelegatedStack: string[] | undefined;
+  delegatedServer: DelegatedRequestServer | undefined;
+  sessionPhpFrames: SessionStackFrame[] | undefined;
+  sessionDiag: SessionDiagnostics | undefined;
+  sessionLoading: boolean;
+  copySection: (label: string, content: string) => void;
+}) {
+  const delegatedStackTrace = delegatedServer?.StackTrace;
+
+  return (
+    <>
+      {/* Delegated Request Info */}
+      {delegatedServer && (
+        <div className="rounded-md border border-orange-500/30 bg-orange-500/5 p-3 space-y-2">
+          <h4 className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Globe className="h-3 w-3" />
+            Delegated PHP Server
+          </h4>
+          <div className="font-mono text-xs break-all">
+            <Badge variant={delegatedServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs mr-2">
+              {delegatedServer.Method} {delegatedServer.StatusCode}
+            </Badge>
+            <span>{delegatedServer.DelegatedEndpoint}</span>
+          </div>
+          {delegatedServer.AdditionalMessages && (
+            <p className="text-xs text-muted-foreground">{delegatedServer.AdditionalMessages}</p>
+          )}
+        </div>
+      )}
+
+      {/* PHP Stack Trace (structured frames) */}
+      {phpStackFrames.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              PHP Stack Trace ({phpStackFrames.length} frames)
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => {
+              const text = phpStackFrames.map((f, i) => {
+                const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
+                return `#${i} ${fn}() at ${f.file || f.fileBase || 'unknown'}:${f.line || '?'}`;
+              }).join('\n');
+              copySection("PHP stack trace", text);
+            }}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="border rounded-md overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-orange-500/10">
+                <tr>
+                  <th className="text-left p-2 font-medium text-muted-foreground">#</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                  <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
+                </tr>
+              </thead>
+              <tbody>
+                {phpStackFrames.map((frame, index) => (
+                  <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-orange-500/5")}>
+                    <td className="p-2 font-mono text-muted-foreground">{index}</td>
+                    <td className="p-2 font-mono">
+                      <span className={cn(index === 0 && "text-orange-600 dark:text-orange-400 font-semibold")}>
+                        {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
+                      </span>
+                    </td>
+                    <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
+                      {frame.fileBase || frame.file || 'unknown'}
+                    </td>
+                    <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* DelegatedRequestServer.StackTrace */}
+      {delegatedStackTrace && delegatedStackTrace.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              PHP Stack Trace — Delegated Server ({delegatedStackTrace.length} frames)
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated PHP stack", delegatedStackTrace.join('\n'))}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+              {delegatedStackTrace.join('\n')}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* DelegatedServiceErrorStack */}
+      {envelopeDelegatedStack && envelopeDelegatedStack.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              PHP Delegated Error Stack ({envelopeDelegatedStack.length} lines)
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("PHP delegated stack", envelopeDelegatedStack.join('\n'))}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+              {envelopeDelegatedStack.join('\n')}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* PHP Response Body */}
+      {delegatedServer?.Response && (
+        <div>
+          <details>
+            <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              PHP Response Body
+            </summary>
+            <div className="mt-2 relative">
+              <Button variant="ghost" size="sm" className="absolute top-1 right-1" onClick={() => {
+                const text = typeof delegatedServer.Response === 'string'
+                  ? delegatedServer.Response
+                  : JSON.stringify(delegatedServer.Response, null, 2);
+                copySection("PHP response body", text);
+              }}>
+                <Copy className="h-4 w-4" />
+              </Button>
+              <ScrollArea className="h-[200px] rounded-md border bg-muted">
+                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+                  {typeof delegatedServer.Response === 'string'
+                    ? delegatedServer.Response
+                    : JSON.stringify(delegatedServer.Response, null, 2)}
+                </pre>
+              </ScrollArea>
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* Request Body sent to PHP */}
+      {delegatedServer?.RequestBody && (
+        <div>
+          <details>
+            <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              Request Body (sent to PHP)
+            </summary>
+            <div className="mt-2 relative">
+              <Button variant="ghost" size="sm" className="absolute top-1 right-1" onClick={() => {
+                const text = typeof delegatedServer.RequestBody === 'string'
+                  ? delegatedServer.RequestBody
+                  : JSON.stringify(delegatedServer.RequestBody, null, 2);
+                copySection("PHP request body", text);
+              }}>
+                <Copy className="h-4 w-4" />
+              </Button>
+              <ScrollArea className="h-[200px] rounded-md border bg-muted">
+                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+                  {typeof delegatedServer.RequestBody === 'string'
+                    ? delegatedServer.RequestBody
+                    : JSON.stringify(delegatedServer.RequestBody, null, 2)}
+                </pre>
+              </ScrollArea>
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* PHP Stack (Session) */}
       {sessionPhpFrames && sessionPhpFrames.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -685,6 +786,7 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
         </div>
       )}
 
+      {/* PHP Log (stacktrace.txt) */}
       {sessionDiag?.phpStackTraceLog && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -704,18 +806,10 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
         </div>
       )}
 
-      {sessionLoading && !hasStackContent && (
+      {sessionLoading && (
         <div className="text-center py-4 text-muted-foreground">
           <RefreshCw className="h-5 w-5 mx-auto mb-1 animate-spin" />
-          <p className="text-xs">Loading session stack traces...</p>
-        </div>
-      )}
-
-      {!hasStackContent && !sessionLoading && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Code2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No backend stack traces available</p>
-          <p className="text-xs mt-1">Enable <strong>includeStackTrace</strong> in Settings → Developer for Go/PHP stacks</p>
+          <p className="text-xs">Loading PHP session data...</p>
         </div>
       )}
     </>
