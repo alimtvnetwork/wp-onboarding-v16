@@ -99,7 +99,7 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 		return nil, appErr
 	}
 
-	result := doApiCall[map[string]any](client, apiCallInput{
+	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  ep.LogsEmail.String(),
 		Body:      body,
