@@ -163,7 +163,7 @@ trait PluginLifecycleHelpersTrait
             $context
         );
 
-        $this->logActivity(PluginConfigType::LogPrefix->value . ' Plugin lifecycle', $entry);
+        $this->fileLogger->info(PluginConfigType::LogPrefix->value . ' Plugin lifecycle', $entry);
     }
 
     /**
