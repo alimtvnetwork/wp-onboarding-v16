@@ -56,7 +56,7 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any
 		return nil, appErr
 	}
 
-	result := doApiCall[map[string]any](client, apiCallInput{
+	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  ep.LogsClear.String(),
 		Operation: operationtype.RequestLogsClear,
