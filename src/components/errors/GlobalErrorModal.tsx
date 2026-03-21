@@ -16,6 +16,57 @@ import { BackendSection } from "./BackendSection";
 import { FrontendSection } from "./FrontendSection";
 import { DownloadDropdown, CopyDropdown } from "./ErrorModalActions";
 
+/**
+ * Parse PHP stack trace frames from a raw remoteResponseBody string.
+ * The body is typically a JSON string from WordPress containing error data
+ * with stack traces like: #0 /path/file.php(42): Class->method()
+ */
+function parsePhpStackFromRemoteBody(raw: string): PHPStackFrame[] {
+  try {
+    // Try to extract the stack trace text — it may be in data.error.message or raw
+    let traceText = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      const errMsg = parsed?.data?.error?.message;
+      if (typeof errMsg === 'string') traceText = errMsg;
+    } catch { /* use raw */ }
+
+    // Match PHP stack trace lines: #N /path/to/file.php(line): Class->method() or function()
+    const frameRegex = /#(\d+)\s+([^\s(]+?)(?:\((\d+)\))?:\s*(.+)/g;
+    const frames: PHPStackFrame[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = frameRegex.exec(traceText)) !== null) {
+      const filePath = match[2];
+      const line = match[3] ? parseInt(match[3], 10) : undefined;
+      const call = match[4]?.trim() || 'unknown';
+
+      // Split class::method or class->method
+      let cls: string | undefined;
+      let fn: string = call;
+      const classMatch = call.match(/^(.+?)(?:::|->\s*)(.+?)(\(.*\))?$/);
+      if (classMatch) {
+        cls = classMatch[1];
+        fn = classMatch[2].replace(/\(\)$/, '');
+      } else {
+        fn = call.replace(/\(\)$/, '').replace(/\(.*\)$/, '');
+      }
+
+      frames.push({
+        file: filePath,
+        fileBase: filePath.split('/').pop(),
+        line,
+        function: fn,
+        class: cls,
+      });
+    }
+
+    return frames;
+  } catch {
+    return [];
+  }
+}
+
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal, errorQueue, currentQueueIndex, navigateQueue, getQueuedErrorsMarkdown } = useErrorStore();
   const { data: versionInfo } = useVersionInfo();
@@ -38,9 +89,15 @@ export function GlobalErrorModal() {
   const phpStackFrames: PHPStackFrame[] = (() => {
     const ctx = selectedError?.context;
     if (!ctx) return [];
+    // 1. Pre-parsed frames from backend
     if (Array.isArray(ctx.stackTraceFrames)) return ctx.stackTraceFrames as PHPStackFrame[];
     const errorDetails = ctx.errorDetails;
     if (errorDetails && Array.isArray(errorDetails.stackTraceFrames)) return errorDetails.stackTraceFrames as PHPStackFrame[];
+    // 2. Parse from remoteResponseBody (raw PHP error JSON embedded in delegated response)
+    const rawBody = ctx.remoteResponseBody;
+    if (typeof rawBody === 'string' && rawBody.length > 0) {
+      return parsePhpStackFromRemoteBody(rawBody);
+    }
     return [];
   })();
   

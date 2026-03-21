@@ -53,12 +53,15 @@ export function BackendSection({
     || (envelopeBackendStack && envelopeBackendStack.length > 0)
     || (sessionGoFrames && sessionGoFrames.length > 0);
 
+  const hasRemoteResponseBody = typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0;
+
   const hasDelegatedContent = phpStackFrames.length > 0
     || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
     || (delegatedStackTrace && delegatedStackTrace.length > 0)
     || !!delegatedServer
     || (sessionPhpFrames && sessionPhpFrames.length > 0)
-    || !!sessionDiag?.phpStackTraceLog;
+    || !!sessionDiag?.phpStackTraceLog
+    || hasRemoteResponseBody;
 
   const hasExecutionContent = (error.backendLogs && error.backendLogs.length > 0)
     || (envelopeMethodsBackend && envelopeMethodsBackend.length > 0);
@@ -809,6 +812,34 @@ function DelegatedContent({ error, phpStackFrames, envelopeDelegatedStack, deleg
               {sessionDiag.phpStackTraceLog}
             </pre>
           </ScrollArea>
+        </div>
+      )}
+
+      {/* Raw remoteResponseBody fallback (when no DelegatedRequestServer.Response) */}
+      {!delegatedServer?.Response && typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0 && (
+        <div>
+          <details open={phpStackFrames.length === 0}>
+            <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
+              <Globe className="h-4 w-4 text-orange-500" />
+              Remote Response Body (raw)
+            </summary>
+            <div className="mt-2 relative">
+              <Button variant="ghost" size="sm" className="absolute top-1 right-1 z-10" onClick={() => copySection("Remote response body", error.context!.remoteResponseBody as string)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+              <ScrollArea className="h-[250px] rounded-md border bg-orange-500/5">
+                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+                  {(() => {
+                    try {
+                      return JSON.stringify(JSON.parse(error.context!.remoteResponseBody as string), null, 2);
+                    } catch {
+                      return error.context!.remoteResponseBody as string;
+                    }
+                  })()}
+                </pre>
+              </ScrollArea>
+            </div>
+          </details>
         </div>
       )}
 
