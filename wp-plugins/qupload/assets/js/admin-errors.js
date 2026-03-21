@@ -29,6 +29,7 @@
         $('#btn-copy-log').on('click', copyLogToClipboard);
         $('#btn-download-log').on('click', downloadLogFile);
         $('#btn-clear-log').on('click', clearLogFile);
+        $('#btn-clear-all-logs').on('click', clearAllLogs);
         $('#chk-auto-refresh').on('change', toggleAutoRefresh);
     }
 
