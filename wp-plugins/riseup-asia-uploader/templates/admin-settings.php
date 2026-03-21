@@ -119,17 +119,17 @@ $pluginSlug = PluginConfigType::Slug->value;
                         <td><?php esc_html_e('List all plugins', $pluginSlug); ?></td>
                     </tr>
                     <tr>
-                        <td><span class="riseup-method-badge method-put">PUT</span></td>
+                        <td><span class="riseup-method-badge method-post">POST</span></td>
                         <td><code><?php echo esc_html(EndpointType::PluginEnable->route()); ?></code></td>
                         <td><?php esc_html_e('Activate a plugin', $pluginSlug); ?></td>
                     </tr>
                     <tr>
-                        <td><span class="riseup-method-badge method-put">PUT</span></td>
+                        <td><span class="riseup-method-badge method-post">POST</span></td>
                         <td><code><?php echo esc_html(EndpointType::PluginDisable->route()); ?></code></td>
                         <td><?php esc_html_e('Deactivate a plugin', $pluginSlug); ?></td>
                     </tr>
                     <tr>
-                        <td><span class="riseup-method-badge method-delete">DELETE</span></td>
+                        <td><span class="riseup-method-badge method-post">POST</span></td>
                         <td><code><?php echo esc_html(EndpointType::PluginDelete->route()); ?></code></td>
                         <td><?php esc_html_e('Delete a plugin', $pluginSlug); ?></td>
                     </tr>
