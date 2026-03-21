@@ -6,6 +6,16 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 
 ---
 
+## [2.29.0] — 2026-03-21
+
+### Clear All Logs Button & Error History Cleanup
+- 🗑️ New "Clear All Plugins" button clears logs for both Riseup Asia and QUpload in one click
+- 🔧 Go backend orchestrates two-step clear for both plugin namespaces atomically
+- 🧹 Error History drawer now has configurable cleanup thresholds (1h–30d)
+- 🔢 Version bump to 2.29.0
+
+---
+
 ## [2.28.7] — 2026-03-21
 
 ### HTML Response Detection & Endpoint Mismatch Error Improvement
