@@ -44,7 +44,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
-		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Body:       NewPluginSlugRequest(normalizedSlug),
 		Operation:  input.Operation,
 		PluginSlug: normalizedSlug,
 		ErrorCode:  input.ErrorCode,
@@ -70,7 +70,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*Plug
 	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
-		Body:       PluginSlugRequest{Plugin: normalizedSlug},
+		Body:       NewPluginSlugRequest(normalizedSlug),
 		Operation:  operationtype.CheckPluginExists,
 		PluginSlug: normalizedSlug,
 		ErrorCode:  apperror.ErrWPConnection,
@@ -212,7 +212,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]Uploa
 	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
-		Body:       PluginSlugRequest{Plugin: slug},
+		Body:       NewPluginSlugRequest(slug),
 		Operation:  operationtype.ListPluginFiles,
 		PluginSlug: slug,
 		ErrorCode:  apperror.ErrWPPluginGet,
