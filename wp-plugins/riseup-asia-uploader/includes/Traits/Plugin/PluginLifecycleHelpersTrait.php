@@ -110,7 +110,7 @@ trait PluginLifecycleHelpersTrait
     private function findPluginFileBySlug(string $slug, array $plugins): ?string
     {
         foreach ($plugins as $file => $data) {
-            if (str_starts_with($file, $slug . '/')) {
+            if (strpos($file, $slug . '/') === 0) {
                 return $file;
             }
         }
