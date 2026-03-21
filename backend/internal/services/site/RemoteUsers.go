@@ -25,7 +25,7 @@ func (s *Service) ListRemoteUsers(ctx context.Context, siteId int64, query strin
 		endpoint += "?" + query
 	}
 
-	result := doApiCall[any](client, apiCallInput{
+	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ListUsers,
@@ -46,7 +46,7 @@ func (s *Service) GetRemoteUser(ctx context.Context, siteId int64, userId string
 
 	endpoint := ep.Users.String() + "/" + userId
 
-	result := doApiCall[wordpress.UserResponse](client, apiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserResponse](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.GetUser,
@@ -65,7 +65,7 @@ func (s *Service) CreateRemoteUser(ctx context.Context, siteId int64, input word
 		return nil, appErr
 	}
 
-	result := doApiCall[wordpress.UserCreateResult](client, apiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserCreateResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  ep.Users.String(),
 		Operation: operationtype.CreateUser,
@@ -87,7 +87,7 @@ func (s *Service) UpdateRemoteUser(ctx context.Context, siteId int64, userId str
 
 	endpoint := ep.Users.String() + "/" + userId
 
-	result := doApiCall[wordpress.UserUpdateResult](client, apiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserUpdateResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Put,
 		Endpoint:  endpoint,
 		Operation: operationtype.UpdateUser,
@@ -114,7 +114,7 @@ func (s *Service) DeleteRemoteUser(ctx context.Context, siteId int64, userId str
 		endpoint += "?reassign=" + reassign
 	}
 
-	result := doApiCall[wordpress.UserDeleteResult](client, apiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserDeleteResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  endpoint,
 		Operation: operationtype.DeleteUser,

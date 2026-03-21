@@ -18,7 +18,7 @@ func (s *Service) CreateRemoteAppPassword(ctx context.Context, siteId int64, inp
 		return nil, appErr
 	}
 
-	result := doApiCall[wordpress.AppPasswordCreateResult](client, apiCallInput{
+	result := wordpress.DoApiCall[wordpress.AppPasswordCreateResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  ep.UserAppPassword.String(),
 		Operation: operationtype.CreateAppPassword,
@@ -38,7 +38,7 @@ func (s *Service) RevokeRemoteAppPassword(ctx context.Context, siteId int64, inp
 		return nil, appErr
 	}
 
-	result := doApiCall[map[string]any](client, apiCallInput{
+	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  ep.UserAppPassword.String(),
 		Operation: operationtype.RevokeAppPassword,
@@ -65,7 +65,7 @@ func (s *Service) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query 
 		endpoint += "?" + query
 	}
 
-	result := doApiCall[any](client, apiCallInput{
+	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ExportUsersCsv,
@@ -84,7 +84,7 @@ func (s *Service) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (an
 		return nil, appErr
 	}
 
-	result := doApiCall[any](client, apiCallInput{
+	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.UsersExportSqlite.String(),
 		Operation: operationtype.ExportUsersSqlite,
