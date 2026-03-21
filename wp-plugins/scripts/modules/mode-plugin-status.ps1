@@ -59,6 +59,7 @@ function Invoke-PluginStatusMode {
 
     if ($pluginFolders.Count -eq 0) {
         Write-Host "No plugins found." -ForegroundColor Yellow
+        if ($script:deployMode) { return }
         exit 0
     }
 
