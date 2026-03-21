@@ -263,7 +263,7 @@ type logFileContentInput struct {
 	FileStat *pathutil.FileInfo
 }
 
-// respondLogFileContent reads file and responds with LogFileResponse.
+// respondLogFileContent reads file and responds with LogFileResponse (filtered to current session).
 func respondLogFileContent(w http.ResponseWriter, input logFileContentInput) {
 	content, err := os.ReadFile(input.Path)
 	if err != nil {
@@ -272,8 +272,10 @@ func respondLogFileContent(w http.ResponseWriter, input logFileContentInput) {
 		return
 	}
 
+	filtered := filterToCurrentSession(string(content))
+
 	respondSuccess(w, LogFileResponse{
-		Content:    string(content),
+		Content:    filtered,
 		Filename:   input.Filename,
 		Size:       input.FileStat.Info.Size(),
 		ModifiedAt: input.FileStat.Info.ModTime().Format(time.RFC3339),
