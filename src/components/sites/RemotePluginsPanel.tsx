@@ -122,10 +122,14 @@ interface RemotePluginsPanelProps {
 
 const ITEMS_PER_PAGE = 10;
 
-// The expected latest version of the Riseup Asia Uploader plugin.
-// Keep this in sync with wp-plugins/riseup-asia-uploader/includes/constants.php RISEUP_VERSION.
-const EXPECTED_UPLOADER_VERSION = "1.21.0";
+// Plugin slugs for managed plugins
 const UPLOADER_SLUG = "riseup-asia-uploader";
+const QUPLOAD_SLUG = "qupload";
+
+interface VersionJson {
+  wpPluginVersion: string;
+  quploadVersion: string;
+}
 
 // Format relative time (e.g., "2m ago", "1h ago")
 function formatTimeAgo(date: Date): string {
