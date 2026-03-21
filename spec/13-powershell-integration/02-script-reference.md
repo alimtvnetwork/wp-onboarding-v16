@@ -110,6 +110,9 @@
 # Run Go backend tests
 .\run.ps1 -t
 
+# Full deploy: git pull, upload all sites, plugin status, then build & run
+.\run.ps1 -d
+
 # Verbose output for debugging
 .\run.ps1 -v
 ```
