@@ -146,6 +146,9 @@ var variantLabels = [...]string{
 	ImportUsersCsv:            "ImportUsersCsv",
 	ExportUsersSqlite:         "ExportUsersSqlite",
 	ImportUsersSqlite:         "ImportUsersSqlite",
+	GetSiteSettings:           "GetSiteSettings",
+	UpdateSiteSettings:        "UpdateSiteSettings",
+	GetSiteHealthSummary:      "GetSiteHealthSummary",
 }
 
 var variantValues = [...]string{
