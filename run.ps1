@@ -424,7 +424,53 @@ if (($pluginstatus -or $pas) -and -not $uas) {
     $script:pluginStatusVerbose = $verbose
     Invoke-PluginStatusMode
 }
+
 # ============================================================================
+# DEPLOY MODE: git pull -> upload all sites -> plugin status -> build & run
+# ============================================================================
+if ($deploy) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  DEPLOY MODE (-d)" -ForegroundColor Cyan
+    Write-Host "  git pull -> upload all sites -> plugin status -> build & run" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Phase 1: Git pull
+    Invoke-GitPull
+
+    # Phase 2: Upload all plugins to all sites
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 1/3] Uploading all plugins to all sites..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    $script:uasExitCode = 0
+    Invoke-UploadAllSitesMode
+
+    # Phase 3: Plugin status check
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 2/3] Checking plugin status on all sites..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    $pluginstatusall = $true
+    $script:errorFlag = $errorlogs
+    $script:pluginStatusVerbose = $verbose
+    Invoke-PluginStatusMode
+
+    # Phase 4: Continue to regular build & run (fall through)
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 3/3] Building and starting backend..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Skip git pull again since we already did it
+    $skippull = $true
+}
+
+#
 # BANNER
 # ============================================================================
 Write-Host ""
