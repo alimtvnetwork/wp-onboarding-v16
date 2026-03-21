@@ -321,7 +321,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     mutationFn: async ({ plugin, enable }: { plugin: RemotePlugin; enable: boolean }) => {
       const action = enable ? "activate" : "deactivate";
       if (!(await validatePluginExists(plugin.plugin, action))) {
-        throw new Error(`Plugin "${plugin.plugin}" not found — ${action} blocked by pre-flight check`);
+        throw new PreFlightBlockedError(plugin.plugin, action);
       }
       if (enable) {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
