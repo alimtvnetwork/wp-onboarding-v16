@@ -62,7 +62,7 @@ type logContentInput struct {
 	FileStat *pathutil.FileInfo
 }
 
-// respondErrorLogContent reads and responds with log file content.
+// respondErrorLogContent reads and responds with log file content (filtered to current session).
 func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
 	content, err := os.ReadFile(input.LogPath)
 	if err != nil {
@@ -71,8 +71,10 @@ func respondErrorLogContent(w http.ResponseWriter, input logContentInput) {
 		return
 	}
 
+	filtered := filterToCurrentSession(string(content))
+
 	respondSuccess(w, LogFileResponse{
-		Content:    string(content),
+		Content:    filtered,
 		Path:       input.LogPath,
 		IsExists:   true,
 		LogType:    input.LogType,
