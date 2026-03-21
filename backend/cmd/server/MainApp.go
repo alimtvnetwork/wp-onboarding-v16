@@ -54,6 +54,7 @@ func runApp() {
 
 	log := initLogger(cfg, versionInfo, logOutput)
 	initEnvelopeDebug(cfg)
+	validateNamespaces(log)
 	log.Info("Starting application", "version", versionInfo.String())
 
 	server := bootstrapServer(cfg, log, versionInfo)
