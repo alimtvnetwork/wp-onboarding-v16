@@ -28,6 +28,7 @@ func (l *Logger) buildLogLine(level Level, msg string, caller callerContext, key
 
 	l.writeHeader(&builder, level, msg, caller)
 	writeKeyvals(&builder, level, keyvals)
+	writeLocation(&builder, caller)
 	appendStackIfError(&builder, level)
 
 	if isColorEnabled {
@@ -36,6 +37,11 @@ func (l *Logger) buildLogLine(level Level, msg string, caller callerContext, key
 
 	builder.WriteString("\n")
 	return builder.String()
+}
+
+// writeLocation appends the caller file and line at the end of the log line.
+func writeLocation(b *strings.Builder, caller callerContext) {
+	b.WriteString(fmt.Sprintf(" [%s:%d]", caller.file, caller.line))
 }
 
 // writeHeader writes the timestamp, level, message prefix. Location is appended after keyvals.
