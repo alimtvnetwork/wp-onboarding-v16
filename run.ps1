@@ -221,7 +221,7 @@ if ($help) {
     Write-Host "  -u -as -site 'name' Upload DEFAULT plugin to a specific site"
     Write-Host "  -u -as -i N         Upload DEFAULT plugin to site #N"
     Write-Host "  -u -as -xs 'name'   Upload DEFAULT plugin to all sites EXCEPT the named one(s)"
-    Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
+    Write-Host "  -dbg, -debug        Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host "  -u -v               Verbose: show raw JSON request/response during upload"
