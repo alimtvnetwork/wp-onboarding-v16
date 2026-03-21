@@ -112,7 +112,7 @@ export function BackendSection({
 
       {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-4 m-0">
-        <OverviewContent error={error} formatTs={formatTs} hasStackContent={hasStackContent} hasExecutionContent={hasExecutionContent} />
+        <OverviewContent error={error} formatTs={formatTs} hasStackContent={hasStackContent} hasExecutionContent={hasExecutionContent} hasDelegatedContent={hasDelegatedContent} />
       </TabsContent>
 
       {/* Error Log Tab */}
