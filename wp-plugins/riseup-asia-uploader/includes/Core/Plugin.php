@@ -59,6 +59,8 @@ use RiseupAsia\Traits\Log\LogRetrievalTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
 use RiseupAsia\Traits\User\UserCrudTrait;
 use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
+use RiseupAsia\Traits\SiteSettings\SiteSettingsTrait;
+use RiseupAsia\Traits\SiteSettings\SiteHealthSummaryTrait;
 
 class Plugin {
     // Wave 1 traits
