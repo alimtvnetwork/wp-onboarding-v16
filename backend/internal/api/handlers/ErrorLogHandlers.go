@@ -4,15 +4,20 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/constants/logfile"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
+
+// timestampPattern matches the [YYYY-MM-DD HH:MM:SS] prefix in error log entries.
+var timestampPattern = regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
 
 // --- Error/Log Handlers ---
 
