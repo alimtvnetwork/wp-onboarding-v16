@@ -206,6 +206,8 @@ if ($help) {
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
     Write-Host "  -ua -xs 'slug'      ZIP + upload ALL plugins EXCEPT the named one(s)"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (parallel)"
+    Write-Host "  -uas -pas           Upload ALL plugins to ALL sites, then run plugin status check"
+    Write-Host "  -uas -pas -v        Same as above with verbose output for both phases"
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -uas -i N           Upload ALL plugins to site #N (1-based index from -ls)"
