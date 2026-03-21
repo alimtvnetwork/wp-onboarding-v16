@@ -79,6 +79,11 @@ type SiteServiceInterface interface {
 	RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (any, *apperror.AppError)
 	ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (any, *apperror.AppError)
 	ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (any, *apperror.AppError)
+
+	// Site settings proxy
+	GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
+	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
