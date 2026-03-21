@@ -627,7 +627,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk delete"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk delete blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk delete");
         }
         if (plugin.status === RemotePluginStatus.Active) {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
