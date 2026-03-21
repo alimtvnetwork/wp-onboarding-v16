@@ -744,9 +744,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             {/* Cache Status & Actions - stacked on mobile */}
             <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
               {lastFetchedAt && (
-                <Badge variant="outline" className="text-xs gap-1 text-muted-foreground shrink-0 hidden sm:flex">
-                  <Clock className="h-3 w-3" />
-                  {formatTimeAgo(lastFetchedAt)}
+                <Badge
+                  variant="outline"
+                  className={`text-xs gap-1 shrink-0 hidden sm:flex ${cacheSource === "live" ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}
+                  title={`Source: ${cacheSource === "live" ? "Force synced from WordPress" : "May be from backend cache"} at ${lastFetchedAt.toLocaleTimeString()}`}
+                >
+                  {cacheSource === "live" ? <Zap className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                  {cacheSource === "live" ? "Live" : "Cached"} · {formatTimeAgo(lastFetchedAt)}
                 </Badge>
               )}
               <Button 
