@@ -59,7 +59,7 @@ type SnapshotImportResult struct {
 
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
 func (c *Client) ImportSnapshot(zipPath string) apperror.Result[SnapshotImportResult] {
-	endpoint := snapshotEndpoint(ep.SnapshotsImport)
+	endpoint := c.snapshotEndpoint(ep.SnapshotsImport)
 
 	mp, err := buildImportMultipart(zipPath)
 	if err != nil {
