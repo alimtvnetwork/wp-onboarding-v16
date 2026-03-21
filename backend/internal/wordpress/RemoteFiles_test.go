@@ -237,6 +237,18 @@ func TestEnablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if body["plugin"] != "my-plugin" {
+			t.Fatalf("expected plugin=my-plugin, got: %#v", body["plugin"])
+		}
+		if body["plugin_slug"] != "my-plugin" {
+			t.Fatalf("expected plugin_slug=my-plugin, got: %#v", body["plugin_slug"])
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"success":true,"message":"Plugin activated successfully.","slug":"my-plugin"}`))
@@ -258,6 +270,18 @@ func TestDisablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if body["plugin"] != "my-plugin" {
+			t.Fatalf("expected plugin=my-plugin, got: %#v", body["plugin"])
+		}
+		if body["plugin_slug"] != "my-plugin" {
+			t.Fatalf("expected plugin_slug=my-plugin, got: %#v", body["plugin_slug"])
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"success":true}`))
@@ -267,5 +291,41 @@ func TestDisablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	if err := c.DisablePluginViaUploader("my-plugin"); err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
+	}
+}
+
+func TestCheckPluginExistsViaUploader_SendsBothSlugFields(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/exists" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if body["plugin"] != "my-plugin" {
+			t.Fatalf("expected plugin=my-plugin, got: %#v", body["plugin"])
+		}
+		if body["plugin_slug"] != "my-plugin" {
+			t.Fatalf("expected plugin_slug=my-plugin, got: %#v", body["plugin_slug"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"pluginSlug":"my-plugin","exists":true,"status":"active","pluginFile":"my-plugin/my-plugin.php"}`))
+	}))
+	defer server.Close()
+
+	c := NewClient(ClientConfig{BaseUrl: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	result := c.CheckPluginExistsViaUploader("my-plugin")
+	if result.HasError() {
+		t.Fatalf("expected no error, got: %v", result.AppError())
+	}
+	if !result.Value().Exists {
+		t.Fatalf("expected exists=true")
 	}
 }

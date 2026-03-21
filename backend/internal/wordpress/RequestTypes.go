@@ -4,9 +4,21 @@
 package wordpress
 
 // PluginSlugRequest is the request body for plugin-slug-only API calls.
+//
+// Compatibility note:
+// - Legacy helpers accept `plugin`
+// - Riseup Asia lifecycle helpers require `plugin_slug`
+//
 // Used by: activate, deactivate, delete, plugin-exists, files-list, export, sync-manifest.
 type PluginSlugRequest struct {
-	Plugin string `json:"plugin"` // external key (Riseup Asia Uploader API)
+	Plugin     string `json:"plugin,omitempty"`      // external key (legacy / QUpload-compatible)
+	PluginSlug string `json:"plugin_slug,omitempty"` // external key (Riseup Asia lifecycle-compatible)
+}
+
+// NewPluginSlugRequest builds a backward-compatible request payload for remote
+// WordPress endpoints that may expect either `plugin` or `plugin_slug`.
+func NewPluginSlugRequest(slug string) PluginSlugRequest {
+	return PluginSlugRequest{Plugin: slug, PluginSlug: slug}
 }
 
 // PluginFileRequest is the request body for single-file read API calls.
