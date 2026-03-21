@@ -198,6 +198,7 @@ if ($help) {
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
     Write-Host "  -v,  -verbose       Show detailed debug output"
+    Write-Host "  -d,  -deploy        Full deploy cycle: git pull, upload all sites, plugin status, then build & run"
     Write-Host ""
     Write-Host "UPLOAD:" -ForegroundColor Yellow
     Write-Host "  -u,  -upload        Upload default plugin via Riseup Asia Uploader API"
