@@ -418,6 +418,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     },
     onError: (error, plugin) => {
+      // Pre-flight blocks are informational, not errors — skip capture
+      if (error instanceof PreFlightBlockedError) { setPluginToDelete(null); return; }
       const captured = captureException(error, {
         endpoint: `/sites/${site.id}/remote-plugins/delete`,
         method: "POST",
