@@ -7,6 +7,7 @@ import (
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	publishstep "wp-plugin-publish/internal/enums/publishsteptype"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // ─── Stage Execution ─────────────────────────────────────────────────────────

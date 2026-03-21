@@ -9,7 +9,6 @@ import (
 
 	endpoint "wp-plugin-publish/internal/enums/endpointtype"
 	healthstatus "wp-plugin-publish/internal/enums/healthstatustype"
-	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )

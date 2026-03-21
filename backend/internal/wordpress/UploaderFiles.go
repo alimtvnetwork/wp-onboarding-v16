@@ -26,7 +26,7 @@ func (c *Client) ReplaceFileViaUploader(input ReplaceFileInput) *apperror.AppErr
 	endpoint := "/" + namespace + ep.Files.String()
 	contentStr := base64.StdEncoding.EncodeToString(input.Content)
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileReplaceRequest{Plugin: input.Slug, Path: input.RelPath, Content: contentStr},
@@ -43,7 +43,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) *apperror.AppError 
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.Files.String()
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginFileDeleteRequest{Plugin: slug, Path: relPath, Action: "delete"},
@@ -91,7 +91,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) apper
 
 	endpoint := "/" + namespace + ep.Sync.String()
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       SyncRequestBody{Plugin: slug, Files: files},

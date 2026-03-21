@@ -10,8 +10,8 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// apiCallInput holds common parameters for a WordPress REST API call.
-type apiCallInput struct {
+// ApiCallInput holds common parameters for a WordPress REST API call.
+type ApiCallInput struct {
 	Method     httpmethodtype.Variant
 	Endpoint   string
 	Body       any
@@ -30,7 +30,7 @@ type ApiCallResponse struct {
 // doApiCallWithStatus sends the request and returns the raw response.
 // Unlike doApiCallRaw, it does NOT validate the status code — the caller decides how to handle it.
 // The error return is only for transport-level failures (DNS, timeout, request creation).
-func (c *Client) doApiCallWithStatus(input apiCallInput) apperror.Result[ApiCallResponse] {
+func (c *Client) doApiCallWithStatus(input ApiCallInput) apperror.Result[ApiCallResponse] {
 	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
@@ -53,7 +53,7 @@ func (c *Client) doApiCallWithStatus(input apiCallInput) apperror.Result[ApiCall
 }
 
 // doApiCallRaw sends the request, checks the status code, and returns raw body bytes on success.
-func (c *Client) doApiCallRaw(input apiCallInput) apperror.Result[[]byte] {
+func (c *Client) doApiCallRaw(input ApiCallInput) apperror.Result[[]byte] {
 	callResult := c.doApiCallWithStatus(input)
 	if callResult.HasError() {
 		return apperror.Fail[[]byte](callResult.AppError())
@@ -70,7 +70,7 @@ func (c *Client) doApiCallRaw(input apiCallInput) apperror.Result[[]byte] {
 
 // doApiCallStream sends the request, validates the status code, and returns the raw HTTP response.
 // The caller is responsible for closing the response body. Use this for streaming responses (e.g. ZIP downloads).
-func (c *Client) doApiCallStream(input apiCallInput) apperror.Result[*http.Response] {
+func (c *Client) doApiCallStream(input ApiCallInput) apperror.Result[*http.Response] {
 	resp, appErr := c.request(input.Method.Value(), input.Endpoint, input.Body)
 	if appErr != nil {
 		code := firstNonEmpty(input.ErrorCode, apperror.ErrInternal)
@@ -94,7 +94,7 @@ func (c *Client) doApiCallStream(input apiCallInput) apperror.Result[*http.Respo
 }
 
 // buildCallError constructs an AppError from a failed API call, wrapping the structured ApiError.
-func (c *Client) buildCallError(input apiCallInput, statusCode int, body []byte) *apperror.AppError {
+func (c *Client) buildCallError(input ApiCallInput, statusCode int, body []byte) *apperror.AppError {
 	apiErr := &ApiError{
 		Operation:    input.Operation.Value(),
 		Method:       input.Method.Value(),
@@ -130,8 +130,8 @@ func isErrorStatus(statusCode int, okStatuses []int) bool {
 	return !isOkStatus(statusCode, okStatuses)
 }
 
-// doApiCall sends a request, checks status, and JSON-decodes the response into T.
-func doApiCall[T any](c *Client, input apiCallInput) apperror.Result[T] {
+// DoApiCall sends a request, checks status, and JSON-decodes the response into T.
+func DoApiCall[T any](c *Client, input ApiCallInput) apperror.Result[T] {
 	rawResult := c.doApiCallRaw(input)
 	if rawResult.HasError() {
 		return apperror.Fail[T](rawResult.AppError())

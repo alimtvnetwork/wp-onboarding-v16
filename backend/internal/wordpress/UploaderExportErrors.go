@@ -49,7 +49,7 @@ func (c *Client) FetchRemoteErrorLogs() apperror.Result[*RemoteErrorLogsResult] 
 	}
 
 	endpoint := BuildNamespacedEndpoint(namespace, ep.ErrorLogs)
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.FetchErrorLogs,
@@ -130,7 +130,7 @@ func (c *Client) FetchRemoteErrorSessions(input ErrorSessionsInput) apperror.Res
 		Limit:     input.Limit,
 		Offset:    input.Offset,
 	})
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.FetchErrorSessions,

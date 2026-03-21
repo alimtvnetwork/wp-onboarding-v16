@@ -43,7 +43,7 @@ type SnapshotDownloadResult struct {
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response] {
-	return c.doApiCallStream(apiCallInput{
+	return c.doApiCallStream(ApiCallInput{
 		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
@@ -53,7 +53,7 @@ func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
-	return doApiCall[SnapshotDownloadResult](c, apiCallInput{
+	return DoApiCall[SnapshotDownloadResult](c, ApiCallInput{
 		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
@@ -95,7 +95,7 @@ func buildStreamZipAppError(resp *http.Response, downloadUrl string) *apperror.A
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
 		Operation: operationtype.GetSnapshotProviders,
@@ -124,7 +124,7 @@ type AvailableTable struct {
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() apperror.Result[[]AvailableTable] {
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethodtype.Get,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
 		Operation: operationtype.GetAvailableTables,

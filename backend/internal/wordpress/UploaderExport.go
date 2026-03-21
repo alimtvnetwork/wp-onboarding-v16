@@ -34,7 +34,7 @@ func (c *Client) ExportPlugin(slug string) apperror.Result[*ExportPluginResult] 
 	}
 
 	endpoint := "/" + namespace + ep.ExportPlugin.String()
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
@@ -101,7 +101,7 @@ func (c *Client) reportExportSelfStart() {
 func (c *Client) callExportSelf(namespace string) apperror.Result[*ExportSelfResult] {
 	endpoint := BuildNamespacedEndpoint(namespace, ep.ExportSelf)
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ExportSelf,

@@ -30,7 +30,7 @@ type SnapshotBackupResult struct {
 
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
 func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
-	return doApiCall[SnapshotBackupResult](c, apiCallInput{
+	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
 		Body:       opts,
@@ -41,7 +41,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[Snapshot
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
-	return doApiCall[SnapshotBackupResult](c, apiCallInput{
+	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
 		Body:       opts,
@@ -116,7 +116,7 @@ func (c *Client) executeImportRequest(endpoint string, body *bytes.Buffer, conte
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	if isErrorStatus(resp.StatusCode, []int{http.StatusOK, http.StatusCreated}) {
-		errorInput := apiCallInput{
+		errorInput := ApiCallInput{
 			Method:    httpmethod.Post,
 			Endpoint:  endpoint,
 			Operation: operation.ImportSnapshot,
@@ -176,7 +176,7 @@ type CleanupStuckResult struct {
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) apperror.Result[SnapshotCleanupResult] {
-	return doApiCall[SnapshotCleanupResult](c, apiCallInput{
+	return DoApiCall[SnapshotCleanupResult](c, ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
 		Body:      opts,

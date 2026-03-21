@@ -118,7 +118,7 @@ func (a *UploaderAvailability) IsNamespaceMissing() bool { return a == nil || a.
 func (c *Client) CheckRiseupAsiaAvailable() apperror.Result[*UploaderAvailability] {
 	for _, ns := range uploaderNamespaces {
 		endpoint := "/" + ns + ep.Status.String()
-		callResp := c.doApiCallWithStatus(apiCallInput{
+		callResp := c.doApiCallWithStatus(ApiCallInput{
 			Method: httpmethod.Get, Endpoint: endpoint, Operation: operationtype.CheckUploaderNamespace,
 		})
 		if callResp.HasError() {
@@ -154,7 +154,7 @@ func (c *Client) GetUploaderStatus() apperror.Result[*UploaderStatus] {
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Status)
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.GetUploaderStatus, ErrorCode: apperror.ErrWPConnection,

@@ -12,7 +12,7 @@ import (
 
 // GetPlugins returns a list of installed plugins
 func (c *Client) GetPlugins() apperror.Result[[]PluginInfo] {
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
 		Operation: operationtype.GetPluginsList,
@@ -35,7 +35,7 @@ func (c *Client) GetPlugins() apperror.Result[[]PluginInfo] {
 func (c *Client) GetPlugin(slug string) apperror.Result[PluginInfo] {
 	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
 
-	rawResult := c.doApiCallRaw(apiCallInput{
+	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Get,
 		Endpoint:   endpoint,
 		Operation:  operationtype.GetPlugin,
