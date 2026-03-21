@@ -112,7 +112,7 @@ export function BackendSection({
 
       {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-4 m-0">
-        <OverviewContent error={error} formatTs={formatTs} hasStackContent={hasStackContent} hasExecutionContent={hasExecutionContent} />
+        <OverviewContent error={error} formatTs={formatTs} hasStackContent={hasStackContent} hasExecutionContent={hasExecutionContent} hasDelegatedContent={hasDelegatedContent} />
       </TabsContent>
 
       {/* Error Log Tab */}
@@ -191,9 +191,9 @@ export function BackendSection({
 
 // --- Internal sub-components (not exported — only used within BackendSection) ---
 
-function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent }: {
+function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent, hasDelegatedContent }: {
   error: CapturedError; formatTs: (ts: string) => string;
-  hasStackContent: boolean; hasExecutionContent: boolean;
+  hasStackContent: boolean; hasExecutionContent: boolean; hasDelegatedContent: boolean;
 }) {
   return (
     <>
@@ -289,6 +289,12 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
           <Badge variant="outline" className="text-xs gap-1">
             <Code2 className="h-3 w-3" />
             Stack traces available
+          </Badge>
+        )}
+        {hasDelegatedContent && (
+          <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 text-orange-600">
+            <Globe className="h-3 w-3" />
+            Delegated logs available
           </Badge>
         )}
         {hasExecutionContent && (
