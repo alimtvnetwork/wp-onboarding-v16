@@ -35,6 +35,7 @@ enum ResponseMessageType: string
     case TempDirCreateFailed      = 'Failed to create temp directory';
     case InvalidFileTypeZip       = 'Invalid file type. Expected ZIP file.';
     case MissingPluginSlug        = 'Missing required plugin slug parameter';
+    case SelfActionProhibited     = 'Cannot perform this action on the managing plugin itself';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
