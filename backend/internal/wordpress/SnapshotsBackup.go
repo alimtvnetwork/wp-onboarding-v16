@@ -32,7 +32,7 @@ type SnapshotBackupResult struct {
 func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
 	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsFullBackup),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsFullBackup),
 		Body:       opts,
 		Operation:  operation.FullBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
@@ -43,7 +43,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[Snapshot
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
 	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsIncremental),
 		Body:       opts,
 		Operation:  operation.IncrementalBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
@@ -59,7 +59,7 @@ type SnapshotImportResult struct {
 
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
 func (c *Client) ImportSnapshot(zipPath string) apperror.Result[SnapshotImportResult] {
-	endpoint := snapshotEndpoint(ep.SnapshotsImport)
+	endpoint := c.snapshotEndpoint(ep.SnapshotsImport)
 
 	mp, err := buildImportMultipart(zipPath)
 	if err != nil {
@@ -178,7 +178,7 @@ type CleanupStuckResult struct {
 func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) apperror.Result[SnapshotCleanupResult] {
 	return DoApiCall[SnapshotCleanupResult](c, ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsCleanup),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsCleanup),
 		Body:      opts,
 		Operation: operation.SnapshotCleanup,
 	})
