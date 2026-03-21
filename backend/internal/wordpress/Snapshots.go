@@ -74,14 +74,15 @@ type SnapshotRestoreResult struct {
 	Status  string `json:"status,omitempty"`  // external key
 }
 
-// snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
-func snapshotEndpoint(path ep.Variant) string {
-	return "/" + RiseupAsiaNamespace + path.String()
+// snapshotEndpoint builds the full endpoint path for snapshot operations using the
+// resolved uploader namespace so legacy-compatible sites keep working.
+func (c *Client) snapshotEndpoint(path ep.Variant) string {
+	return BuildNamespacedEndpoint(c.resolveNamespace(), path)
 }
 
 // GetSnapshots lists all snapshots on the remote site.
 func (c *Client) GetSnapshots() apperror.Result[[]SnapshotRecord] {
-	endpoint := snapshotEndpoint(ep.SnapshotsList)
+	endpoint := c.snapshotEndpoint(ep.SnapshotsList)
 	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
@@ -134,7 +135,7 @@ func trySnapshotArrayFallback(c *Client, endpoint string) apperror.Result[[]Snap
 func (c *Client) GetSnapshot(snapshotId int64) apperror.Result[SnapshotRecord] {
 	return DoApiCall[SnapshotRecord](c, ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsInfo),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsInfo),
 		Body:      SnapshotIdRequest{Id: snapshotId},
 		Operation: operationtype.GetSnapshot,
 	})
@@ -144,7 +145,7 @@ func (c *Client) GetSnapshot(snapshotId int64) apperror.Result[SnapshotRecord] {
 func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) apperror.Result[SnapshotCreateResult] {
 	return DoApiCall[SnapshotCreateResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsSchedule),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsSchedule),
 		Body:       opts,
 		Operation:  operationtype.CreateSnapshot,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
@@ -155,7 +156,7 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) apperror.Result[Snap
 func (c *Client) DeleteSnapshot(snapshotId int64) *apperror.AppError {
 	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsDelete),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsDelete),
 		Body:       SnapshotIdRequest{Id: snapshotId},
 		Operation:  operationtype.DeleteSnapshot,
 		OkStatuses: []int{http.StatusOK, http.StatusNoContent},
@@ -168,7 +169,7 @@ func (c *Client) DeleteSnapshot(snapshotId int64) *apperror.AppError {
 func (c *Client) RestoreSnapshot(snapshotId int64) apperror.Result[SnapshotRestoreResult] {
 	return DoApiCall[SnapshotRestoreResult](c, ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsRestore),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsRestore),
 		Body:      SnapshotRestoreOptions{Id: snapshotId, Confirm: true},
 		Operation: operationtype.RestoreSnapshot,
 	})
@@ -178,7 +179,7 @@ func (c *Client) RestoreSnapshot(snapshotId int64) apperror.Result[SnapshotResto
 func (c *Client) GetSnapshotSettings() apperror.Result[SnapshotSettings] {
 	return DoApiCall[SnapshotSettings](c, ApiCallInput{
 		Method:    httpmethod.Get,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsSettings),
 		Operation: operationtype.GetSnapshotSettings,
 	})
 }
@@ -187,7 +188,7 @@ func (c *Client) GetSnapshotSettings() apperror.Result[SnapshotSettings] {
 func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) apperror.Result[SnapshotSettings] {
 	return DoApiCall[SnapshotSettings](c, ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsSettings),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsSettings),
 		Body:      settings,
 		Operation: operationtype.UpdateSnapshotSettings,
 	})
