@@ -43,7 +43,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) apperror.Result[Snapshot
 func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) apperror.Result[SnapshotBackupResult] {
 	return DoApiCall[SnapshotBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
-		Endpoint:   snapshotEndpoint(ep.SnapshotsIncremental),
+		Endpoint:   c.snapshotEndpoint(ep.SnapshotsIncremental),
 		Body:       opts,
 		Operation:  operation.IncrementalBackup,
 		OkStatuses: []int{http.StatusOK, http.StatusCreated},
