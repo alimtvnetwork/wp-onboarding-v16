@@ -260,22 +260,25 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
    * Pre-flight guard: validates a plugin identifier exists both in the local cache
    * AND on the remote WordPress site via a lightweight server-side check.
    * Prevents unnecessary 404s from stale UI state or cache mismatches.
+   *
+   * This is an informational guard, NOT an error — blocked actions are logged
+   * as warnings and never captured in the error store.
    */
   const validatePluginExists = useCallback(async (pluginIdentifier: string, actionLabel: string): Promise<boolean> => {
     if (!pluginIdentifier || pluginIdentifier.trim() === "") {
-      toast.error(`Cannot ${actionLabel}: plugin identifier is empty`);
-      console.warn(`[guard] Blocked ${actionLabel} — empty plugin identifier`);
+      toast.warning(`Cannot ${actionLabel}: plugin identifier is empty`);
+      console.info(`[guard] Blocked ${actionLabel} — empty plugin identifier`);
       return false;
     }
 
     // Fast local check first
     const cachedPlugins = queryClient.getQueryData<RemotePlugin[]>(queryKey);
     if (cachedPlugins && !cachedPlugins.some((p) => p.plugin === pluginIdentifier)) {
-      toast.error(`Cannot ${actionLabel}: plugin not found in current list`, {
+      toast.warning(`Cannot ${actionLabel}: plugin not found in current list`, {
         description: `"${pluginIdentifier}" is not in the synced plugin list. Try Force Sync first.`,
         duration: 8000,
       });
-      console.warn(`[guard] Blocked ${actionLabel} — "${pluginIdentifier}" not in cached list of ${cachedPlugins.length} plugins`);
+      console.info(`[guard] Blocked ${actionLabel} — "${pluginIdentifier}" not in cached list of ${cachedPlugins.length} plugins`);
       return false;
     }
 
@@ -284,15 +287,26 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       const response = await api.checkRemotePluginExists(site.id, pluginIdentifier);
       const result = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/exists`, method: "POST" });
       if (!result.exists) {
-        toast.error(`Cannot ${actionLabel}: plugin not installed on remote site`, {
+        toast.warning(`Cannot ${actionLabel}: plugin not installed on remote site`, {
           description: `"${pluginIdentifier}" was not found on the WordPress site. It may have been removed externally.`,
           duration: 8000,
         });
-        console.warn(`[guard] Server pre-flight blocked ${actionLabel} — "${pluginIdentifier}" not installed remotely`);
+        console.info(`[guard] Server pre-flight blocked ${actionLabel} — "${pluginIdentifier}" not installed remotely`);
         // Invalidate local cache since it's stale
         queryClient.invalidateQueries({ queryKey });
         return false;
       }
+
+      // Update cached plugin status from the exists check response (keeps active/inactive fresh)
+      if (result.status) {
+        const freshStatus = result.status === "active" ? RemotePluginStatus.Active : RemotePluginStatus.Inactive;
+        queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+          old?.map((p) =>
+            p.plugin === pluginIdentifier ? { ...p, status: freshStatus } : p
+          )
+        );
+      }
+
       return true;
     } catch (err: unknown) {
       // If pre-flight check itself fails, log but allow the action to proceed
