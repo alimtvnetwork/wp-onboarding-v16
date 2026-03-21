@@ -207,7 +207,9 @@ if ($help) {
     Write-Host "  -ua -xs 'slug'      ZIP + upload ALL plugins EXCEPT the named one(s)"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (parallel)"
     Write-Host "  -uas -pas           Upload ALL plugins to ALL sites, then run plugin status check"
+    Write-Host "  -uas -pas -cla      Upload ALL, status check, then clear ALL logs on ALL sites"
     Write-Host "  -uas -pas -v        Same as above with verbose output for both phases"
+    Write-Host "  -uas -cla           Upload ALL plugins to ALL sites, then clear ALL logs"
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -uas -i N           Upload ALL plugins to site #N (1-based index from -ls)"
@@ -318,7 +320,9 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
     Write-Host "    .\run.ps1 -uas -pas                 # Upload all, then check plugin status"
+    Write-Host "    .\run.ps1 -uas -pas -cla            # Upload all, status, then clear all logs"
     Write-Host "    .\run.ps1 -uas -pas -v              # Upload all + status check (verbose)"
+    Write-Host "    .\run.ps1 -uas -cla                 # Upload all, then clear all logs"
     Write-Host ""
     Write-Host "  Upload (default plugin, multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
@@ -535,6 +539,36 @@ if ($uas) {
         $script:errorFlag = $errorlogs
         $script:pluginStatusVerbose = $verbose
         Invoke-PluginStatusMode
+    }
+
+    # Chain into clear-logs-all if -cla was also given (e.g. .\run.ps1 -uas -pas -cla)
+    if ($clearlogsall) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Status complete — clearing logs on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose
+    }
+
+    # Chain into clear-all-sites (purge) if -cas was also given
+    if ($clearallsites -or $purge) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Chained — purging all logs on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose
+    }
+
+    # Chain into single-site clear-logs if -cl was also given
+    if ($clearlogs) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Chained — clearing logs..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose
     }
 
     exit $script:uasExitCode
