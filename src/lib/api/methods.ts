@@ -57,6 +57,10 @@ import type {
   RemoteLogsClearConfirmResponse,
   RemoteLogsEmailResponse,
   RemoteLogsEmailOptions,
+  SiteSettingsResponse,
+  SiteSettingsUpdate,
+  SiteSettingsUpdateResponse,
+  SiteHealthSummaryResponse,
 } from './types';
 
 // ---------------------------------------------------------------------------

@@ -1030,3 +1030,99 @@ export interface RemoteLogsEmailOptions {
   include_archives?: boolean;
   log_types?: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Site Settings types
+// ---------------------------------------------------------------------------
+
+export interface SiteSettingsResponse {
+  searchEngineVisible: boolean;
+  wpDebug: boolean;
+  wpDebugLog: boolean;
+  wpDebugDisplay: boolean;
+  uploadMaxFilesize: string;
+  postMaxSize: string;
+  memoryLimit: string;
+  maxExecutionTime: number;
+  maxInputVars: number;
+  wpConfigWritable: boolean;
+  htaccessWritable: boolean;
+  phpVersion: string;
+  wpVersion: string;
+  siteUrl: string;
+  homeUrl: string;
+  isMultisite: boolean;
+  timezone: string;
+  activeTheme: string;
+  serverSoftware: string;
+}
+
+export interface SiteSettingsUpdate {
+  searchEngineVisible?: boolean;
+  wpDebug?: boolean;
+  wpDebugLog?: boolean;
+  wpDebugDisplay?: boolean;
+  uploadMaxFilesize?: string;
+  postMaxSize?: string;
+  memoryLimit?: string;
+}
+
+export interface SiteSettingsUpdateResponse {
+  success: boolean;
+  updated: Record<string, unknown>;
+  settings: SiteSettingsResponse;
+  warnings?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Site Health Summary types
+// ---------------------------------------------------------------------------
+
+export interface SiteHealthSummaryResponse {
+  system: {
+    phpVersion: string;
+    wpVersion: string;
+    memoryLimit: string;
+    memoryUsage: string;
+    memoryPeak: string;
+    uploadMaxFilesize: string;
+    postMaxSize: string;
+    maxExecutionTime: number;
+    diskFree: string;
+    diskTotal: string;
+    diskFreeBytes: number;
+    diskTotalBytes: number;
+    serverSoftware: string;
+    sslEnabled: boolean;
+    isMultisite: boolean;
+    timezone: string;
+    wpDebug: boolean;
+    wpDebugLog: boolean;
+  };
+  plugins: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  integrations: {
+    wpReset: {
+      available: boolean;
+      isPro: boolean;
+      snapshots: number;
+    };
+    updraftPlus: {
+      available: boolean;
+      backups: number;
+    };
+  };
+  users: {
+    total: number;
+    byRole: Record<string, number>;
+  };
+  database: {
+    tableCount: number;
+    totalSize: string;
+    totalBytes: number;
+    prefix: string;
+  };
+}

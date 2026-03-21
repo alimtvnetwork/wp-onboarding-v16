@@ -93,6 +93,10 @@ export type {
   ConfigActivityEntry,
   ConnectionActivityEntry,
   SiteCredentialResponse,
+  SiteSettingsResponse,
+  SiteSettingsUpdate,
+  SiteSettingsUpdateResponse,
+  SiteHealthSummaryResponse,
 } from './types';
 
 // Envelope utilities
