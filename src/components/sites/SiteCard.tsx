@@ -39,6 +39,8 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
 import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
+import { SiteSettingsPanel } from "./SiteSettingsPanel";
+import { SiteHealthSummaryPanel } from "./SiteHealthSummaryPanel";
 import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
 import { useSettings } from "@/hooks/useSettings";
 
