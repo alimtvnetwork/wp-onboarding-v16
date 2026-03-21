@@ -1199,6 +1199,22 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           onOpenChange={(open) => !open && setFileBrowserPlugin(null)}
         />
       )}
+
+      {/* Debug Logs Sub-Dialog */}
+      <Dialog open={showDebugLogs} onOpenChange={setShowDebugLogs}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Remote Debug Logs — {site.name}
+            </DialogTitle>
+            <DialogDescription>
+              View, clear, or email PHP error logs from this WordPress site.
+            </DialogDescription>
+          </DialogHeader>
+          <RemoteLogsPanel siteId={site.id} siteName={site.name} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
