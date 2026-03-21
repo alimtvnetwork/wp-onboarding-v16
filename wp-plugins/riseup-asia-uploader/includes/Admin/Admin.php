@@ -89,6 +89,17 @@ class Admin {
         return self::$instance;
     }
 
+    /**
+     * Get plugin settings merged with defaults.
+     *
+     * @return array<string, mixed>
+     */
+    public static function get_settings(): array {
+        $saved = get_option('riseup_asia_uploader_settings', array());
+
+        return array_replace_recursive(self::$defaults, is_array($saved) ? $saved : array());
+    }
+
     /** Constructor. */
     private function __construct() {
         InitHelpers::errorLogWithPrefix('Admin::__construct() — registering admin hooks');
