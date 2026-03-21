@@ -121,13 +121,15 @@ export function GlobalErrorModal() {
 
   return (
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
-      <DialogContent className={cn(
-        "flex flex-col p-0 gap-0 overflow-hidden z-[9999]",
-        "w-full h-full max-w-full max-h-full rounded-none",
-        "sm:max-w-[95vw] sm:w-[95vw] sm:max-h-[95vh] sm:h-[95vh] sm:rounded-lg",
-        "lg:max-w-6xl",
-        "[&~.fixed]:z-[9999]"
-      )}>
+      <DialogContent
+        data-error-modal
+        className={cn(
+          "flex flex-col p-0 gap-0 overflow-hidden",
+          "w-full h-full max-w-full max-h-full rounded-none",
+          "sm:max-w-[95vw] sm:w-[95vw] sm:max-h-[95vh] sm:h-[95vh] sm:rounded-lg",
+          "lg:max-w-6xl"
+        )}
+      >
         {/* Header */}
         <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
