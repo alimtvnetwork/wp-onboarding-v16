@@ -263,4 +263,6 @@ var variantValues = [...]string{
 	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
 	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
 	CloudStorageRestore:             "/cloud-storage/restore",
+	SiteSettings:                    "/site-settings",
+	SiteHealthSummary:               "/site-health-summary",
 }
