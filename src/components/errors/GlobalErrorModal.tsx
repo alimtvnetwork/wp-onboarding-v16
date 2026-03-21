@@ -38,9 +38,15 @@ export function GlobalErrorModal() {
   const phpStackFrames: PHPStackFrame[] = (() => {
     const ctx = selectedError?.context;
     if (!ctx) return [];
+    // 1. Pre-parsed frames from backend
     if (Array.isArray(ctx.stackTraceFrames)) return ctx.stackTraceFrames as PHPStackFrame[];
     const errorDetails = ctx.errorDetails;
     if (errorDetails && Array.isArray(errorDetails.stackTraceFrames)) return errorDetails.stackTraceFrames as PHPStackFrame[];
+    // 2. Parse from remoteResponseBody (raw PHP error JSON embedded in delegated response)
+    const rawBody = ctx.remoteResponseBody;
+    if (typeof rawBody === 'string' && rawBody.length > 0) {
+      return parsePhpStackFromRemoteBody(rawBody);
+    }
     return [];
   })();
   
