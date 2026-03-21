@@ -64,7 +64,7 @@ func ConfirmClearRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.ConfirmRemoteLogsClear(r.Context(), siteId, body.Token)
 	if appErr != nil {
-		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
+		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
 		return
 	}
 
@@ -95,7 +95,7 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.EmailRemoteLogs(r.Context(), siteId, body)
 	if appErr != nil {
-		respondError(w, appErr.HttpStatus(), apperror.ErrWPConnection, appErr.Error())
+		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
 		return
 	}
 
