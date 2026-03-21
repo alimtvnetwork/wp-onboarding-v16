@@ -209,7 +209,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
   const queryKey = ["sites", site.id, "remote-plugins"];
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
-  const [isFromCache, setIsFromCache] = useState(false);
+  const [cacheSource, setCacheSource] = useState<"live" | "cached">("cached");
+  const [, setTimeTick] = useState(0);
 
   const { data: plugins, isLoading, isError, error: queryError, refetch, isFetching } = useQuery({
     queryKey,
