@@ -103,6 +103,10 @@ class Plugin {
     // Wave 5 traits
     use CloudStorageTrait;
 
+    // Wave 6 traits
+    use SiteSettingsTrait;
+    use SiteHealthSummaryTrait;
+
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
     private ?Database $db = null;

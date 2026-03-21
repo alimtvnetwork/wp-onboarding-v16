@@ -102,6 +102,10 @@ enum EndpointType: string
     case UsersExportSqlite = 'users/export-sqlite';
     case UsersImportSqlite = 'users/import-sqlite';
 
+    // ── Site Settings ───────────────────────────────────────────────
+    case SiteSettings        = 'site-settings';
+    case SiteHealthSummary   = 'site-health-summary';
+
     // ── Cloud Storage ───────────────────────────────────────────────
     case CloudStorageAccounts        = 'cloud-storage/accounts';
     case CloudStorageAccountId       = 'cloud-storage/accounts/(?P<id>\d+)';
