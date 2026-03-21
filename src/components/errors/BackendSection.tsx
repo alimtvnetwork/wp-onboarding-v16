@@ -1,5 +1,5 @@
 import { CapturedError } from '@/stores/errorStore';
-import type { ErrorDiagnosticContext, SessionStackFrame, SessionDiagnostics, EnvelopeMethodFrame } from '@/lib/api';
+import type { ErrorDiagnosticContext, SessionStackFrame, SessionDiagnostics, EnvelopeMethodFrame, DelegatedRequestServer } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
