@@ -367,6 +367,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       if (context?.previousPlugins) {
         queryClient.setQueryData(queryKey, context.previousPlugins);
       }
+      // Pre-flight blocks are informational, not errors — skip capture
+      if (error instanceof PreFlightBlockedError) return;
       const captured = captureException(error, {
         endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
