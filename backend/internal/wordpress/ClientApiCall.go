@@ -150,7 +150,7 @@ func DoApiCall[T any](c *Client, input ApiCallInput) apperror.Result[T] {
 // decodeApiResponse unmarshals raw JSON bytes into T.
 func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
 	// Guard against HTML before JSON decode — clearer than "invalid character '<'"
-	if htmlErr := detectHtmlResponse(data, "", operationtype.Unknown); htmlErr != nil {
+	if htmlErr := detectHtmlResponse(data, "", operationtype.Invalid); htmlErr != nil {
 		return apperror.Fail[T](htmlErr)
 	}
 
