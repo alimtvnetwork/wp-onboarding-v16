@@ -576,7 +576,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk deactivate"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk deactivate blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk deactivate");
         }
         const response = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
