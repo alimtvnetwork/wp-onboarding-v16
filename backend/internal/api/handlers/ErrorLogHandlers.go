@@ -300,3 +300,62 @@ func splitLines(content string) []string {
 func fileExists(path string) bool {
 	return pathutil.IsFileExists(path)
 }
+
+// filterToCurrentSession splits the error log into entry blocks (delimited by ─── lines)
+// and returns only those whose timestamp is at or after the current server session start.
+func filterToCurrentSession(content string) string {
+	sessionStart := middleware.SessionStartTime
+	lines := strings.Split(content, "\n")
+
+	var currentBlock []string
+	var sessionBlocks []string
+
+	for _, line := range lines {
+		isDivider := strings.HasPrefix(line, "───")
+
+		if isDivider {
+			// End of a block — check if it belongs to this session
+			if len(currentBlock) > 0 {
+				blockText := strings.Join(currentBlock, "\n")
+				if isBlockInSession(currentBlock, sessionStart) {
+					sessionBlocks = append(sessionBlocks, blockText)
+				}
+				currentBlock = nil
+			}
+			continue
+		}
+
+		currentBlock = append(currentBlock, line)
+	}
+
+	// Handle last block (no trailing divider)
+	if len(currentBlock) > 0 && isBlockInSession(currentBlock, sessionStart) {
+		sessionBlocks = append(sessionBlocks, strings.Join(currentBlock, "\n"))
+	}
+
+	if len(sessionBlocks) == 0 {
+		return ""
+	}
+
+	divider := "───────────────────────────────────────────────────────────────────────────────"
+	return strings.Join(sessionBlocks, "\n"+divider+"\n") + "\n" + divider
+}
+
+// isBlockInSession checks if any line in the block has a timestamp >= session start.
+func isBlockInSession(blockLines []string, sessionStart time.Time) bool {
+	for _, line := range blockLines {
+		match := timestampPattern.FindStringSubmatch(line)
+		if len(match) < 2 {
+			continue
+		}
+
+		entryTime, err := time.Parse("2006-01-02 15:04:05", match[1])
+		if err != nil {
+			continue
+		}
+
+		return !entryTime.Before(sessionStart)
+	}
+
+	return false
+}
