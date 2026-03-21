@@ -321,6 +321,22 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
                     </div>
                   )}
 
+                  {/* Clear All (both plugins) */}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleClearAllPlugins}
+                    disabled={isClearingAll}
+                    title="Clear logs for both Riseup Asia and QUpload plugins"
+                  >
+                    {isClearingAll ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Clear All Plugins
+                  </Button>
+
                   {/* Email */}
                   <Button
                     size="sm"
