@@ -139,16 +139,12 @@ export function BackendSection({
         />
       </TabsContent>
 
-      {/* Stack Traces Tab */}
+      {/* Stack Traces Tab (Go only) */}
       <TabsContent value="stack" className="space-y-4 m-0">
         <StackContent
           error={error}
-          phpStackFrames={phpStackFrames}
           envelopeBackendStack={envelopeBackendStack}
-          envelopeDelegatedStack={envelopeDelegatedStack}
           sessionGoFrames={sessionGoFrames}
-          sessionPhpFrames={sessionPhpFrames}
-          sessionDiag={sessionDiag}
           sessionLoading={sessionLoading}
           hasStackContent={hasStackContent}
           copySection={copySection}
