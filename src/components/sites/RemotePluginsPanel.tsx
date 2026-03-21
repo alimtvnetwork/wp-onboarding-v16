@@ -58,7 +58,8 @@ import { toast } from "sonner";
 import { useErrorStore, PHPStackFrame } from "@/stores/errorStore";
 import { useRemotePluginEvents } from "@/hooks/useRemotePluginEvents";
 import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
-import { FolderOpen, AlertTriangle } from "lucide-react";
+import { FolderOpen, AlertTriangle, FileText } from "lucide-react";
+import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
 import { compareVersions } from "@/lib/versionUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { isApiClientError } from "@/lib/api/client";
@@ -117,6 +118,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [showDebugLogs, setShowDebugLogs] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Draggable dialog state
@@ -663,6 +665,16 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0 h-8 w-8 sm:h-9 sm:w-9" title="Refresh (may use cache)">
                 <RefreshCw className={`h-4 w-4 shrink-0 will-change-transform ${isFetching ? "animate-spin" : ""}`} />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebugLogs(true)}
+                className="shrink-0 gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
+                title="View remote PHP debug logs"
+              >
+                <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Debug</span> Logs
+              </Button>
             </div>
           </div>
 
@@ -1187,6 +1199,22 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           onOpenChange={(open) => !open && setFileBrowserPlugin(null)}
         />
       )}
+
+      {/* Debug Logs Sub-Dialog */}
+      <Dialog open={showDebugLogs} onOpenChange={setShowDebugLogs}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Remote Debug Logs — {site.name}
+            </DialogTitle>
+            <DialogDescription>
+              View, clear, or email PHP error logs from this WordPress site.
+            </DialogDescription>
+          </DialogHeader>
+          <RemoteLogsPanel siteId={site.id} siteName={site.name} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
