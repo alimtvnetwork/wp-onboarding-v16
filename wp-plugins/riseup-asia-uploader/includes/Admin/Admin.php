@@ -118,6 +118,7 @@ class Admin {
         add_action(HookType::ajax(AjaxActionType::ClearErrorSessions->value), array($this, 'ajaxClearErrorSessions'));
         add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), array($this, 'ajaxReadLogFile'));
         add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), array($this, 'ajaxClearLogFile'));
+        add_action(HookType::ajax(AjaxActionType::ClearAllLogs->value), array($this, 'ajaxClearAllLogs'));
         add_action(HookType::ajax(AjaxActionType::LicenseSave->value), array($this, 'ajaxLicenseSave'));
         add_action(HookType::ajax(AjaxActionType::LicenseActivate->value), array($this, 'ajaxLicenseActivate'));
         add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), array($this, 'ajaxLicenseDeactivate'));

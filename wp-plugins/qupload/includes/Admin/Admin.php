@@ -37,5 +37,6 @@ class Admin {
         add_action(HookType::AdminEnqueue->value, [$this, 'enqueueAdminAssets']);
         add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), [$this, 'ajaxReadLogFile']);
         add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), [$this, 'ajaxClearLogFile']);
+        add_action(HookType::ajax(AjaxActionType::ClearAllLogs->value), [$this, 'ajaxClearAllLogs']);
     }
 }
