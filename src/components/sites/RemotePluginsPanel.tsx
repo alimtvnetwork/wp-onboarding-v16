@@ -61,8 +61,19 @@ import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
 import { FolderOpen, AlertTriangle } from "lucide-react";
 import { compareVersions } from "@/lib/versionUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { isApiClientError } from "@/lib/api/client";
 
-interface RemotePluginsPanelProps {
+/** Detect if an error is a remote WordPress site 500 (server-side crash). */
+function isRemoteSiteError(err: unknown): boolean {
+  if (isApiClientError(err)) {
+    return err.apiError.code === 500 || /status 500/.test(err.message);
+  }
+  if (err instanceof Error) {
+    return /status 500/.test(err.message);
+  }
+  return false;
+}
+
   site: Site;
   open: boolean;
   onOpenChange: (open: boolean) => void;
