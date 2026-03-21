@@ -2,8 +2,10 @@ package wordpress
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/operationtype"
