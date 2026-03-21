@@ -641,7 +641,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failedResults = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    failedResults.forEach((r) => {
+    const realFailedResults = failedResults.filter((r) => !(r.reason instanceof PreFlightBlockedError));
+    realFailedResults.forEach((r) => {
       captureException(r.reason instanceof Error ? r.reason : new Error(String(r.reason)), {
         endpoint: `/sites/${site.id}/remote-plugins/delete`,
         method: "POST",
@@ -649,11 +650,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       });
     });
     if (succeeded > 0) toast.success(`Deleted ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
-    if (failedResults.length > 0) {
-      const anyRemote500 = failedResults.some((r) => isRemoteSiteError(r.reason));
-      const firstRemoteBody = failedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
+    if (realFailedResults.length > 0) {
+      const anyRemote500 = realFailedResults.some((r) => isRemoteSiteError(r.reason));
+      const firstRemoteBody = realFailedResults.map((r) => extractRemoteResponseBody(r.reason)).find(Boolean);
       const phpSnippet = firstRemoteBody ? extractPhpErrorSnippet(firstRemoteBody) : null;
-      toast.error(`Failed to delete ${failedResults.length} plugin${failedResults.length !== 1 ? "s" : ""}`, {
+      toast.error(`Failed to delete ${realFailedResults.length} plugin${realFailedResults.length !== 1 ? "s" : ""}`, {
         description: anyRemote500
           ? phpSnippet
             ? `Remote site error: ${phpSnippet}`
