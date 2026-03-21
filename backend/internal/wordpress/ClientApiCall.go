@@ -67,6 +67,11 @@ func (c *Client) doApiCallRaw(input ApiCallInput) apperror.Result[[]byte] {
 		return apperror.Fail[[]byte](c.buildCallError(input, resp.StatusCode, resp.Body))
 	}
 
+	// Detect HTML responses early — WordPress returns HTML for unregistered REST routes.
+	if htmlErr := detectHtmlResponse(resp.Body, input.Endpoint, input.Operation); htmlErr != nil {
+		return apperror.Fail[[]byte](htmlErr)
+	}
+
 	return apperror.Ok(resp.Body)
 }
 
