@@ -142,6 +142,16 @@ function formatTimeAgo(date: Date): string {
   return `${diffDays}d ago`;
 }
 
+function normalizeRemotePluginStatus(status?: string | null): RemotePluginStatus {
+  return String(status ?? "").trim().toLowerCase() === "active"
+    ? RemotePluginStatus.Active
+    : RemotePluginStatus.Inactive;
+}
+
+function isRemotePluginActive(status?: string | null): boolean {
+  return normalizeRemotePluginStatus(status) === RemotePluginStatus.Active;
+}
+
 export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPanelProps) {
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
@@ -299,7 +309,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
       // Update cached plugin status from the exists check response (keeps active/inactive fresh)
       if (result.status) {
-        const freshStatus = result.status.toLowerCase() === "active" ? RemotePluginStatus.Active : RemotePluginStatus.Inactive;
+        const freshStatus = normalizeRemotePluginStatus(result.status);
         queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
           old?.map((p) =>
             p.plugin === pluginIdentifier ? { ...p, status: freshStatus } : p
@@ -399,7 +409,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         throw new PreFlightBlockedError(plugin.plugin, "delete");
       }
       // If plugin is active, deactivate first, then delete
-      if (plugin.status === RemotePluginStatus.Active) {
+      if (isRemotePluginActive(plugin.status)) {
         const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
       }
@@ -471,7 +481,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       found: true,
       version: uploader.version,
       isOutdated: cmp < 0,
-      isActive: uploader.status === RemotePluginStatus.Active,
+      isActive: isRemotePluginActive(uploader.status),
     } as const;
   }, [plugins]);
 
@@ -514,7 +524,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const handleBulkActivate = async () => {
     if (selectedPlugins.size === 0) return;
     setBulkActionPending(true);
-    const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && p.status !== RemotePluginStatus.Active);
+    const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && !isRemotePluginActive(p.status));
     if (selectedList.length === 0) { setBulkActionPending(false); return; }
 
     // Optimistic update
@@ -565,7 +575,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const handleBulkDeactivate = async () => {
     if (selectedPlugins.size === 0) return;
     setBulkActionPending(true);
-    const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && p.status === RemotePluginStatus.Active);
+    const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && isRemotePluginActive(p.status));
     if (selectedList.length === 0) { setBulkActionPending(false); return; }
 
     // Optimistic update
@@ -629,7 +639,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         if (!(await validatePluginExists(plugin.plugin, "bulk delete"))) {
           throw new PreFlightBlockedError(plugin.plugin, "bulk delete");
         }
-        if (plugin.status === RemotePluginStatus.Active) {
+        if (isRemotePluginActive(plugin.status)) {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin, plugin.version);
           requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "PUT" });
         }
@@ -1069,9 +1079,9 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                             v{plugin.version}
                           </Badge>
                           <Badge
-                            variant={plugin.status === RemotePluginStatus.Active ? "default" : "outline"}
+                            variant={isRemotePluginActive(plugin.status) ? "default" : "outline"}
                             className={`text-xs shrink-0 ${
-                              plugin.status === RemotePluginStatus.Active 
+                              isRemotePluginActive(plugin.status)
                                 ? "bg-green-500/20 text-green-400 border-green-500/30" 
                                 : "text-muted-foreground"
                             }`}
@@ -1111,7 +1121,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
                         <div className="flex items-center gap-1 px-1">
                           <Switch
-                            checked={plugin.status === RemotePluginStatus.Active}
+                            checked={isRemotePluginActive(plugin.status)}
                             onCheckedChange={(checked) => handleToggle(plugin, checked)}
                             className={hasSuccessPulse ? "animate-success-pulse" : ""}
                           />
@@ -1125,10 +1135,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
-                              onClick={() => handleToggle(plugin, plugin.status !== RemotePluginStatus.Active)}
+                              onClick={() => handleToggle(plugin, !isRemotePluginActive(plugin.status))}
                               disabled={toggleMutation.isPending}
                             >
-                              {plugin.status === RemotePluginStatus.Active ? (
+                              {isRemotePluginActive(plugin.status) ? (
                                 <>
                                   <PowerOff className="h-4 w-4 mr-2" />
                                   Deactivate
@@ -1250,7 +1260,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             <AlertDialogTitle>Delete {pluginToDelete?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently remove the plugin from {site.name}. 
-              {pluginToDelete?.status === RemotePluginStatus.Active && " The plugin will be deactivated first."}
+              {isRemotePluginActive(pluginToDelete?.status) && " The plugin will be deactivated first."}
               {" "}This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
