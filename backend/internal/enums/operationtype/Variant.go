@@ -217,6 +217,9 @@ var variantValues = [...]string{
 	ImportUsersCsv:            "import users csv",
 	ExportUsersSqlite:         "export users sqlite",
 	ImportUsersSqlite:         "import users sqlite",
+	GetSiteSettings:           "get site settings",
+	UpdateSiteSettings:        "update site settings",
+	GetSiteHealthSummary:      "get site health summary",
 }
 
 func (v Variant) String() string  { return v.Value() }
