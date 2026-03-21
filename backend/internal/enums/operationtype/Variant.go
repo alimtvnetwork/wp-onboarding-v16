@@ -75,6 +75,9 @@ const (
 	ImportUsersCsv
 	ExportUsersSqlite
 	ImportUsersSqlite
+	GetSiteSettings
+	UpdateSiteSettings
+	GetSiteHealthSummary
 )
 
 var variantLabels = [...]string{
