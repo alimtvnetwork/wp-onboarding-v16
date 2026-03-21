@@ -1077,9 +1077,21 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent
+          className="max-w-2xl max-h-[85vh] flex flex-col"
+          style={{
+            transform: `translate(calc(-50% + ${dragOffset.x}px), calc(-50% + ${dragOffset.y}px))`,
+          }}
+          onPointerDownOutside={(e) => {
+            if (isDragging.current) e.preventDefault();
+          }}
+        >
+          <DialogHeader
+            className="pb-2 shrink-0 cursor-move select-none"
+            onMouseDown={handleDragStart}
+          >
             <DialogTitle className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
               <Database className="h-5 w-5 text-primary" />
               Snapshots — {site.name}
               {hasRunningSnapshots && (
