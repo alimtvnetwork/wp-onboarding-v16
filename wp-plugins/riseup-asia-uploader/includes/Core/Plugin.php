@@ -53,6 +53,7 @@ use RiseupAsia\Traits\FileSystem\FileSystemTrait;
 use RiseupAsia\Traits\Log\LogStatusTrait;
 use RiseupAsia\Traits\Log\LogRotationStatusTrait;
 use RiseupAsia\Traits\Log\LogClearingTrait;
+use RiseupAsia\Traits\Log\LogClearAllTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
 use RiseupAsia\Traits\Log\LogRetrievalTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
@@ -89,6 +90,7 @@ class Plugin {
     use LogStatusTrait;
     use LogRotationStatusTrait;
     use LogClearingTrait;
+    use LogClearAllTrait;
     use LogEmailTrait;
     use LogRetrievalTrait;
     use MachineApprovalTrait;

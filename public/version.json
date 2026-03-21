@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.29.0",
+  "version": "2.30.0",
   "releaseDate": "2026-03-21",
   "gitCommit": "dev",
   "buildTime": "2026-03-21T00:00:00Z",
-  "scriptVersion": "2.29.0",
-  "wpPluginVersion": "2.29.0",
-  "quploadVersion": "2.29.0",
+  "scriptVersion": "2.30.0",
+  "wpPluginVersion": "2.30.0",
+  "quploadVersion": "2.30.0",
   "changelog": [
+    {
+      "version": "2.30.0",
+      "date": "2026-03-21",
+      "title": "PHP Clear-All Endpoint & Version Bump",
+      "changes": [
+        "🗑️ New DELETE /logs/clear-all endpoint in Riseup Asia plugin clears logs for BOTH plugins (Riseup Asia + QUpload) in a single call",
+        "🔗 Cross-plugin log clearing: Riseup Asia directly invokes QUpload FileLogger if active on the same site",
+        "🧹 Includes file logs + database tables (Transactions, ErrorSessions) for Riseup Asia",
+        "🔢 Version bump across all components to 2.30.0"
+      ]
+    },
     {
       "version": "2.29.0",
       "date": "2026-03-21",

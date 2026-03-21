@@ -312,6 +312,12 @@ trait RouteRegistrationTrait
             'permission_callback' => $this->buildPermissionCallback('logs_clear', array($this, 'checkPluginPermission')),
         ));
 
+        $safeRegister(EndpointType::LogsClearAll->route(), array(
+            'methods'             => HttpMethodType::Delete->value,
+            'callback'            => array($this, 'handleLogsClearAll'),
+            'permission_callback' => $this->buildPermissionCallback('logs_clear_all', array($this, 'checkPluginPermission')),
+        ));
+
         $safeRegister(EndpointType::LogsConfirm->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleLogsClearConfirm'),
