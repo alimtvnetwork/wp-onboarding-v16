@@ -206,6 +206,8 @@ if ($help) {
     Write-Host "  -ua, -uploadall     ZIP + upload ALL plugins (except QUpload) via QUpload API"
     Write-Host "  -ua -xs 'slug'      ZIP + upload ALL plugins EXCEPT the named one(s)"
     Write-Host "  -uas                Upload ALL plugins to ALL configured sites (parallel)"
+    Write-Host "  -uas -pas           Upload ALL plugins to ALL sites, then run plugin status check"
+    Write-Host "  -uas -pas -v        Same as above with verbose output for both phases"
     Write-Host "  -uas -sync          Upload ALL plugins to ALL sites SEQUENTIALLY"
     Write-Host "  -uas -site 'name'   Upload ALL plugins to a specific site by name"
     Write-Host "  -uas -i N           Upload ALL plugins to site #N (1-based index from -ls)"
@@ -315,6 +317,8 @@ if ($help) {
     Write-Host "    .\run.ps1 -uas -i 1,2              # Upload all plugins to sites #1 and #2"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1'       # Upload to all sites EXCEPT Test V1"
     Write-Host "    .\run.ps1 -uas -xs 'Test V1,Test V2'  # Exclude multiple sites"
+    Write-Host "    .\run.ps1 -uas -pas                 # Upload all, then check plugin status"
+    Write-Host "    .\run.ps1 -uas -pas -v              # Upload all + status check (verbose)"
     Write-Host ""
     Write-Host "  Upload (default plugin, multi-site):" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -u -as                   # Upload default plugin to all sites (parallel)"
@@ -404,9 +408,9 @@ if ($check) {
 }
 
 # ============================================================================
-# PLUGIN STATUS CHECK (early exit)
+# PLUGIN STATUS CHECK (early exit — skip if chained with -uas)
 # ============================================================================
-if ($pluginstatus -or $pas) {
+if (($pluginstatus -or $pas) -and -not $uas) {
     Invoke-GitPull
     $pluginstatusall = $pas
     $script:errorFlag = $errorlogs
@@ -516,7 +520,22 @@ if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
 if ($zipqupload) { Invoke-ZipQUploadMode }
-if ($uas) { Invoke-UploadAllSitesMode }
+if ($uas) {
+    Invoke-UploadAllSitesMode
+
+    # Chain into plugin-status-all if -pas was also given (e.g. .\run.ps1 -uas -pas)
+    if ($pas) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Upload complete — running plugin status check on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        $pluginstatusall = $true
+        $script:errorFlag = $errorlogs
+        $script:pluginStatusVerbose = $verbose
+        Invoke-PluginStatusMode
+    }
+}
 if ($purge -or $clearallsites) { Invoke-PurgeMode -SkipConfirm:$yes -VerboseMode:$verbose }
 if ($clearlogsall) { Invoke-ClearLogsMode -ForceAll -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
 if ($clearlogs) { Invoke-ClearLogsMode -PluginFilter $logplugin -TypeFilter $logtype -AuditMode:$audit -VerboseMode:$verbose }
