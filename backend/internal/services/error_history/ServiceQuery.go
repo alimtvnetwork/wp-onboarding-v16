@@ -134,6 +134,55 @@ func (s *Service) Clear() apperror.Result[int64] {
 	return apperror.Ok(deleted)
 }
 
+// ClearOlderThan removes error history entries older than the given duration string.
+// Accepted values: "1h", "6h", "24h", "7d", "30d".
+func (s *Service) ClearOlderThan(threshold string) apperror.Result[int64] {
+	duration, parseErr := parseDurationThreshold(threshold)
+	if parseErr != nil {
+		return apperror.FailWrap[int64](parseErr, apperror.ErrValidation, "invalid threshold")
+	}
+
+	cutoff := time.Now().Add(-duration)
+
+	result, err := s.db.Exec("DELETE FROM ErrorHistory WHERE CreatedAt < ?", cutoff.UTC().Format("2006-01-02 15:04:05"))
+	if err != nil {
+		return apperror.FailWrap[int64](err, apperror.ErrDatabaseQuery, "clear old error history")
+	}
+
+	deleted, _ := result.RowsAffected()
+
+	if s.log != nil {
+		s.log.Info("Old error history cleared", "threshold", threshold, "cutoff", cutoff.Format(time.RFC3339), "deleted", deleted)
+	}
+
+	return apperror.Ok(deleted)
+}
+
+// parseDurationThreshold converts a human-readable threshold like "7d" or "24h" into a time.Duration.
+func parseDurationThreshold(s string) (time.Duration, error) {
+	if len(s) < 2 {
+		return 0, fmt.Errorf("threshold too short: %q", s)
+	}
+
+	unit := s[len(s)-1]
+	value := s[:len(s)-1]
+
+	var num int
+	_, err := fmt.Sscanf(value, "%d", &num)
+	if err != nil || num <= 0 {
+		return 0, fmt.Errorf("invalid threshold number: %q", value)
+	}
+
+	switch unit {
+	case 'h':
+		return time.Duration(num) * time.Hour, nil
+	case 'd':
+		return time.Duration(num) * 24 * time.Hour, nil
+	default:
+		return 0, fmt.Errorf("unsupported threshold unit %q, use 'h' or 'd'", string(unit))
+	}
+}
+
 // BulkExport generates a combined markdown report for multiple errors
 func (s *Service) BulkExport(ids []int64) apperror.Result[string] {
 	if len(ids) == 0 {

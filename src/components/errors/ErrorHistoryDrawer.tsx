@@ -5,6 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   AlertCircle, 
   AlertTriangle, 
@@ -16,7 +22,8 @@ import {
   X,
   CheckSquare,
   Square,
-  Eye
+  Eye,
+  Clock
 } from "lucide-react";
 import { useErrorHistory, recordToCapturedError } from "@/hooks/useErrorHistory";
 import { useErrorStore } from "@/stores/errorStore";
@@ -42,7 +49,7 @@ const levelColors = {
 };
 
 export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerProps) {
-  const { errors, total, isLoading, refetch, deleteError, clearErrors, exportErrors, isExporting } = useErrorHistory();
+  const { errors, total, isLoading, refetch, deleteError, clearErrors, clearOldErrors, isClearingOld, exportErrors, isExporting } = useErrorHistory();
   const { openErrorModal, openErrorQueue } = useErrorStore();
   
   const [search, setSearch] = useState("");
@@ -135,6 +142,18 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
       toast.success("Error history cleared");
     }
   };
+
+  // Clear old entries by threshold
+  const handleClearOld = async (threshold: string, label: string) => {
+    try {
+      const response = await clearOldErrors(threshold);
+      const count = response?.data?.count ?? 0;
+      setSelectedIds(new Set());
+      toast.success(`Cleared ${count} error(s) older than ${label}`);
+    } catch {
+      toast.error("Failed to clear old errors");
+    }
+  };
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -220,14 +239,42 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearAll}
-              className="text-destructive hover:text-destructive"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={isClearingOld}
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Clean up
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleClearOld("1h", "1 hour")}>
+                  Older than 1 hour
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("6h", "6 hours")}>
+                  Older than 6 hours
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("24h", "24 hours")}>
+                  Older than 24 hours
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("7d", "7 days")}>
+                  Older than 7 days
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleClearOld("30d", "30 days")}>
+                  Older than 30 days
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleClearAll}
+                  className="text-destructive focus:text-destructive"
+                >
+                  Clear all
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         

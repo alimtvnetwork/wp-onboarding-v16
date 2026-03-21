@@ -55,6 +55,32 @@ func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ClearOldErrorHistory removes error entries older than a threshold (e.g. "7d", "24h").
+func ClearOldErrorHistory(w http.ResponseWriter, r *http.Request) {
+	if isServiceMissing(w, Services.ErrorHistoryService, "ErrorHistory service") {
+		return
+	}
+
+	threshold := r.URL.Query().Get("threshold")
+	if threshold == "" {
+		respondBadRequest(w, apperror.ErrValidation, "Missing 'threshold' query parameter (e.g. 24h, 7d, 30d)")
+
+		return
+	}
+
+	deleted, err := Services.ErrorHistoryService.ClearOlderThan(threshold)
+	if err != nil {
+		respondBadRequest(w, apperror.ErrValidation, err.Error())
+
+		return
+	}
+
+	respondSuccess(w, ActionResponse{
+		IsCleared: true,
+		Count:     int(deleted),
+	})
+}
+
 // bulkExportInput is the JSON body for BulkExportErrorHistory.
 type bulkExportInput struct {
 	Ids []int64 `json:"ids"`

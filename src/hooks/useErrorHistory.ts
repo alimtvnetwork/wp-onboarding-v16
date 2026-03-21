@@ -46,6 +46,15 @@ export function useErrorHistory() {
     },
   });
 
+  // Clear old errors by threshold
+  const clearOldMutation = useMutation({
+    meta: { suppressGlobalError: true },
+    mutationFn: (threshold: string) => api.clearOldErrorHistory(threshold),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["error-history"] });
+    },
+  });
+
   // Bulk export errors
   const exportMutation = useMutation({
     meta: { suppressGlobalError: true },
@@ -98,6 +107,8 @@ export function useErrorHistory() {
     saveError,
     deleteError: deleteMutation.mutate,
     clearErrors: clearMutation.mutate,
+    clearOldErrors: clearOldMutation.mutateAsync,
+    isClearingOld: clearOldMutation.isPending,
     exportErrors: exportMutation.mutateAsync,
     isExporting: exportMutation.isPending,
   };
