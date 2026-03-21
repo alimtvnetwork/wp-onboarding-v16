@@ -130,6 +130,7 @@ trait AdminMenuTrait {
             'actions'   => [
                 'readLogFile'  => AjaxActionType::ReadLogFile->value,
                 'clearLogFile' => AjaxActionType::ClearLogFile->value,
+                'clearAllLogs' => AjaxActionType::ClearAllLogs->value,
             ],
             'tabs'      => [
                 'log'        => AdminTabType::Log->value,
