@@ -64,6 +64,17 @@ import { compareVersions } from "@/lib/versionUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { isApiClientError } from "@/lib/api/client";
 
+/**
+ * Sentinel error for pre-flight blocks — NOT a real error.
+ * Used to short-circuit mutations without triggering error capture or notifications.
+ */
+class PreFlightBlockedError extends Error {
+  constructor(pluginIdentifier: string, action: string) {
+    super(`Plugin "${pluginIdentifier}" not found — ${action} blocked by pre-flight check`);
+    this.name = "PreFlightBlockedError";
+  }
+}
+
 /** Detect if an error is a remote WordPress site 500 (server-side crash). */
 function isRemoteSiteError(err: unknown): boolean {
   if (isApiClientError(err)) {
