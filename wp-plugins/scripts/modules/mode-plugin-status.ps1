@@ -49,6 +49,7 @@ function Invoke-PluginStatusMode {
 
     if ($targetSites.Count -eq 0) {
         Write-Host "No enabled sites found." -ForegroundColor Yellow
+        if ($script:deployMode) { return }
         exit 0
     }
 
