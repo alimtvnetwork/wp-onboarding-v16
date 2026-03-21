@@ -118,6 +118,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [showDebugLogs, setShowDebugLogs] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Draggable dialog state
