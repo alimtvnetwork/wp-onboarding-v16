@@ -404,9 +404,9 @@ if ($check) {
 }
 
 # ============================================================================
-# PLUGIN STATUS CHECK (early exit)
+# PLUGIN STATUS CHECK (early exit — skip if chained with -uas)
 # ============================================================================
-if ($pluginstatus -or $pas) {
+if (($pluginstatus -or $pas) -and -not $uas) {
     Invoke-GitPull
     $pluginstatusall = $pas
     $script:errorFlag = $errorlogs
