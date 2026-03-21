@@ -5,6 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   AlertCircle, 
   AlertTriangle, 
@@ -16,7 +22,8 @@ import {
   X,
   CheckSquare,
   Square,
-  Eye
+  Eye,
+  Clock
 } from "lucide-react";
 import { useErrorHistory, recordToCapturedError } from "@/hooks/useErrorHistory";
 import { useErrorStore } from "@/stores/errorStore";
