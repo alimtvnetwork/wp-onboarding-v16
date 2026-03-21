@@ -59,6 +59,7 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
   const [clearExpiry, setClearExpiry] = useState<number>(0);
   const [isClearing, setIsClearing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   // Email state
   const [showEmailDialog, setShowEmailDialog] = useState(false);
