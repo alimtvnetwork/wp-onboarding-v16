@@ -49,6 +49,7 @@ function Invoke-PluginStatusMode {
 
     if ($targetSites.Count -eq 0) {
         Write-Host "No enabled sites found." -ForegroundColor Yellow
+        if ($script:deployMode) { return }
         exit 0
     }
 
@@ -58,6 +59,7 @@ function Invoke-PluginStatusMode {
 
     if ($pluginFolders.Count -eq 0) {
         Write-Host "No plugins found." -ForegroundColor Yellow
+        if ($script:deployMode) { return }
         exit 0
     }
 
@@ -108,7 +110,11 @@ function Invoke-PluginStatusMode {
     Write-PluginStatusSummary -Results $allResults -TotalSites $targetSites.Count -TotalPlugins $pluginFolders.Count -StatusLogsDir $statusLogsDir
 
     $failCount = ($allResults | Where-Object { $_.Status -ne "OK" -and $_.Status -ne "SKIPPED" }).Count
-    exit $(if ($failCount -eq 0) { 0 } else { 1 })
+    $script:pluginStatusExitCode = if ($failCount -eq 0) { 0 } else { 1 }
+
+    # In deploy mode (-d), return to caller instead of exiting so the build & run phase can proceed
+    if ($script:deployMode) { return }
+    exit $script:pluginStatusExitCode
 }
 
 function Test-HasProperty {
