@@ -163,6 +163,22 @@ export function BackendSection({
         <RequestDetails error={error} copySection={copySection} sessionDiagnostics={sessionDiag} />
       </TabsContent>
 
+      {/* Delegated Logs Tab (PHP) */}
+      {hasDelegatedContent && (
+        <TabsContent value="delegated" className="space-y-4 m-0">
+          <DelegatedContent
+            error={error}
+            phpStackFrames={phpStackFrames}
+            envelopeDelegatedStack={envelopeDelegatedStack}
+            delegatedServer={delegatedServer}
+            sessionPhpFrames={sessionPhpFrames}
+            sessionDiag={sessionDiag}
+            sessionLoading={sessionLoading}
+            copySection={copySection}
+          />
+        </TabsContent>
+      )}
+
       {/* Traversal Tab */}
       {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
         <TabsContent value="traversal" className="space-y-4 m-0">
