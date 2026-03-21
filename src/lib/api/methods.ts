@@ -743,6 +743,8 @@ export const api = {
     request<RemoteLogsStatusResponse>(`/sites/${siteId}/remote-logs`),
   clearRemoteLogs: (siteId: number) =>
     request<RemoteLogsClearResponse>(`/sites/${siteId}/remote-logs/clear`, { method: "DELETE" }),
+  clearAllRemoteLogs: (siteId: number) =>
+    request<{ riseup: { cleared: boolean; error?: string }; qupload: { cleared: boolean; error?: string } }>(`/sites/${siteId}/remote-logs/clear-all`, { method: "DELETE" }),
   confirmClearRemoteLogs: (siteId: number, token: string) =>
     request<RemoteLogsClearConfirmResponse>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
   emailRemoteLogs: (siteId: number, opts?: RemoteLogsEmailOptions) =>
