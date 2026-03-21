@@ -26,6 +26,8 @@ import {
   Calendar,
   Users,
   FileText,
+  Settings,
+  HeartPulse,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord } from "@/lib/api";
@@ -37,6 +39,8 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
 import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
+import { SiteSettingsPanel } from "./SiteSettingsPanel";
+import { SiteHealthSummaryPanel } from "./SiteHealthSummaryPanel";
 import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
 import { useSettings } from "@/hooks/useSettings";
 
@@ -56,6 +60,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const [showSiteSettings, setShowSiteSettings] = useState(false);
+  const [showHealthSummary, setShowHealthSummary] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
@@ -372,6 +378,28 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowSiteSettings(true)}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Site settings (debug, uploads, etc.)"}
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Settings</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => setShowHealthSummary(true)}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Site health summary"}
+          >
+            <HeartPulse className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Health</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
             title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
@@ -435,6 +463,22 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             <DialogTitle>Remote Logs — {site.name}</DialogTitle>
           </DialogHeader>
           <RemoteLogsPanel siteId={site.id} siteName={site.name} />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showSiteSettings} onOpenChange={setShowSiteSettings}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Site Settings — {site.name}</DialogTitle>
+          </DialogHeader>
+          <SiteSettingsPanel site={site} open={showSiteSettings} />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showHealthSummary} onOpenChange={setShowHealthSummary}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Health Summary — {site.name}</DialogTitle>
+          </DialogHeader>
+          <SiteHealthSummaryPanel site={site} open={showHealthSummary} />
         </DialogContent>
       </Dialog>
     </Card>

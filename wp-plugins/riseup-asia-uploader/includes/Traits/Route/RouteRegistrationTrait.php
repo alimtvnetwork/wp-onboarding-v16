@@ -50,6 +50,7 @@ trait RouteRegistrationTrait
         $this->registerSnapshotRoutes($safeRegister);
         $this->registerUserRoutes($safeRegister);
         $this->registerCloudStorageRoutes($safeRegister);
+        $this->registerSiteSettingsRoutes($safeRegister);
         $this->registerCatchAllRoute($safeRegister);
 
         $this->fileLogger->info("REST API route registration complete: $registered registered, $failed failed");
@@ -422,6 +423,36 @@ trait RouteRegistrationTrait
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleImportSqlite'),
             'permission_callback' => $this->buildPermissionCallback('users_import_sqlite', $userPerm),
+        ));
+    }
+
+    /**
+     * Register site settings and health summary routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerSiteSettingsRoutes(callable $safeRegister): void {
+        $settingsPerm = array($this, 'checkPluginPermission');
+
+        // GET + PUT /site-settings
+        $safeRegister(EndpointType::SiteSettings->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleGetSiteSettings'),
+                'permission_callback' => $this->buildPermissionCallback('site_settings', $settingsPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Put->value,
+                'callback'            => array($this, 'handleUpdateSiteSettings'),
+                'permission_callback' => $this->buildPermissionCallback('site_settings_update', $settingsPerm),
+            ),
+        ));
+
+        // GET /site-health-summary
+        $safeRegister(EndpointType::SiteHealthSummary->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleSiteHealthSummary'),
+            'permission_callback' => $this->buildPermissionCallback('site_health_summary', $settingsPerm),
         ));
     }
 

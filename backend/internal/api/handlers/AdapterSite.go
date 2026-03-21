@@ -79,6 +79,11 @@ type SiteServiceInterface interface {
 	RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (any, *apperror.AppError)
 	ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (any, *apperror.AppError)
 	ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (any, *apperror.AppError)
+
+	// Site settings proxy
+	GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
+	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -311,4 +316,16 @@ func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int6
 		return nil, appErr
 	}
 	return result, nil
+}
+
+func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteSiteSettings(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+	return a.Service.UpdateRemoteSiteSettings(ctx, siteId, body)
+}
+
+func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
 }

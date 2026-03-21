@@ -83,6 +83,7 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs/email", handlers.EmailRemoteLogs).Methods("POST")
 	registerSnapshotRoutes(api)
 	registerUserRoutes(api)
+	registerSiteSettingsRoutes(api)
 }
 
 func registerUserRoutes(api *mux.Router) {
@@ -95,6 +96,12 @@ func registerUserRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/users/app-password", handlers.RevokeRemoteAppPassword).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/users/export", handlers.ExportRemoteUsersCsv).Methods("GET")
 	api.HandleFunc("/sites/{id}/users/export-sqlite", handlers.ExportRemoteUsersSqlite).Methods("GET")
+}
+
+func registerSiteSettingsRoutes(api *mux.Router) {
+	api.HandleFunc("/sites/{id}/site-settings", handlers.GetRemoteSiteSettings).Methods("GET")
+	api.HandleFunc("/sites/{id}/site-settings", handlers.UpdateRemoteSiteSettings).Methods("PUT")
+	api.HandleFunc("/sites/{id}/site-health-summary", handlers.GetRemoteSiteHealthSummary).Methods("GET")
 }
 
 func registerSnapshotRoutes(api *mux.Router) {

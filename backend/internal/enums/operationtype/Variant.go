@@ -75,6 +75,9 @@ const (
 	ImportUsersCsv
 	ExportUsersSqlite
 	ImportUsersSqlite
+	GetSiteSettings
+	UpdateSiteSettings
+	GetSiteHealthSummary
 )
 
 var variantLabels = [...]string{
@@ -143,6 +146,9 @@ var variantLabels = [...]string{
 	ImportUsersCsv:            "ImportUsersCsv",
 	ExportUsersSqlite:         "ExportUsersSqlite",
 	ImportUsersSqlite:         "ImportUsersSqlite",
+	GetSiteSettings:           "GetSiteSettings",
+	UpdateSiteSettings:        "UpdateSiteSettings",
+	GetSiteHealthSummary:      "GetSiteHealthSummary",
 }
 
 var variantValues = [...]string{
@@ -211,6 +217,9 @@ var variantValues = [...]string{
 	ImportUsersCsv:            "import users csv",
 	ExportUsersSqlite:         "export users sqlite",
 	ImportUsersSqlite:         "import users sqlite",
+	GetSiteSettings:           "get site settings",
+	UpdateSiteSettings:        "update site settings",
+	GetSiteHealthSummary:      "get site health summary",
 }
 
 func (v Variant) String() string  { return v.Value() }

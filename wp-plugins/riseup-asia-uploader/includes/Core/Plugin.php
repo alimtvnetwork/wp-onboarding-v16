@@ -59,6 +59,8 @@ use RiseupAsia\Traits\Log\LogRetrievalTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
 use RiseupAsia\Traits\User\UserCrudTrait;
 use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
+use RiseupAsia\Traits\SiteSettings\SiteSettingsTrait;
+use RiseupAsia\Traits\SiteSettings\SiteHealthSummaryTrait;
 
 class Plugin {
     // Wave 1 traits
@@ -100,6 +102,10 @@ class Plugin {
 
     // Wave 5 traits
     use CloudStorageTrait;
+
+    // Wave 6 traits
+    use SiteSettingsTrait;
+    use SiteHealthSummaryTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;

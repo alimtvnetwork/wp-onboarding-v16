@@ -87,6 +87,8 @@ const (
 	CloudStorageBackupHistory
 	CloudStorageBackupHistoryId
 	CloudStorageRestore
+	SiteSettings
+	SiteHealthSummary
 )
 
 var variantLabels = [...]string{
@@ -173,6 +175,8 @@ var variantLabels = [...]string{
 	CloudStorageBackupHistory:       "CloudStorageBackupHistory",
 	CloudStorageBackupHistoryId:     "CloudStorageBackupHistoryId",
 	CloudStorageRestore:             "CloudStorageRestore",
+	SiteSettings:                    "SiteSettings",
+	SiteHealthSummary:               "SiteHealthSummary",
 }
 
 var variantValues = [...]string{
@@ -259,4 +263,6 @@ var variantValues = [...]string{
 	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
 	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
 	CloudStorageRestore:             "/cloud-storage/restore",
+	SiteSettings:                    "/site-settings",
+	SiteHealthSummary:               "/site-health-summary",
 }
