@@ -49,7 +49,7 @@ const levelColors = {
 };
 
 export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerProps) {
-  const { errors, total, isLoading, refetch, deleteError, clearErrors, exportErrors, isExporting } = useErrorHistory();
+  const { errors, total, isLoading, refetch, deleteError, clearErrors, clearOldErrors, isClearingOld, exportErrors, isExporting } = useErrorHistory();
   const { openErrorModal, openErrorQueue } = useErrorStore();
   
   const [search, setSearch] = useState("");
