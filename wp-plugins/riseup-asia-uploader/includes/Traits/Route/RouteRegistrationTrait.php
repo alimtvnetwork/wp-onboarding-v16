@@ -427,6 +427,36 @@ trait RouteRegistrationTrait
     }
 
     /**
+     * Register site settings and health summary routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerSiteSettingsRoutes(callable $safeRegister): void {
+        $settingsPerm = array($this, 'checkPluginPermission');
+
+        // GET + PUT /site-settings
+        $safeRegister(EndpointType::SiteSettings->route(), array(
+            array(
+                'methods'             => HttpMethodType::Get->value,
+                'callback'            => array($this, 'handleGetSiteSettings'),
+                'permission_callback' => $this->buildPermissionCallback('site_settings', $settingsPerm),
+            ),
+            array(
+                'methods'             => HttpMethodType::Put->value,
+                'callback'            => array($this, 'handleUpdateSiteSettings'),
+                'permission_callback' => $this->buildPermissionCallback('site_settings_update', $settingsPerm),
+            ),
+        ));
+
+        // GET /site-health-summary
+        $safeRegister(EndpointType::SiteHealthSummary->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleSiteHealthSummary'),
+            'permission_callback' => $this->buildPermissionCallback('site_health_summary', $settingsPerm),
+        ));
+    }
+
+    /**
      * Register catch-all route for invalid paths.
      *
      * @param callable $safeRegister Route registration closure.
