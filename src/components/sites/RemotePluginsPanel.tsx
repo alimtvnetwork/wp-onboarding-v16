@@ -841,27 +841,34 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             </div>
           </div>
 
-          {/* Uploader Version Warning */}
-          {uploaderVersionInfo && uploaderVersionInfo.isOutdated && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 shrink-0">
-              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm">
-                <p className="font-medium text-amber-300">
-                  Riseup Asia Uploader is outdated (v{uploaderVersionInfo.version} → v{EXPECTED_UPLOADER_VERSION})
-                </p>
-                <p className="text-amber-400/80 mt-0.5">
-                  Some features like enable/disable/delete may not work. Republish the uploader to this site to update.
+          {/* Managed Plugin Version Warnings */}
+          {managedPluginVersions.some((p) => p.isOutdated) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30 text-warning-foreground shrink-0">
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm space-y-1">
+                {managedPluginVersions.filter((p) => p.isOutdated).map((p) => (
+                  <p key={p.slug} className="font-medium">
+                    {p.label} is outdated{" "}
+                    <Badge variant="outline" className="text-[10px] font-mono mx-0.5 px-1 py-0">v{p.version}</Badge>
+                    {" → "}
+                    <Badge variant="outline" className="text-[10px] font-mono mx-0.5 px-1 py-0 border-primary/50 text-primary">v{p.expectedVersion}</Badge>
+                  </p>
+                ))}
+                <p className="text-muted-foreground mt-0.5">
+                  Some features may not work correctly. Deploy the latest version to this site.
                 </p>
               </div>
             </div>
           )}
-          {uploaderVersionInfo && !uploaderVersionInfo.found && !isLoading && !isError && (
+          {managedPluginVersions.some((p) => !p.found) && !isLoading && !isError && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive shrink-0">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm">
-                <p className="font-medium">Riseup Asia Uploader not found</p>
+                {managedPluginVersions.filter((p) => !p.found).map((p) => (
+                  <p key={p.slug} className="font-medium">{p.label} not found on this site</p>
+                ))}
                 <p className="text-destructive/80 mt-0.5">
-                  The companion plugin is not installed on this site. Deploy it to enable full plugin management.
+                  Deploy the plugin to enable full management capabilities.
                 </p>
               </div>
             </div>
