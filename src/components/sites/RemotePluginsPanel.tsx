@@ -525,7 +525,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     const results = await Promise.allSettled(
       selectedList.map(async (plugin) => {
         if (!(await validatePluginExists(plugin.plugin, "bulk activate"))) {
-          throw new Error(`Plugin "${plugin.plugin}" not found — bulk activate blocked`);
+          throw new PreFlightBlockedError(plugin.plugin, "bulk activate");
         }
         const response = await api.enableRemotePlugin(site.id, plugin.plugin, plugin.version);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "PUT" });
