@@ -50,6 +50,7 @@ trait RouteRegistrationTrait
         $this->registerSnapshotRoutes($safeRegister);
         $this->registerUserRoutes($safeRegister);
         $this->registerCloudStorageRoutes($safeRegister);
+        $this->registerSiteSettingsRoutes($safeRegister);
         $this->registerCatchAllRoute($safeRegister);
 
         $this->fileLogger->info("REST API route registration complete: $registered registered, $failed failed");
