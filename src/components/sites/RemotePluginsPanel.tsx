@@ -209,7 +209,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
   const queryKey = ["sites", site.id, "remote-plugins"];
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
-  const [isFromCache, setIsFromCache] = useState(false);
+  const [cacheSource, setCacheSource] = useState<"live" | "cached">("cached");
+  const [, setTimeTick] = useState(0);
 
   const { data: plugins, isLoading, isError, error: queryError, refetch, isFetching } = useQuery({
     queryKey,
@@ -220,7 +221,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         throw new Error(msg);
       }
       setLastFetchedAt(new Date());
-      setIsFromCache(false);
+      setCacheSource("cached");
       return response.data as RemotePlugin[];
     },
     enabled: open,
@@ -240,6 +241,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     }
   }, [isError, queryError, captureException, site.id]);
 
+  // Auto-update relative time every 30s
+  useEffect(() => {
+    if (!open || !lastFetchedAt) return;
+    const interval = setInterval(() => setTimeTick((t) => t + 1), 30_000);
+    return () => clearInterval(interval);
+  }, [open, lastFetchedAt]);
+
   // Force sync mutation (bypasses cache)
   const forceSyncMutation = useMutation({
     meta: { suppressGlobalError: true },
@@ -251,7 +259,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       toast.success("Plugin list refreshed from site");
       queryClient.setQueryData(queryKey, data);
       setLastFetchedAt(new Date());
-      setIsFromCache(false);
+      setCacheSource("live");
     },
     onError: (error) => {
       const captured = captureException(error, {
@@ -736,9 +744,13 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             {/* Cache Status & Actions - stacked on mobile */}
             <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
               {lastFetchedAt && (
-                <Badge variant="outline" className="text-xs gap-1 text-muted-foreground shrink-0 hidden sm:flex">
-                  <Clock className="h-3 w-3" />
-                  {formatTimeAgo(lastFetchedAt)}
+                <Badge
+                  variant="outline"
+                  className={`text-xs gap-1 shrink-0 hidden sm:flex ${cacheSource === "live" ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}
+                  title={`Source: ${cacheSource === "live" ? "Force synced from WordPress" : "May be from backend cache"} at ${lastFetchedAt.toLocaleTimeString()}`}
+                >
+                  {cacheSource === "live" ? <Zap className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                  {cacheSource === "live" ? "Live" : "Cached"} · {formatTimeAgo(lastFetchedAt)}
                 </Badge>
               )}
               <Button 
@@ -1232,12 +1244,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                   <span className="hidden sm:inline"> (of {plugins?.length} total)</span>
                 )}
               </span>
-              {isFromCache && (
-                <Badge variant="secondary" className="text-xs gap-1">
-                  <Database className="h-3 w-3" />
-                  Cached
-                </Badge>
-              )}
+              <Badge variant="secondary" className={`text-xs gap-1 ${cacheSource === "live" ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}>
+                {cacheSource === "live" ? <Zap className="h-3 w-3" /> : <Database className="h-3 w-3" />}
+                {cacheSource === "live" ? "Live" : "Cached"}
+              </Badge>
             </div>
             <a
               href={`${site.url}/wp-admin/plugins.php`}
