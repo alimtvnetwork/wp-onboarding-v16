@@ -125,14 +125,25 @@ func (s *Service) convertSingleUploaderPlugin(siteId int64, p wordpress.Uploader
 	slug := resolvePluginSlug(p)
 	pluginFile := s.resolvePluginFile(siteId, p, slug)
 
-	status := "Inactive"
+	status := normalizeRemotePluginStatus("Inactive")
 	if p.Active {
-		status = "Active"
+		status = normalizeRemotePluginStatus("Active")
 	}
 
 	return &RemotePlugin{
 		Plugin: pluginFile, Slug: slug, Name: p.Name, Version: p.Version,
 		Status: status, Author: p.Author, Description: p.Description,
+	}
+}
+
+func normalizeRemotePluginStatus(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "active":
+		return "Active"
+	case "inactive":
+		return "Inactive"
+	default:
+		return status
 	}
 }
 
@@ -188,6 +199,10 @@ func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteId int64) (
 	if unmarshalErr != nil {
 
 		return nil, apperror.Wrap(unmarshalErr, apperror.ErrInternal, "failed to unmarshal cached plugins")
+	}
+
+	for i := range plugins {
+		plugins[i].Status = normalizeRemotePluginStatus(plugins[i].Status)
 	}
 
 	return plugins, nil
