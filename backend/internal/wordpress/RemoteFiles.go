@@ -64,7 +64,7 @@ type syncManifestResult struct {
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.SyncManifest.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
@@ -98,7 +98,7 @@ type pluginFilesResult struct {
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) apperror.Result[[]RemoteFile] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.Files.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginSlugRequest{Plugin: slug},
@@ -131,7 +131,7 @@ type mutationTokenResult struct {
 func (c *Client) RequestMutationToken(action string) apperror.Result[string] {
 	endpoint := "/" + OnboardNamespace + OnboardRequestMutationPath + "?action=" + action
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.RequestMutationToken,
@@ -168,7 +168,7 @@ type fileContentResult struct {
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) apperror.Result[string] {
 	endpoint := "/" + RiseupAsiaNamespace + ep.File.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  endpoint,
 		Body:      PluginFileRequest{Plugin: pluginSlug, Path: filePath},

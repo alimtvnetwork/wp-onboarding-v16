@@ -179,7 +179,7 @@ func (c *Client) reportAuthStart() {
 
 // fetchAuthResponse sends the authentication API call.
 func (c *Client) fetchAuthResponse() apperror.Result[ApiCallResponse] {
-	authInput := apiCallInput{
+	authInput := ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCoreUsersMe,
 		Operation: operationtype.AuthenticateUser,

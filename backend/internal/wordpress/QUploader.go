@@ -15,7 +15,7 @@ import (
 func (c *Client) CheckQUploadAvailable() apperror.Result[*UploaderAvailability] {
 	endpoint := "/" + QUploadNamespace + ep.Status.String()
 
-	callResp := c.doApiCallWithStatus(apiCallInput{
+	callResp := c.doApiCallWithStatus(ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.CheckUploaderNamespace,
@@ -72,7 +72,7 @@ func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Enable.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Put,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
@@ -90,7 +90,7 @@ func (c *Client) DisablePluginViaQUpload(slug string) *apperror.AppError {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Disable.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Put,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
@@ -107,7 +107,7 @@ func (c *Client) DisablePluginViaQUpload(slug string) *apperror.AppError {
 func (c *Client) ListPluginsViaQUpload() apperror.Result[[]UploaderPluginInfo] {
 	endpoint := "/" + QUploadNamespace + ep.Plugins.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ListPlugins,
@@ -127,7 +127,7 @@ func (c *Client) DeletePluginViaQUpload(slug string) *apperror.AppError {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Delete.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},

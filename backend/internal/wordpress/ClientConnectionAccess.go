@@ -40,7 +40,7 @@ func (c *Client) reportPluginAccessStart() {
 
 // fetchPluginAccessResponse sends the plugin list API call.
 func (c *Client) fetchPluginAccessResponse() apperror.Result[ApiCallResponse] {
-	pluginAccessInput := apiCallInput{
+	pluginAccessInput := ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  WPCorePlugins,
 		Operation: operationtype.CheckPluginAccess,
@@ -163,7 +163,7 @@ func (c *Client) sendWriteTestPost() apperror.Result[ApiCallResponse] {
 		Status:  poststatus.Draft.String(),
 	}
 
-	writeTestInput := apiCallInput{
+	writeTestInput := ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  WPCorePosts,
 		Body:      testPost,
@@ -245,7 +245,7 @@ func (c *Client) handleWriteTestCleanup(body []byte, result *ConnectionInfo) {
 
 // deleteTestPost removes the test draft post.
 func (c *Client) deleteTestPost(postId int) {
-	deleteInput := apiCallInput{
+	deleteInput := ApiCallInput{
 		Method:     httpmethod.Delete,
 		Endpoint:   fmt.Sprintf(WPCorePostById+"?force=true", postId),
 		Operation:  operationtype.DeleteTestPost,

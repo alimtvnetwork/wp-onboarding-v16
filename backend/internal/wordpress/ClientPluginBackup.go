@@ -24,7 +24,7 @@ func (c *Client) CreateRemoteBackup(slug string) apperror.Result[RemoteBackupRes
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginBackup.String()
 
-	return doApiCall[RemoteBackupResult](c, apiCallInput{
+	return doApiCall[RemoteBackupResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
