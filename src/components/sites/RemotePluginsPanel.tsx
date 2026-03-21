@@ -50,6 +50,7 @@ import {
   Upload,
   FileArchive,
   X,
+  GripVertical,
 } from "lucide-react";
 import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { RemotePluginStatus } from "@/lib/constants";
