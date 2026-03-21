@@ -83,6 +83,7 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs/email", handlers.EmailRemoteLogs).Methods("POST")
 	registerSnapshotRoutes(api)
 	registerUserRoutes(api)
+	registerSiteSettingsRoutes(api)
 }
 
 func registerUserRoutes(api *mux.Router) {

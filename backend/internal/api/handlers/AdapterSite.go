@@ -317,3 +317,15 @@ func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int6
 	}
 	return result, nil
 }
+
+func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteSiteSettings(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+	return a.Service.UpdateRemoteSiteSettings(ctx, siteId, body)
+}
+
+func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
+}
