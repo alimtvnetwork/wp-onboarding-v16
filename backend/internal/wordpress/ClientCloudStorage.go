@@ -14,7 +14,7 @@ func (c *Client) UploadToCloudStorage(req CloudStorageUploadRequest) apperror.Re
 	namespace := c.resolveNamespace()
 	endpoint := "/" + namespace + ep.CloudStorageUpload.String()
 
-	return doApiCall[CloudStorageUploadResult](c, ApiCallInput{
+	return DoApiCall[CloudStorageUploadResult](c, ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       req,

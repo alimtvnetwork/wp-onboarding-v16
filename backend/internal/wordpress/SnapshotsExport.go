@@ -53,7 +53,7 @@ func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response
 
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot.
 func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
-	return doApiCall[SnapshotDownloadResult](c, ApiCallInput{
+	return DoApiCall[SnapshotDownloadResult](c, ApiCallInput{
 		Method:    httpmethodtype.Post,
 		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
