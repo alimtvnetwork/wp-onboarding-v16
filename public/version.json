@@ -1,13 +1,25 @@
 {
   "appName": "WP Publish",
-  "version": "2.28.4",
-  "releaseDate": "2026-03-20",
+  "version": "2.28.5",
+  "releaseDate": "2026-03-21",
   "gitCommit": "dev",
-  "buildTime": "2026-03-20T00:00:00Z",
-  "scriptVersion": "2.28.4",
-  "wpPluginVersion": "2.28.4",
-  "quploadVersion": "2.28.4",
+  "buildTime": "2026-03-21T00:00:00Z",
+  "scriptVersion": "2.28.5",
+  "wpPluginVersion": "2.28.5",
+  "quploadVersion": "2.28.5",
   "changelog": [
+    {
+      "version": "2.28.5",
+      "date": "2026-03-21",
+      "title": "Compilation & Error Handling Fixes",
+      "changes": [
+        "🐛 Fixed missing imports across Go backend (context, apperror, models packages)",
+        "🔧 Exported DoApiCall/ApiCallInput from wordpress package for cross-package access",
+        "🛠️ Replaced undefined appErr.HttpStatus() calls with resolveHttpStatus() helper in all handlers",
+        "🔧 Fixed EmailLogsRequest type mismatch in AdapterSite.go",
+        "🧹 Removed unused models import from VerboseCheck.go"
+      ]
+    },
     {
       "version": "2.28.4",
       "date": "2026-03-20",

@@ -1,5 +1,5 @@
 # WP Plugin Publish - PowerShell Build & Run Script
-# Version: 2.28.4
+# Version: 2.28.5
 # Supports pnpm with PnP for disk-efficient Node.js dependency management
 # All paths are relative to script location (working directory)
 

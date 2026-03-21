@@ -6,6 +6,15 @@ This changelog is synchronized with [`public/version.json`](../../public/version
 
 ---
 
+## [2.28.5] — 2026-03-21
+
+### Compilation & Error Handling Fixes
+- 🐛 Fixed missing imports across Go backend (context, apperror, models packages)
+- 🔧 Exported `DoApiCall`/`ApiCallInput` from wordpress package for cross-package access
+- 🛠️ Replaced undefined `appErr.HttpStatus()` calls with `resolveHttpStatus()` helper in all handlers
+- 🔧 Fixed `EmailLogsRequest` type mismatch in `AdapterSite.go`
+- 🧹 Removed unused models import from `VerboseCheck.go`
+
 ## [2.28.4] — 2026-03-20
 
 ### Changelog & Documentation Enhancements
