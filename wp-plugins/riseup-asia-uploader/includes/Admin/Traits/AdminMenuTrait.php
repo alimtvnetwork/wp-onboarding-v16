@@ -220,6 +220,7 @@ trait AdminMenuTrait {
                 'clearSessions' => AjaxActionType::ClearErrorSessions->value,
                 'readLogFile'   => AjaxActionType::ReadLogFile->value,
                 'clearLogFile'  => AjaxActionType::ClearLogFile->value,
+                'clearAllLogs'  => AjaxActionType::ClearAllLogs->value,
             ),
             'tabs'         => array(
                 'sessions'   => AdminTabType::Sessions->value,
