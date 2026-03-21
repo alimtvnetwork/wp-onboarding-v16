@@ -41,7 +41,7 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.App
 	normalizedSlug := normalizePluginSlug(input.Slug)
 	endpoint := "/" + namespace + input.Endpoint.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Put,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
@@ -67,7 +67,7 @@ func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*Plug
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: normalizedSlug},
@@ -161,7 +161,7 @@ func (c *Client) ListPluginsViaUploader() apperror.Result[[]UploaderPluginInfo] 
 	namespace := c.resolveNamespace()
 	endpoint := BuildNamespacedEndpoint(namespace, ep.Plugins)
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ListPlugins,
@@ -209,7 +209,7 @@ type listFilesResult struct {
 func (c *Client) ListPluginFilesViaUploader(slug string) apperror.Result[[]UploaderFileInfo] {
 	endpoint := "/" + c.resolveNamespace() + ep.Files.String()
 
-	callInput := apiCallInput{
+	callInput := ApiCallInput{
 		Method:     httpmethod.Post,
 		Endpoint:   endpoint,
 		Body:       PluginSlugRequest{Plugin: slug},
