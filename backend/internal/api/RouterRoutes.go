@@ -107,10 +107,10 @@ func registerSnapshotRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/snapshots/incremental", handlers.IncrementalBackupRemoteSnapshot).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/import", handlers.ImportRemoteSnapshot).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/cleanup", handlers.CleanupRemoteSnapshots).Methods("POST")
-	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.GetRemoteSnapshot).Methods("GET")
-	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
-	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")
-	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/export", handlers.ExportRemoteSnapshot).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId:[0-9]+}", handlers.GetRemoteSnapshot).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId:[0-9]+}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId:[0-9]+}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId:[0-9]+}/export", handlers.ExportRemoteSnapshot).Methods("GET")
 	api.HandleFunc("/sites/{id}/snapshots/download", handlers.DownloadSnapshotZip).Methods("POST")
 }
 

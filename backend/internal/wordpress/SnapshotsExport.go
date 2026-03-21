@@ -45,7 +45,7 @@ type SnapshotDownloadResult struct {
 func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response] {
 	return c.doApiCallStream(ApiCallInput{
 		Method:    httpmethodtype.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsExport),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsExport),
 		Body:      SnapshotIdRequest{Id: snapshotId},
 		Operation: operationtype.ExportSnapshot,
 	})
@@ -55,7 +55,7 @@ func (c *Client) ExportSnapshot(snapshotId int64) apperror.Result[*http.Response
 func (c *Client) DownloadSnapshotZip(snapshotId int64) apperror.Result[SnapshotDownloadResult] {
 	return DoApiCall[SnapshotDownloadResult](c, ApiCallInput{
 		Method:    httpmethodtype.Post,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsDownload),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsDownload),
 		Body:      SnapshotIdRequest{Id: snapshotId},
 		Operation: operationtype.DownloadSnapshotZip,
 	})
@@ -97,7 +97,7 @@ func buildStreamZipAppError(resp *http.Response, downloadUrl string) *apperror.A
 func (c *Client) GetSnapshotProviders() apperror.Result[[]SnapshotProvider] {
 	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethodtype.Get,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsProviders),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsProviders),
 		Operation: operationtype.GetSnapshotProviders,
 	})
 	if rawResult.HasError() {
@@ -126,7 +126,7 @@ type AvailableTable struct {
 func (c *Client) GetAvailableTables() apperror.Result[[]AvailableTable] {
 	rawResult := c.doApiCallRaw(ApiCallInput{
 		Method:    httpmethodtype.Get,
-		Endpoint:  snapshotEndpoint(ep.SnapshotsTables),
+		Endpoint:  c.snapshotEndpoint(ep.SnapshotsTables),
 		Operation: operationtype.GetAvailableTables,
 	})
 	if rawResult.HasError() {

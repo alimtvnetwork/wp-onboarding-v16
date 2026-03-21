@@ -20,11 +20,10 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
-import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
+import { SnapshotInterval, SnapshotSchedule, SnapshotRecord } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useCaptureQueryError } from "@/hooks/useCaptureQueryError";
 import { api, requireSuccess } from "@/lib/api";
-import { CronJobStatus } from "@/lib/constants";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 import {
   Sheet,
@@ -295,8 +294,6 @@ export function SnapshotSettingsTab() {
             showRetention={true}
           />
 
-          <Separator />
-          <CronJobsPanel />
         </>
       )}
 
@@ -587,201 +584,6 @@ const CRON_STATUS_CONFIG: Record<string, { className: string; label: string }> =
   Error: { className: "text-destructive", label: "Error" },
 };
 
-function CronJobsPanel() {
-  const {
-    data: cronJobs,
-    isLoading,
-    isError: cronError,
-    error: cronQueryError,
-    refetch,
-    isFetching,
-  } = useApiQuery<SnapshotCronJob[]>({
-    queryKey: ["snapshot-cron-jobs"],
-    apiFn: () => api.getSnapshotCronJobs(0),
-    endpoint: "/sites/0/snapshots/cron",
-    queryOptions: { retry: false, meta: { suppressGlobalError: true } },
-  });
-
-  useCaptureQueryError(cronError, cronQueryError, {
-    source: "CronJobsPanel.fetchCronJobs",
-    endpoint: "/sites/0/snapshots/cron",
-    triggerComponent: "SnapshotSettingsTab",
-  });
-
-  const [syncing, setSyncing] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  const jobs = cronJobs ?? [];
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const res = await api.syncSnapshotCronJobs(0);
-      const result = requireSuccess(res, { endpoint: "/sites/0/snapshots/cron/sync", method: "POST" });
-      toast.success(`Cron sync: ${result.created} created, ${result.updated} updated, ${result.removed} removed`);
-      refetch();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(`Cron sync failed: ${message}`);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleTrigger = async (cronId: string) => {
-    setActionLoading(cronId);
-    try {
-      const res = await api.triggerSnapshotCronJob(0, cronId);
-      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${cronId}/trigger`, method: "POST" });
-      toast.success("Snapshot triggered");
-      refetch();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(`Trigger failed: ${message}`);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleTogglePause = async (job: SnapshotCronJob) => {
-    setActionLoading(job.id);
-    try {
-      const apiFn = job.status === CronJobStatus.Paused ? api.resumeSnapshotCronJob : api.pauseSnapshotCronJob;
-      const res = await apiFn(0, job.id);
-      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${job.id}/${job.status === CronJobStatus.Paused ? "resume" : "pause"}`, method: "POST" });
-      toast.success(job.status === CronJobStatus.Paused ? "Cron job resumed" : "Cron job paused");
-      refetch();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(`Action failed: ${message}`);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const intervalLabel = (interval: string) =>
-    INTERVAL_OPTIONS.find((o) => o.value === interval)?.label ?? interval;
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Radio className="h-4 w-4" />
-          Cron Jobs
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={syncing}
-            className="h-7 text-xs"
-          >
-            <Zap className={cn("h-3.5 w-3.5 mr-1", syncing && "animate-spin")} />
-            Sync
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="h-7 text-xs"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isFetching && "animate-spin")} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Active cron jobs running on the backend. Sync to match current schedules.
-      </p>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8 text-muted-foreground text-xs gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading cron jobs…
-        </div>
-      ) : jobs.length === 0 ? (
-        <div className="text-center py-6 text-muted-foreground text-xs border rounded-md border-dashed">
-          No cron jobs registered. Save settings with schedules, then sync.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {jobs.map((job) => {
-            const statusCfg = CRON_STATUS_CONFIG[job.status] ?? { className: "text-muted-foreground", label: job.status };
-            const isThisLoading = actionLoading === job.id;
-            return (
-              <div
-                key={job.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                  job.status === CronJobStatus.Active ? "bg-accent/20 border-primary/15" : "bg-muted/30"
-                )}
-              >
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{intervalLabel(job.interval)}</span>
-                    <span className={cn("text-[10px] font-medium uppercase tracking-wider", statusCfg.className)}>
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="font-mono">{job.cronExpression}</span>
-                    {job.nextRunAt && (
-                      <span>
-                        Next: {formatDistanceToNow(new Date(job.nextRunAt), { addSuffix: true })}
-                      </span>
-                    )}
-                    {job.lastRunAt && (
-                      <span>
-                        Last: {formatDistanceToNow(new Date(job.lastRunAt), { addSuffix: true })}
-                      </span>
-                    )}
-                    <span>Runs: {job.runCount}</span>
-                  </div>
-                  {job.lastError && (
-                    <p className="text-[10px] text-destructive truncate max-w-[300px]" title={job.lastError}>
-                      {job.lastError}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTogglePause(job)}
-                    disabled={isThisLoading}
-                    className="h-7 w-7 p-0"
-                    title={job.status === CronJobStatus.Paused ? "Resume" : "Pause"}
-                  >
-                    {isThisLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : job.status === CronJobStatus.Paused ? (
-                      <Play className="h-3.5 w-3.5" />
-                    ) : (
-                      <Pause className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleTrigger(job.id)}
-                    disabled={isThisLoading}
-                    className="h-7 w-7 p-0"
-                    title="Trigger now"
-                  >
-                    <Zap className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Snapshot History Viewer + Phase 4: Detail Drawer                           */
 /* -------------------------------------------------------------------------- */
@@ -838,23 +640,6 @@ function SnapshotHistoryViewer() {
   useCaptureQueryError(snapshotsError, snapshotsQueryError, {
     source: "SnapshotHistoryViewer.fetchSnapshots",
     endpoint: "/sites/0/snapshots",
-    triggerComponent: "SnapshotSettingsTab",
-  });
-
-  const {
-    data: cronJobsData,
-    isError: calendarCronError,
-    error: calendarCronQueryError,
-  } = useApiQuery<SnapshotCronJob[]>({
-    queryKey: ["snapshot-cron-jobs-calendar"],
-    apiFn: () => api.getSnapshotCronJobs(0),
-    endpoint: "/sites/0/snapshots/cron",
-    queryOptions: { retry: false, meta: { suppressGlobalError: true } },
-  });
-
-  useCaptureQueryError(calendarCronError, calendarCronQueryError, {
-    source: "SnapshotHistoryViewer.fetchCronJobsCalendar",
-    endpoint: "/sites/0/snapshots/cron",
     triggerComponent: "SnapshotSettingsTab",
   });
 
@@ -973,7 +758,7 @@ function SnapshotHistoryViewer() {
           <SnapshotStorageAnalytics snapshots={records} />
 
           <Separator />
-          <SnapshotCalendarView snapshots={records} cronJobs={cronJobsData ?? []} />
+          <SnapshotCalendarView snapshots={records} cronJobs={[]} />
         </>
       )}
     </div>

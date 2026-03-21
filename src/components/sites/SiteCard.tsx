@@ -28,8 +28,8 @@ import {
   FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
-import { ConnectionStatus, CronJobStatus, STALE_TIME_DEFAULT_MS } from "@/lib/constants";
+import { api, Site, PluginMapping, SnapshotRecord } from "@/lib/api";
+import { ConnectionStatus, STALE_TIME_DEFAULT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
@@ -89,26 +89,6 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     triggerComponent: "SiteCard",
   });
 
-  // Fetch cron jobs for "next backup" badge
-  const { data: cronJobs, isError: cronError, error: cronQueryError } = useQuery({
-    queryKey: ["sites", site.id, "snapshots", "cron"],
-    queryFn: async () => {
-      const res = await api.getSnapshotCronJobs(site.id);
-      if (res.success) return res.data || [];
-      return [];
-    },
-    enabled: site.connectionStatus === ConnectionStatus.Connected,
-    staleTime: STALE_TIME_DEFAULT_MS,
-    retry: false,
-    meta: { suppressGlobalError: true },
-  });
-
-  useCaptureQueryError(cronError, cronQueryError, {
-    source: "SiteCard.fetchCronJobs",
-    endpoint: `/sites/${site.id}/snapshots/cron`,
-    triggerComponent: "SiteCard",
-  });
-
   // Derive running backup
   const runningBackup = useMemo(() => {
     if (!snapshots?.length) return null;
@@ -126,16 +106,6 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
     return completed[0] || null;
   }, [snapshots]);
-
-  // Derive next scheduled run
-  const nextScheduledRun = useMemo(() => {
-    if (!cronJobs?.length) return null;
-    const active = (cronJobs as SnapshotCronJob[])
-      .filter((j) => j.status === CronJobStatus.Active && j.nextRunAt)
-      .sort((a, b) => new Date(a.nextRunAt!).getTime() - new Date(b.nextRunAt!).getTime());
-
-    return active[0] || null;
-  }, [cronJobs]);
 
   const handleTestConnection = async () => {
     setTestingSiteId(site.id);
@@ -324,8 +294,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </p>
         )}
 
-        {/* Running backup, last backup & next schedule indicators */}
-        {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup || nextScheduledRun) && (
+        {/* Running backup & last backup indicators */}
+        {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
@@ -337,12 +307,6 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
               <span className="inline-flex items-center gap-1 text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
-              </span>
-            )}
-            {nextScheduledRun?.nextRunAt && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>Next: {formatDistanceToNow(parseISO(nextScheduledRun.nextRunAt), { addSuffix: true })}</span>
               </span>
             )}
           </div>
