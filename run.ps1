@@ -23,7 +23,8 @@ param(
     [Alias('t')][switch]$test,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
-    [Alias('d')][switch]$debug,
+    [Alias('d')][switch]$deploy,
+    [Alias('dbg')][switch]$debug,
     [Alias('c')][switch]$clear,
     [Alias('pp')][string]$pluginpath = "",
     [string]$site = "",
@@ -197,6 +198,7 @@ if ($help) {
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -t,  -test          Run Go backend tests and exit"
     Write-Host "  -v,  -verbose       Show detailed debug output"
+    Write-Host "  -d,  -deploy        Full deploy cycle: git pull, upload all sites, plugin status, then build & run"
     Write-Host ""
     Write-Host "UPLOAD:" -ForegroundColor Yellow
     Write-Host "  -u,  -upload        Upload default plugin via Riseup Asia Uploader API"
@@ -220,7 +222,7 @@ if ($help) {
     Write-Host "  -u -as -site 'name' Upload DEFAULT plugin to a specific site"
     Write-Host "  -u -as -i N         Upload DEFAULT plugin to site #N"
     Write-Host "  -u -as -xs 'name'   Upload DEFAULT plugin to all sites EXCEPT the named one(s)"
-    Write-Host "  -d,  -debug         Enable debug logging (shows endpoints, paths, responses)"
+    Write-Host "  -dbg, -debug        Enable debug logging (shows endpoints, paths, responses)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u, -q, -z, -zq)"
     Write-Host "  -sync               Sequential mode for -uas (no background jobs)"
     Write-Host "  -u -v               Verbose: show raw JSON request/response during upload"
@@ -291,6 +293,7 @@ if ($help) {
     Write-Host ""
     Write-Host "  Build & Run:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1              # Full build and run"
+    Write-Host "    .\run.ps1 -d           # Deploy: git pull, upload all sites, plugin status, build & run"
     Write-Host "    .\run.ps1 -r           # Complete clean reinstall and build"
     Write-Host "    .\run.ps1 -s           # Just start the backend (skip build)"
     Write-Host "    .\run.ps1 -b           # Build only, don't start server"
@@ -303,7 +306,7 @@ if ($help) {
     Write-Host "    .\run.ps1 -u           # Upload default plugin (Riseup Asia API)"
     Write-Host "    .\run.ps1 -q           # Upload default plugin (QUpload API)"
     Write-Host "    .\run.ps1 -u -q        # Upload Riseup Asia Uploader via QUpload"
-    Write-Host "    .\run.ps1 -u -d        # Upload with debug logging"
+    Write-Host "    .\run.ps1 -u -dbg       # Upload with debug logging"
     Write-Host "    .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload specific plugin"
     Write-Host "    .\run.ps1 -q -pp 'wp-plugins/qupload' # Upload specific via QUpload"
     Write-Host ""
@@ -421,6 +424,52 @@ if (($pluginstatus -or $pas) -and -not $uas) {
     $script:pluginStatusVerbose = $verbose
     Invoke-PluginStatusMode
 }
+
+# ============================================================================
+# DEPLOY MODE: git pull -> upload all sites -> plugin status -> build & run
+# ============================================================================
+if ($deploy) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  DEPLOY MODE (-d)" -ForegroundColor Cyan
+    Write-Host "  git pull -> upload all sites -> plugin status -> build & run" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Phase 1: Git pull
+    Invoke-GitPull
+
+    # Phase 2: Upload all plugins to all sites
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 1/3] Uploading all plugins to all sites..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    $script:uasExitCode = 0
+    Invoke-UploadAllSitesMode
+
+    # Phase 3: Plugin status check
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 2/3] Checking plugin status on all sites..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    $pluginstatusall = $true
+    $script:errorFlag = $errorlogs
+    $script:pluginStatusVerbose = $verbose
+    Invoke-PluginStatusMode
+
+    # Phase 4: Continue to regular build & run (fall through)
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [Deploy 3/3] Building and starting backend..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Skip git pull again since we already did it
+    $skippull = $true
+}
+
 # ============================================================================
 # BANNER
 # ============================================================================

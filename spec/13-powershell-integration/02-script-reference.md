@@ -35,7 +35,8 @@
 | `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`, `-q`, `-ua`, or `-z`) |
 | | `-site` | String | Target a specific site by name (use with `-uas`) |
 | `-xs` | `-exclude` | String | Exclude site(s) by name, comma-separated (use with `-uas`) |
-| `-d` | `-debug` | Switch | Enable debug logging for upload |
+| `-d` | `-deploy` | Switch | Full deploy cycle: git pull → upload all sites → plugin status → build & run |
+| `-dbg` | `-debug` | Switch | Enable debug logging for upload |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
 ---
@@ -108,6 +109,9 @@
 
 # Run Go backend tests
 .\run.ps1 -t
+
+# Full deploy: git pull, upload all sites, plugin status, then build & run
+.\run.ps1 -d
 
 # Verbose output for debugging
 .\run.ps1 -v

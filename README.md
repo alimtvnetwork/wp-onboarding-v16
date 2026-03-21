@@ -70,6 +70,9 @@ cd wp-plugin-publish
 # Full pipeline: git pull → prerequisites → pnpm install → build → start Go server
 .\run.ps1
 
+# Deploy mode: git pull → upload all sites → plugin status → build & run
+.\run.ps1 -d
+
 # Clean reinstall (fresh dependencies + clean build)
 .\run.ps1 -r
 ```
