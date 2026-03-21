@@ -29,6 +29,44 @@ use RiseupAsia\Helpers\BooleanHelpers;
 trait PluginLifecycleHelpersTrait
 {
     /**
+     * Handle plugin existence check request.
+     *
+     * Returns whether a plugin with the given slug is installed (and its status).
+     *
+     * @param WP_REST_Request $request Request with 'plugin_slug' parameter.
+     * @return WP_REST_Response
+     */
+    public function handlePluginExists(WP_REST_Request $request): WP_REST_Response
+    {
+        $loadError = $this->loadPluginFunctions();
+
+        if ($loadError) {
+            return $loadError;
+        }
+
+        $slug = sanitize_text_field($request->get_param('plugin_slug') ?? '');
+
+        if (empty($slug)) {
+            return $this->errorResponse(
+                ResponseMessageType::MissingPluginSlug->value,
+                HttpStatusType::BadRequest->value
+            );
+        }
+
+        $plugins    = get_plugins();
+        $pluginFile = $this->findPluginFileBySlug($slug, $plugins);
+        $exists     = $pluginFile !== null;
+        $isActive   = $exists && is_plugin_active($pluginFile);
+
+        return new WP_REST_Response(array(
+            ResponseKeyType::Slug->value   => $slug,
+            'exists'                       => $exists,
+            'active'                       => $isActive,
+            ResponseKeyType::PluginFile->value => $pluginFile ?? '',
+        ), HttpStatusType::Ok->value);
+    }
+
+    /**
      * Resolve the target plugin slug and file path from a REST request.
      *
      * @return array{slug: string, plugin_file: string}|WP_REST_Response
