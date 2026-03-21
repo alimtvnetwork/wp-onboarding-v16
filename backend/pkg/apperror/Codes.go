@@ -54,10 +54,11 @@ const (
 	ErrWPPluginUpload   ErrorCode = "E3006" // Failed to upload plugin
 	ErrWPPluginActivate ErrorCode = "E3007" // Failed to activate plugin
 	ErrWPTimeout        ErrorCode = "E3008" // Request timed out
-	ErrWPUploadFailed   ErrorCode = "E3009" // Plugin upload to WordPress failed
-	ErrWPPluginDelete   ErrorCode = "E3010" // Failed to delete plugin
-	ErrWPPluginFiles    ErrorCode = "E3011" // Failed to get plugin files
-	ErrWPPluginContent  ErrorCode = "E3012" // Failed to get plugin file content
+	ErrWPUploadFailed      ErrorCode = "E3009" // Plugin upload to WordPress failed
+	ErrWPPluginDelete      ErrorCode = "E3010" // Failed to delete plugin
+	ErrWPPluginFiles       ErrorCode = "E3011" // Failed to get plugin files
+	ErrWPPluginContent     ErrorCode = "E3012" // Failed to get plugin file content
+	ErrWPEndpointMismatch  ErrorCode = "E3013" // REST API returned HTML — endpoint/namespace not registered
 )
 
 // File system errors (E4xxx)

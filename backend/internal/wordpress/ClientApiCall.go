@@ -2,8 +2,10 @@ package wordpress
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"wp-plugin-publish/internal/enums/httpmethodtype"
 	"wp-plugin-publish/internal/enums/operationtype"
@@ -63,6 +65,11 @@ func (c *Client) doApiCallRaw(input ApiCallInput) apperror.Result[[]byte] {
 
 	if isErrorStatus(resp.StatusCode, input.OkStatuses) {
 		return apperror.Fail[[]byte](c.buildCallError(input, resp.StatusCode, resp.Body))
+	}
+
+	// Detect HTML responses early — WordPress returns HTML for unregistered REST routes.
+	if htmlErr := detectHtmlResponse(resp.Body, input.Endpoint, input.Operation); htmlErr != nil {
+		return apperror.Fail[[]byte](htmlErr)
 	}
 
 	return apperror.Ok(resp.Body)
@@ -142,6 +149,11 @@ func DoApiCall[T any](c *Client, input ApiCallInput) apperror.Result[T] {
 
 // decodeApiResponse unmarshals raw JSON bytes into T.
 func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result[T] {
+	// Guard against HTML before JSON decode — clearer than "invalid character '<'"
+	if htmlErr := detectHtmlResponse(data, "", operationtype.Invalid); htmlErr != nil {
+		return apperror.Fail[T](htmlErr)
+	}
+
 	var result T
 	err := json.Unmarshal(data, &result)
 
@@ -150,6 +162,34 @@ func decodeApiResponse[T any](data []byte, operationDesc string) apperror.Result
 	}
 
 	return apperror.Ok(result)
+}
+
+// detectHtmlResponse checks if response bytes look like HTML instead of JSON,
+// which indicates the WordPress REST API namespace/endpoint is not registered.
+// Returns nil if the response is not HTML.
+func detectHtmlResponse(body []byte, endpoint string, op operationtype.Variant) *apperror.AppError {
+	if len(body) == 0 {
+		return nil
+	}
+
+	peek := strings.TrimSpace(string(body[:min(len(body), 512)]))
+	lower := strings.ToLower(peek[:min(len(peek), 200)])
+
+	isHtml := strings.HasPrefix(peek, "<") ||
+		strings.HasPrefix(lower, "<!doctype") ||
+		strings.Contains(lower, "<html")
+
+	if !isHtml {
+		return nil
+	}
+
+	msg := "received HTML instead of JSON — the REST API endpoint is not registered on this WordPress site"
+	if endpoint != "" {
+		msg = fmt.Sprintf("%s (endpoint: %s)", msg, endpoint)
+	}
+	msg += ". Verify the plugin is installed, activated, and the API namespace matches"
+
+	return apperror.New(apperror.ErrWPEndpointMismatch, msg)
 }
 
 // firstNonEmpty returns the first non-empty ErrorCode argument.
