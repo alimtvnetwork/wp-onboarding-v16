@@ -309,12 +309,6 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
             )}
-            {nextScheduledRun?.nextRunAt && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>Next: {formatDistanceToNow(parseISO(nextScheduledRun.nextRunAt), { addSuffix: true })}</span>
-              </span>
-            )}
           </div>
         )}
 
