@@ -26,6 +26,9 @@ func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wor
 		Operation: operationtype.GetSiteSettings,
 	})
 	if result.HasError() {
+		if isRemote404(result.AppError()) {
+			return wordpress.BuildOutdatedSiteSettings(), nil
+		}
 		return nil, result.AppError()
 	}
 

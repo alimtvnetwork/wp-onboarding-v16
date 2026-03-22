@@ -85,6 +85,9 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		Operation: operationtype.GetLogsRotationStatus,
 	})
 	if result.HasError() {
+		if isRemote404(result.AppError()) {
+			return wordpress.BuildOutdatedLogsRotationStatus(), nil
+		}
 		return nil, result.AppError()
 	}
 

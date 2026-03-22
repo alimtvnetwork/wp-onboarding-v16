@@ -104,6 +104,16 @@ type SiteSettingsData struct {
 	Timezone            string `json:"timezone"`
 	ActiveTheme         string `json:"activeTheme"`
 	ServerSoftware      string `json:"serverSoftware"`
+	PluginOutdated      bool   `json:"pluginOutdated,omitempty"`
+	OutdatedMessage     string `json:"outdatedMessage,omitempty"`
+}
+
+// BuildOutdatedSiteSettings returns a graceful fallback when the remote plugin lacks the site-settings endpoint.
+func BuildOutdatedSiteSettings() *SiteSettingsData {
+	return &SiteSettingsData{
+		PluginOutdated:  true,
+		OutdatedMessage: "Remote plugin is outdated — the /site-settings endpoint is not available. Please update the plugin using Deploy Uploader.",
+	}
 }
 
 // SiteSettingsUpdateResult is the typed response from the PHP site-settings PUT endpoint.
