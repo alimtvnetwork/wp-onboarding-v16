@@ -351,6 +351,24 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
                   </span>
                 </div>
               )}
+              {logsSummary.totalLines > 0 && (
+                <div className="mt-2 pt-2 border-t">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs gap-1.5 w-full"
+                    onClick={handleClearAllLogs}
+                    disabled={isClearingLogs}
+                  >
+                    {isClearingLogs ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                    Clear All Logs
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
