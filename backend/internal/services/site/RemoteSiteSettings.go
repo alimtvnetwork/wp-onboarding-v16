@@ -66,5 +66,5 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }

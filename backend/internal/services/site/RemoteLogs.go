@@ -109,7 +109,7 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.
