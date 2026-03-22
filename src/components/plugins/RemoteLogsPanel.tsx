@@ -40,6 +40,8 @@ import { toast } from "sonner";
 interface RemoteLogsPanelProps {
   siteId: number;
   siteName?: string;
+  /** When true, auto-expand and auto-fetch on mount (used in dialog context) */
+  autoOpen?: boolean;
 }
 
 function formatBytes(bytes: number): string {
@@ -49,8 +51,8 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLogsPanelProps) {
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
 
