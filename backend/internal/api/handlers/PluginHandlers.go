@@ -12,7 +12,7 @@ import (
 
 // GetPlugins returns all registered plugins
 var GetPlugins = handleListNilSafe(
-	pluginService,
+	isPluginServiceReady,
 	apperror.ErrWPConnection,
 	func(ctx context.Context) (any, *apperror.AppError) {
 		return Services.PluginService.List(ctx)
@@ -48,7 +48,7 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 // GetPlugin returns a specific plugin by ID
 var GetPlugin = handleActionById(
 	handlerIdConfig{
-		GetService:  pluginService,
+		IsReady:     isPluginServiceReady,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPAPIDisabled,
@@ -92,7 +92,7 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 // DeletePlugin removes a plugin registration
 var DeletePlugin = handleDeleteById(
 	handlerIdConfig{
-		GetService:  pluginService,
+		IsReady:     isPluginServiceReady,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPPluginGet,
@@ -105,7 +105,7 @@ var DeletePlugin = handleDeleteById(
 // GetPluginMappings returns plugin-site mappings
 var GetPluginMappings = handleActionById(
 	handlerIdConfig{
-		GetService:  pluginService,
+		IsReady:     isPluginServiceReady,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPPluginUpload,
@@ -151,7 +151,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 // DeletePluginMapping removes a plugin-site mapping
 var DeletePluginMapping = handleDeleteById(
 	handlerIdConfig{
-		GetService:  pluginService,
+		IsReady:     isPluginServiceReady,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPTimeout,
@@ -209,7 +209,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 // GetSiteMappings returns all plugin mappings for a site
 var GetSiteMappings = handleActionById(
 	handlerIdConfig{
-		GetService:  pluginService,
+		IsReady:     isPluginServiceReady,
 		ServiceName: "Plugin service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPPluginDelete,

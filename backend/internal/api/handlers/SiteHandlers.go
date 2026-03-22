@@ -31,7 +31,7 @@ type SiteUpdateInput struct {
 
 // GetSites returns all registered WordPress sites
 var GetSites = handleListNilSafe(
-	siteService,
+	isSiteServiceReady,
 	apperror.ErrDatabaseConnect,
 	func(ctx context.Context) (any, *apperror.AppError) {
 		return Services.SiteService.List(ctx)
@@ -122,7 +122,7 @@ func validateCreateSiteCredentials(input SiteCreateInput) string {
 // GetSite returns a specific site by ID
 var GetSite = handleActionById(
 	handlerIdConfig{
-		GetService:  siteService,
+		IsReady:     isSiteServiceReady,
 		ServiceName: "Site service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrNotFound,
@@ -181,7 +181,7 @@ func normalizeUpdateSitePassword(input *SiteUpdateInput) {
 // DeleteSite removes a site
 var DeleteSite = handleDeleteById(
 	handlerIdConfig{
-		GetService:  siteService,
+		IsReady:     isSiteServiceReady,
 		ServiceName: "Site service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrDatabaseDelete,
@@ -194,7 +194,7 @@ var DeleteSite = handleDeleteById(
 // TestSiteConnection tests the WordPress REST API connection
 var TestSiteConnection = handleActionById(
 	handlerIdConfig{
-		GetService:  siteService,
+		IsReady:     isSiteServiceReady,
 		ServiceName: "Site service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrWPConnection,
@@ -240,7 +240,7 @@ func testCredentialsOrFail(w http.ResponseWriter, r *http.Request, input credent
 // GetSiteCredentials returns decrypted credentials for API Explorer
 var GetSiteCredentials = handleActionById(
 	handlerIdConfig{
-		GetService:  siteService,
+		IsReady:     isSiteServiceReady,
 		ServiceName: "Site service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrDatabaseMigrate,

@@ -1,9 +1,7 @@
 package handlers
 
-// --- Service getters for lazy resolution ---
+// --- Typed service getters for lazy resolution ---
 // These return the typed interface (or nil) when Services is nil.
-// The handler factory configs still accept func() any for the nil-check;
-// callers can wrap: func() any { return siteServiceTyped() }
 
 func siteServiceTyped() SiteServiceInterface {
 	if Services == nil {
@@ -69,19 +67,16 @@ func errorHistoryServiceTyped() ErrorHistoryServiceInterface {
 	return Services.ErrorHistoryService
 }
 
-// --- Legacy any-returning wrappers (used by handler factory configs) ---
-// These exist because the handler factory pattern uses isServiceMissing(w, any, name)
-// for nil-checking across different service types.
+// --- Bool readiness checks (used by handler factory configs) ---
+// These replace the legacy func() any wrappers.
 
-func siteService() any       { return siteServiceTyped() }
-func pluginService() any     { return pluginServiceTyped() }
-func syncService() any       { return syncServiceTyped() }
-func gitService() any        { return gitServiceTyped() }
-func watcherService() any    { return watcherServiceTyped() }
-func publishService() any    { return publishServiceTyped() }
-func backupService() any     { return backupServiceTyped() }
-func errorHistoryService() any { return errorHistoryServiceTyped() }
-
-func versionServiceGetter() any { return VersionService }
-
-func e2eServiceGetter() any { return E2EService }
+func isSiteServiceReady() bool           { return siteServiceTyped() != nil }
+func isPluginServiceReady() bool          { return pluginServiceTyped() != nil }
+func isSyncServiceReady() bool            { return syncServiceTyped() != nil }
+func isGitServiceReady() bool             { return gitServiceTyped() != nil }
+func isWatcherServiceReady() bool         { return watcherServiceTyped() != nil }
+func isPublishServiceReady() bool         { return publishServiceTyped() != nil }
+func isBackupServiceReady() bool          { return backupServiceTyped() != nil }
+func isErrorHistoryServiceReady() bool    { return errorHistoryServiceTyped() != nil }
+func isVersionServiceReady() bool         { return VersionService != nil }
+func isE2EServiceReady() bool             { return E2EService != nil }

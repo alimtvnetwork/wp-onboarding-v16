@@ -28,17 +28,17 @@ type E2EServiceInterface interface {
 var E2EService E2EServiceInterface
 
 // GetE2ESuites returns all test suites
-var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
-	func(ctx context.Context) (any, *apperror.AppError) {
+var GetE2ESuites = handleListNilSafe(isE2EServiceReady, "E7001",
+	func(ctx context.Context) ([]e2e.TestSuite, *apperror.AppError) {
 		return E2EService.ListSuites(ctx)
 	},
 )
 
 // GetE2ECases returns test cases for a suite
 func GetE2ECases(w http.ResponseWriter, r *http.Request) {
-	isServiceMissing := E2EService == nil
+	isMissing := E2EService == nil
 
-	if isServiceMissing {
+	if isMissing {
 		respondSuccess(w, []e2e.TestCase{})
 
 		return
@@ -82,9 +82,9 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 
 // GetE2ERuns returns past test runs
 func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
-	isServiceMissing := E2EService == nil
+	isMissing := E2EService == nil
 
-	if isServiceMissing {
+	if isMissing {
 		respondSuccess(w, []e2e.TestRun{})
 
 		return

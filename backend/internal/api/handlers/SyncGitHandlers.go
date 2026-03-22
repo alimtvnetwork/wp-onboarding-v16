@@ -14,7 +14,7 @@ import (
 // CheckSync compares local vs remote plugin files
 var CheckSync = handleTwoIds(
 	twoIdConfig{
-		GetService:  syncService,
+		IsReady:     isSyncServiceReady,
 		ServiceName: "Sync service",
 		Param1Name:  "id",
 		Param2Name:  "siteId",
@@ -28,7 +28,7 @@ var CheckSync = handleTwoIds(
 // CheckAllSites checks sync status for all mapped sites
 var CheckAllSites = handleActionById(
 	handlerIdConfig{
-		GetService:  syncService,
+		IsReady:     isSyncServiceReady,
 		ServiceName: "Sync service",
 		ParamName:   "id",
 		ErrCode:     "E4003",
@@ -41,7 +41,7 @@ var CheckAllSites = handleActionById(
 // PushSync pushes local changes (including deletions) to the remote site
 var PushSync = handleTwoIds(
 	twoIdConfig{
-		GetService:  syncService,
+		IsReady:     isSyncServiceReady,
 		ServiceName: "Sync service",
 		Param1Name:  "id",
 		Param2Name:  "siteId",
@@ -57,7 +57,7 @@ var PushSync = handleTwoIds(
 // GitPull performs git pull for a specific plugin
 var GitPull = handleActionById(
 	handlerIdConfig{
-		GetService:  gitService,
+		IsReady:     isGitServiceReady,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5001",
@@ -70,7 +70,7 @@ var GitPull = handleActionById(
 // GitPullAll performs git pull for all plugins
 var GitPullAll = handleNoArgs(
 	noArgsConfig{
-		GetService:  gitService,
+		IsReady:     isGitServiceReady,
 		ServiceName: "Git service",
 		ErrCode:     "E5002",
 	},
@@ -82,7 +82,7 @@ var GitPullAll = handleNoArgs(
 // GitStatus returns git status for a specific plugin
 var GitStatus = handleActionById(
 	handlerIdConfig{
-		GetService:  gitService,
+		IsReady:     isGitServiceReady,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5003",
@@ -139,7 +139,7 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 // GitPush pushes commits to remote for a specific plugin
 var GitPush = handleActionById(
 	handlerIdConfig{
-		GetService:  gitService,
+		IsReady:     isGitServiceReady,
 		ServiceName: "Git service",
 		ParamName:   "id",
 		ErrCode:     "E5005",
