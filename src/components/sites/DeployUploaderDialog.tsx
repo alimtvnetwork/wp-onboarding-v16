@@ -191,6 +191,13 @@ export function DeployUploaderDialog({
   const surfacePartialFailure = (deployResults: DeploySiteResult[], siteIds: number[]) => {
     const failedResults = deployResults.filter((r) => !r.isSuccess);
     const summaryLines = failedResults.map((r) => `${r.siteName}: ${r.error || r.message}`);
+
+    // Combine all remote response bodies for delegated error diagnostics
+    const remoteResponses = failedResults
+      .filter((r) => r.remoteResponseBody)
+      .map((r) => `--- ${r.siteName} (${r.remoteStatusCode || "?"} from ${r.remoteUrl || "unknown"}) ---\n${r.remoteResponseBody}`)
+      .join("\n\n");
+
     const modalError: ApiError = {
       code: "E3009",
       message: "Bulk uploader deployment failed on one or more sites",
@@ -198,8 +205,10 @@ export function DeployUploaderDialog({
       timestamp: new Date().toISOString(),
       context: {
         source: "DeployUploaderDialog",
+        remoteResponseBody: remoteResponses || undefined,
         failedSites: failedResults.map((r) => ({
           siteId: r.siteId, siteName: r.siteName, error: r.error || r.message,
+          remoteStatusCode: r.remoteStatusCode, remoteUrl: r.remoteUrl,
         })),
       },
     };
@@ -215,7 +224,11 @@ export function DeployUploaderDialog({
       requestBody: { siteIds },
       responseStatus: 500,
       backendLogs,
-      context: { source: "DeployUploaderDialog", triggerAction: "bulk-bootstrap-uploader" },
+      context: {
+        source: "DeployUploaderDialog",
+        triggerAction: "bulk-bootstrap-uploader",
+        remoteResponseBody: remoteResponses || undefined,
+      },
     });
     openErrorModal(captured);
   };
