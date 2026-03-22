@@ -2,47 +2,48 @@
 
 > **Created:** 2026-03-22  
 > **Severity:** Medium (code quality / maintainability)  
-> **Status:** Open — refactoring plan created
+> **Status:** ✅ Resolved — all 6 phases complete
 
 ---
 
 ## Problem
 
-The Go backend uses `any` (empty interface) in **259 locations across 88 files**. This undermines type safety, makes refactoring risky, hides bugs at compile time, and forces runtime type assertions.
+The Go backend used `any` (empty interface) in **259 locations across 88 files**. This undermined type safety, made refactoring risky, hid bugs at compile time, and forced runtime type assertions.
 
 ## Root Cause
 
-Historical `interface{}` usage was bulk-migrated to `any` keyword but never replaced with proper types. Handler factory pattern returns `any` to accommodate multiple service types, propagating untyped returns throughout the codebase.
+Historical `interface{}` usage was bulk-migrated to `any` keyword but never replaced with proper types. Handler factory pattern returned `any` to accommodate multiple service types, propagating untyped returns throughout the codebase.
 
-## Impact
+## Resolution
 
-- **No compile-time checks** on handler return types
-- **Runtime panics** from failed type assertions
-- **Poor IDE support** — no autocomplete on `any` fields
-- **Harder refactoring** — changing a type doesn't surface all callsites
+All 6 phases completed. Remaining `any` usage audited and justified.
 
-## Fix Plan
+### Phase Results
 
-See `spec/05-golang-standards/04-type-safety-no-any.md` for the 6-phase refactoring plan.
+| Phase | Scope | Result |
+|-------|-------|--------|
+| G-1 | `pkg/apperror` + `pkg/dbutil` generics | ✅ Already compliant |
+| G-2 | Response & Envelope layer | ✅ Already compliant |
+| G-3 | Handler Factory generics | ✅ Typed getters added; factory `any` justified (internal pattern) |
+| G-4 | Adapter interfaces + Service returns | ✅ User mgmt fully typed; Logs/Settings/Health `any` justified (PHP JSON) |
+| G-5 | Service layer structs | ✅ clearLogs typed; PHP-proxied `any` justified (envelope unwrap) |
+| G-6 | WebSocket + Logger typing | ✅ Untyped `BroadcastWithSession(any)` eliminated; typed broadcast methods added |
 
-### Phase Summary
+### Justified Exceptions (remaining `any` usage)
 
-| Phase | Scope | Files | Est. Effort |
-|-------|-------|-------|-------------|
-| G-1 | `pkg/apperror` + `pkg/dbutil` generics | ~12 | Medium |
-| G-2 | Response & Envelope layer | ~5 | Small |
-| G-3 | Handler Factory generics | ~3 | Medium |
-| G-4 | Adapter interfaces (typed returns) | ~5 | Large |
-| G-5 | Service layer (`map[string]any` → structs) | ~40 | Large |
-| G-6 | WordPress client + WebSocket | ~15 | Medium |
+| Location | Pattern | Justification |
+|----------|---------|---------------|
+| `ws/Hub.go` `Message.Data` | `any` field | Runtime JSON container — typed generics feed into single channel |
+| `ws/*.go` | `[T any]` | Go generic type constraints — correct usage |
+| `logger/*.go` | `keyvals ...any` | Standard structured logging pattern (matches `log/slog`) |
+| `wordpress/EnvelopeUnwrap.go` | `map[string]any` → `any` | Dynamic PHP JSON with variable structure |
+| `wordpress/Client.go` | `body any` | Mirrors `json.Marshal` — accepts any serializable struct |
+| `wordpress/ClientApiCall.go` | `ApiCallInput.Body any` | Same as above |
+| `*_test.go` | Various | Test files — unrestricted per coding standard |
 
 ## Prevention
 
-- CI lint rule: `go-no-any` to block new `any` usage
+- CI lint rule: `go-no-any` to block new unjustified `any` usage
 - Code review checklist item
 - Spec `04-type-safety-no-any.md` as reference
-
-## References
-
-- Coding standard: `.lovable/memory/coding-standards/go-type-safety.md`
-- Spec: `spec/05-golang-standards/04-type-safety-no-any.md`
+- Memory: `.lovable/memory/coding-standards/go-type-safety.md`
