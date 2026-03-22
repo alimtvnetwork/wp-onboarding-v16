@@ -122,7 +122,7 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *a
 	isUploaderPathEmpty := uploaderPath == ""
 
 	if isUploaderPathEmpty {
-		uploaderPath = "plugins-uploader-helper"
+		uploaderPath = "../wp-plugins/riseup-asia-uploader"
 	}
 
 	s.logBootstrapZipStart(id, uploaderPath)
