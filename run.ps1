@@ -434,6 +434,14 @@ if ($check) {
 }
 
 # ============================================================================
+# SITE SETTINGS (early exit)
+# ============================================================================
+if ($sitesettings) {
+    Invoke-GitPull
+    Invoke-SiteSettingsMode -VerboseMode:$verbose -SettingAction $set -SettingValue $setval
+}
+
+# ============================================================================
 # PLUGIN STATUS CHECK (early exit — skip if chained with -uas)
 # ============================================================================
 if (($pluginstatus -or $pas) -and -not $uas) {
