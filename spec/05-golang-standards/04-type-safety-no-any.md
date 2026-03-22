@@ -155,15 +155,16 @@ Builder functions already generic. `Response.Results any` is a justified excepti
 
 ---
 
-### Updated Violation Count (post Phase G-3)
+### Final Violation Count (all phases complete)
 
-| Category | Count | Priority |
-|----------|-------|----------|
-| Handler factory infrastructure `any` | ~~25~~ **0** | ✅ Done |
-| Adapter interface `(any, *AppError)` returns | ~27 | 🔴 High (Phase G-4) |
-| Service methods returning `any` | ~40 | 🔴 High (Phase G-4) |
-| `map[string]any` in service params | ~15 | 🟡 Medium (Phase G-5) |
-| `any` in handler callbacks (from service layer) | ~22 | 🟡 Resolves with G-4 |
-| **Remaining actionable violations** | **~104** | |
+| Category | Status |
+|----------|--------|
+| Handler factory infrastructure `any` | ✅ Eliminated (G-3) |
+| Adapter interface `(any, *AppError)` returns | ✅ Eliminated (G-4) |
+| Service methods returning `any` | ✅ Eliminated (G-4) |
+| `map[string]any` in service params | ✅ All justified (G-5) |
+| WebSocket `data any` broadcast | ✅ Eliminated (G-6) |
+| Logger formatting | ✅ Matches `log/slog` pattern (justified) |
+| **Remaining actionable violations** | **0** |
 
 *Reference: `.lovable/plan.md` Phase G (Type Safety)*
