@@ -381,6 +381,15 @@ if ($help) {
     Write-Host "    .\run.ps1 -pas -site 'Test V1'     # Status for specific site"
     Write-Host "    .\run.ps1 -pas -sync               # Status on all sites (sequential)"
     Write-Host ""
+    Write-Host "  Site settings:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -ss                              # Read settings on default site"
+    Write-Host "    .\run.ps1 -ss -site 'Test V1'              # Read settings on specific site"
+    Write-Host "    .\run.ps1 -ss -set 'debug-on'              # Enable WP_DEBUG on default site"
+    Write-Host "    .\run.ps1 -ss -set 'debug-off'             # Disable WP_DEBUG"
+    Write-Host "    .\run.ps1 -ss -set 'seo-off'               # Discourage search engines"
+    Write-Host "    .\run.ps1 -ss -set 'upload-size' -setval '256M'  # Set upload max"
+    Write-Host "    .\run.ps1 -ss -set 'memory-limit' -setval '512M' # Set memory limit"
+    Write-Host ""
     Write-Host "  Info:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ls          # List all sites (deploy + backend)"
     Write-Host "    .\run.ps1 -lr          # Same as -ls"
