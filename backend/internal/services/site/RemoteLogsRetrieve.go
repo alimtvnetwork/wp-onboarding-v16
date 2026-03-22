@@ -2,7 +2,6 @@ package site
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
