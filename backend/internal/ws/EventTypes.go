@@ -174,3 +174,24 @@ type PublishStageCompleteData struct {
 	SiteId    int64
 	Details   json.RawMessage `json:",omitempty"`
 }
+
+// --- Remote plugin action events ---
+
+// RemoteActionStartedData is broadcast when a remote plugin action begins.
+type RemoteActionStartedData struct {
+	SiteId     int64
+	SiteName   string
+	Action     string
+	PluginSlug string
+}
+
+// RemoteActionCompleteData is broadcast when a remote plugin action completes.
+type RemoteActionCompleteData struct {
+	SiteId     int64
+	SiteName   string
+	Action     string
+	PluginSlug string
+	IsSuccess  bool
+	Error      string `json:",omitempty"`
+	DurationMs int64
+}
