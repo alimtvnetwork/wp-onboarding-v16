@@ -23,6 +23,7 @@ import {
   FileText,
   AlertTriangle,
   ArrowRight,
+  Trash2,
 } from "lucide-react";
 import { api, Site, RemotePlugin } from "@/lib/api";
 import type { SiteHealthSummaryResponse } from "@/lib/api";
