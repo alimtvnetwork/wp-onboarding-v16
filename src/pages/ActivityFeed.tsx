@@ -80,16 +80,14 @@ function errorToActivity(entry: ErrorHistoryRecord): ActivityEntry {
     id: `err-${entry.id}`,
     timestamp: entry.createdAt,
     siteId: 0,
-    siteName: entry.siteUrl ? new URL(entry.siteUrl).hostname : "Local",
+    siteName: entry.siteUrl ? (() => { try { return new URL(entry.siteUrl).hostname; } catch { return "Local"; } })() : "Local",
     type: "Connection",
     action: "error",
     title: `[${entry.code}] ${entry.message.length > 80 ? entry.message.substring(0, 80) + "..." : entry.message}`,
     metadata: {
-      code: entry.code,
-      level: entry.level,
-      endpoint: entry.endpoint,
-      method: entry.method,
-    },
+      reason: `${entry.level}: ${entry.code}`,
+      wpVersion: entry.endpoint || undefined,
+    } as ConnectionMetadata,
     source: "go",
   };
 }
