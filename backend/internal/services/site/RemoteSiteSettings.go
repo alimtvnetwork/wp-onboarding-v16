@@ -69,44 +69,68 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
+// Tries /site-health-summary and /status in parallel — uses the richer result if available.
 func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteHealthSummary)
-
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Get,
-		Endpoint:  endpoint,
-		Operation: operationtype.GetSiteHealthSummary,
-	})
-	if result.HasError() {
-		if isRemote404(result.AppError()) {
-			// Fallback: build partial health summary from /status endpoint
-			return s.buildHealthSummaryFromStatus(client)
-		}
-		return nil, result.AppError()
-	}
-
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
-	}
-
-	return &data, nil
-}
-
-// buildHealthSummaryFromStatus fetches /status endpoint data and builds a partial HealthSummaryData.
-// This mirrors the PowerShell -pas source of truth instead of treating missing /site-health-summary as outdated.
-func (s *Service) buildHealthSummaryFromStatus(client *wordpress.Client) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	namespace := client.ResolveNamespace()
-	statusResult := client.GetStatusMetadataByNamespace(namespace)
-	if statusResult.HasError() {
-		return nil, statusResult.AppError()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Channel 1: try dedicated /site-health-summary endpoint
+	var healthResult *wordpress.HealthSummaryData
+	var healthErr *apperror.AppError
+	go func() {
+		defer wg.Done()
+		endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.SiteHealthSummary)
+		result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
+			Method:    httpmethod.Get,
+			Endpoint:  endpoint,
+			Operation: operationtype.GetSiteHealthSummary,
+		})
+		if result.HasError() {
+			healthErr = result.AppError()
+			return
+		}
+		data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+		if unwrapErr != nil {
+			healthErr = unwrapErr
+			return
+		}
+		healthResult = &data
+	}()
+
+	// Channel 2: try /status endpoint (same as PowerShell -pas)
+	var statusResult *wordpress.HealthSummaryData
+	go func() {
+		defer wg.Done()
+		metaResult := client.GetStatusMetadataByNamespace(namespace)
+		if metaResult.HasError() {
+			return
+		}
+		statusResult = wordpress.BuildHealthSummaryFromStatus(metaResult.Value())
+	}()
+
+	wg.Wait()
+
+	// Prefer the richer /site-health-summary if it succeeded
+	if healthResult != nil {
+		return healthResult, nil
 	}
 
-	meta := statusResult.Value()
-	return wordpress.BuildHealthSummaryFromStatus(meta), nil
+	// Fall back to /status data
+	if statusResult != nil {
+		return statusResult, nil
+	}
+
+	// Both failed
+	if healthErr != nil {
+		return nil, healthErr
+	}
+
+	return wordpress.BuildOutdatedHealthSummary(), nil
 }
