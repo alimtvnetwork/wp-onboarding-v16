@@ -61,6 +61,7 @@ const (
 	RequestLogsClear
 	ConfirmLogsClear
 	EmailLogs
+	RetrieveLogs
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
