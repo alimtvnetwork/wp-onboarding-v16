@@ -75,8 +75,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     try {
       const response = await api.getRemoteLogsStatus(siteId);
 
-      if (response.data) {
+      if (response.success && response.data) {
         setStatus(response.data);
+      } else if (!response.success) {
+        toast.error(response.error?.message || "Failed to fetch log status");
       }
     } catch {
       toast.error("Failed to fetch log status");
@@ -84,6 +86,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setIsLoading(false);
     }
   }, [siteId]);
+
+  // Auto-fetch when autoOpen is true
+  useEffect(() => {
+    if (autoOpen && !status) {
+      fetchStatus();
+    }
+  }, [autoOpen, fetchStatus, status]);
 
   const handleOpen = useCallback(
     (open: boolean) => {
