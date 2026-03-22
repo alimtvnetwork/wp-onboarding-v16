@@ -1,88 +1,87 @@
 package handlers
 
 // --- Service getters for lazy resolution ---
-// These return nil (not panic) when Services is nil.
+// These return the typed interface (or nil) when Services is nil.
+// The handler factory configs still accept func() any for the nil-check;
+// callers can wrap: func() any { return siteServiceTyped() }
 
-func siteService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func siteServiceTyped() SiteServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.SiteService
 }
 
-func pluginService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func pluginServiceTyped() PluginServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.PluginService
 }
 
-func syncService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func syncServiceTyped() SyncServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.SyncService
 }
 
-func gitService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func gitServiceTyped() GitServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.GitService
 }
 
-func watcherService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func watcherServiceTyped() WatcherServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.WatcherService
 }
 
-func publishService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func publishServiceTyped() PublishServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.PublishService
 }
 
-func backupService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func backupServiceTyped() BackupServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.BackupService
 }
 
-func versionServiceGetter() any { return VersionService }
-
-func e2eServiceGetter() any { return E2EService }
-
-func errorHistoryService() any {
-	isServicesMissing := Services == nil
-
-	if isServicesMissing {
+func errorHistoryServiceTyped() ErrorHistoryServiceInterface {
+	if Services == nil {
 		return nil
 	}
 
 	return Services.ErrorHistoryService
 }
+
+// --- Legacy any-returning wrappers (used by handler factory configs) ---
+// These exist because the handler factory pattern uses isServiceMissing(w, any, name)
+// for nil-checking across different service types.
+
+func siteService() any       { return siteServiceTyped() }
+func pluginService() any     { return pluginServiceTyped() }
+func syncService() any       { return syncServiceTyped() }
+func gitService() any        { return gitServiceTyped() }
+func watcherService() any    { return watcherServiceTyped() }
+func publishService() any    { return publishServiceTyped() }
+func backupService() any     { return backupServiceTyped() }
+func errorHistoryService() any { return errorHistoryServiceTyped() }
+
+func versionServiceGetter() any { return VersionService }
+
+func e2eServiceGetter() any { return E2EService }
