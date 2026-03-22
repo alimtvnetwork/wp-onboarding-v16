@@ -117,8 +117,8 @@ export default function ActivityFeed() {
 
   // Merge and sort by timestamp descending
   const allEntries = useMemo(() => {
-    const publishEntries = (publishData?.entries || []).map(publishToActivity);
-    const errorEntries = (errorData?.errors || []).map(errorToActivity);
+    const publishEntries = (publishData?.data?.entries || []).map(publishToActivity);
+    const errorEntries = (errorData?.data?.errors || []).map(errorToActivity);
     const merged = [...publishEntries, ...errorEntries];
     merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return merged;
