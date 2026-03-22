@@ -113,16 +113,36 @@ export function DeployUploaderDialog({
       }
     } catch (error: unknown) {
       setStatus(DeployStatus.Error);
+      const errorMsg = error instanceof Error ? error.message : "Deployment failed";
       setLogs((prev) => [
         ...prev,
         {
           timestamp: new Date().toISOString(),
           level: "error",
           step: "error",
-          message: error instanceof Error ? error.message : "Deployment failed",
+          message: errorMsg,
         },
       ]);
-      toast.error("Deployment failed");
+
+      // Surface to global error modal with full envelope/delegated data
+      const { captureError, captureException, openErrorModal } = useErrorStore.getState();
+      if (isApiClientError(error)) {
+        const captured = captureError(error.apiError, {
+          endpoint: error.meta.requestUrl,
+          method: error.meta.method,
+          requestBody: error.meta.requestBody,
+          responseStatus: (error.apiError.context?.responseStatus as number | undefined) ?? undefined,
+          context: { source: "DeployUploaderDialog" },
+        });
+        openErrorModal(captured);
+      } else {
+        const captured = captureException(error, {
+          source: "DeployUploaderDialog",
+          endpoint: "/sites/bulk-bootstrap-uploader",
+          method: "POST",
+        });
+        openErrorModal(captured);
+      }
     }
   };
 
