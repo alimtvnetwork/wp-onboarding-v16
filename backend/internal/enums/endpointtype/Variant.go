@@ -37,6 +37,7 @@ const (
 	LogsClear
 	LogsConfirm
 	LogsEmail
+	LogsRetrieve
 	Openapi
 	OpcacheReset
 	SnapshotsList
