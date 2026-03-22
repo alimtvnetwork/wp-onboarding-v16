@@ -89,7 +89,7 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
