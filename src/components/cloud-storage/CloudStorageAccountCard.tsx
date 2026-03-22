@@ -129,13 +129,13 @@ export function CloudStorageAccountCard({
 
               {/* Test result feedback */}
               {testResult && (
-                <div className={`flex items-center gap-1.5 text-xs mt-1 ${testResult.Success ? "text-success" : "text-destructive"}`}>
-                  {testResult.Success ? (
+                <div className={`flex items-center gap-1.5 text-xs mt-1 ${testResult.success ? "text-success" : "text-destructive"}`}>
+                  {testResult.success ? (
                     <CheckCircle2 className="h-3.5 w-3.5" />
                   ) : (
                     <XCircle className="h-3.5 w-3.5" />
                   )}
-                  <span>{testResult.Message || testResult.Error}</span>
+                  <span>{testResult.message || testResult.error}</span>
                 </div>
               )}
             </div>
