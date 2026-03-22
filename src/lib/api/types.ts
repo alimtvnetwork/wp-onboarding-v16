@@ -1033,6 +1033,31 @@ export interface RemoteLogsEmailOptions {
   log_types?: string[];
 }
 
+// Log Retrieval Types (content viewer)
+export interface LogRetrieveFileData {
+  Exists: boolean;
+  File: string;
+  Path: string;
+  Content: string;
+  Lines: number;
+  TotalLines: number;
+  TotalSize: number;
+  Truncated: boolean;
+}
+
+export interface PluginLogsData {
+  namespace: string;
+  label: string;
+  available: boolean;
+  infoLog?: LogRetrieveFileData;
+  errorLog?: LogRetrieveFileData;
+  stacktrace?: LogRetrieveFileData;
+}
+
+export interface LogsRetrieveResult {
+  plugins: PluginLogsData[];
+}
+
 // ---------------------------------------------------------------------------
 // Site Settings types
 // ---------------------------------------------------------------------------
