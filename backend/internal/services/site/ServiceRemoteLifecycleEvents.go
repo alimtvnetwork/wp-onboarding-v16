@@ -291,5 +291,5 @@ func (s *Service) broadcastRemoteActionComplete(input remoteActionCompleteInput)
 		DurationMs: input.DurationMs,
 	}
 
-	s.wsHub.BroadcastWithSession("remote_plugin_action_complete", event, input.Ref.SessionId)
+	s.wsHub.BroadcastRemoteActionComplete(event, input.Ref.SessionId)
 }
