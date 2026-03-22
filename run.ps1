@@ -45,7 +45,10 @@ param(
     [switch]$check,
     [Alias('ps')][switch]$pluginstatus,
     [switch]$pas,
-    [Alias('err')][switch]$errorlogs
+    [Alias('err')][switch]$errorlogs,
+    [Alias('ss')][switch]$sitesettings,
+    [string]$set = "",
+    [string]$setval = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
