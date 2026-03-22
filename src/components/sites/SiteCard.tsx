@@ -35,6 +35,7 @@ import {
   Settings,
   HeartPulse,
   MoreHorizontal,
+  Cloud,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord } from "@/lib/api";
