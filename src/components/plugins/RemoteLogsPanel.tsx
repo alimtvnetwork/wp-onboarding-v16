@@ -82,14 +82,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       } else if (!response.success) {
         const msg = response.error?.message || "Failed to fetch log status";
         captureError(
-          { code: response.error?.code || "E2010", message: msg, level: "error" },
-          { endpoint: `/sites/${siteId}/remote-logs`, method: "GET", responseStatus: response.error?.httpStatus }
+          { code: response.error?.code || "E2010", message: msg, timestamp: new Date().toISOString() },
+          { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" }
         );
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to fetch log status";
       captureError(
-        { code: "E2010", message: msg, level: "error" },
+        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
         { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" }
       );
     } finally {
