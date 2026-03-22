@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -15,7 +16,7 @@ import (
 // GetRemoteLogs returns log file metadata from a remote WordPress site
 var GetRemoteLogs = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 		return Services.SiteService.GetRemoteLogsStatus(ctx, siteId)
 	},
 )
@@ -23,7 +24,7 @@ var GetRemoteLogs = handleSiteActionById(
 // GetRemoteLogsRotationStatus returns log rotation config from a remote WordPress site
 var GetRemoteLogsRotationStatus = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
 		return Services.SiteService.GetRemoteLogsRotationStatus(ctx, siteId)
 	},
 )
@@ -31,7 +32,7 @@ var GetRemoteLogsRotationStatus = handleSiteActionById(
 // ClearRemoteLogs initiates Step 1 of the two-step log clearing flow
 var ClearRemoteLogs = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError) {
 		return Services.SiteService.RequestRemoteLogsClear(ctx, siteId)
 	},
 )
@@ -105,7 +106,7 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 // ClearAllRemoteLogs clears logs for both plugins (riseup-asia + qupload) in one call
 var ClearAllRemoteLogs = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*site.ClearAllPluginLogsResult, *apperror.AppError) {
 		return Services.SiteService.ClearAllRemoteLogs(ctx, siteId)
 	},
 )
