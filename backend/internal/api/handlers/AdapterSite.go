@@ -290,43 +290,39 @@ func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, cre
 	return a.Service.DB().SetDefaultCredential(siteId, credId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	return a.Service.GetRemoteLogsStatus(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
 	return a.Service.GetRemoteLogsRotationStatus(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError) {
 	return a.Service.RequestRemoteLogsClear(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError) {
 	return a.Service.ConfirmRemoteLogsClear(ctx, siteId, token)
 }
 
-func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError) {
 	return a.Service.EmailRemoteLogs(ctx, siteId, body)
 }
 
-func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError) {
-	result, appErr := a.Service.ClearAllRemoteLogs(ctx, siteId)
-	if appErr != nil {
-		return nil, appErr
-	}
-	return result, nil
+func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int64) (*site.ClearAllPluginLogsResult, *apperror.AppError) {
+	return a.Service.ClearAllRemoteLogs(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 	return a.Service.GetRemoteSiteSettings(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) {
 	return a.Service.UpdateRemoteSiteSettings(ctx, siteId, body)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
 }
 
