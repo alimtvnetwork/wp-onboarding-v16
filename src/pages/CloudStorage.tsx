@@ -33,7 +33,7 @@ export default function CloudStorage() {
   const [activeProvider, setActiveProvider] = useState<CloudStorageProvider>("GitHub");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CloudStorageAccount | null>(null);
-  const [testResults, setTestResults] = useState<Record<number, { Success: boolean; Message?: string; Error?: string }>>(
+  const [testResults, setTestResults] = useState<Record<number, { success: boolean; message?: string; error?: string }>>(
     {},
   );
   const [testingId, setTestingId] = useState<number | null>(null);
