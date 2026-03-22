@@ -88,20 +88,38 @@
 
 ---
 
+### Phase I: Dashboard UX & Data Pipeline Fix (2026-03-22)
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| I-1 | Fix double-envelope wrapping (Health/Logs/Settings) | 🔴 Critical | — | Todo |
+| I-2 | Redesign SiteCard button layout | 🟡 High | — | Todo |
+| I-3 | PowerShell -d skip PHP propagation if no changes | 🟢 Medium | — | Todo |
+| I-4 | Redeploy to fix plugin_slug error (v2.30.0) | 🟡 High | User runs deploy | Blocked |
+
+**Specs:**
+- `spec/02-app-issues/34-double-envelope-wrapping-health-logs.md`
+- `spec/02-app-issues/35-sitecard-button-layout-redesign.md`
+- `spec/02-app-issues/36-plugin-slug-still-missing-v2.30.md`
+- `spec/02-app-issues/37-powershell-deploy-skip-php-propagation.md`
+
+---
+
 ## Next Task Selection
 
 > **For handoff to other AI models:** Pick the next task based on priority and unblocked status.
 
 **Recommended implementation order:**
 
-1. **Phase A: Deploy & Verify** — 🔴 Critical but blocked on user running `.\run.ps1 -uas`
-2. **H-3: User Management** — in progress; PHP layer + Go proxy + React dashboard scaffolded; needs wiring (route, sidebar, plan update)
-
-**Completed recently:**
-- **H-2: Publish Analytics** — Analytics tab on Publish History page with 4 charts (daily publishes, success rate trend, duration heatmap, per-site breakdown)
+1. **I-1: Fix double-envelope wrapping** — 🔴 Critical, unblocked, fixes Health/Logs/Settings panels
+2. **I-2: Redesign SiteCard buttons** — 🟡 High, unblocked, UX improvement
+3. **I-3: PowerShell -d optimization** — 🟢 Medium, unblocked
+4. **H-3: User Management** — in progress; needs route/sidebar wiring
+5. **Phase A / I-4: Deploy & Verify** — blocked on user running `.\run.ps1 -d`
 
 **Blocked (needs user action):**
-- Phase A: All deployment tasks — user must run PowerShell scripts
+- Phase A: All deployment tasks
+- I-4: Redeploy for plugin_slug fix
 
 ---
 
