@@ -55,13 +55,12 @@
 - F-3: Verbose `-check` mode (HEAD requests)
 - F-4: Auto-invalidate cached ZIP on source change
 
-### 🔄 Phase G: Type Safety (Reopened — No `any` Policy)
-- Previous: Migrated `interface{}` → `any` (completed)
-- **New standard:** `any` is also prohibited — must use specific types or bounded generics
-- Exception: file I/O initial unmarshalling, test files, third-party boundaries
-- **Actionable violations:** ~117 across ~35 files (142 already compliant/justified)
+### ✅ Phase G: Go Type Safety — `any` Elimination (Complete)
+- **Standard:** `any` prohibited in production Go except justified exceptions
+- **Exceptions:** generic constraints `[T any]`, logger `keyvals ...any`, `Message.Data any`, PHP envelope unwrap, `json.Marshal`-style body params, test files
+- **All 6 sub-phases complete** (G-1 through G-6)
 - Spec: `spec/05-golang-standards/04-type-safety-no-any.md`
-- Issue: `spec/02-app-issues/38-go-type-safety-any-elimination.md`
+- Issue: `spec/02-app-issues/38-go-type-safety-any-elimination.md` — **Resolved**
 
 #### Phase G Sub-tasks
 
