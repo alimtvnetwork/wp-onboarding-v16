@@ -94,7 +94,8 @@ func (s *Service) buildPreflightClient(site models.Site) (*wordpress.Client, *ap
 	return client, nil
 }
 
-// checkSiteEndpoints probes both Riseup Asia and QUpload endpoints.
+// checkSiteEndpoints probes both Riseup Asia and QUpload endpoints in parallel.
+// Each plugin check (availability + metadata) runs concurrently for maximum speed.
 func (s *Service) checkSiteEndpoints(siteId int64, site models.Site, client *wordpress.Client) PreflightSiteResult {
 	preflight := PreflightSiteResult{
 		SiteId:      siteId,
@@ -103,15 +104,32 @@ func (s *Service) checkSiteEndpoints(siteId int64, site models.Site, client *wor
 		IsReachable: true,
 	}
 
-	riseupResult := client.CheckRiseupAsiaAvailable()
-	preflight.RiseupAsia = buildPluginPreflightStatus(client, "riseup-asia-uploader", riseupResult)
-	preflight.RiseupAsiaAvailable = preflight.RiseupAsia.Available
-	preflight.RiseupAsiaNamespace = preflight.RiseupAsia.Namespace
+	var wg sync.WaitGroup
+	var riseupStatus, quploadStatus PreflightPluginStatus
 
-	quploadResult := client.CheckQUploadAvailable()
-	preflight.QUpload = buildPluginPreflightStatus(client, "qupload", quploadResult)
-	preflight.QUploadAvailable = preflight.QUpload.Available
-	preflight.QUploadNamespace = preflight.QUpload.Namespace
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		riseupResult := client.CheckRiseupAsiaAvailable()
+		riseupStatus = buildPluginPreflightStatus(client, "riseup-asia-uploader", riseupResult)
+	}()
+
+	go func() {
+		defer wg.Done()
+		quploadResult := client.CheckQUploadAvailable()
+		quploadStatus = buildPluginPreflightStatus(client, "qupload", quploadResult)
+	}()
+
+	wg.Wait()
+
+	preflight.RiseupAsia = riseupStatus
+	preflight.RiseupAsiaAvailable = riseupStatus.Available
+	preflight.RiseupAsiaNamespace = riseupStatus.Namespace
+
+	preflight.QUpload = quploadStatus
+	preflight.QUploadAvailable = quploadStatus.Available
+	preflight.QUploadNamespace = quploadStatus.Namespace
 
 	return preflight
 }
