@@ -66,7 +66,8 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
   const { data: expectedVersions } = useQuery({
     queryKey: ["version-json"],
     queryFn: async () => {
-      const resp = await fetch(resolvePublicUrl("version.json"));
+      const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+      const resp = await fetch(`${base}version.json`);
       if (!resp.ok) return null;
       return resp.json() as Promise<{ wpPluginVersion: string; quploadVersion: string }>;
     },
