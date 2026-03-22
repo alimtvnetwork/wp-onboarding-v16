@@ -69,68 +69,85 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
-// Tries /site-health-summary and /status in parallel — uses the richer result if available.
+// Mirrors the PowerShell -pas pattern: probes all known namespaces' /status endpoints
+// AND the rich /site-health-summary endpoint in parallel — no sequential ResolveNamespace() overhead.
 func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	namespace := client.ResolveNamespace()
+	// All known namespaces to probe (same as PowerShell -pas probes all configured plugins)
+	namespaces := []string{
+		wordpress.QUploadNamespace,
+		wordpress.RiseupAsiaNamespace,
+	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 
-	// Channel 1: try dedicated /site-health-summary endpoint
-	var healthResult *wordpress.HealthSummaryData
-	var healthErr *apperror.AppError
-	go func() {
-		defer wg.Done()
-		endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.SiteHealthSummary)
-		result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
-			Method:    httpmethod.Get,
-			Endpoint:  endpoint,
-			Operation: operationtype.GetSiteHealthSummary,
-		})
-		if result.HasError() {
-			healthErr = result.AppError()
-			return
-		}
-		data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-		if unwrapErr != nil {
-			healthErr = unwrapErr
-			return
-		}
-		healthResult = &data
-	}()
+	// Channel 1: try rich /site-health-summary on each namespace in parallel
+	type healthProbeResult struct {
+		data *wordpress.HealthSummaryData
+	}
+	healthCh := make(chan healthProbeResult, len(namespaces))
 
-	// Channel 2: try /status endpoint (same as PowerShell -pas)
-	var statusResult *wordpress.HealthSummaryData
-	go func() {
-		defer wg.Done()
-		metaResult := client.GetStatusMetadataByNamespace(namespace)
-		if metaResult.HasError() {
-			return
-		}
-		statusResult = wordpress.BuildHealthSummaryFromStatus(metaResult.Value())
-	}()
+	for _, ns := range namespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.SiteHealthSummary)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Get,
+				Endpoint:  endpoint,
+				Operation: operationtype.GetSiteHealthSummary,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			healthCh <- healthProbeResult{data: &data}
+		}(ns)
+	}
+
+	// Channel 2: try /status on each namespace in parallel (same as PowerShell -pas)
+	type statusProbeResult struct {
+		data *wordpress.HealthSummaryData
+	}
+	statusCh := make(chan statusProbeResult, len(namespaces))
+
+	for _, ns := range namespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			metaResult := client.GetStatusMetadataByNamespace(namespace)
+			if metaResult.HasError() {
+				return
+			}
+			statusCh <- statusProbeResult{data: wordpress.BuildHealthSummaryFromStatus(metaResult.Value())}
+		}(ns)
+	}
 
 	wg.Wait()
+	close(healthCh)
+	close(statusCh)
 
-	// Prefer the richer /site-health-summary if it succeeded
-	if healthResult != nil {
-		return healthResult, nil
+	// Prefer the richer /site-health-summary if any namespace returned it
+	for probe := range healthCh {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	// Fall back to /status data
-	if statusResult != nil {
-		return statusResult, nil
+	// Fall back to /status data (same data as PowerShell -pas displays)
+	for probe := range statusCh {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	// Both failed
-	if healthErr != nil {
-		return nil, healthErr
-	}
-
+	// All probes failed on all namespaces
 	return wordpress.BuildOutdatedHealthSummary(), nil
 }
