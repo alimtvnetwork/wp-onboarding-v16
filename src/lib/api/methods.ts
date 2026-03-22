@@ -110,7 +110,7 @@ export const api = {
       { method: "POST", body: JSON.stringify({ siteIds, uploaderPath }) }
     ),
   deployPreflight: (siteIds: number[]) =>
-    request<{ results: Array<{ siteId: number; siteName: string; siteUrl: string; isReachable: boolean; riseupAsiaAvailable: boolean; riseupAsiaNamespace?: string; qUploadAvailable: boolean; qUploadNamespace?: string; error?: string }> }>(
+    request<{ results: Array<{ siteId: number; siteName: string; siteUrl: string; isReachable: boolean; riseupAsiaAvailable: boolean; riseupAsiaNamespace?: string; qUploadAvailable: boolean; qUploadNamespace?: string; riseupAsia?: { name: string; available: boolean; namespace?: string; status: string; httpStatus?: number; message?: string; version?: string; wpVersion?: string; phpVersion?: string; pluginName?: string; apiNamespace?: string; serverTime?: string; dbAvailable?: string; remoteSiteUrl?: string }; qUpload?: { name: string; available: boolean; namespace?: string; status: string; httpStatus?: number; message?: string; version?: string; wpVersion?: string; phpVersion?: string; pluginName?: string; apiNamespace?: string; serverTime?: string; dbAvailable?: string; remoteSiteUrl?: string }; error?: string }> }>(
       `/sites/deploy-preflight`,
       { method: "POST", body: JSON.stringify({ siteIds }) }
     ),
