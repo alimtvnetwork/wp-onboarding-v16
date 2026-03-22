@@ -10,7 +10,7 @@ import (
 // --- Fluent Modifiers ---
 
 // WithEndpoints sets the requested and delegated endpoint in attributes.
-func (r Response) WithEndpoints(requested, delegated string) Response {
+func (r Response[T]) WithEndpoints(requested, delegated string) Response[T] {
 	r.Attributes.RequestedAt = requested
 	r.Attributes.RequestDelegatedAt = delegated
 
@@ -18,7 +18,7 @@ func (r Response) WithEndpoints(requested, delegated string) Response {
 }
 
 // WithSessionId attaches a session ID to the response attributes for frontend diagnostics.
-func (r Response) WithSessionId(sessionId string) Response {
+func (r Response[T]) WithSessionId(sessionId string) Response[T] {
 	r.Attributes.SessionId = sessionId
 
 	return r
@@ -26,7 +26,7 @@ func (r Response) WithSessionId(sessionId string) Response {
 
 // WithBackendTrace appends backend stack trace lines to the Errors block.
 // Only populated if IncludeStackTrace is enabled.
-func (r Response) WithBackendTrace(lines []string) Response {
+func (r Response[T]) WithBackendTrace(lines []string) Response[T] {
 	isTraceDisabled := !globalDebug.IncludeStackTrace
 	isEmpty := len(lines) == 0
 
@@ -43,7 +43,7 @@ func (r Response) WithBackendTrace(lines []string) Response {
 
 // WithDelegatedErrorStack attaches delegated service error stack lines.
 // Only populated if IncludeStackTrace is enabled.
-func (r Response) WithDelegatedErrorStack(lines []string) Response {
+func (r Response[T]) WithDelegatedErrorStack(lines []string) Response[T] {
 	isTraceDisabled := !globalDebug.IncludeStackTrace
 	isEmpty := len(lines) == 0
 
@@ -72,7 +72,7 @@ func truncateFrames(lines []string) []string {
 
 // WithMethodsStack attaches the backend methods stack for diagnostics.
 // Only populated if IncludeMethodsStack is enabled.
-func (r Response) WithMethodsStack(frames []MethodFrame) Response {
+func (r Response[T]) WithMethodsStack(frames []MethodFrame) Response[T] {
 	isStackDisabled := !globalDebug.IncludeMethodsStack
 	isEmpty := len(frames) == 0
 
@@ -90,7 +90,7 @@ func (r Response) WithMethodsStack(frames []MethodFrame) Response {
 
 // WithRemoteResponseBody attaches the raw response body from a remote service.
 // Truncated to 4096 bytes to prevent oversized payloads.
-func (r Response) WithRemoteResponseBody(body string) Response {
+func (r Response[T]) WithRemoteResponseBody(body string) Response[T] {
 	isBodyEmpty := body == ""
 
 	if isBodyEmpty {
@@ -109,7 +109,7 @@ func (r Response) WithRemoteResponseBody(body string) Response {
 }
 
 // ensureErrors initializes the Errors block if nil.
-func (r *Response) ensureErrors() {
+func (r *Response[T]) ensureErrors() {
 	if r.Errors == nil {
 		r.Errors = &Errors{}
 		r.Attributes.HasAnyErrors = true
@@ -119,10 +119,10 @@ func (r *Response) ensureErrors() {
 // --- HTTP Writer ---
 
 // Write serializes and writes the response to the HTTP response writer.
-func Write(w http.ResponseWriter, resp Response) {
+func Write[T any](w http.ResponseWriter, resp Response[T]) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.Status.Code)
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(resp) //nolint:errcheck
 }
 
 // --- Helpers ---

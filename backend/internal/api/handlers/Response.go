@@ -94,7 +94,7 @@ func respondDeleted(w http.ResponseWriter) {
 // requestPath is the base URL path used to generate navigation URLs.
 func respondList[T any](
 	w http.ResponseWriter,
-	data T,
+	data []T,
 	pg envelope.Pagination,
 	requestPath string,
 ) {
@@ -103,7 +103,7 @@ func respondList[T any](
 
 // respondListUnpaginated writes an unpaginated list envelope.
 // Generic: compile-time type checking on the data parameter.
-func respondListUnpaginated[T any](w http.ResponseWriter, data T, count int) {
+func respondListUnpaginated[T any](w http.ResponseWriter, data []T, count int) {
 	envelope.Write(w, envelope.ListUnpaginated(data, count))
 }
 

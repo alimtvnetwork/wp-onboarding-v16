@@ -96,7 +96,7 @@ func collectTraceLines(pcs []uintptr, maxFrames int) []string {
 }
 
 // ErrorWithStack creates an error response with Go stack traces and methods stack auto-captured.
-func ErrorWithStack(statusCode int, code, message string) Response {
+func ErrorWithStack(statusCode int, code, message string) Response[EmptyResult] {
 	resp := Error(statusCode, code, message)
 	backendTrace := CaptureBackendTrace(3)
 	methodFrames := CaptureMethodFrames(3)

@@ -9,17 +9,20 @@ import (
 	"time"
 )
 
-// Response is the universal API response envelope.
+// Response is the universal API response envelope, generic over the Results element type.
 // Every endpoint — success or error, single or list — returns this structure.
 // Optional sections use pointers with omitempty so they are absent from JSON when nil.
-type Response struct {
+type Response[T any] struct {
 	Status       Status
 	Attributes   Attributes
-	Results      any
+	Results      []T
 	Navigation   *Navigation   `json:",omitempty"`
 	Errors       *Errors       `json:",omitempty"`
 	MethodsStack *MethodsStack `json:",omitempty"`
 }
+
+// EmptyResult is used for responses that carry no data (Deleted, Error).
+type EmptyResult = struct{}
 
 // Status describes the outcome of the request.
 type Status struct {
@@ -117,8 +120,8 @@ func GetDebugConfig() DebugConfig {
 
 // Success creates a single-item success response (slim envelope).
 // Generic: callers get compile-time type checking on the data parameter.
-func Success[T any](data T) Response {
-	return Response{
+func Success[T any](data T) Response[T] {
+	return Response[T]{
 		Status: Status{
 			IsSuccess: true,
 			IsFailed:  false,
@@ -136,8 +139,8 @@ func Success[T any](data T) Response {
 
 // Created creates a single-item 201 response.
 // Generic: callers get compile-time type checking on the data parameter.
-func Created[T any](data T) Response {
-	return Response{
+func Created[T any](data T) Response[T] {
+	return Response[T]{
 		Status: Status{
 			IsSuccess: true,
 			IsFailed:  false,
@@ -154,8 +157,8 @@ func Created[T any](data T) Response {
 }
 
 // Deleted creates a standard deletion success response.
-func Deleted() Response {
-	return Response{
+func Deleted() Response[EmptyResult] {
+	return Response[EmptyResult]{
 		Status: Status{
 			IsSuccess: true,
 			IsFailed:  false,
@@ -167,14 +170,14 @@ func Deleted() Response {
 			IsSingle:   false,
 			IsMultiple: false,
 		},
-		Results: []struct{}{},
+		Results: []EmptyResult{},
 	}
 }
 
 // List creates a paginated list response with navigation URL links.
 // Generic: callers get compile-time type checking on the data parameter.
 // requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
-func List[T any](data T, pg Pagination, requestPath string) Response {
+func List[T any](data []T, pg Pagination, requestPath string) Response[T] {
 	nav := pg.NavigationUrls(requestPath)
 	resp := newListResponse(data, pg)
 	resp.Navigation = &nav
@@ -182,8 +185,8 @@ func List[T any](data T, pg Pagination, requestPath string) Response {
 }
 
 // newListResponse builds a list response with pagination attributes.
-func newListResponse[T any](data T, pg Pagination) Response {
-	return Response{
+func newListResponse[T any](data []T, pg Pagination) Response[T] {
+	return Response[T]{
 		Status:     successStatus(http.StatusOK, "OK"),
 		Attributes: listAttributes(pg),
 		Results:    data,
@@ -204,8 +207,8 @@ func listAttributes(pg Pagination) Attributes {
 
 // ListUnpaginated creates a list response without pagination metadata.
 // Generic: callers get compile-time type checking on the data parameter.
-func ListUnpaginated[T any](data T, count int) Response {
-	return Response{
+func ListUnpaginated[T any](data []T, count int) Response[T] {
+	return Response[T]{
 		Status: successStatus(http.StatusOK, "OK"),
 		Attributes: Attributes{
 			IsSingle:     false,
@@ -218,11 +221,11 @@ func ListUnpaginated[T any](data T, count int) Response {
 
 // Error creates an error response. Populates the top-level Errors block
 // if error reporting is enabled in debug config.
-func Error(statusCode int, code, message string) Response {
-	resp := Response{
+func Error(statusCode int, code, message string) Response[EmptyResult] {
+	resp := Response[EmptyResult]{
 		Status:     failureStatus(statusCode, message),
 		Attributes: Attributes{HasAnyErrors: true},
-		Results:    []struct{}{},
+		Results:    []EmptyResult{},
 	}
 	if globalDebug.IncludeErrors {
 		resp.Errors = &Errors{

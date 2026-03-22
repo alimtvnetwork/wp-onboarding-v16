@@ -24,9 +24,11 @@ func TestSuccess(t *testing.T) {
 	if resp.Attributes.IsMultiple {
 		t.Error("expected IsMultiple=false")
 	}
-	results, _ := resp.Results.([]interface{})
-	if len(results) != 1 {
-		t.Errorf("expected 1 result, got %d", len(results))
+	if len(resp.Results) != 1 {
+		t.Errorf("expected 1 result, got %d", len(resp.Results))
+	}
+	if resp.Results[0]["name"] != "Test" {
+		t.Errorf("expected result name=Test, got %q", resp.Results[0]["name"])
 	}
 	if resp.Errors != nil {
 		t.Error("expected Errors=nil")
@@ -54,9 +56,8 @@ func TestDeleted(t *testing.T) {
 	if resp.Status.Code != 200 {
 		t.Errorf("expected code 200, got %d", resp.Status.Code)
 	}
-	results, _ := resp.Results.([]interface{})
-	if len(results) != 0 {
-		t.Errorf("expected empty results, got %d", len(results))
+	if len(resp.Results) != 0 {
+		t.Errorf("expected empty results, got %d", len(resp.Results))
 	}
 }
 
@@ -135,9 +136,8 @@ func TestError_WithErrorsEnabled(t *testing.T) {
 	if !strings.Contains(resp.Errors.BackendMessage, "E5001") {
 		t.Errorf("expected BackendMessage to contain error code, got %q", resp.Errors.BackendMessage)
 	}
-	results, _ := resp.Results.([]interface{})
-	if len(results) != 0 {
-		t.Errorf("expected empty results, got %d", len(results))
+	if len(resp.Results) != 0 {
+		t.Errorf("expected empty results, got %d", len(resp.Results))
 	}
 }
 
