@@ -2,6 +2,7 @@ package site
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -9,6 +10,24 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
+
+// PreflightPluginStatus is the normalized per-plugin status data shown in the dashboard.
+type PreflightPluginStatus struct {
+	Name          string
+	Available     bool
+	Namespace     string
+	Status        string
+	HttpStatus    int
+	Message       string
+	Version       string
+	WpVersion     string
+	PhpVersion    string
+	PluginName    string
+	ApiNamespace  string
+	ServerTime    string
+	DbAvailable   string
+	RemoteSiteUrl string
+}
 
 // PreflightSiteResult is the pre-flight result for a single site.
 type PreflightSiteResult struct {
@@ -20,6 +39,8 @@ type PreflightSiteResult struct {
 	RiseupAsiaNamespace string
 	QUploadAvailable    bool
 	QUploadNamespace    string
+	RiseupAsia          PreflightPluginStatus
+	QUpload             PreflightPluginStatus
 	Error               string
 }
 
@@ -83,18 +104,98 @@ func (s *Service) checkSiteEndpoints(siteId int64, site models.Site, client *wor
 	}
 
 	riseupResult := client.CheckRiseupAsiaAvailable()
-	if !riseupResult.HasError() && riseupResult.Value().IsAvailable() {
-		preflight.RiseupAsiaAvailable = true
-		preflight.RiseupAsiaNamespace = riseupResult.Value().Namespace
-	}
+	preflight.RiseupAsia = buildPluginPreflightStatus(client, "riseup-asia-uploader", riseupResult)
+	preflight.RiseupAsiaAvailable = preflight.RiseupAsia.Available
+	preflight.RiseupAsiaNamespace = preflight.RiseupAsia.Namespace
 
 	quploadResult := client.CheckQUploadAvailable()
-	if !quploadResult.HasError() && quploadResult.Value().IsAvailable() {
-		preflight.QUploadAvailable = true
-		preflight.QUploadNamespace = quploadResult.Value().Namespace
-	}
+	preflight.QUpload = buildPluginPreflightStatus(client, "qupload", quploadResult)
+	preflight.QUploadAvailable = preflight.QUpload.Available
+	preflight.QUploadNamespace = preflight.QUpload.Namespace
 
 	return preflight
+}
+
+func buildPluginPreflightStatus(client *wordpress.Client, slug string, availabilityResult apperror.Result[*wordpress.UploaderAvailability]) PreflightPluginStatus {
+	status := PreflightPluginStatus{
+		Name:   slug,
+		Status: "ERROR",
+	}
+
+	if availabilityResult.HasError() {
+		status.HttpStatus = extractAppErrorStatus(availabilityResult.AppError())
+		status.Status, status.Message = classifyPreflightFailure(status.HttpStatus, availabilityResult.AppError().Error())
+		return status
+	}
+
+	availability := availabilityResult.ValueOr(nil)
+	if availability == nil || !availability.IsAvailable() {
+		status.Status = "NOT_INSTALLED"
+		status.Message = "Plugin not found (404)"
+		return status
+	}
+
+	status.Available = true
+	status.Namespace = availability.Namespace
+
+	metadataResult := client.GetStatusMetadataByNamespace(availability.Namespace)
+	if metadataResult.HasError() {
+		status.HttpStatus = extractAppErrorStatus(metadataResult.AppError())
+		status.Status, status.Message = classifyPreflightFailure(status.HttpStatus, metadataResult.AppError().Error())
+		return status
+	}
+
+	metadata := metadataResult.Value()
+	status.Status = "OK"
+	status.HttpStatus = 200
+	status.Message = metadata.Message
+	status.Version = metadata.Version
+	status.WpVersion = metadata.WpVersion
+	status.PhpVersion = metadata.PhpVersion
+	status.PluginName = metadata.PluginName
+	status.ApiNamespace = metadata.ApiNamespace
+	status.ServerTime = metadata.ServerTime
+	status.DbAvailable = metadata.DbAvailable
+	status.RemoteSiteUrl = metadata.RemoteSiteUrl
+
+	return status
+}
+
+func extractAppErrorStatus(err *apperror.AppError) int {
+	if err == nil {
+		return 0
+	}
+	if err.Diagnostic.StatusCode > 0 {
+		return err.Diagnostic.StatusCode
+	}
+
+	var apiErr *wordpress.ApiError
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode
+	}
+
+	return 0
+}
+
+func classifyPreflightFailure(statusCode int, fallback string) (string, string) {
+	switch statusCode {
+	case 404:
+		return "NOT_INSTALLED", "Plugin not found (404)"
+	case 401:
+		return "AUTH_FAILED", "Unauthorized (401)"
+	case 403:
+		return "AUTH_FAILED", "Forbidden (403)"
+	case 0:
+		if fallback == "" {
+			return "UNREACHABLE", "Site unreachable"
+		}
+		return "UNREACHABLE", fallback
+	default:
+		if fallback == "" {
+			return "ERROR", fmt.Sprintf("HTTP %d", statusCode)
+		}
+		return "ERROR", fallback
+	}
 }
 
 // buildUnreachablePreflight constructs a preflight result for an unreachable site.
@@ -104,6 +205,17 @@ func buildUnreachablePreflight(siteId int64, site models.Site, errMsg string) Pr
 		SiteName:    site.Name,
 		SiteUrl:     site.Url,
 		IsReachable: false,
-		Error:       errMsg,
+		RiseupAsia: PreflightPluginStatus{
+			Name:    "riseup-asia-uploader",
+			Status:  "UNREACHABLE",
+			Message: errMsg,
+		},
+		QUpload: PreflightPluginStatus{
+			Name:    "qupload",
+			Status:  "UNREACHABLE",
+			Message: errMsg,
+		},
+		Error: errMsg,
 	}
 }
+
