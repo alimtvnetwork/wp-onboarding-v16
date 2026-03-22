@@ -94,7 +94,7 @@ func respondDeleted(w http.ResponseWriter) {
 // requestPath is the base URL path used to generate navigation URLs.
 func respondList[T any](
 	w http.ResponseWriter,
-	data T,
+	data []T,
 	pg envelope.Pagination,
 	requestPath string,
 ) {
