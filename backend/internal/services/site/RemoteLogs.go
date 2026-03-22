@@ -140,87 +140,150 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
+// Probes all known namespaces in parallel — no sequential ResolveNamespace().
 func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsClear)
+	type probeResult struct {
+		data *wordpress.LogsClearRequestData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearRequestData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Delete,
-		Endpoint:  endpoint,
-		Operation: operationtype.RequestLogsClear,
-	})
-	if result.HasError() {
-		return nil, result.AppError()
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.LogsClear)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearRequestData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Delete,
+				Endpoint:  endpoint,
+				Operation: operationtype.RequestLogsClear,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	return &data, nil
+	return nil, apperror.New(apperror.ErrWPConnection, "logs clear request failed on all namespaces")
 }
 
 // ConfirmRemoteLogsClear executes Step 2 with the provided token.
+// Probes all known namespaces in parallel — no sequential ResolveNamespace().
 func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsConfirm)
-
 	body := wordpress.ClearTokenRequest{
 		Token: token,
 	}
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearConfirmData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Post,
-		Endpoint:  endpoint,
-		Body:      body,
-		Operation: operationtype.ConfirmLogsClear,
-	})
-	if result.HasError() {
-		return nil, result.AppError()
+	type probeResult struct {
+		data *wordpress.LogsClearConfirmData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
+
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.LogsConfirm)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearConfirmData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Post,
+				Endpoint:  endpoint,
+				Body:      body,
+				Operation: operationtype.ConfirmLogsClear,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	return &data, nil
+	return nil, apperror.New(apperror.ErrWPConnection, "logs clear confirm failed on all namespaces")
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
+// Probes all known namespaces in parallel — no sequential ResolveNamespace().
 func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsEmail)
+	type probeResult struct {
+		data *wordpress.LogsEmailResultData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsEmailResultData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Post,
-		Endpoint:  endpoint,
-		Body:      body,
-		Operation: operationtype.EmailLogs,
-	})
-	if result.HasError() {
-		return nil, result.AppError()
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.LogsEmail)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsEmailResultData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Post,
+				Endpoint:  endpoint,
+				Body:      body,
+				Operation: operationtype.EmailLogs,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	return &data, nil
+	return nil, apperror.New(apperror.ErrWPConnection, "email logs failed on all namespaces")
 }
 
 // ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.
