@@ -111,18 +111,18 @@ export function CloudStorageRepoSelector({
   if (!isGitProvider) return null;
 
   const filteredRepos = repoSearch.length > 0
-    ? repos.filter((r) => r.FullName.toLowerCase().includes(repoSearch.toLowerCase()))
+    ? repos.filter((r) => r.fullName.toLowerCase().includes(repoSearch.toLowerCase()))
     : repos;
 
   const handleRepoSelect = (fullName: string) => {
-    const selected = repos.find((r) => r.FullName === fullName);
+    const selected = repos.find((r) => r.fullName === fullName);
     const isFound = !!selected;
 
     if (isFound) {
       const [owner, name] = fullName.split("/");
       onRepoOwnerChange(owner);
       onRepoNameChange(name);
-      onDefaultBranchChange(selected!.DefaultBranch || "main");
+      onDefaultBranchChange(selected!.defaultBranch || "main");
     }
   };
 
@@ -211,10 +211,10 @@ export function CloudStorageRepoSelector({
                       </SelectTrigger>
                       <SelectContent className="max-h-48">
                         {filteredRepos.map((repo) => (
-                          <SelectItem key={repo.FullName} value={repo.FullName}>
+                          <SelectItem key={repo.fullName} value={repo.fullName}>
                             <span className="flex items-center gap-2">
-                              {repo.FullName}
-                              {repo.IsPrivate && (
+                              {repo.fullName}
+                              {repo.isPrivate && (
                                 <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground">
                                   private
                                 </span>
@@ -244,9 +244,9 @@ export function CloudStorageRepoSelector({
                         <SelectContent>
                           {branches.length > 0 ? (
                             branches.map((b) => (
-                              <SelectItem key={b.Name} value={b.Name}>
-                                {b.Name}
-                                {b.IsDefault && " (default)"}
+                              <SelectItem key={b.name} value={b.name}>
+                                {b.name}
+                                {b.isDefault && " (default)"}
                               </SelectItem>
                             ))
                           ) : (

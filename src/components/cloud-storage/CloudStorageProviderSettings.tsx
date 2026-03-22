@@ -41,16 +41,16 @@ export function CloudStorageProviderSettings({
 
   useEffect(() => {
     if (settings) {
-      setIsEnabled(settings.IsEnabled);
-      setAutoBackup(settings.AutoBackupEnabled);
-      setDefaultAccountId(settings.DefaultAccountId?.toString() || "none");
-      setRetentionCount(settings.RetentionCount);
-      setRotationEnabled(settings.RotationEnabled);
-      setBackupPrefix(settings.BackupPrefix);
+      setIsEnabled(settings.isEnabled);
+      setAutoBackup(settings.autoBackupEnabled);
+      setDefaultAccountId(settings.defaultAccountId?.toString() || "none");
+      setRetentionCount(settings.retentionCount);
+      setRotationEnabled(settings.rotationEnabled);
+      setBackupPrefix(settings.backupPrefix);
     }
   }, [settings]);
 
-  const providerAccounts = accounts.filter((a) => a.Provider === provider && a.IsActive);
+  const providerAccounts = accounts.filter((a) => a.provider === provider && a.isActive);
 
   const handleSave = () => {
     onSave({
@@ -109,8 +109,8 @@ export function CloudStorageProviderSettings({
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
               {providerAccounts.map((a) => (
-                <SelectItem key={a.Id} value={a.Id.toString()}>
-                  {a.AccountLabel}
+                <SelectItem key={a.id} value={a.id.toString()}>
+                  {a.accountLabel}
                 </SelectItem>
               ))}
             </SelectContent>

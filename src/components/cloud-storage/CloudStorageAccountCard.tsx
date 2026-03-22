@@ -61,9 +61,9 @@ export function CloudStorageAccountCard({
 }: CloudStorageAccountCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const config = PROVIDER_CONFIG[account.Provider];
-  const hasError = !!account.LastError;
-  const hasLastUsed = !!account.LastUsedAt;
+  const config = PROVIDER_CONFIG[account.provider];
+  const hasError = !!account.lastError;
+  const hasLastUsed = !!account.lastUsedAt;
 
   return (
     <>
@@ -74,13 +74,13 @@ export function CloudStorageAccountCard({
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-foreground truncate">
-                  {account.AccountLabel}
+                  {account.accountLabel}
                 </h3>
                 <Badge
-                  variant={account.IsActive ? "default" : "secondary"}
+                  variant={account.isActive ? "default" : "secondary"}
                   className="text-xs"
                 >
-                  {account.IsActive ? "Active" : "Inactive"}
+                  {account.isActive ? "Active" : "Inactive"}
                 </Badge>
                 {hasError && (
                   <Tooltip>
@@ -88,7 +88,7 @@ export function CloudStorageAccountCard({
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{account.LastError}</p>
+                      <p className="text-sm">{account.lastError}</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -96,24 +96,24 @@ export function CloudStorageAccountCard({
 
               {/* Provider + Token mask */}
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="font-medium">{config?.label ?? account.Provider}</span>
+                <span className="font-medium">{config?.label ?? account.provider}</span>
                 <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
-                  {account.TokenMask || "••••••"}
+                  {account.tokenMask || "••••••"}
                 </span>
               </div>
 
               {/* Repo/Folder info */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                {account.RepoOwner && account.RepoName && (
+                {account.repoOwner && account.repoName && (
                   <span className="font-mono">
-                    {account.RepoOwner}/{account.RepoName}
+                    {account.repoOwner}/{account.repoName}
                   </span>
                 )}
-                {account.BaseUrl && (
-                  <span className="truncate max-w-[200px]">{account.BaseUrl}</span>
+                {account.baseUrl && (
+                  <span className="truncate max-w-[200px]">{account.baseUrl}</span>
                 )}
-                {account.FolderName && (
-                  <span>📁 {account.FolderName}</span>
+                {account.folderName && (
+                  <span>📁 {account.folderName}</span>
                 )}
               </div>
 
@@ -122,7 +122,7 @@ export function CloudStorageAccountCard({
                 {hasLastUsed && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    Used {formatDistanceToNow(new Date(account.LastUsedAt), { addSuffix: true })}
+                    Used {formatDistanceToNow(new Date(account.lastUsedAt), { addSuffix: true })}
                   </span>
                 )}
               </div>
@@ -147,7 +147,7 @@ export function CloudStorageAccountCard({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onTest(account.Id)}
+                    onClick={() => onTest(account.id)}
                     disabled={isTesting}
                     className="h-8 w-8"
                   >
@@ -195,7 +195,7 @@ export function CloudStorageAccountCard({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-2">
-              <CloudStorageBackupTimeline accountId={account.Id} />
+              <CloudStorageBackupTimeline accountId={account.id} />
             </CollapsibleContent>
           </Collapsible>
         </CardContent>
@@ -207,7 +207,7 @@ export function CloudStorageAccountCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Account</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{account.AccountLabel}</strong>?
+              Are you sure you want to delete <strong>{account.accountLabel}</strong>?
               This will not delete any files stored remotely, but the account credentials
               will be permanently removed.
             </AlertDialogDescription>
@@ -215,7 +215,7 @@ export function CloudStorageAccountCard({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => onDelete(account.Id)}
+              onClick={() => onDelete(account.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

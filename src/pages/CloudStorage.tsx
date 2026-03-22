@@ -49,7 +49,7 @@ export default function CloudStorage() {
 
   // Filtered accounts for active tab
   const filteredAccounts = useMemo(
-    () => accounts.filter((a) => a.Provider === activeProvider),
+    () => accounts.filter((a) => a.provider === activeProvider),
     [accounts, activeProvider],
   );
 
@@ -148,9 +148,9 @@ export default function CloudStorage() {
             <TabsTrigger key={p.id} value={p.id} className="flex items-center gap-2">
               {p.icon}
               {p.label}
-              {accounts.filter((a) => a.Provider === p.id).length > 0 && (
+              {accounts.filter((a) => a.provider === p.id).length > 0 && (
                 <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                  {accounts.filter((a) => a.Provider === p.id).length}
+                  {accounts.filter((a) => a.provider === p.id).length}
                 </span>
               )}
             </TabsTrigger>
@@ -185,13 +185,13 @@ export default function CloudStorage() {
                 ) : (
                   filteredAccounts.map((account) => (
                     <CloudStorageAccountCard
-                      key={account.Id}
+                      key={account.id}
                       account={account}
                       onEdit={handleEditAccount}
                       onDelete={handleDelete}
                       onTest={handleTest}
-                      isTesting={testingId === account.Id}
-                      testResult={testResults[account.Id]}
+                      isTesting={testingId === account.id}
+                      testResult={testResults[account.id]}
                     />
                   ))
                 )}
