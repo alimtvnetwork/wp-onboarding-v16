@@ -18,6 +18,7 @@
 
 ### Key Patterns
 
+- **Envelope Response**: `Response[T any]` with `Results []T` — fully generic, no `any` field
 - Handler returns: Use typed structs (e.g., `*SiteSettings`) instead of `any`
 - Maps: Use typed structs instead of `map[string]any`
 - Slices: Use typed slices (e.g., `[]PluginStatus`) instead of `[]any`
@@ -25,6 +26,7 @@
 - Service getters: Use typed interface (e.g., `SiteServiceInterface`) instead of `func() any`
 - WebSocket broadcasts: Use typed methods (e.g., `BroadcastRemoteActionStarted`) instead of `BroadcastWithSession(data any)`
 - Request bodies: `Body any` in `ApiCallInput` is justified — mirrors `json.Marshal` signature
+- Error/Deleted responses: Use `Response[EmptyResult]` (alias for `struct{}`)
 
 ### Status: ✅ Complete
 
