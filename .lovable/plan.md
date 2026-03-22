@@ -92,9 +92,9 @@
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| I-1 | Fix double-envelope wrapping (Health/Logs/Settings) | 🔴 Critical | — | Todo |
-| I-2 | Redesign SiteCard button layout | 🟡 High | — | Todo |
-| I-3 | PowerShell -d skip PHP propagation if no changes | 🟢 Medium | — | Todo |
+| I-1 | Fix double-envelope wrapping (Health/Logs/Settings) | 🔴 Critical | — | ✅ Done |
+| I-2 | Redesign SiteCard button layout | 🟡 High | — | ✅ Done |
+| I-3 | PowerShell -d skip PHP propagation if no changes | 🟢 Medium | — | ✅ Done |
 | I-4 | Redeploy to fix plugin_slug error (v2.30.0) | 🟡 High | User runs deploy | Blocked |
 
 **Specs:**
