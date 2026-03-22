@@ -72,7 +72,7 @@
 | G-3 | Typed Service Getters + Factory analysis | Handler infra | ~2 | ✅ Done (typed getters added; factory `any` justified as internal pattern) |
 | G-4 | Typed Adapter interfaces + Service returns | Adapter layer | ~30 | ✅ Done (User mgmt fully typed; Logs/Settings/Health justified `any` — PHP JSON) |
 | G-5 | Service layer typed structs (`map[string]any` → structs) | Services | ~15 | ✅ Done (clearLogs typed; PHP-proxied `any` justified — envelope unwrap) |
-| G-6 | WordPress client + WebSocket typing | Infra | ~15 | 📋 Todo |
+| G-6 | WebSocket + Logger typing | Infra | ~8 | ✅ Done (untyped `BroadcastWithSession(any)` eliminated; typed `BroadcastRemoteActionStarted/Complete`; Logger `keyvals ...any` justified — slog pattern; `Message.Data any` justified — runtime JSON container; `[T any]` constraints correct Go generics) |
 
 ### ✅ Phase H-1: Licensing Admin Dashboard
 - React dashboard with license CRUD, audit log viewer, health badge
