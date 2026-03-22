@@ -27,7 +27,7 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
