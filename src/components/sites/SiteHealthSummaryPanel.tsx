@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,14 @@ import {
   XCircle,
   Camera,
   Archive,
+  Package,
+  FileText,
+  AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
-import { api, Site } from "@/lib/api";
+import { api, Site, RemotePlugin } from "@/lib/api";
 import type { SiteHealthSummaryResponse } from "@/lib/api";
+import type { RemoteLogsStatusResponse } from "@/lib/api/types";
 
 interface SiteHealthSummaryPanelProps {
   site: Site;
@@ -44,6 +49,102 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
     staleTime: 60_000,
     meta: { suppressGlobalError: true },
   });
+
+  // Fetch remote plugins for version info
+  const { data: remotePlugins } = useQuery({
+    queryKey: ["sites", site.id, "remote-plugins"],
+    queryFn: async () => {
+      const res = await api.getRemotePlugins(site.id);
+      return res.success ? (res.data ?? []) : [];
+    },
+    enabled: open,
+    staleTime: 60_000,
+    meta: { suppressGlobalError: true },
+  });
+
+  // Fetch expected versions
+  const { data: expectedVersions } = useQuery({
+    queryKey: ["version-json"],
+    queryFn: async () => {
+      const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+      const resp = await fetch(`${base}version.json`);
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ wpPluginVersion: string; quploadVersion: string }>;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  // Fetch remote logs status
+  const { data: logsStatus } = useQuery({
+    queryKey: ["sites", site.id, "remote-logs-status"],
+    queryFn: async () => {
+      const res = await api.getRemoteLogsStatus(site.id);
+      return res.success ? (res.data as RemoteLogsStatusResponse) : null;
+    },
+    enabled: open,
+    staleTime: 60_000,
+    meta: { suppressGlobalError: true },
+  });
+
+  // Derive managed plugin versions
+  const managedPlugins = (() => {
+    if (!remotePlugins) return [];
+    const plugins: Array<{
+      name: string;
+      slug: string;
+      remoteVersion: string | null;
+      expectedVersion: string | null;
+      isActive: boolean;
+      isOutdated: boolean;
+      isMissing: boolean;
+    }> = [];
+
+    const uploaderSlug = "riseup-asia-uploader/riseup-asia-uploader.php";
+    const quploadSlug = "qupload/qupload.php";
+
+    const findPlugin = (slug: string) =>
+      remotePlugins.find(
+        (p: RemotePlugin) =>
+          p.plugin === slug || p.slug === slug.split("/")[0]
+      );
+
+    const uploader = findPlugin(uploaderSlug);
+    const qupload = findPlugin(quploadSlug);
+
+    plugins.push({
+      name: "Riseup Asia Uploader",
+      slug: "riseup-asia-uploader",
+      remoteVersion: uploader?.version || null,
+      expectedVersion: expectedVersions?.wpPluginVersion || null,
+      isActive: uploader?.status?.toLowerCase() === "active",
+      isOutdated: !!(uploader?.version && expectedVersions?.wpPluginVersion && uploader.version !== expectedVersions.wpPluginVersion),
+      isMissing: !uploader,
+    });
+
+    plugins.push({
+      name: "QUpload",
+      slug: "qupload",
+      remoteVersion: qupload?.version || null,
+      expectedVersion: expectedVersions?.quploadVersion || null,
+      isActive: qupload?.status?.toLowerCase() === "active",
+      isOutdated: !!(qupload?.version && expectedVersions?.quploadVersion && qupload.version !== expectedVersions.quploadVersion),
+      isMissing: !qupload,
+    });
+
+    return plugins;
+  })();
+
+  // Derive logs summary
+  const logsSummary = (() => {
+    if (!logsStatus) return null;
+    const errorFiles = logsStatus.files.filter(
+      (f) => f.name.includes("error") || f.name.includes("stacktrace")
+    );
+    const hasErrors = errorFiles.some((f) => f.lineCount > 0);
+    const totalLines = logsStatus.files.reduce((sum, f) => sum + f.lineCount, 0);
+    const totalSize = logsStatus.totalSizeBytes;
+    return { hasErrors, totalLines, totalSize, errorFiles, files: logsStatus.files };
+  })();
 
   if (isLoading) {
     return (
@@ -87,6 +188,126 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
             Refresh
           </Button>
         </div>
+
+        {/* Managed Plugin Versions */}
+        <Card>
+          <CardHeader className="py-2.5 px-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Managed Plugins
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            {managedPlugins.map((p) => (
+              <div key={p.slug} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{p.name}</span>
+                  {p.isActive ? (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      Active
+                    </Badge>
+                  ) : p.isMissing ? (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                      Missing
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                      Inactive
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {p.remoteVersion ? (
+                    <>
+                      <Badge variant="outline" className="text-xs font-mono px-1.5 py-0">
+                        v{p.remoteVersion}
+                      </Badge>
+                      {p.isOutdated && (
+                        <>
+                          <ArrowRight className="h-3 w-3 text-warning" />
+                          <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 border-warning/40 text-warning">
+                            v{p.expectedVersion}
+                          </Badge>
+                        </>
+                      )}
+                      {!p.isOutdated && p.expectedVersion && (
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                      )}
+                    </>
+                  ) : p.isMissing ? (
+                    <span className="text-xs text-destructive">Not installed</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Unknown</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Logs Status */}
+        {logsSummary && (
+          <Card>
+            <CardHeader className="py-2.5 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Remote Logs
+                {logsSummary.hasErrors && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/20 gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Has Errors
+                  </Badge>
+                )}
+                {!logsSummary.hasErrors && logsSummary.totalLines === 0 && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Clean
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              <div className="space-y-1.5">
+                {logsSummary.files.map((f) => {
+                  const isError = f.name.includes("error") || f.name.includes("stacktrace");
+                  const hasContent = f.lineCount > 0;
+                  return (
+                    <div key={f.name} className="flex items-center justify-between text-xs">
+                      <span className={`font-mono ${isError && hasContent ? "text-destructive" : "text-muted-foreground"}`}>
+                        {f.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{f.lineCount} lines</span>
+                        <span className="text-muted-foreground font-mono">
+                          {f.sizeBytes < 1024
+                            ? `${f.sizeBytes}B`
+                            : f.sizeBytes < 1048576
+                              ? `${(f.sizeBytes / 1024).toFixed(1)}KB`
+                              : `${(f.sizeBytes / 1048576).toFixed(1)}MB`}
+                        </span>
+                        {isError && hasContent && <AlertTriangle className="h-3 w-3 text-destructive" />}
+                        {!hasContent && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {logsSummary.totalSize > 0 && (
+                <div className="mt-2 pt-2 border-t text-xs text-muted-foreground flex justify-between">
+                  <span>{logsSummary.totalLines} total lines</span>
+                  <span className="font-mono">
+                    {logsSummary.totalSize < 1024
+                      ? `${logsSummary.totalSize}B`
+                      : logsSummary.totalSize < 1048576
+                        ? `${(logsSummary.totalSize / 1024).toFixed(1)}KB`
+                        : `${(logsSummary.totalSize / 1048576).toFixed(1)}MB`}
+                    {" total"}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* System */}
         <Card>
