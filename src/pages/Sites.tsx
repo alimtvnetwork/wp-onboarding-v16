@@ -17,7 +17,7 @@ import {
   AlertCircle,
   Upload,
 } from "lucide-react";
-import { api, Site } from "@/lib/api";
+import { api, Site, requireSuccess } from "@/lib/api";
 import { ConnectionStatus } from "@/lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
