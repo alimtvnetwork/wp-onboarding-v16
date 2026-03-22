@@ -183,6 +183,21 @@ export function CloudStorageAccountCard({
               </DropdownMenu>
             </div>
           </div>
+          {/* Backup History Toggle */}
+          <Collapsible open={historyOpen} onOpenChange={setHistoryOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between h-8 text-xs text-muted-foreground hover:text-foreground mt-2">
+                <span className="flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  Backup History
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <CloudStorageBackupTimeline accountId={account.Id} />
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
 
