@@ -261,11 +261,11 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
                   </div>
                 )}
 
-                {status.ArchiveCount > 0 && (
+                {status.archiveCount > 0 && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Archive className="h-3.5 w-3.5" />
-                    {status.ArchiveCount} archived rotation
-                    {status.ArchiveCount !== 1 ? "s" : ""}
+                    {status.archiveCount} archived rotation
+                    {status.archiveCount !== 1 ? "s" : ""}
                   </div>
                 )}
 
