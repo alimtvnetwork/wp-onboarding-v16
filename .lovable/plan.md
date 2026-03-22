@@ -90,7 +90,7 @@
 | J-3 | Parallel site uploads with goroutines | 🟡 High | J-1, J-2 | ✅ Done |
 | J-4 | Pre-flight endpoint check UI (like PowerShell -pas) | 🟡 High | — | ✅ Done |
 | J-5 | Phased progress UI in deploy dialog (ZIP→Upload→Summary) | 🟡 High | J-1, J-3 | ✅ Done |
-| J-6 | Delegated error logs in error modal (remote 500 response bodies) | 🟡 High | — | Todo |
+| J-6 | Delegated error logs in error modal (remote 500 response bodies) | 🟡 High | — | ✅ Done |
 | J-7 | Retry limiting — max 1 attempt per plugin per site | 🟢 Medium | J-2 | ✅ Done |
 
 **Acceptance criteria:**

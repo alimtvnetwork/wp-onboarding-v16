@@ -112,12 +112,15 @@ type MultiScanResponse struct {
 
 // BulkBootstrapSiteResult is the result for a single site in bulk bootstrap.
 type BulkBootstrapSiteResult struct {
-	SiteId      int64
-	SiteName    string
-	IsSuccess   bool
-	Message     string
-	IsActivated bool   `json:",omitempty"`
-	Error       string `json:",omitempty"`
+	SiteId             int64
+	SiteName           string
+	IsSuccess          bool
+	Message            string
+	IsActivated        bool   `json:",omitempty"`
+	Error              string `json:",omitempty"`
+	RemoteResponseBody string `json:",omitempty"`
+	RemoteStatusCode   int    `json:",omitempty"`
+	RemoteUrl          string `json:",omitempty"`
 }
 
 // BulkBootstrapResponse wraps results for bulk uploader deployment.
