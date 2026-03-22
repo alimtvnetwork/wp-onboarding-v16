@@ -331,7 +331,7 @@ function ProviderIcon({ provider }: { provider: CloudStorageProvider }) {
 
 interface AddAccountFormProps {
   onClose: () => void;
-  onCreate: (body: Record<string, unknown>) => Promise<unknown>;
+  onCreate: (body: CloudStorageAccountCreateRequest) => Promise<unknown>;
   isCreating: boolean;
 }
 
