@@ -113,7 +113,10 @@ export function DeployUploaderDialog({
     try {
       const siteIds = sites.map((s) => s.id);
       const response = await api.deployPreflight(siteIds);
-      setPreflightResults(response.results);
+      const data = response.data;
+      if (data?.results) {
+        setPreflightResults(data.results);
+      }
     } catch {
       // Pre-flight failure is non-blocking
       toast.error("Pre-flight check failed — you can still deploy");
