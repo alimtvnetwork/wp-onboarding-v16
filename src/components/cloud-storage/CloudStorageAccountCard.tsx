@@ -60,6 +60,7 @@ export function CloudStorageAccountCard({
   testResult,
 }: CloudStorageAccountCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const config = PROVIDER_CONFIG[account.Provider];
   const hasError = !!account.LastError;
   const hasLastUsed = !!account.LastUsedAt;
