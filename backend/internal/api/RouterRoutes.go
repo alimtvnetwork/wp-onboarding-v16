@@ -35,7 +35,11 @@ func registerRoutes(api *mux.Router, cfg ServerConfig) {
 	registerHistoryRoutes(api)
 	registerSessionRoutes(api)
 	registerE2ERoutes(api)
-	api.HandleFunc("/ws", cfg.WSHub.HandleWebSocket).Methods("GET")
+}
+
+// registerWebSocket registers the WebSocket endpoint on the root router (not the /api/v1 subrouter).
+func registerWebSocket(router *mux.Router, cfg ServerConfig) {
+	router.HandleFunc("/ws", cfg.WSHub.HandleWebSocket).Methods("GET")
 }
 
 func registerCoreRoutes(api *mux.Router) {
