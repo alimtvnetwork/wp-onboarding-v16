@@ -135,6 +135,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         { code: "E2010", message: msg, timestamp: new Date().toISOString() },
         { endpoint: `/sites/${siteId}/remote-logs/clear`, method: "DELETE" }
       );
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   const handleClearConfirm = async () => {
     if (!clearToken) return;
@@ -146,8 +150,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       toast.success("Remote logs cleared successfully");
       setClearToken(null);
       await fetchStatus();
-    } catch {
-      toast.error("Failed to confirm log clearing");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to confirm log clearing";
+      captureError(
+        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
+        { endpoint: `/sites/${siteId}/remote-logs/clear/confirm`, method: "POST" }
+      );
     } finally {
       setIsConfirming(false);
     }
@@ -183,8 +191,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
         await fetchStatus();
       }
-    } catch {
-      toast.error("Failed to clear logs for both plugins");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to clear logs for both plugins";
+      captureError(
+        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
+        { endpoint: `/sites/${siteId}/remote-logs/clear-all`, method: "POST" }
+      );
     } finally {
       setIsClearingAll(false);
     }
@@ -204,8 +216,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setShowEmailDialog(false);
       setEmailRecipient("");
       setIncludeArchives(false);
-    } catch {
-      toast.error("Failed to email logs");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to email logs";
+      captureError(
+        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
+        { endpoint: `/sites/${siteId}/remote-logs/email`, method: "POST" }
+      );
     } finally {
       setIsSendingEmail(false);
     }
