@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor } from "lucide-react";
+import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -176,6 +176,22 @@ export function GlobalErrorModal() {
 
   const hasMultipleErrors = errorQueue.length > 1;
 
+  // Determine error source classification
+  const hasDelegatedData = !!(
+    selectedError.requestDelegatedAt
+    || selectedError.envelopeErrors?.DelegatedRequestServer
+    || selectedError.envelopeErrors?.DelegatedServiceErrorStack?.length
+    || selectedError.phpStackFrames?.length
+    || (typeof selectedError.context?.remoteResponseBody === 'string' && selectedError.context.remoteResponseBody.length > 0)
+    || phpStackFrames.length > 0
+  );
+  const hasFrontendOnly = !selectedError.endpoint && !selectedError.envelopeErrors && selectedError.parsedFrames && selectedError.parsedFrames.length > 0;
+  const errorSource = hasDelegatedData
+    ? { label: "Delegated Remote", icon: Globe, className: "border-orange-500/40 bg-orange-500/10 text-orange-600 dark:text-orange-400" }
+    : hasFrontendOnly
+      ? { label: "Frontend", icon: Monitor, className: "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400" }
+      : { label: "Local Backend", icon: Server, className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" };
+
   return (
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
       <DialogContent
@@ -202,6 +218,10 @@ export function GlobalErrorModal() {
                   <span className="sm:hidden">Error</span>
                   <Badge variant="secondary" className={cn("text-xs", levelColors[selectedError.level] || "")}>
                     {selectedError.code}
+                  </Badge>
+                  <Badge variant="outline" className={cn("text-xs gap-1 font-medium", errorSource.className)}>
+                    <errorSource.icon className="h-3 w-3" />
+                    {errorSource.label}
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="truncate text-xs sm:text-sm">
