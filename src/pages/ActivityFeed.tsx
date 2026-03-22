@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, ActivityEntry, ActivityType, PublishHistoryEntry, ErrorHistoryRecord } from "@/lib/api";
+import { api, ActivityEntry, ActivityType, PublishHistoryEntry, ErrorHistoryRecord, ConnectionMetadata } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
