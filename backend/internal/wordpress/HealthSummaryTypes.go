@@ -4,11 +4,21 @@ package wordpress
 
 // HealthSummaryData is the typed response from the PHP site-health-summary endpoint.
 type HealthSummaryData struct {
-	System       HealthSystem       `json:"system"`
-	Plugins      HealthPlugins      `json:"plugins"`
-	Integrations HealthIntegrations `json:"integrations"`
-	Users        HealthUsers        `json:"users"`
-	Database     HealthDatabase     `json:"database"`
+	System          HealthSystem       `json:"system"`
+	Plugins         HealthPlugins      `json:"plugins"`
+	Integrations    HealthIntegrations `json:"integrations"`
+	Users           HealthUsers        `json:"users"`
+	Database        HealthDatabase     `json:"database"`
+	PluginOutdated  bool               `json:"pluginOutdated,omitempty"`
+	OutdatedMessage string             `json:"outdatedMessage,omitempty"`
+}
+
+// BuildOutdatedHealthSummary returns a HealthSummaryData indicating the remote plugin is outdated.
+func BuildOutdatedHealthSummary() *HealthSummaryData {
+	return &HealthSummaryData{
+		PluginOutdated:  true,
+		OutdatedMessage: "The remote plugin needs to be updated to v2.31.0+ to support health summary.",
+	}
 }
 
 // HealthSystem holds PHP/WP system information.

@@ -207,6 +207,24 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
     );
   }
 
+  if (health?.pluginOutdated) {
+    return (
+      <div className="text-center py-8 space-y-3">
+        <div className="flex items-center justify-center gap-2 text-warning">
+          <AlertTriangle className="h-5 w-5" />
+          <span className="font-medium text-sm">Plugin Outdated</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {health.outdatedMessage || "The remote plugin needs to be updated to v2.31.0+ to support health summary."}
+        </p>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   if (!health) {
     const errMsg = error instanceof Error ? error.message : "Could not load health summary";
     return (
