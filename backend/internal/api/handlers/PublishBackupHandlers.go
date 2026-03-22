@@ -76,7 +76,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 
 // PreviewPublish returns a preview of files that will be published
 var PreviewPublish = handleTwoIds(
-	twoIdConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5007"},
+	twoIdConfig{IsReady: isPublishServiceReady, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5007"},
 	func(ctx context.Context, pluginId, siteId int64) (any, *apperror.AppError) {
 		return Services.PublishService.PreviewPublish(ctx, pluginId, siteId)
 	},
@@ -84,7 +84,7 @@ var PreviewPublish = handleTwoIds(
 
 // ComputeDiff returns a true diff between local and remote files
 var ComputeDiff = handleTwoIds(
-	twoIdConfig{GetService: publishService, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5008"},
+	twoIdConfig{IsReady: isPublishServiceReady, ServiceName: "Publish service", Param1Name: "id", Param2Name: "siteId", ErrCode: "E5008"},
 	func(ctx context.Context, pluginId, siteId int64) (any, *apperror.AppError) {
 		return Services.PublishService.ComputeDiff(ctx, pluginId, siteId)
 	},
@@ -96,7 +96,7 @@ var ComputeDiff = handleTwoIds(
 
 // GetBackups returns backup history for a plugin
 var GetBackups = handleActionById(
-	handlerIdConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6001"},
+	handlerIdConfig{IsReady: isBackupServiceReady, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6001"},
 	func(ctx context.Context, pluginId int64) (any, *apperror.AppError) {
 		return Services.BackupService.List(ctx, pluginId)
 	},
@@ -130,7 +130,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBackup removes a backup file
 var DeleteBackup = handleDeleteById(
-	handlerIdConfig{GetService: backupService, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6003"},
+	handlerIdConfig{IsReady: isBackupServiceReady, ServiceName: "Backup service", ParamName: "id", ErrCode: "E6003"},
 	func(ctx context.Context, id int64) *apperror.AppError {
 		return Services.BackupService.Delete(ctx, id)
 	},
@@ -152,10 +152,10 @@ var VersionService VersionServiceInterface
 
 // GetPluginVersions returns version history for a plugin
 func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
-	isServiceMissing := VersionService == nil
+	isMissing := VersionService == nil
 
-	if isServiceMissing {
-		respondSuccess(w, []any{})
+	if isMissing {
+		respondSuccess(w, []struct{}{})
 
 		return
 	}
@@ -206,23 +206,23 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 // GetPluginVersion returns a specific version entry
 var GetPluginVersion = handleActionById(
-	handlerIdConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8002"},
-	func(ctx context.Context, id int64) (any, *apperror.AppError) {
+	handlerIdConfig{IsReady: isVersionServiceReady, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8002"},
+	func(ctx context.Context, id int64) (*database.PluginVersionRow, *apperror.AppError) {
 		return VersionService.GetVersion(ctx, id)
 	},
 )
 
 // RollbackPluginVersion restores a plugin to a previous version
 var RollbackPluginVersion = handleActionById(
-	handlerIdConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8003"},
-	func(ctx context.Context, id int64) (any, *apperror.AppError) {
+	handlerIdConfig{IsReady: isVersionServiceReady, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8003"},
+	func(ctx context.Context, id int64) (*ws.RollbackCompleteData, *apperror.AppError) {
 		return VersionService.Rollback(ctx, id)
 	},
 )
 
 // DeletePluginVersion removes a version entry
 var DeletePluginVersion = handleDeleteById(
-	handlerIdConfig{GetService: versionServiceGetter, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8004"},
+	handlerIdConfig{IsReady: isVersionServiceReady, ServiceName: "Version service", ParamName: "versionId", ErrCode: "E8004"},
 	func(ctx context.Context, id int64) *apperror.AppError {
 		return VersionService.DeleteVersion(ctx, id)
 	},

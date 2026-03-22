@@ -16,7 +16,7 @@ import (
 // ScanPlugin triggers a file scan for a specific plugin
 var ScanPlugin = handleActionById(
 	handlerIdConfig{
-		GetService:  watcherService,
+		IsReady:     isWatcherServiceReady,
 		ServiceName: "Watcher service",
 		ParamName:   "id",
 		ErrCode:     apperror.ErrBackupCreate,
@@ -29,7 +29,7 @@ var ScanPlugin = handleActionById(
 // ScanAllPlugins triggers a file scan for all plugins
 var ScanAllPlugins = handleNoArgs(
 	noArgsConfig{
-		GetService:  watcherService,
+		IsReady:     isWatcherServiceReady,
 		ServiceName: "Watcher service",
 		ErrCode:     apperror.ErrBackupRestore,
 	},
