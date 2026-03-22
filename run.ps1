@@ -116,6 +116,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-check.ps1")
 . (Join-Path $ModulesDir "mode-plugin-status.ps1")
 . (Join-Path $ModulesDir "mode-site-settings.ps1")
+. (Join-Path $ModulesDir "deploy-tracker.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
