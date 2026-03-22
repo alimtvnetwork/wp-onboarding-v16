@@ -423,7 +423,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <DialogHeader>
             <DialogTitle>Remote Logs — {site.name}</DialogTitle>
           </DialogHeader>
-          <RemoteLogsPanel siteId={site.id} siteName={site.name} />
+          <RemoteLogsPanel siteId={site.id} siteName={site.name} autoOpen />
         </DialogContent>
       </Dialog>
       <Dialog open={showSiteSettings} onOpenChange={setShowSiteSettings}>

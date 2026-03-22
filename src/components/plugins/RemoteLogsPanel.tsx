@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,8 @@ import { toast } from "sonner";
 interface RemoteLogsPanelProps {
   siteId: number;
   siteName?: string;
+  /** When true, auto-expand and auto-fetch on mount (used in dialog context) */
+  autoOpen?: boolean;
 }
 
 function formatBytes(bytes: number): string {
@@ -49,8 +51,8 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLogsPanelProps) {
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
 
@@ -73,8 +75,10 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
     try {
       const response = await api.getRemoteLogsStatus(siteId);
 
-      if (response.data) {
+      if (response.success && response.data) {
         setStatus(response.data);
+      } else if (!response.success) {
+        toast.error(response.error?.message || "Failed to fetch log status");
       }
     } catch {
       toast.error("Failed to fetch log status");
@@ -82,6 +86,13 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
       setIsLoading(false);
     }
   }, [siteId]);
+
+  // Auto-fetch when autoOpen is true
+  useEffect(() => {
+    if (autoOpen && !status) {
+      fetchStatus();
+    }
+  }, [autoOpen, fetchStatus, status]);
 
   const handleOpen = useCallback(
     (open: boolean) => {

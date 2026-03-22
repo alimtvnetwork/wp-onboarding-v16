@@ -19,7 +19,7 @@ import {
   Camera,
   Archive,
 } from "lucide-react";
-import { api, Site, requireSuccess } from "@/lib/api";
+import { api, Site } from "@/lib/api";
 import type { SiteHealthSummaryResponse } from "@/lib/api";
 
 interface SiteHealthSummaryPanelProps {
@@ -30,14 +30,17 @@ interface SiteHealthSummaryPanelProps {
 export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelProps) {
   const queryKey = ["sites", site.id, "site-health-summary"];
 
-  const { data: health, isLoading, refetch, isFetching } = useQuery({
+  const { data: health, isLoading, error, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.getRemoteSiteHealthSummary(site.id);
-      return requireSuccess(response, { endpoint: `/sites/${site.id}/site-health-summary`, method: "GET" }) as SiteHealthSummaryResponse;
+      if (!response.success) {
+        throw new Error(response.error?.message || "Failed to load health summary");
+      }
+      return response.data as SiteHealthSummaryResponse;
     },
     enabled: open,
-    retry: false,
+    retry: 1,
     staleTime: 60_000,
     meta: { suppressGlobalError: true },
   });
@@ -52,10 +55,15 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
   }
 
   if (!health) {
+    const errMsg = error instanceof Error ? error.message : "Could not load health summary";
     return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        <p>Could not load health summary.</p>
-        <p className="text-xs mt-1">The remote plugin may need to be updated.</p>
+      <div className="text-center py-8 space-y-3">
+        <p className="text-sm text-muted-foreground">{errMsg}</p>
+        <p className="text-xs text-muted-foreground">The remote plugin may need to be updated to v2.31.0+.</p>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+          Retry
+        </Button>
       </div>
     );
   }
