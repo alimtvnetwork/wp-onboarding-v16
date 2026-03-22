@@ -38,9 +38,11 @@ type LogsStatusPhpDbBlock struct {
 
 // LogsStatusData is the normalized response sent to the frontend.
 type LogsStatusData struct {
-	Files          []LogFileInfo `json:"files"`
-	TotalSizeBytes int64         `json:"totalSizeBytes"`
-	ArchiveCount   int           `json:"archiveCount"`
+	Files           []LogFileInfo `json:"files"`
+	TotalSizeBytes  int64         `json:"totalSizeBytes"`
+	ArchiveCount    int           `json:"archiveCount"`
+	PluginOutdated  bool          `json:"pluginOutdated,omitempty"`
+	OutdatedMessage string        `json:"outdatedMessage,omitempty"`
 }
 
 // LogFileInfo represents a single log file in the normalized response.
