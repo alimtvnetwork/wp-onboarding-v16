@@ -62,6 +62,7 @@ import {
 import { api, requireSuccess } from "@/lib/api";
 import type {
   CloudStorageAccount,
+  CloudStorageAccountCreateRequest,
   CloudStorageProvider,
   CloudStorageSettings,
   CloudStorageBackupHistoryRecord,
