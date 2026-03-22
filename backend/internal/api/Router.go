@@ -63,6 +63,7 @@ func NewServer(cfg ServerConfig) *Server {
 
 	api := router.PathPrefix("/api/v1").Subrouter()
 	registerRoutes(api, cfg)
+	registerWebSocket(router, cfg)
 
 	if cfg.StaticDir != "" {
 		staticDir := resolveSpaStaticDir(cfg.StaticDir)
