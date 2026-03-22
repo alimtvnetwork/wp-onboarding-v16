@@ -337,3 +337,41 @@ func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteI
 func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
 }
+
+// --- User management typed adapter methods ---
+
+func (a *SiteServiceAdapter) ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError) {
+	return a.Service.ListRemoteUsers(ctx, siteId, query)
+}
+
+func (a *SiteServiceAdapter) GetRemoteUser(ctx context.Context, siteId int64, userId string) (*wordpress.UserResponse, *apperror.AppError) {
+	return a.Service.GetRemoteUser(ctx, siteId, userId)
+}
+
+func (a *SiteServiceAdapter) CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (*wordpress.UserCreateResult, *apperror.AppError) {
+	return a.Service.CreateRemoteUser(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (*wordpress.UserUpdateResult, *apperror.AppError) {
+	return a.Service.UpdateRemoteUser(ctx, siteId, userId, input)
+}
+
+func (a *SiteServiceAdapter) DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (*wordpress.UserDeleteResult, *apperror.AppError) {
+	return a.Service.DeleteRemoteUser(ctx, siteId, userId, reassign)
+}
+
+func (a *SiteServiceAdapter) CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (*wordpress.AppPasswordCreateResult, *apperror.AppError) {
+	return a.Service.CreateRemoteAppPassword(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (*wordpress.AppPasswordRevokeResult, *apperror.AppError) {
+	return a.Service.RevokeRemoteAppPassword(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (*wordpress.UserExportResult, *apperror.AppError) {
+	return a.Service.ExportRemoteUsersCsv(ctx, siteId, query)
+}
+
+func (a *SiteServiceAdapter) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError) {
+	return a.Service.ExportRemoteUsersSqlite(ctx, siteId)
+}
