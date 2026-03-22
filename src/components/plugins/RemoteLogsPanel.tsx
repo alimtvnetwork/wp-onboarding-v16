@@ -30,13 +30,14 @@ import {
   CheckCircle,
   Archive,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, requireSuccess } from "@/lib/api";
 import type {
   RemoteLogsStatusResponse,
   RemoteLogsClearResponse,
 } from "@/lib/api/types";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
+import { isApiClientError } from "@/lib/api";
 
 interface RemoteLogsPanelProps {
   siteId: number;
@@ -52,11 +53,34 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
+/** Surface an error through the global error modal with full envelope/delegated data. */
+function surfaceError(err: unknown, fallbackEndpoint: string, fallbackMethod: string) {
+  const { captureError, captureException, openErrorModal } = useErrorStore.getState();
+
+  if (isApiClientError(err)) {
+    const captured = captureError(err.apiError, {
+      endpoint: err.meta.requestUrl,
+      method: err.meta.method,
+      requestBody: err.meta.requestBody,
+      responseStatus: (err.apiError.context?.responseStatus as number | undefined) ?? undefined,
+      context: { source: "RemoteLogsPanel" },
+    });
+    openErrorModal(captured);
+    return;
+  }
+
+  const captured = captureException(err, {
+    source: "RemoteLogsPanel",
+    endpoint: fallbackEndpoint,
+    method: fallbackMethod,
+  });
+  openErrorModal(captured);
+}
+
 export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLogsPanelProps) {
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
-  const { captureError } = useErrorStore();
 
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
@@ -76,26 +100,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
     try {
       const response = await api.getRemoteLogsStatus(siteId);
-
-      if (response.success && response.data) {
-        setStatus(response.data);
-      } else if (!response.success) {
-        const msg = response.error?.message || "Failed to fetch log status";
-        captureError(
-          { code: response.error?.code || "E2010", message: msg, timestamp: new Date().toISOString() },
-          { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" }
-        );
-      }
+      const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" });
+      setStatus(data);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to fetch log status";
-      captureError(
-        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
-        { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" }
-      );
+      surfaceError(err, `/sites/${siteId}/remote-logs`, "GET");
     } finally {
       setIsLoading(false);
     }
-  }, [siteId, captureError]);
+  }, [siteId]);
 
   // Auto-fetch when autoOpen is true
   useEffect(() => {
@@ -122,19 +134,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
     try {
       const response = await api.clearRemoteLogs(siteId);
-      const data: RemoteLogsClearResponse | undefined = response.data;
+      const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/clear`, method: "DELETE" });
 
-      if (data) {
-        setClearToken(data.token);
-        setClearExpiry(data.expiresIn);
-        toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
-      }
+      setClearToken(data.token);
+      setClearExpiry(data.expiresIn);
+      toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to initiate log clearing";
-      captureError(
-        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
-        { endpoint: `/sites/${siteId}/remote-logs/clear`, method: "DELETE" }
-      );
+      surfaceError(err, `/sites/${siteId}/remote-logs/clear`, "DELETE");
     } finally {
       setIsClearing(false);
     }
@@ -146,16 +152,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setIsConfirming(true);
 
     try {
-      await api.confirmClearRemoteLogs(siteId, clearToken);
+      const response = await api.confirmClearRemoteLogs(siteId, clearToken);
+      requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/clear/confirm`, method: "POST" });
       toast.success("Remote logs cleared successfully");
       setClearToken(null);
       await fetchStatus();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to confirm log clearing";
-      captureError(
-        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
-        { endpoint: `/sites/${siteId}/remote-logs/clear/confirm`, method: "POST" }
-      );
+      surfaceError(err, `/sites/${siteId}/remote-logs/clear/confirm`, "POST");
     } finally {
       setIsConfirming(false);
     }
@@ -174,29 +177,23 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
     try {
       const response = await api.clearAllRemoteLogs(siteId);
-      const data = response.data;
+      const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/clear-all`, method: "POST" });
 
-      if (data) {
-        const rOk = data.riseup?.cleared;
-        const qOk = data.qupload?.cleared;
+      const rOk = data.riseup?.cleared;
+      const qOk = data.qupload?.cleared;
 
-        if (rOk && qOk) {
-          toast.success("All logs cleared for both plugins");
-        } else {
-          const failures: string[] = [];
-          if (!rOk) failures.push(`Riseup: ${data.riseup?.error || "failed"}`);
-          if (!qOk) failures.push(`QUpload: ${data.qupload?.error || "failed"}`);
-          toast.warning(`Partial clear: ${failures.join("; ")}`);
-        }
-
-        await fetchStatus();
+      if (rOk && qOk) {
+        toast.success("All logs cleared for both plugins");
+      } else {
+        const failures: string[] = [];
+        if (!rOk) failures.push(`Riseup: ${data.riseup?.error || "failed"}`);
+        if (!qOk) failures.push(`QUpload: ${data.qupload?.error || "failed"}`);
+        toast.warning(`Partial clear: ${failures.join("; ")}`);
       }
+
+      await fetchStatus();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to clear logs for both plugins";
-      captureError(
-        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
-        { endpoint: `/sites/${siteId}/remote-logs/clear-all`, method: "POST" }
-      );
+      surfaceError(err, `/sites/${siteId}/remote-logs/clear-all`, "POST");
     } finally {
       setIsClearingAll(false);
     }
@@ -208,20 +205,17 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setIsSendingEmail(true);
 
     try {
-      await api.emailRemoteLogs(siteId, {
+      const response = await api.emailRemoteLogs(siteId, {
         recipient: emailRecipient || undefined,
         include_archives: includeArchives,
       });
+      requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/email`, method: "POST" });
       toast.success("Logs emailed successfully");
       setShowEmailDialog(false);
       setEmailRecipient("");
       setIncludeArchives(false);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to email logs";
-      captureError(
-        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
-        { endpoint: `/sites/${siteId}/remote-logs/email`, method: "POST" }
-      );
+      surfaceError(err, `/sites/${siteId}/remote-logs/email`, "POST");
     } finally {
       setIsSendingEmail(false);
     }
