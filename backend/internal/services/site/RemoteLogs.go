@@ -46,7 +46,7 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
