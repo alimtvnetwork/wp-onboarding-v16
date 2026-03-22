@@ -12,6 +12,8 @@ import (
 )
 
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
+// The PHP logs/status endpoint returns a flat response (not envelope-wrapped),
+// so we deserialize directly into LogsStatusPhpResponse and transform.
 func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -20,7 +22,7 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 
 	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsStatus)
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsStatusData]](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.LogsStatusPhpResponse](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.GetLogsStatus,
@@ -29,12 +31,8 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 		return nil, result.AppError()
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
-	}
-
-	return &data, nil
+	phpResponse := result.Value()
+	return phpResponse.ToLogsStatusData(), nil
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
