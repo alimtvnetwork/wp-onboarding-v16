@@ -48,29 +48,27 @@ export function useDashboardStats() {
           api.getPublishHistory({ limit: DASHBOARD_TREND_LIMIT }),
         ]);
 
-      const sites = sitesRes.success ? (sitesRes.data ?? []) : [];
-      const plugins = pluginsRes.success ? (pluginsRes.data ?? []) : [];
-      const errors = errorsRes.success ? (errorsRes.data ?? []) : [];
+      const sites = requireSuccess(sitesRes, { endpoint: "/sites", method: "GET" });
+      const plugins = requireSuccess(pluginsRes, { endpoint: "/plugins", method: "GET" });
+      const errors = requireSuccess(errorsRes, { endpoint: `/errors?limit=${RECENT_ERRORS_LIMIT}`, method: "GET" });
+      const publishStats = requireSuccess(publishStatsRes, { endpoint: "/publish-history/stats", method: "GET" });
+      const recentPublishesData = requireSuccess(recentPublishesRes, {
+        endpoint: `/publish-history?limit=${RECENT_PUBLISHES_LIMIT}`,
+        method: "GET",
+      });
+      const allPublishesData = requireSuccess(trendPublishesRes, {
+        endpoint: `/publish-history?limit=${DASHBOARD_TREND_LIMIT}`,
+        method: "GET",
+      });
 
       const sitesList = Array.isArray(sites) ? sites : [];
       const pluginsList = Array.isArray(plugins) ? plugins : [];
       const errorsList = Array.isArray(errors) ? errors : [];
 
-      const publishStats =
-        publishStatsRes.success && publishStatsRes.data
-          ? (publishStatsRes.data as PublishHistoryStats)
-          : null;
-
-      const recentPublishes =
-        recentPublishesRes.success && recentPublishesRes.data
-          ? (recentPublishesRes.data.entries ?? [])
-          : [];
+      const recentPublishes = recentPublishesData?.entries ?? [];
 
       // Build trend sparklines
-      const allPublishes =
-        trendPublishesRes.success && trendPublishesRes.data
-          ? (trendPublishesRes.data.entries ?? [])
-          : [];
+      const allPublishes = allPublishesData?.entries ?? [];
 
       const trends: DashboardTrends = {
         publishes: buildDailyBuckets(allPublishes),
@@ -90,7 +88,7 @@ export function useDashboardStats() {
           pendingChanges: pluginsList.reduce((acc: number, p: Plugin) => acc + (p.modifiedCount || 0), 0),
         },
         errors: { recent: errorsList.length },
-        publish: publishStats,
+        publish: (publishStats as PublishHistoryStats) ?? null,
         recentPublishes,
         trends,
       };
