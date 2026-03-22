@@ -271,6 +271,9 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 <DropdownMenuItem onClick={() => setShowCredentials(true)}>
                   <Users className="h-4 w-4 mr-2" /> Credentials
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowCloudStorage(true)} disabled={site.connectionStatus !== ConnectionStatus.Connected}>
+                  <Cloud className="h-4 w-4 mr-2" /> Cloud Storage
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(site.id)}>
                   <Trash2 className="h-4 w-4 mr-2" /> Delete
