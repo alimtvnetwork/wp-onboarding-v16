@@ -263,8 +263,21 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
             )}
 
+            {/* Plugin Outdated Warning */}
+            {!isLoading && status?.pluginOutdated && (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">Plugin Outdated</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {status.outdatedMessage || "The remote plugin does not support this endpoint. Please update using Deploy Uploader."}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* File List */}
-            {!isLoading && status && (
+            {!isLoading && status && !status.pluginOutdated && (
               <>
                 {hasFiles ? (
                   <div className="space-y-1.5">
