@@ -211,10 +211,10 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
               </div>
               {status && (
                 <Badge variant="secondary" className="text-xs">
-                  {formatBytes(status.TotalSizeBytes)}
-                  {status.ArchiveCount > 0 && (
+                  {formatBytes(status.totalSizeBytes)}
+                  {status.archiveCount > 0 && (
                     <span className="ml-1 text-muted-foreground">
-                      · {status.ArchiveCount} archived
+                      · {status.archiveCount} archived
                     </span>
                   )}
                 </Badge>
