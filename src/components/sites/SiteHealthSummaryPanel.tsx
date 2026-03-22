@@ -147,13 +147,16 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
   // Derive logs summary
   const logsSummary = (() => {
     if (!logsStatus) return null;
+    if (logsStatus.pluginOutdated) {
+      return { hasErrors: false, totalLines: 0, totalSize: 0, errorFiles: [], files: [], pluginOutdated: true };
+    }
     const errorFiles = logsStatus.files.filter(
       (f) => f.name.includes("error") || f.name.includes("stacktrace")
     );
     const hasErrors = errorFiles.some((f) => f.lineCount > 0);
     const totalLines = logsStatus.files.reduce((sum, f) => sum + f.lineCount, 0);
     const totalSize = logsStatus.totalSizeBytes;
-    return { hasErrors, totalLines, totalSize, errorFiles, files: logsStatus.files };
+    return { hasErrors, totalLines, totalSize, errorFiles, files: logsStatus.files, pluginOutdated: false };
   })();
 
   const handleClearAllLogs = async () => {
