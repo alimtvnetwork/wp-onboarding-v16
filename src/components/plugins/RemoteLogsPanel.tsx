@@ -190,7 +190,7 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
     }
   };
 
-  const hasFiles = status?.Files && status.Files.length > 0;
+  const hasFiles = status?.files && status.files.length > 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
