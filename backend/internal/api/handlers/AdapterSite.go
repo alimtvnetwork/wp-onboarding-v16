@@ -71,6 +71,7 @@ type SiteServiceInterface interface {
 	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError)
 	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError)
 	ClearAllRemoteLogs(ctx context.Context, siteId int64) (*site.ClearAllPluginLogsResult, *apperror.AppError)
+	RetrieveRemoteLogs(ctx context.Context, siteId int64, params site.LogsRetrieveParams) (*wordpress.LogsRetrieveResult, *apperror.AppError)
 
 	// User management proxy — typed returns
 	ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError)
