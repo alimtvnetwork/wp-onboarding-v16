@@ -49,7 +49,7 @@ func (s *Service) broadcastRemoteActionStartedWS(ref *remoteActionRef) {
 		PluginSlug: ref.PluginSlug,
 	}
 
-	s.wsHub.BroadcastWithSession("remote_plugin_action_started", event, ref.SessionId)
+	s.wsHub.BroadcastRemoteActionStarted(event, ref.SessionId)
 }
 
 // saveRemoteActionRequest saves the request to the session log.
