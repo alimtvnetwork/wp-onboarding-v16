@@ -77,12 +77,6 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, appErr
 	}
 
-	// All known namespaces to probe (same as PowerShell -pas probes all configured plugins)
-	namespaces := []string{
-		wordpress.QUploadNamespace,
-		wordpress.RiseupAsiaNamespace,
-	}
-
 	var wg sync.WaitGroup
 
 	// Channel 1: try rich /site-health-summary on each namespace in parallel
