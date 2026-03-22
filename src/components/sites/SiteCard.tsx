@@ -344,7 +344,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
-        <div className="flex gap-1 pt-2 border-t">
+        <div className="flex gap-1 pt-2 border-t transition-colors duration-300 group-hover:border-primary/20">
           <Button
             variant="ghost"
             size="sm"
