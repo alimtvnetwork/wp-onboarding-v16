@@ -99,26 +99,43 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsRotationStatus)
+	type probeResult struct {
+		data *wordpress.LogsRotationStatusData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRotationStatusData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Get,
-		Endpoint:  endpoint,
-		Operation: operationtype.GetLogsRotationStatus,
-	})
-	if result.HasError() {
-		if isRemote404(result.AppError()) {
-			return wordpress.BuildOutdatedLogsRotationStatus(), nil
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.LogsRotationStatus)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRotationStatusData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Get,
+				Endpoint:  endpoint,
+				Operation: operationtype.GetLogsRotationStatus,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
+	}
+
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
 		}
-		return nil, result.AppError()
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
-	}
-
-	return &data, nil
+	return wordpress.BuildOutdatedLogsRotationStatus(), nil
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
