@@ -12,6 +12,8 @@ import (
 
 // executeBootstrapUpload uploads the uploader plugin to the remote site.
 func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	s.logBootstrapEndpointCheck(id, "Riseup Asia Uploader", "Checking existing uploader endpoint")
+
 	availResult := client.CheckRiseupAsiaAvailable()
 	isUploaderReady :=
 		!availResult.HasError() &&
@@ -19,6 +21,8 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 			availResult.Value().HasNamespace()
 
 	if isUploaderReady {
+		s.logBootstrapEndpointCheck(id, "Riseup Asia Uploader", fmt.Sprintf("Endpoint ready (%s)", availResult.Value().Namespace))
+
 		input := bootstrapUploaderInput{
 			SiteId:    id,
 			Client:    client,
@@ -29,7 +33,13 @@ func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zip
 		return s.bootstrapViaUploader(input)
 	}
 
-	return s.bootstrapViaOnboard(id, client, zipPath)
+	if availResult.HasError() {
+		s.logBootstrapWarn(id, fmt.Sprintf("Riseup Asia Uploader endpoint unavailable: %v", availResult.AppError()))
+	} else {
+		s.logBootstrapWarn(id, "Riseup Asia Uploader not installed on remote site — trying QUpload fallback")
+	}
+
+	return s.bootstrapViaQUpload(id, client, zipPath)
 }
 
 // bootstrapUploaderInput bundles parameters for bootstrapViaUploader.
@@ -66,26 +76,42 @@ func (s *Service) executeUploaderUpload(siteId int64, client *wordpress.Client, 
 	return result.Value(), nil
 }
 
-// bootstrapViaOnboard installs via the Onboard plugin for first-time setup.
-func (s *Service) bootstrapViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapInfo(id, "First-time installation - checking for Onboard plugin")
+// bootstrapViaQUpload installs via QUpload when the uploader is not yet available.
+func (s *Service) bootstrapViaQUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	s.logBootstrapEndpointCheck(id, "QUpload", "Checking fallback upload endpoint")
 
-	isOnboardUnavailable := !s.checkOnboardAvailable(client)
+	qAvailResult := client.CheckQUploadAvailable()
+	isQUploadReady :=
+		!qAvailResult.HasError() &&
+			qAvailResult.Value().IsAvailable() &&
+			qAvailResult.Value().HasNamespace()
 
-	if isOnboardUnavailable {
-		s.logBootstrapError(id, "No upload helper plugin found.")
+	if !isQUploadReady {
+		if qAvailResult.HasError() {
+			s.logBootstrapError(id, fmt.Sprintf("QUpload fallback unavailable: %v", qAvailResult.AppError()))
+		} else {
+			s.logBootstrapError(id, "No upload helper plugin found. Checked Riseup Asia Uploader and QUpload endpoints.")
+		}
 
-		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site.")
+		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Checked Riseup Asia Uploader and QUpload endpoints.")
 	}
 
-	return s.uploadViaOnboard(id, client, zipPath)
+	s.logBootstrapEndpointCheck(id, "QUpload", fmt.Sprintf("Fallback endpoint ready (%s)", qAvailResult.Value().Namespace))
+
+	return s.uploadViaQUpload(id, client, zipPath)
 }
 
-// uploadViaOnboard performs the actual upload via the Onboard plugin.
-func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapInfo(id, "Using Onboard plugin for installation")
+// uploadViaQUpload performs the actual upload via the QUpload plugin.
+func (s *Service) uploadViaQUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	s.logBootstrapInfo(id, "Using QUpload fallback for installation")
+	s.logBootstrapInfo(id, "Uploading ZIP to fallback endpoint")
 
-	result := client.UploadPluginViaOnboard(zipPath, true)
+	result := client.UploadPluginViaQUpload(wordpress.UploadInput{
+		ZipPath:      zipPath,
+		Slug:         "riseup-asia-uploader",
+		IsActivate:   true,
+		UploadSource: uploadsource.RestApi,
+	})
 	if result.HasError() {
 		s.logBootstrapError(id, fmt.Sprintf("Upload failed: %v", result.AppError()))
 
@@ -93,6 +119,31 @@ func (s *Service) uploadViaOnboard(id int64, client *wordpress.Client, zipPath s
 	}
 
 	return result.Value(), nil
+}
+
+// logBootstrapWarn broadcasts a bootstrap warning log entry.
+func (s *Service) logBootstrapWarn(id int64, message string) {
+	warnLog := bootstrapLogInput{
+		Level:   loglevel.Warn,
+		SiteId:  id,
+		Message: message,
+		Details: toJson(SiteIdDetail{SiteId: id}),
+	}
+	s.broadcastBootstrapLog(warnLog)
+}
+
+// logBootstrapEndpointCheck broadcasts explicit endpoint-check logs for deployment diagnostics.
+func (s *Service) logBootstrapEndpointCheck(id int64, helperName, message string) {
+	checkLog := bootstrapLogInput{
+		Level:   loglevel.Info,
+		SiteId:  id,
+		Message: fmt.Sprintf("[%s] %s", helperName, message),
+		Details: toJson(map[string]any{
+			"siteId": id,
+			"helper": helperName,
+		}),
+	}
+	s.broadcastBootstrapLog(checkLog)
 }
 
 // finalizeBootstrap logs success and returns the result.
