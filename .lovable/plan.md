@@ -55,8 +55,24 @@
 - F-3: Verbose `-check` mode (HEAD requests)
 - F-4: Auto-invalidate cached ZIP on source change
 
-### ✅ Phase G: Type Safety
-- Zero `interface{}` outside test files; all migrated to `any` or typed generics
+### 🔄 Phase G: Type Safety (Reopened — No `any` Policy)
+- Previous: Migrated `interface{}` → `any` (completed)
+- **New standard:** `any` is also prohibited — must use specific types or bounded generics
+- Exception: file I/O initial unmarshalling, test files, third-party boundaries
+- **Current violations:** ~259 across 88 files
+- Spec: `spec/05-golang-standards/04-type-safety-no-any.md`
+- Issue: `spec/02-app-issues/38-go-type-safety-any-elimination.md`
+
+#### Phase G Sub-tasks
+
+| # | Task | Scope | Files | Status |
+|---|------|-------|-------|--------|
+| G-1 | Generic `Result[T]` in `pkg/apperror` + `pkg/dbutil` | Foundation | ~12 | 📋 Todo |
+| G-2 | Typed Response & Envelope structs | Response layer | ~5 | 📋 Todo |
+| G-3 | Generic Handler Factory | Handler infra | ~3 | 📋 Todo |
+| G-4 | Typed Adapter interfaces | Adapter layer | ~5 | 📋 Todo |
+| G-5 | Service layer typed structs (`map[string]any` → structs) | Services | ~40 | 📋 Todo |
+| G-6 | WordPress client + WebSocket typing | Infra | ~15 | 📋 Todo |
 
 ### ✅ Phase H-1: Licensing Admin Dashboard
 - React dashboard with license CRUD, audit log viewer, health badge
