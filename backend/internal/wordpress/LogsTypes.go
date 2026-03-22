@@ -38,9 +38,11 @@ type LogsStatusPhpDbBlock struct {
 
 // LogsStatusData is the normalized response sent to the frontend.
 type LogsStatusData struct {
-	Files          []LogFileInfo `json:"files"`
-	TotalSizeBytes int64         `json:"totalSizeBytes"`
-	ArchiveCount   int           `json:"archiveCount"`
+	Files           []LogFileInfo `json:"files"`
+	TotalSizeBytes  int64         `json:"totalSizeBytes"`
+	ArchiveCount    int           `json:"archiveCount"`
+	PluginOutdated  bool          `json:"pluginOutdated,omitempty"`
+	OutdatedMessage string        `json:"outdatedMessage,omitempty"`
 }
 
 // LogFileInfo represents a single log file in the normalized response.
@@ -113,4 +115,16 @@ type LogsRotationStatusData struct {
 	MaxSizeBytes int64  `json:"maxSizeBytes"`
 	MaxFiles     int    `json:"maxFiles"`
 	Interval     string `json:"interval"`
+}
+
+// BuildOutdatedLogsStatus returns a graceful fallback LogsStatusData
+// when the remote plugin is outdated and doesn't have the /logs/status endpoint.
+func BuildOutdatedLogsStatus() *LogsStatusData {
+	return &LogsStatusData{
+		Files:          []LogFileInfo{},
+		TotalSizeBytes: 0,
+		ArchiveCount:   0,
+		PluginOutdated: true,
+		OutdatedMessage: "Remote plugin is outdated — the /logs/status endpoint is not available. Please update the plugin using Deploy Uploader.",
+	}
 }

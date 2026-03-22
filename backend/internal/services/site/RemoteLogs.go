@@ -3,6 +3,8 @@ package site
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
@@ -11,9 +13,26 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// isRemote404 checks if an AppError originates from a remote 404 response.
+func isRemote404(err *apperror.AppError) bool {
+	if err.Diagnostic.StatusCode == 404 {
+		return true
+	}
+
+	// Check cause chain for wordpress.ApiError with 404
+	var apiErr *wordpress.ApiError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
+		return true
+	}
+
+	// Fallback: check error message for "status 404"
+	return strings.Contains(err.Error(), "status 404")
+}
+
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
 // The PHP logs/status endpoint returns a flat response (not envelope-wrapped),
 // so we deserialize directly into LogsStatusPhpResponse and transform.
+// If the remote endpoint returns 404, the plugin is outdated — return a graceful fallback.
 func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -28,6 +47,10 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 		Operation: operationtype.GetLogsStatus,
 	})
 	if result.HasError() {
+		if isRemote404(result.AppError()) {
+			return wordpress.BuildOutdatedLogsStatus(), nil
+		}
+
 		return nil, result.AppError()
 	}
 
