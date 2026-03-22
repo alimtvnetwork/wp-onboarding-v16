@@ -62,6 +62,7 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/test", handlers.TestSiteConnection).Methods("POST")
 	api.HandleFunc("/sites/{id}/bootstrap-uploader", handlers.BootstrapUploader).Methods("POST")
 	api.HandleFunc("/sites/bulk-bootstrap-uploader", handlers.BulkBootstrapUploader).Methods("POST")
+	api.HandleFunc("/sites/deploy-preflight", handlers.DeployPreflight).Methods("POST")
 	api.HandleFunc("/sites/{id}/mappings", handlers.GetSiteMappings).Methods("GET")
 	api.HandleFunc("/sites/{id}/mappings", handlers.UpdateSiteMappings).Methods("PUT")
 	api.HandleFunc("/sites/{id}/remote-plugins", handlers.GetRemotePlugins).Methods("GET")
