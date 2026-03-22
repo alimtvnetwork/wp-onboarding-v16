@@ -38,10 +38,11 @@ export default function UserManagement() {
   );
 
   // Auto-select first site if none selected
-  const hasSites = sites && sites.length > 0;
-  if (hasSites && selectedSiteId === null) {
-    setSelectedSiteId(sites[0].id);
-  }
+  useEffect(() => {
+    if (sites && sites.length > 0 && selectedSiteId === null) {
+      setSelectedSiteId(sites[0].id);
+    }
+  }, [sites, selectedSiteId]);
 
   // Extract users from envelope response
   const users: WPUserSummary[] = Array.isArray(usersResponse)
