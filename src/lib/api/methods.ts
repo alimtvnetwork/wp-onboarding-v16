@@ -756,17 +756,17 @@ export const api = {
 
   // Cloud Storage
   getCloudStorageAccounts: () =>
-    request<{ Accounts: unknown[] }>("/cloud-storage/accounts"),
+    request<{ accounts: unknown[] }>("/cloud-storage/accounts"),
   getCloudStorageAccount: (id: number) =>
-    request<{ Account: unknown }>(`/cloud-storage/accounts/${id}`),
+    request<{ account: unknown }>(`/cloud-storage/accounts/${id}`),
   createCloudStorageAccount: (body: Record<string, unknown>) =>
-    request<{ Account: unknown }>("/cloud-storage/accounts", { method: "POST", body: JSON.stringify(body) }),
+    request<{ account: unknown }>("/cloud-storage/accounts", { method: "POST", body: JSON.stringify(body) }),
   updateCloudStorageAccount: (id: number, body: Record<string, unknown>) =>
-    request<{ Account: unknown }>(`/cloud-storage/accounts/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    request<{ account: unknown }>(`/cloud-storage/accounts/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteCloudStorageAccount: (id: number) =>
-    request<{ Success: boolean }>(`/cloud-storage/accounts/${id}`, { method: "DELETE" }),
+    request<{ success: boolean }>(`/cloud-storage/accounts/${id}`, { method: "DELETE" }),
   testCloudStorageAccount: (accountId: number) =>
-    request<{ Success: boolean; ConnectionStatus?: string; Username?: string; Message?: string; Error?: string }>(
+    request<{ success: boolean; connectionStatus?: string; username?: string; message?: string; error?: string }>(
       "/cloud-storage/accounts/test",
       { method: "POST", body: JSON.stringify({ AccountId: accountId }) },
     ),
@@ -775,18 +775,18 @@ export const api = {
   updateCloudStorageSettings: (provider: string, settings: Record<string, unknown>) =>
     request<Record<string, unknown>>(`/cloud-storage/settings/${provider}`, { method: "PUT", body: JSON.stringify(settings) }),
   initiateCloudStorageOAuth: (accountLabel: string) =>
-    request<{ Success: boolean; OAuthUrl?: string; OAuthState?: string; Error?: string }>(
+    request<{ success: boolean; oAuthUrl?: string; oAuthState?: string; error?: string }>(
       "/cloud-storage/oauth/initiate",
       { method: "POST", body: JSON.stringify({ AccountLabel: accountLabel }) },
     ),
 
   // Cloud Storage — Phase 5A: Repo & branch browsing
   getCloudStorageRepos: (accountId: number) =>
-    request<{ Repositories: import('@/types/cloudStorage').CloudStorageRepository[] }>(
+    request<{ repositories: import('@/types/cloudStorage').CloudStorageRepository[] }>(
       `/cloud-storage/repos${buildQuery({ account_id: accountId })}`,
     ),
   getCloudStorageBranches: (accountId: number, repo: string) =>
-    request<{ Branches: import('@/types/cloudStorage').CloudStorageBranch[] }>(
+    request<{ branches: import('@/types/cloudStorage').CloudStorageBranch[] }>(
       `/cloud-storage/branches${buildQuery({ account_id: accountId, repo })}`,
     ),
 
@@ -796,16 +796,16 @@ export const api = {
       `/cloud-storage/backup-history${buildQuery({ account_id: accountId, page, per_page: perPage })}`,
     ),
   getCloudStorageBackupDetail: (backupId: number) =>
-    request<{ Backup: import('@/types/cloudStorage').CloudStorageBackupHistoryRecord }>(
+    request<{ backup: import('@/types/cloudStorage').CloudStorageBackupHistoryRecord }>(
       `/cloud-storage/backup-history/${backupId}`,
     ),
   deleteCloudStorageBackup: (backupId: number) =>
-    request<{ Success: boolean; Message: string }>(
+    request<{ success: boolean; message: string }>(
       `/cloud-storage/backup-history/${backupId}`,
       { method: "DELETE" },
     ),
   restoreCloudStorageBackup: (backupId: number) =>
-    request<{ Success: boolean; Message: string }>(
+    request<{ success: boolean; message: string }>(
       "/cloud-storage/restore",
       { method: "POST", body: JSON.stringify({ BackupId: backupId }) },
     ),
