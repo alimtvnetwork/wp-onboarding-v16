@@ -141,8 +141,13 @@ Builder functions already generic. `Response.Results any` is a justified excepti
 - Eliminated `UnwrapPhpEnvelope(map[string]any)` usage from all typed endpoints
 - Only justified `any` remaining: `UpdateRemoteSiteSettings` input `map[string]any` (dynamic PHP settings)
 
-### Phase G-5: Service Layer map[string]any → Typed Structs
-- Create request/response structs for UpdateRemoteSiteSettings, etc.
+### Phase G-5: Service Layer map[string]any → Typed Structs ✅ Done (2026-03-22)
+- Audited all remaining `map[string]any` — all are justified exceptions:
+  - `UpdateRemoteSiteSettings` param: dynamic PHP settings input (arbitrary key-value)
+  - `SiteSettingsUpdateResult.Updated`: dynamic key-value pairs from PHP response
+  - `EnvelopeUnwrap.go`: parsing unknown PHP JSON (file I/O exception)
+  - `toJson(v any)`: matches `json.Marshal` signature (library boundary)
+- No actionable violations remaining
 
 ### Phase G-6: WebSocket + Logger ✅ Done
 - Typed broadcast payload with `BroadcastPayload` interface
