@@ -133,6 +133,7 @@ var variantLabels = [...]string{
 	RequestLogsClear:       "RequestLogsClear",
 	ConfirmLogsClear:       "ConfirmLogsClear",
 	EmailLogs:              "EmailLogs",
+	RetrieveLogs:           "RetrieveLogs",
 	CloudStorageUpload:         "CloudStorageUpload",
 	CloudStorageRestore:       "CloudStorageRestore",
 	CloudStorageBackupHistory: "CloudStorageBackupHistory",
