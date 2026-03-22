@@ -27,7 +27,7 @@ func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any,
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // UpdateRemoteSiteSettings updates site settings on a remote WordPress site.
@@ -47,7 +47,7 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
@@ -66,5 +66,5 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }

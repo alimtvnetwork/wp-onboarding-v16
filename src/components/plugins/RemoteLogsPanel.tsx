@@ -104,9 +104,9 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
       const data: RemoteLogsClearResponse | undefined = response.data;
 
       if (data) {
-        setClearToken(data.Token);
-        setClearExpiry(data.ExpiresIn);
-        toast.info("Clear token issued — confirm within " + data.ExpiresIn + "s");
+        setClearToken(data.token);
+        setClearExpiry(data.expiresIn);
+        toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
       }
     } catch {
       toast.error("Failed to initiate log clearing");
@@ -190,7 +190,7 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
     }
   };
 
-  const hasFiles = status?.Files && status.Files.length > 0;
+  const hasFiles = status?.files && status.files.length > 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
@@ -211,10 +211,10 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
               </div>
               {status && (
                 <Badge variant="secondary" className="text-xs">
-                  {formatBytes(status.TotalSizeBytes)}
-                  {status.ArchiveCount > 0 && (
+                  {formatBytes(status.totalSizeBytes)}
+                  {status.archiveCount > 0 && (
                     <span className="ml-1 text-muted-foreground">
-                      · {status.ArchiveCount} archived
+                      · {status.archiveCount} archived
                     </span>
                   )}
                 </Badge>
@@ -237,18 +237,18 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
               <>
                 {hasFiles ? (
                   <div className="space-y-1.5">
-                    {status.Files.map((file) => (
+                    {status.files.map((file) => (
                       <div
-                        key={file.Name}
+                        key={file.name}
                         className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
                       >
                         <span className="font-mono text-xs text-foreground">
-                          {file.Name}
+                          {file.name}
                         </span>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{file.LineCount.toLocaleString()} lines</span>
+                          <span>{file.lineCount.toLocaleString()} lines</span>
                           <Badge variant="outline" className="text-xs">
-                            {formatBytes(file.SizeBytes)}
+                            {formatBytes(file.sizeBytes)}
                           </Badge>
                         </div>
                       </div>
@@ -261,11 +261,11 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
                   </div>
                 )}
 
-                {status.ArchiveCount > 0 && (
+                {status.archiveCount > 0 && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Archive className="h-3.5 w-3.5" />
-                    {status.ArchiveCount} archived rotation
-                    {status.ArchiveCount !== 1 ? "s" : ""}
+                    {status.archiveCount} archived rotation
+                    {status.archiveCount !== 1 ? "s" : ""}
                   </div>
                 )}
 

@@ -27,7 +27,7 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
@@ -46,7 +46,7 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
@@ -65,7 +65,7 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // ConfirmRemoteLogsClear executes Step 2 with the provided token.
@@ -89,7 +89,7 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
@@ -109,7 +109,7 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.

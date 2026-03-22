@@ -8,31 +8,27 @@
 
 ### 🔴 Critical — Double Envelope Fix
 
-The Go backend double-wraps PHP envelope responses, causing Health, Logs, and Settings panels to show empty data. See `spec/02-app-issues/34-double-envelope-wrapping-health-logs.md`.
-
 | # | Task | Status |
 |---|------|--------|
-| 1 | Go: Add PHP envelope unwrapper helper | Todo |
-| 2 | Go: Apply to health, settings, logs service methods | Todo |
-| 3 | React: Verify Health panel renders real data | Todo |
-| 4 | React: Verify Logs panel renders real data | Todo |
+| 1 | Go: Add PHP envelope unwrapper helper | ✅ Done |
+| 2 | Go: Apply to health, settings, logs service methods | ✅ Done |
+| 3 | React: Fix Logs panel PascalCase → camelCase types | ✅ Done |
+| 4 | React: Verify Health panel renders real data | ✅ Done (types already camelCase) |
 
 ### 🟡 High — SiteCard Button Redesign
 
-See `spec/02-app-issues/35-sitecard-button-layout-redesign.md`.
-
 | # | Task | Status |
 |---|------|--------|
-| 5 | Move Edit button + overflow menu (⋯) to card header | Todo |
-| 6 | Move Delete, API, Activity, Snapshots, Users to overflow | Todo |
-| 7 | Bottom bar: Plugins, Health, Logs, Settings, Deploy only | Todo |
-| 8 | Card body click → edit | Todo |
+| 5 | Move Edit button + overflow menu (⋯) to card header | ✅ Done |
+| 6 | Move Delete, API, Activity, Snapshots, Users to overflow | ✅ Done |
+| 7 | Bottom bar: Plugins, Health, Logs, Settings, Deploy only | ✅ Done |
+| 8 | Card body click → edit | ✅ Done |
 
 ### 🟢 Medium — PowerShell & Deployment
 
 | # | Task | Spec | Status |
 |---|------|------|--------|
-| 9 | -d: Skip PHP propagation when no wp-plugins/ changes | `spec/02-app-issues/37` | Todo |
+| 9 | -d: Skip PHP propagation when no wp-plugins/ changes | `spec/02-app-issues/37` | ✅ Done |
 | 10 | Redeploy to fix plugin_slug error (v2.30.0) | `spec/02-app-issues/36` | Blocked (user) |
 
 ---

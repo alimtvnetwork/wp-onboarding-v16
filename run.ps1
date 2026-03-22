@@ -477,25 +477,43 @@ if ($deploy) {
     # Phase 1: Git pull
     Invoke-GitPull
 
-    # Phase 2: Upload all plugins to all sites
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  [Deploy 1/3] Uploading all plugins to all sites..." -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    $script:uasExitCode = 0
-    Invoke-UploadAllSitesMode
+    # Phase 1b: Check if wp-plugins/ changed — skip PHP propagation if not
+    # See: spec/02-app-issues/37-powershell-deploy-skip-php-propagation.md
+    $wpPluginsChanged = $true
+    try {
+        $changedFiles = git diff --name-only HEAD@{1} HEAD -- "wp-plugins/" 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not $changedFiles) {
+            $wpPluginsChanged = $false
+            Write-Host "[Deploy] No wp-plugins/ changes detected — skipping PHP upload & status" -ForegroundColor Green
+        } elseif ($changedFiles) {
+            $changeCount = ($changedFiles | Measure-Object).Count
+            Write-Host "[Deploy] $changeCount file(s) changed in wp-plugins/ — propagating to sites" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[Deploy] Could not check git diff, proceeding with full deploy" -ForegroundColor DarkGray
+    }
 
-    # Phase 3: Plugin status check
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  [Deploy 2/3] Checking plugin status on all sites..." -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    $pluginstatusall = $true
-    $script:errorFlag = $errorlogs
-    $script:pluginStatusVerbose = $verbose
-    Invoke-PluginStatusMode
+    if ($wpPluginsChanged) {
+        # Phase 2: Upload all plugins to all sites
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  [Deploy 1/3] Uploading all plugins to all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        $script:uasExitCode = 0
+        Invoke-UploadAllSitesMode
+
+        # Phase 3: Plugin status check
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  [Deploy 2/3] Checking plugin status on all sites..." -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        $pluginstatusall = $true
+        $script:errorFlag = $errorlogs
+        $script:pluginStatusVerbose = $verbose
+        Invoke-PluginStatusMode
+    }
 
     # Phase 4: Continue to regular build & run (fall through to banner + steps 2-5)
     Write-Host ""

@@ -7,6 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Globe,
   Loader2,
   RefreshCw,
@@ -23,11 +30,11 @@ import {
   Database,
   Activity,
   Clock,
-  Calendar,
   Users,
   FileText,
   Settings,
   HeartPulse,
+  MoreHorizontal,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord } from "@/lib/api";
@@ -212,7 +219,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     <Card className="group transition-colors hover:bg-secondary/30">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div
+            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+            onClick={() => onEdit(site)}
+            title="Click to edit"
+          >
             <div className="p-2 rounded-lg bg-primary/10 shrink-0">
               <Globe className="h-5 w-5 text-primary" />
             </div>
@@ -226,11 +237,43 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate"
+                onClick={(e) => e.stopPropagation()}
               >
                 {site.url.replace(/^https?:\/\//, "")}
                 <ExternalLink className="h-3 w-3 flex-shrink-0" />
               </a>
             </div>
+          </div>
+          {/* Header actions: Edit + Overflow */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(site)} title="Edit site">
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/api-explorer?siteId=${site.id}`)} disabled={site.connectionStatus !== ConnectionStatus.Connected}>
+                  <FlaskConical className="h-4 w-4 mr-2" /> API Explorer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/publish-history?siteId=${site.id}&siteName=${encodeURIComponent(site.name)}`)}>
+                  <Activity className="h-4 w-4 mr-2" /> Activity
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowSnapshots(true)} disabled={site.connectionStatus !== ConnectionStatus.Connected}>
+                  <Database className="h-4 w-4 mr-2" /> Snapshots
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowCredentials(true)}>
+                  <Users className="h-4 w-4 mr-2" /> Credentials
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(site.id)}>
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
@@ -256,38 +299,14 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             <span>{getStatusText(site.connectionStatus)}</span>
           </div>
           
-          {/* Retest Button - Always visible for connected sites */}
-          {site.connectionStatus === ConnectionStatus.Connected && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={handleTestConnection}
-              disabled={testingSiteId === site.id}
-            >
-              {testingSiteId === site.id ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="h-3 w-3 mr-1" />
-              )}
+          {site.connectionStatus === ConnectionStatus.Connected ? (
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+              {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Retest
             </Button>
-          )}
-          
-          {/* Test Button - For disconnected or unknown */}
-          {site.connectionStatus !== ConnectionStatus.Connected && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={handleTestConnection}
-              disabled={testingSiteId === site.id}
-            >
-              {testingSiteId === site.id ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="h-3 w-3 mr-1" />
-              )}
+          ) : (
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+              {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Test
             </Button>
           )}
@@ -304,7 +323,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Backup Running</span>
               </span>
@@ -318,126 +337,62 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
         )}
 
-        {/* Action buttons - responsive flex wrap layout */}
-        <div className="flex flex-wrap gap-1 pt-2 border-t">
+        {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
+        <div className="flex gap-1 pt-2 border-t">
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => navigate(`/api-explorer?siteId=${site.id}`)}
-            disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Test API endpoints"}
-          >
-            <FlaskConical className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">API</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            className="flex-1 h-8 text-xs gap-1.5 px-2"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View plugins on this site"}
+            title="View plugins on this site"
           >
-            <Eye className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Plugins</span>
+            <Eye className="h-3.5 w-3.5 shrink-0" />
+            Plugins
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => setShowSnapshots(true)}
-            disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Manage database snapshots"}
-          >
-            <Database className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Snapshots</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => navigate(`/publish-history?siteId=${site.id}&siteName=${encodeURIComponent(site.name)}`)}
-            title="View activity logs for this site"
-          >
-            <Activity className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Activity</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => setShowLogs(true)}
-            disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "View remote logs"}
-          >
-            <FileText className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Logs</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => setShowSiteSettings(true)}
-            disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Site settings (debug, uploads, etc.)"}
-          >
-            <Settings className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Settings</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            className="flex-1 h-8 text-xs gap-1.5 px-2"
             onClick={() => setShowHealthSummary(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Site health summary"}
+            title="Site health summary"
           >
-            <HeartPulse className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Health</span>
+            <HeartPulse className="h-3.5 w-3.5 shrink-0" />
+            Health
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            onClick={() => setShowLogs(true)}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title="View remote logs"
+          >
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            Logs
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            onClick={() => setShowSiteSettings(true)}
+            disabled={site.connectionStatus !== ConnectionStatus.Connected}
+            title="Site settings"
+          >
+            <Settings className="h-3.5 w-3.5 shrink-0" />
+            Settings
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 h-8 text-xs gap-1.5 px-2"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
-            title={site.connectionStatus !== ConnectionStatus.Connected ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
+            title="Deploy Riseup Asia Uploader"
           >
-            {deployingUploader ? (
-              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-            ) : (
-              <Upload className="h-4 w-4 shrink-0" />
-            )}
-            <span className="text-[10px] leading-tight truncate">Deploy</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => setShowCredentials(true)}
-            title="Manage credentials for this site"
-          >
-            <Users className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Users</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
-            onClick={() => onEdit(site)}
-          >
-            <Edit className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Edit</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(site.id)}
-          >
-            <Trash2 className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] leading-tight truncate">Delete</span>
+            {deployingUploader ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
+            Deploy
           </Button>
         </div>
       </CardContent>
