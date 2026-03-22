@@ -130,12 +130,23 @@ func (h *Hub) BroadcastRemotePluginLogWithSession(input RemotePluginLogInput) {
 	h.BroadcastOperationLogWithSession(opLog)
 }
 
-// BroadcastWithSession is a method wrapper for the package-level generic BroadcastWithSession function,
-// satisfying interfaces that require a method on *Hub.
-func (h *Hub) BroadcastWithSession(eventType string, data any, sessionId string) {
-	h.broadcast <- &Message{
-		Type:      eventType,
+// BroadcastTypedWithSession sends a typed event with session ID using the generic BroadcastWithSession function.
+// This replaces the old untyped BroadcastWithSession(eventType, data any, sessionId) method.
+func BroadcastTypedWithSession[T any](h *Hub, eventType string, data T, sessionId string) {
+	BroadcastWithSession(BroadcastInput[T]{
+		Hub:       h,
+		EventType: eventType,
 		Data:      data,
 		SessionId: sessionId,
-	}
+	})
+}
+
+// BroadcastRemoteActionStarted sends a remote plugin action started event with session ID.
+func (h *Hub) BroadcastRemoteActionStarted(data RemoteActionStartedData, sessionId string) {
+	BroadcastTypedWithSession(h, EventRemotePluginActionStarted, data, sessionId)
+}
+
+// BroadcastRemoteActionComplete sends a remote plugin action complete event with session ID.
+func (h *Hub) BroadcastRemoteActionComplete(data RemoteActionCompleteData, sessionId string) {
+	BroadcastTypedWithSession(h, EventRemotePluginActionComplete, data, sessionId)
 }
