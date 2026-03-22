@@ -75,6 +75,13 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 | `-pas` | | Check plugin status on ALL configured sites |
 | `-errorlogs` | `-err` | Include error logs and stack traces (use with `-ps`/`-pas`) |
 
+### Site Settings
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-sitesettings` | `-ss` | Read site settings from default/target site |
+| `-set 'action'` | | Setting action: `debug-on`, `debug-off`, `debug-display-on/off`, `seo-on/off`, `upload-size`, `post-size`, `memory-limit` |
+| `-setval 'value'` | | Value for size-based actions (e.g., `256M`, `512M`) |
+
 ### Info
 | Flag | Alias | Description |
 |------|-------|-------------|
@@ -97,6 +104,8 @@ The `-v` flag shows raw JSON request bodies and response bodies for all REST API
 | `-cl -v`, `-cla -v` | Pre-clear: GET /logs/retrieve (line counts + sizes), then DELETE /logs/clear and POST /logs/clear/confirm request+response |
 | `-cas -v`, `-purge -v` | Pre-clear retrieval + all log clear + audit clear request+response |
 | `-pas -v` | Raw /status response JSON |
+| `-ss -v` | GET /site-settings request+response JSON |
+| `-ss -set ... -v` | PUT /site-settings request body + response JSON |
 
 ## Deployment Order (First-Time)
 

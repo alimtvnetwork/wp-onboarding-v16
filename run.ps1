@@ -45,7 +45,10 @@ param(
     [switch]$check,
     [Alias('ps')][switch]$pluginstatus,
     [switch]$pas,
-    [Alias('err')][switch]$errorlogs
+    [Alias('err')][switch]$errorlogs,
+    [Alias('ss')][switch]$sitesettings,
+    [string]$set = "",
+    [string]$setval = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -112,6 +115,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-approve-machine.ps1")
 . (Join-Path $ModulesDir "mode-check.ps1")
 . (Join-Path $ModulesDir "mode-plugin-status.ps1")
+. (Join-Path $ModulesDir "mode-site-settings.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -279,6 +283,21 @@ if ($help) {
     Write-Host "  -pas -site 'name'   Status for named site only"
     Write-Host "  -pas -sync          Sequential mode"
     Write-Host ""
+    Write-Host "SITE SETTINGS:" -ForegroundColor Yellow
+    Write-Host "  -ss                 Read site settings from default site" 
+    Write-Host "  -ss -site 'name'    Read settings from a specific site"
+    Write-Host "  -ss -i N            Read settings from site #N"
+    Write-Host "  -ss -set 'debug-on'         Enable WP_DEBUG + WP_DEBUG_LOG"
+    Write-Host "  -ss -set 'debug-off'        Disable WP_DEBUG + WP_DEBUG_LOG + WP_DEBUG_DISPLAY"
+    Write-Host "  -ss -set 'debug-display-on' Enable WP_DEBUG_DISPLAY"
+    Write-Host "  -ss -set 'debug-display-off' Disable WP_DEBUG_DISPLAY"
+    Write-Host "  -ss -set 'seo-on'           Enable search engine visibility"
+    Write-Host "  -ss -set 'seo-off'          Discourage search engines"
+    Write-Host "  -ss -set 'upload-size' -setval '256M'   Set upload_max_filesize"
+    Write-Host "  -ss -set 'post-size' -setval '256M'     Set post_max_size"
+    Write-Host "  -ss -set 'memory-limit' -setval '512M'  Set memory_limit"
+    Write-Host "  -ss -v              Verbose: show raw JSON request/response"
+    Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
     Write-Host "  -za                 ZIP ALL plugins in wp-plugins/ with version numbers"
@@ -362,6 +381,15 @@ if ($help) {
     Write-Host "    .\run.ps1 -pas -site 'Test V1'     # Status for specific site"
     Write-Host "    .\run.ps1 -pas -sync               # Status on all sites (sequential)"
     Write-Host ""
+    Write-Host "  Site settings:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -ss                              # Read settings on default site"
+    Write-Host "    .\run.ps1 -ss -site 'Test V1'              # Read settings on specific site"
+    Write-Host "    .\run.ps1 -ss -set 'debug-on'              # Enable WP_DEBUG on default site"
+    Write-Host "    .\run.ps1 -ss -set 'debug-off'             # Disable WP_DEBUG"
+    Write-Host "    .\run.ps1 -ss -set 'seo-off'               # Discourage search engines"
+    Write-Host "    .\run.ps1 -ss -set 'upload-size' -setval '256M'  # Set upload max"
+    Write-Host "    .\run.ps1 -ss -set 'memory-limit' -setval '512M' # Set memory limit"
+    Write-Host ""
     Write-Host "  Info:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ls          # List all sites (deploy + backend)"
     Write-Host "    .\run.ps1 -lr          # Same as -ls"
@@ -412,6 +440,14 @@ if ($listsites) {
 # ============================================================================
 if ($check) {
     Invoke-CheckMode -VerboseMode:$verbose
+}
+
+# ============================================================================
+# SITE SETTINGS (early exit)
+# ============================================================================
+if ($sitesettings) {
+    Invoke-GitPull
+    Invoke-SiteSettingsMode -VerboseMode:$verbose -SettingAction $set -SettingValue $setval
 }
 
 # ============================================================================

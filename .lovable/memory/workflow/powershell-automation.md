@@ -47,6 +47,7 @@ run.ps1 is a thin orchestrator that dot-sources modules from `wp-plugins/scripts
 | `mode-list-sites.ps1` | Invoke-ListSitesMode |
 | `mode-test.ps1` | Invoke-TestMode |
 | `mode-clear-logs.ps1` | Invoke-ClearLogsMode |
+| `mode-site-settings.ps1` | Invoke-SiteSettingsMode (read/update remote site settings via REST API) |
 
 All module paths use `Join-Path $ScriptDir "wp-plugins" "scripts" "modules"` for safe resolution.
 
