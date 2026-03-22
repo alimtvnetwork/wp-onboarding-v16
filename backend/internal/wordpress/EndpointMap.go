@@ -228,6 +228,7 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPLogsClear:           {Method: httpmethod.Delete, Endpoint: ep.LogsClear},
 	EPLogsConfirm:         {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
 	EPLogsEmail:           {Method: httpmethod.Post, Endpoint: ep.LogsEmail},
+	EPLogsRetrieve:        {Method: httpmethod.Get, Endpoint: ep.LogsRetrieve},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},
