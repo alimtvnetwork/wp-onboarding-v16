@@ -76,7 +76,8 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 			if result.HasError() {
 				return
 			}
-			ch <- probeResult{data: result.Value().ToLogsStatusData()}
+			val := result.Value()
+			ch <- probeResult{data: val.ToLogsStatusData()}
 		}(ns)
 	}
 
