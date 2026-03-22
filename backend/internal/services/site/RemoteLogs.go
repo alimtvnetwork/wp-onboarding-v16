@@ -15,18 +15,30 @@ import (
 
 // isRemote404 checks if an AppError originates from a remote 404 response.
 func isRemote404(err *apperror.AppError) bool {
+	if err == nil {
+		return false
+	}
+
 	if err.Diagnostic.StatusCode == 404 {
 		return true
 	}
 
-	// Check cause chain for wordpress.ApiError with 404
 	var apiErr *wordpress.ApiError
 	if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
 		return true
 	}
 
-	// Fallback: check error message for "status 404"
-	return strings.Contains(err.Error(), "status 404")
+	combined := strings.ToLower(err.Error())
+	if err.Details != "" {
+		combined += "\n" + strings.ToLower(err.Details)
+	}
+	if err.Cause != nil {
+		combined += "\n" + strings.ToLower(err.Cause.Error())
+	}
+
+	return strings.Contains(combined, "status 404") ||
+		strings.Contains(combined, "not found") ||
+		strings.Contains(combined, "/logs/status")
 }
 
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
