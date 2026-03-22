@@ -38,6 +38,8 @@ interface SiteHealthSummaryPanelProps {
 }
 
 export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelProps) {
+  const queryClient = useQueryClient();
+  const [isClearingLogs, setIsClearingLogs] = useState(false);
   const queryKey = ["sites", site.id, "site-health-summary"];
 
   const { data: health, isLoading, error, refetch, isFetching } = useQuery({
