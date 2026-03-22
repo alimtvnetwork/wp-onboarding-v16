@@ -56,6 +56,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
+  const { captureError } = useErrorStore();
 
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
@@ -79,14 +80,22 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       if (response.success && response.data) {
         setStatus(response.data);
       } else if (!response.success) {
-        toast.error(response.error?.message || "Failed to fetch log status");
+        const msg = response.error?.message || "Failed to fetch log status";
+        captureError(
+          { code: response.error?.code || "E2010", message: msg, level: "error" },
+          { endpoint: `/sites/${siteId}/remote-logs`, method: "GET", responseStatus: response.error?.httpStatus }
+        );
       }
-    } catch {
-      toast.error("Failed to fetch log status");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to fetch log status";
+      captureError(
+        { code: "E2010", message: msg, level: "error" },
+        { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" }
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [siteId]);
+  }, [siteId, captureError]);
 
   // Auto-fetch when autoOpen is true
   useEffect(() => {
