@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { wsClient, WS_EVENTS } from "@/lib/ws";
 import {
   Dialog,
   DialogContent,
@@ -111,14 +112,46 @@ export function DeployUploaderDialog({
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Listen for streamed preflight results via WebSocket
+  useEffect(() => {
+    if (!open) return;
+
+    const unsub = wsClient.on(WS_EVENTS.PREFLIGHT_SITE_RESULT, (data: unknown) => {
+      const result = data as PreflightSiteResult;
+      if (!result?.siteId) return;
+      setPreflightResults((prev) => {
+        const existing = prev.findIndex((p) => p.siteId === result.siteId);
+        if (existing >= 0) {
+          const updated = [...prev];
+          updated[existing] = result;
+          return updated;
+        }
+        return [...prev, result];
+      });
+    });
+
+    return () => unsub();
+  }, [open]);
+
   const runPreflight = useCallback(async () => {
     setPreflightLoading(true);
+    setPreflightResults([]);
     try {
       const siteIds = sites.map((s) => s.id);
+      // HTTP call still returns full results as fallback; WS streams them incrementally
       const response = await api.deployPreflight(siteIds);
       const data = response.data;
       if (data?.results) {
-        setPreflightResults(data.results);
+        // Merge any results not yet received via WS
+        setPreflightResults((prev) => {
+          const merged = [...prev];
+          for (const r of data.results) {
+            if (!merged.some((p) => p.siteId === r.siteId)) {
+              merged.push(r);
+            }
+          }
+          return merged;
+        });
       }
     } catch {
       // Pre-flight failure is non-blocking

@@ -195,3 +195,38 @@ type RemoteActionCompleteData struct {
 	Error      string `json:",omitempty"`
 	DurationMs int64
 }
+
+// --- Preflight events ---
+
+// PreflightSiteResultData is broadcast when a single site's preflight check completes.
+type PreflightSiteResultData struct {
+	SiteId              int64
+	SiteName            string
+	SiteUrl             string
+	IsReachable         bool
+	RiseupAsiaAvailable bool
+	RiseupAsiaNamespace string
+	QUploadAvailable    bool
+	QUploadNamespace    string
+	RiseupAsia          PreflightPluginStatusData `json:",omitempty"`
+	QUpload             PreflightPluginStatusData `json:",omitempty"`
+	Error               string                    `json:",omitempty"`
+}
+
+// PreflightPluginStatusData is the WS-layer mirror of site.PreflightPluginStatus.
+type PreflightPluginStatusData struct {
+	Name          string
+	Available     bool
+	Namespace     string
+	Status        string
+	HttpStatus    int
+	Message       string
+	Version       string `json:",omitempty"`
+	WpVersion     string `json:",omitempty"`
+	PhpVersion    string `json:",omitempty"`
+	PluginName    string `json:",omitempty"`
+	ApiNamespace  string `json:",omitempty"`
+	ServerTime    string `json:",omitempty"`
+	DbAvailable   string `json:",omitempty"`
+	RemoteSiteUrl string `json:",omitempty"`
+}
