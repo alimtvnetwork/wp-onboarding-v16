@@ -39,6 +39,7 @@ type WSHub interface {
 	BroadcastRemotePluginLogWithSession(input RemotePluginLogInput)
 	BroadcastRemoteActionStarted(data RemoteActionStartedEvent, sessionId string)
 	BroadcastRemoteActionComplete(data RemoteActionCompleteEvent, sessionId string)
+	BroadcastPreflightSiteResult(result PreflightSiteResult)
 }
 
 // ConnectionProgressInput holds connection test progress broadcast parameters.

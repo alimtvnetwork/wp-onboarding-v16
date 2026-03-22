@@ -54,7 +54,13 @@ func (s *Service) DeployPreflight(ctx context.Context, siteIds []int64) ([]Prefl
 
 		go func(idx int, id int64) {
 			defer wg.Done()
-			results[idx] = s.preflightSingleSite(ctx, id)
+			result := s.preflightSingleSite(ctx, id)
+			results[idx] = result
+
+			// Stream each result immediately via WebSocket
+			if s.wsHub != nil {
+				s.wsHub.BroadcastPreflightSiteResult(result)
+			}
 		}(i, siteId)
 	}
 
