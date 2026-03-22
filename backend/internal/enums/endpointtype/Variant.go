@@ -215,6 +215,7 @@ var variantValues = [...]string{
 	LogsClear:               "/logs/clear",
 	LogsConfirm:             "/logs/clear/confirm",
 	LogsEmail:               "/logs/email",
+	LogsRetrieve:            "/logs/retrieve",
 	Openapi:                 "/openapi",
 	OpcacheReset:            "/opcache-reset",
 	SnapshotsList:           "/snapshots/list",
