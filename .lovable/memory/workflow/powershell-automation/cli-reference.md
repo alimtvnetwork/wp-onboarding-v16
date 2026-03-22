@@ -75,6 +75,13 @@ The PowerShell automation suite (`run.ps1`) uses a modular architecture with dot
 | `-pas` | | Check plugin status on ALL configured sites |
 | `-errorlogs` | `-err` | Include error logs and stack traces (use with `-ps`/`-pas`) |
 
+### Site Settings
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-sitesettings` | `-ss` | Read site settings from default/target site |
+| `-set 'action'` | | Setting action: `debug-on`, `debug-off`, `debug-display-on/off`, `seo-on/off`, `upload-size`, `post-size`, `memory-limit` |
+| `-setval 'value'` | | Value for size-based actions (e.g., `256M`, `512M`) |
+
 ### Info
 | Flag | Alias | Description |
 |------|-------|-------------|
