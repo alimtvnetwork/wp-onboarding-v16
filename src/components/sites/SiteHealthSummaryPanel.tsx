@@ -25,8 +25,10 @@ import {
   ArrowRight,
   Trash2,
 } from "lucide-react";
-import { api, Site, RemotePlugin } from "@/lib/api";
-import type { SiteHealthSummaryResponse } from "@/lib/api";
+import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
+import { isApiClientError } from "@/lib/api";
+import { useErrorStore } from "@/stores/errorStore";
+import { toast } from "sonner";
 import type { RemoteLogsStatusResponse } from "@/lib/api/types";
 
 interface SiteHealthSummaryPanelProps {
