@@ -4,6 +4,7 @@ package site
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -247,7 +248,9 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 	}
 
 	type probeResult struct {
-		data *wordpress.LogsEmailResultData
+		data   *wordpress.LogsEmailResultData
+		ns     string
+		appErr *apperror.AppError
 	}
 	ch := make(chan probeResult, len(allNamespaces))
 	var wg sync.WaitGroup
@@ -264,26 +267,36 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 				Operation: operationtype.EmailLogs,
 			})
 			if result.HasError() {
+				ch <- probeResult{ns: namespace, appErr: result.AppError()}
 				return
 			}
 			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
 			if unwrapErr != nil {
+				ch <- probeResult{ns: namespace, appErr: apperror.Wrap(unwrapErr, apperror.ErrWPConnection, "unwrap failed")}
 				return
 			}
-			ch <- probeResult{data: &data}
+			ch <- probeResult{data: &data, ns: namespace}
 		}(ns)
 	}
 
 	wg.Wait()
 	close(ch)
 
+	var lastErr string
 	for probe := range ch {
 		if probe.data != nil {
 			return probe.data, nil
 		}
+		if probe.appErr != nil {
+			lastErr = fmt.Sprintf("[%s] %s", probe.ns, probe.appErr.Error())
+		}
 	}
 
-	return nil, apperror.New(apperror.ErrWPConnection, "email logs failed on all namespaces")
+	msg := "email logs failed on all namespaces"
+	if lastErr != "" {
+		msg = fmt.Sprintf("%s — last error: %s", msg, lastErr)
+	}
+	return nil, apperror.New(apperror.ErrWPConnection, msg)
 }
 
 // ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.
