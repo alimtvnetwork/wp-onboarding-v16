@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,11 +34,13 @@ import {
   AlertTriangle,
   Loader2,
   Clock,
-  Shield,
+  ChevronDown,
+  History,
 } from "lucide-react";
 import type { CloudStorageAccount } from "@/types/cloudStorage";
 import { PROVIDER_CONFIG } from "@/types/cloudStorage";
 import { formatDistanceToNow } from "date-fns";
+import { CloudStorageBackupTimeline } from "./CloudStorageBackupTimeline";
 
 interface CloudStorageAccountCardProps {
   account: CloudStorageAccount;
@@ -53,6 +60,7 @@ export function CloudStorageAccountCard({
   testResult,
 }: CloudStorageAccountCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const config = PROVIDER_CONFIG[account.Provider];
   const hasError = !!account.LastError;
   const hasLastUsed = !!account.LastUsedAt;
@@ -175,6 +183,21 @@ export function CloudStorageAccountCard({
               </DropdownMenu>
             </div>
           </div>
+          {/* Backup History Toggle */}
+          <Collapsible open={historyOpen} onOpenChange={setHistoryOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between h-8 text-xs text-muted-foreground hover:text-foreground mt-2">
+                <span className="flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  Backup History
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <CloudStorageBackupTimeline accountId={account.Id} />
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
 
