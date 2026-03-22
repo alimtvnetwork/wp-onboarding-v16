@@ -37,6 +37,7 @@ const (
 	LogsClear
 	LogsConfirm
 	LogsEmail
+	LogsRetrieve
 	Openapi
 	OpcacheReset
 	SnapshotsList
@@ -125,6 +126,7 @@ var variantLabels = [...]string{
 	LogsClear:               "LogsClear",
 	LogsConfirm:             "LogsConfirm",
 	LogsEmail:               "LogsEmail",
+	LogsRetrieve:            "LogsRetrieve",
 	Openapi:                 "Openapi",
 	OpcacheReset:            "OpcacheReset",
 	SnapshotsList:           "SnapshotsList",
@@ -213,6 +215,7 @@ var variantValues = [...]string{
 	LogsClear:               "/logs/clear",
 	LogsConfirm:             "/logs/clear/confirm",
 	LogsEmail:               "/logs/email",
+	LogsRetrieve:            "/logs/retrieve",
 	Openapi:                 "/openapi",
 	OpcacheReset:            "/opcache-reset",
 	SnapshotsList:           "/snapshots/list",

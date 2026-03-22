@@ -758,6 +758,15 @@ export const api = {
     request<RemoteLogsClearConfirmResponse>(`/sites/${siteId}/remote-logs/confirm`, { method: "POST", body: JSON.stringify({ token }) }),
   emailRemoteLogs: (siteId: number, opts?: RemoteLogsEmailOptions) =>
     request<RemoteLogsEmailResponse>(`/sites/${siteId}/remote-logs/email`, { method: "POST", body: JSON.stringify(opts || {}) }),
+  retrieveRemoteLogs: (siteId: number, params?: { include_info_log?: boolean; include_error_log?: boolean; include_stacktrace?: boolean; max_lines?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.include_info_log === false) q.set("include_info_log", "false");
+    if (params?.include_error_log === false) q.set("include_error_log", "false");
+    if (params?.include_stacktrace === false) q.set("include_stacktrace", "false");
+    if (params?.max_lines) q.set("max_lines", String(params.max_lines));
+    const qs = q.toString();
+    return request<import("./types").LogsRetrieveResult>(`/sites/${siteId}/remote-logs/retrieve${qs ? `?${qs}` : ""}`);
+  },
 
   // Cloud Storage
   getCloudStorageAccounts: () =>
