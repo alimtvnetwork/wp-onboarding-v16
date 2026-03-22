@@ -55,10 +55,15 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
   }
 
   if (!health) {
+    const errMsg = error instanceof Error ? error.message : "Could not load health summary";
     return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        <p>Could not load health summary.</p>
-        <p className="text-xs mt-1">The remote plugin may need to be updated.</p>
+      <div className="text-center py-8 space-y-3">
+        <p className="text-sm text-muted-foreground">{errMsg}</p>
+        <p className="text-xs text-muted-foreground">The remote plugin may need to be updated to v2.31.0+.</p>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-3 w-3 mr-1 ${isFetching ? "animate-spin" : ""}`} />
+          Retry
+        </Button>
       </div>
     );
   }
