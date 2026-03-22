@@ -47,7 +47,7 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
