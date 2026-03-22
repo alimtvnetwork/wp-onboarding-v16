@@ -98,12 +98,12 @@ export default function CloudStorage() {
     testAccount.mutate(id, {
       onSuccess: (result) => {
         setTestResults((prev) => ({ ...prev, [id]: result }));
-        const isSuccess = result.Success;
+        const isSuccess = result.success;
 
         if (isSuccess) {
-          toast.success(result.Message || "Connection successful");
+          toast.success(result.message || "Connection successful");
         } else {
-          toast.error(result.Error || "Connection failed");
+          toast.error(result.error || "Connection failed");
         }
       },
       onSettled: () => setTestingId(null),
