@@ -84,14 +84,6 @@ type SiteServiceInterface interface {
 	GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError)
 	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
 	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError)
-
-	// Remote log management — returns any (justified: PHP JSON structure unknown at compile time)
-	GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
-	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError)
-	ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
