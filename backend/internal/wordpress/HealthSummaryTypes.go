@@ -24,16 +24,17 @@ func BuildOutdatedHealthSummary() *HealthSummaryData {
 // BuildHealthSummaryFromStatus builds a partial HealthSummaryData from the /status endpoint metadata.
 // Used as fallback when /site-health-summary is not available but /status works.
 func BuildHealthSummaryFromStatus(meta *StatusMetadata) *HealthSummaryData {
-	dbAvail := meta.DbAvailable == "True" || meta.DbAvailable == "true" || meta.DbAvailable == "1"
-
 	return &HealthSummaryData{
 		System: HealthSystem{
 			PhpVersion: meta.PhpVersion,
 			WpVersion:  meta.WpVersion,
 		},
-		Database: HealthDatabase{},
-		PluginOutdated:  !dbAvail && meta.DbAvailable != "",
-		OutdatedMessage: "",
+		Plugins:      HealthPlugins{},
+		Integrations: HealthIntegrations{},
+		Users:        HealthUsers{ByRole: map[string]int{}},
+		Database: HealthDatabase{
+			TotalSize: "Unknown",
+		},
 	}
 }
 
