@@ -114,3 +114,15 @@ type LogsRotationStatusData struct {
 	MaxFiles     int    `json:"maxFiles"`
 	Interval     string `json:"interval"`
 }
+
+// BuildOutdatedLogsStatus returns a graceful fallback LogsStatusData
+// when the remote plugin is outdated and doesn't have the /logs/status endpoint.
+func BuildOutdatedLogsStatus() *LogsStatusData {
+	return &LogsStatusData{
+		Files:          []LogFileInfo{},
+		TotalSizeBytes: 0,
+		ArchiveCount:   0,
+		PluginOutdated: true,
+		OutdatedMessage: "Remote plugin is outdated — the /logs/status endpoint is not available. Please update the plugin using Deploy Uploader.",
+	}
+}
