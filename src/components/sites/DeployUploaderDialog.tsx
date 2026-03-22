@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { wsClient, WS_EVENTS } from "@/lib/ws";
 import {
   Dialog,
   DialogContent,
