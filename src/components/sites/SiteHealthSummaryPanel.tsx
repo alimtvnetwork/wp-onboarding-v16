@@ -29,6 +29,7 @@ import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { isApiClientError } from "@/lib/api";
 import { useErrorStore } from "@/stores/errorStore";
 import { toast } from "sonner";
+import type { SiteHealthSummaryResponse } from "@/lib/api";
 import type { RemoteLogsStatusResponse } from "@/lib/api/types";
 
 interface SiteHealthSummaryPanelProps {
