@@ -119,6 +119,7 @@ func bootstrapSingleSiteWithZip(r *http.Request, siteId int64, zipPath string) B
 }
 
 // buildBootstrapFailure constructs a failure result for a single bootstrap attempt.
+// Extracts remote response body from the ApiError cause chain for delegated error diagnostics.
 func buildBootstrapFailure(r *http.Request, siteId int64, err error) BulkBootstrapSiteResult {
 	result := Services.SiteService.GetById(r.Context(), siteId)
 
@@ -127,11 +128,28 @@ func buildBootstrapFailure(r *http.Request, siteId int64, err error) BulkBootstr
 		siteName = result.Value().Name
 	}
 
-	return BulkBootstrapSiteResult{
+	failResult := BulkBootstrapSiteResult{
 		SiteId:    siteId,
 		SiteName:  siteName,
 		IsSuccess: false,
 		Message:   "Deployment failed",
 		Error:     err.Error(),
 	}
+
+	// Extract remote response body from ApiError in the cause chain
+	var apiErr *wordpress.ApiError
+	if errors.As(err, &apiErr) {
+		failResult.RemoteResponseBody = apiErr.ResponseBody
+		failResult.RemoteStatusCode = apiErr.StatusCode
+		failResult.RemoteUrl = apiErr.Url
+	} else {
+		// Try via AppError diagnostic
+		var appErr *apperror.AppError
+		if errors.As(err, &appErr) && appErr.Diagnostic.StatusCode > 0 {
+			failResult.RemoteStatusCode = appErr.Diagnostic.StatusCode
+			failResult.RemoteUrl = appErr.Diagnostic.Url
+		}
+	}
+
+	return failResult
 }
