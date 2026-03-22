@@ -10,75 +10,10 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// executeBootstrapUpload uploads the uploader plugin to the remote site.
-func (s *Service) executeBootstrapUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapEndpointCheck(id, "Riseup Asia Uploader", "Checking existing uploader endpoint")
-
-	availResult := client.CheckRiseupAsiaAvailable()
-	isUploaderReady :=
-		!availResult.HasError() &&
-			availResult.Value().IsAvailable() &&
-			availResult.Value().HasNamespace()
-
-	if isUploaderReady {
-		s.logBootstrapEndpointCheck(id, "Riseup Asia Uploader", fmt.Sprintf("Endpoint ready (%s)", availResult.Value().Namespace))
-
-		input := bootstrapUploaderInput{
-			SiteId:    id,
-			Client:    client,
-			ZipPath:   zipPath,
-		Namespace: availResult.Value().Namespace,
-		}
-
-		return s.bootstrapViaUploader(input)
-	}
-
-	if availResult.HasError() {
-		s.logBootstrapWarn(id, fmt.Sprintf("Riseup Asia Uploader endpoint unavailable: %v", availResult.AppError()))
-	} else {
-		s.logBootstrapWarn(id, "Riseup Asia Uploader not installed on remote site — trying QUpload fallback")
-	}
-
-	return s.bootstrapViaQUpload(id, client, zipPath)
-}
-
-// bootstrapUploaderInput bundles parameters for bootstrapViaUploader.
-type bootstrapUploaderInput struct {
-	SiteId    int64
-	Client    *wordpress.Client
-	ZipPath   string
-	Namespace string
-}
-
-// bootstrapViaUploader updates via an existing Riseup Asia Uploader.
-func (s *Service) bootstrapViaUploader(input bootstrapUploaderInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapInfo(input.SiteId, fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", input.Namespace))
-
-	uploadInput := wordpress.UploadInput{
-		ZipPath:      input.ZipPath,
-		Slug:         "riseup-asia-uploader",
-		IsActivate:   true,
-		UploadSource: uploadsource.RestApi,
-	}
-
-	return s.executeUploaderUpload(input.SiteId, input.Client, uploadInput)
-}
-
-// executeUploaderUpload performs the upload and wraps errors.
-func (s *Service) executeUploaderUpload(siteId int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	result := client.UploadPluginViaUploader(input)
-	if result.HasError() {
-		s.logBootstrapError(siteId, fmt.Sprintf("Upload failed: %v", result.AppError()))
-
-		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
-	}
-
-	return result.Value(), nil
-}
-
-// bootstrapViaQUpload installs via QUpload when the uploader is not yet available.
-func (s *Service) bootstrapViaQUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapEndpointCheck(id, "QUpload", "Checking fallback upload endpoint")
+// executeCrossUpload uses cross-upload strategy: always prefer QUpload endpoint for Riseup Asia.
+// This prevents the self-update 500 error (a plugin can't replace itself while running).
+func (s *Service) executeCrossUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	s.logBootstrapEndpointCheck(id, "QUpload", "Checking cross-upload endpoint (preferred)")
 
 	qAvailResult := client.CheckQUploadAvailable()
 	isQUploadReady :=
@@ -86,25 +21,50 @@ func (s *Service) bootstrapViaQUpload(id int64, client *wordpress.Client, zipPat
 			qAvailResult.Value().IsAvailable() &&
 			qAvailResult.Value().HasNamespace()
 
-	if !isQUploadReady {
-		if qAvailResult.HasError() {
-			s.logBootstrapError(id, fmt.Sprintf("QUpload fallback unavailable: %v", qAvailResult.AppError()))
-		} else {
-			s.logBootstrapError(id, "No upload helper plugin found. Checked Riseup Asia Uploader and QUpload endpoints.")
-		}
+	if isQUploadReady {
+		s.logBootstrapEndpointCheck(id, "QUpload", fmt.Sprintf("Cross-upload endpoint ready (%s)", qAvailResult.Value().Namespace))
 
-		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Checked Riseup Asia Uploader and QUpload endpoints.")
+		return s.uploadViaQUpload(id, client, zipPath)
 	}
 
-	s.logBootstrapEndpointCheck(id, "QUpload", fmt.Sprintf("Fallback endpoint ready (%s)", qAvailResult.Value().Namespace))
+	if qAvailResult.HasError() {
+		s.logBootstrapWarn(id, fmt.Sprintf("QUpload endpoint unavailable: %v", qAvailResult.AppError()))
+	} else {
+		s.logBootstrapWarn(id, "QUpload not installed — falling back to self-upload (Riseup Asia endpoint)")
+	}
 
-	return s.uploadViaQUpload(id, client, zipPath)
+	return s.bootstrapViaSelfUpload(id, client, zipPath)
 }
 
-// uploadViaQUpload performs the actual upload via the QUpload plugin.
+// bootstrapViaSelfUpload falls back to uploading via Riseup Asia's own endpoint (last resort).
+func (s *Service) bootstrapViaSelfUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	s.logBootstrapEndpointCheck(id, "Riseup Asia Uploader", "Checking self-upload endpoint (fallback)")
+
+	availResult := client.CheckRiseupAsiaAvailable()
+	isReady :=
+		!availResult.HasError() &&
+			availResult.Value().IsAvailable() &&
+			availResult.Value().HasNamespace()
+
+	if !isReady {
+		s.logBootstrapError(id, "No upload endpoint available. Checked QUpload and Riseup Asia endpoints.")
+
+		return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload endpoint available on site")
+	}
+
+	s.logBootstrapWarn(id, fmt.Sprintf("Using self-upload via %s (risk of 500 error)", availResult.Value().Namespace))
+
+	return s.executeUploaderUpload(id, client, wordpress.UploadInput{
+		ZipPath:      zipPath,
+		Slug:         "riseup-asia-uploader",
+		IsActivate:   true,
+		UploadSource: uploadsource.RestApi,
+	})
+}
+
+// uploadViaQUpload performs the actual upload via the QUpload plugin (cross-upload).
 func (s *Service) uploadViaQUpload(id int64, client *wordpress.Client, zipPath string) (*wordpress.UploaderUploadResult, *apperror.AppError) {
-	s.logBootstrapInfo(id, "Using QUpload fallback for installation")
-	s.logBootstrapInfo(id, "Uploading ZIP to fallback endpoint")
+	s.logBootstrapInfo(id, "Uploading Riseup Asia via QUpload endpoint (cross-upload)")
 
 	result := client.UploadPluginViaQUpload(wordpress.UploadInput{
 		ZipPath:      zipPath,
@@ -113,7 +73,19 @@ func (s *Service) uploadViaQUpload(id int64, client *wordpress.Client, zipPath s
 		UploadSource: uploadsource.RestApi,
 	})
 	if result.HasError() {
-		s.logBootstrapError(id, fmt.Sprintf("Upload failed: %v", result.AppError()))
+		s.logBootstrapError(id, fmt.Sprintf("Cross-upload failed: %v", result.AppError()))
+
+		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPUploadFailed, "cross-upload via QUpload failed")
+	}
+
+	return result.Value(), nil
+}
+
+// executeUploaderUpload performs the upload and wraps errors.
+func (s *Service) executeUploaderUpload(siteId int64, client *wordpress.Client, input wordpress.UploadInput) (*wordpress.UploaderUploadResult, *apperror.AppError) {
+	result := client.UploadPluginViaUploader(input)
+	if result.HasError() {
+		s.logBootstrapError(siteId, fmt.Sprintf("Upload failed: %v", result.AppError()))
 
 		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
@@ -138,12 +110,15 @@ func (s *Service) logBootstrapEndpointCheck(id int64, helperName, message string
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: fmt.Sprintf("[%s] %s", helperName, message),
-		Details: toJson(map[string]any{
-			"siteId": id,
-			"helper": helperName,
-		}),
+		Details: toJson(EndpointCheckDetail{SiteId: id, Helper: helperName}),
 	}
 	s.broadcastBootstrapLog(checkLog)
+}
+
+// EndpointCheckDetail is a typed struct for endpoint check log details.
+type EndpointCheckDetail struct {
+	SiteId int64
+	Helper string
 }
 
 // finalizeBootstrap logs success and returns the result.
@@ -160,12 +135,11 @@ func (s *Service) logBootstrapDeploySuccess(id int64, site models.Site, isActiva
 		SiteName:    site.Name,
 		IsActivated: isActivated,
 	}
-	deployDetails := toJson(uploaderDeploy)
 	deployLog := bootstrapLogInput{
 		Level:   loglevel.Info,
 		SiteId:  id,
 		Message: "Riseup Asia Uploader deployed successfully",
-		Details: deployDetails,
+		Details: toJson(uploaderDeploy),
 	}
 	s.broadcastBootstrapLog(deployLog)
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site",
