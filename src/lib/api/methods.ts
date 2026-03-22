@@ -109,6 +109,11 @@ export const api = {
       `/sites/bulk-bootstrap-uploader`,
       { method: "POST", body: JSON.stringify({ siteIds, uploaderPath }) }
     ),
+  deployPreflight: (siteIds: number[]) =>
+    request<{ results: Array<{ siteId: number; siteName: string; siteUrl: string; isReachable: boolean; riseupAsiaAvailable: boolean; riseupAsiaNamespace?: string; qUploadAvailable: boolean; qUploadNamespace?: string; error?: string }> }>(
+      `/sites/deploy-preflight`,
+      { method: "POST", body: JSON.stringify({ siteIds }) }
+    ),
   getSiteCredentials: (siteId: number) =>
     request<{ url: string; username: string; appPassword: string }>(`/sites/${siteId}/credentials`),
   
