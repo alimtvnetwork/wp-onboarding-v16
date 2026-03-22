@@ -82,44 +82,64 @@ type SiteHandlerFunc[T any] func(ctx context.Context, siteId int64) (T, *apperro
 
 ---
 
-## Current Violations (2026-03-22)
+## Audit Results (2026-03-22)
+
+### ✅ Already Compliant
+
+| Category | Files | Notes |
+|----------|-------|-------|
+| `pkg/apperror` | Result.go, ResultMap.go, ResultSlice.go | Already fully generic `Result[T]`, `ResultMap[K,V]`, `ResultSlice[T]` |
+| `pkg/dbutil` | Query.go, Result.go, ResultSet.go, Exec.go | Already fully generic. `...any` in SQL args matches `database/sql` signature (exception) |
+| `pkg/apperror` Cast/Match | Cast.go, Match.go | `any` input justified — type assertion utility & panic recovery |
+| Response builders | Response.go | `respondSuccess[T]`, `respondCreated[T]`, `respondList[T]` already generic |
+| Envelope builders | envelope/Envelope.go | `Success[T]`, `Created[T]`, `List[T]` already generic at input |
+
+### ⚠️ Justified Exceptions (no action needed)
+
+| Category | Count | Reason |
+|----------|-------|--------|
+| `Response.Results any` | 1 field | Go doesn't support generic struct fields without making Response generic — would break shared `envelope.Write(w, Response)` pattern. The builders are generic at input. |
+| `EnvelopeUnwrap.go` `map[string]any` | 3 uses | Parsing unknown PHP JSON — file I/O exception |
+| `respondJson` / `isServiceMissing` / `isBodyInvalid` / `decodeJsonSilent` | 4 uses | JSON decode target & nil-check on arbitrary services — standard Go patterns |
+
+### 🔴 Actual Violations Requiring Fix
 
 | Category | Count | Files | Priority |
 |----------|-------|-------|----------|
-| Handler factory generics (`func() any`, `(any, *AppError)`) | ~22 | HandlerFactory.go, HandlerFactoryGetters.go | 🔴 High |
-| Adapter interface returns (`(any, *AppError)`) | ~27 | AdapterSite.go | 🔴 High |
-| Response/envelope types (`Data any`) | ~22 | Response.go, ResponseTypes.go, Envelope.go | 🔴 High |
-| `map[string]any` (JSON payloads) | ~28 | Various services | 🟡 Medium |
-| `[]any` (slices) | ~36 | Various | 🟡 Medium |
-| `pkg/apperror` Result types | ~22 | Result.go, ResultMap.go, ResultSlice.go | 🟡 Medium |
-| `pkg/dbutil` query helpers | ~16 | Query.go, Result.go, ResultSet.go | 🟡 Medium |
-| WebSocket broadcast | ~8 | Hub.go, EventTypes.go | 🟢 Low |
-| Logger/config | ~5 | Logger.go, ConfigHelpers.go | 🟢 Low |
-| WordPress client | ~10 | Client.go, ClientApiCall.go | 🟢 Low |
+| Handler factory `GetService func() any` | ~12 | HandlerFactory.go, HandlerFactoryGetters.go | 🔴 High |
+| Adapter interface `(any, *AppError)` returns | ~27 | AdapterSite.go + adapter implementations | 🔴 High |
+| Service methods returning `any` | ~40 | RemoteLogs.go, RemoteSiteSettings.go, RemoteUsers.go, etc. | 🔴 High |
+| `map[string]any` in service params | ~15 | UpdateRemoteSiteSettings, etc. | 🟡 Medium |
+| `[]any` in handler responses | ~10 | HandlerFactory.go empty results | 🟡 Medium |
+| WebSocket `data any` broadcast | ~8 | Hub.go, EventTypes.go, AdapterSiteWs.go | 🟡 Medium |
+| Logger formatting | ~5 | Logger.go, LoggerFormat.go | 🟢 Low |
 
-**Total: ~259 occurrences across 88 files**
+**Actionable violations: ~117 across ~35 files** (down from 259 — 142 were already compliant or justified exceptions)
 
 ---
 
-## Refactoring Strategy
+## Revised Refactoring Plan
 
-### Phase 1: Core Infrastructure (pkg/)
-Define typed generics in `apperror.Result[T]`, `dbutil.TypedResult[T]` so downstream code can adopt them.
+### Phase G-1: pkg/apperror + pkg/dbutil ✅ Already Done
+Both packages already use proper generics.
 
-### Phase 2: Response & Envelope Layer
-Replace `Data any` in response structs with generic `Data T`.
+### Phase G-2: Response & Envelope Layer ✅ Already Done  
+Builder functions already generic. `Response.Results any` is a justified exception.
 
-### Phase 3: Handler Factory
-Convert `HandlerFactory.go` to use generic handler functions.
+### Phase G-3: Handler Factory + Service Getters
+- Replace `GetService func() any` with typed interface per domain
+- Replace `func(ctx) (any, *AppError)` with typed handler functions
 
-### Phase 4: Adapter Interfaces
-Replace all `(any, *AppError)` returns with typed returns per domain.
+### Phase G-4: Adapter Interfaces + Service Returns
+- Define typed return structs for Health, Logs, Settings, Users
+- Replace all `(any, *AppError)` returns with `(*TypedStruct, *AppError)`
 
-### Phase 5: Service Layer
-Replace `map[string]any` and `[]any` with typed structs.
+### Phase G-5: Service Layer map[string]any → Typed Structs
+- Create request/response structs for UpdateRemoteSiteSettings, etc.
 
-### Phase 6: WordPress Client & WebSocket
-Type the remaining infrastructure code.
+### Phase G-6: WebSocket + Logger
+- Type the broadcast payload with a `BroadcastPayload` interface
+- Type logger format args
 
 ---
 
