@@ -53,7 +53,8 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
     },
     enabled: open,
     retry: 1,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: open ? 30_000 : false,
     meta: { suppressGlobalError: true },
   });
 
@@ -65,7 +66,8 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
       return res.success ? (res.data ?? []) : [];
     },
     enabled: open,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: open ? 30_000 : false,
     meta: { suppressGlobalError: true },
   });
 
@@ -89,7 +91,8 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
       return res.success ? (res.data as RemoteLogsStatusResponse) : null;
     },
     enabled: open,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: open ? 30_000 : false,
     meta: { suppressGlobalError: true },
   });
 
