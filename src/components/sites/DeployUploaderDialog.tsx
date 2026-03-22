@@ -26,6 +26,9 @@ interface DeploySiteResult {
   message: string;
   isActivated?: boolean;
   error?: string;
+  remoteResponseBody?: string;
+  remoteStatusCode?: number;
+  remoteUrl?: string;
 }
 
 interface PreflightSiteResult {
