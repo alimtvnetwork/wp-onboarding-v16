@@ -12,14 +12,13 @@ import (
 )
 
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
-// Returns any — justified: PHP envelope has variable JSON structure (see UnwrapPhpEnvelope).
-func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsStatusData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.LogsStatus.String(),
 		Operation: operationtype.GetLogsStatus,
@@ -28,18 +27,22 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
-// Returns any — justified: PHP envelope has variable JSON structure.
-func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRotationStatusData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.LogsRotationStatus.String(),
 		Operation: operationtype.GetLogsRotationStatus,
@@ -48,18 +51,22 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
-// Returns any — justified: PHP envelope has variable JSON structure.
-func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearRequestData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  ep.LogsClear.String(),
 		Operation: operationtype.RequestLogsClear,
@@ -68,12 +75,16 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // ConfirmRemoteLogsClear executes Step 2 with the provided token.
-// Returns any — justified: PHP envelope has variable JSON structure.
-func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
+func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -83,7 +94,7 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		Token: token,
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearConfirmData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  ep.LogsConfirm.String(),
 		Body:      body,
@@ -93,18 +104,22 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
-// Returns any — justified: PHP envelope has variable JSON structure.
-func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
+func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsEmailResultData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  ep.LogsEmail.String(),
 		Body:      body,
@@ -114,7 +129,12 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // ClearAllPluginLogsResult holds the combined result of clearing logs for both plugins.

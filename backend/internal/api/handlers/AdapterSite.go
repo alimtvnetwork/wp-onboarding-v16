@@ -61,13 +61,13 @@ type SiteServiceInterface interface {
 	CleanupRemoteSnapshots(ctx context.Context, siteId int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, *apperror.AppError)
 	ClearErrorLogHashes() int
 
-	// Remote log management
-	GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
-	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError)
-	ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	// Remote log management — typed returns
+	GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError)
+	GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError)
+	RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError)
+	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError)
+	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError)
+	ClearAllRemoteLogs(ctx context.Context, siteId int64) (*site.ClearAllPluginLogsResult, *apperror.AppError)
 
 	// User management proxy — typed returns
 	ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError)
@@ -80,10 +80,10 @@ type SiteServiceInterface interface {
 	ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (*wordpress.UserExportResult, *apperror.AppError)
 	ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError)
 
-	// Site settings proxy — returns any (justified: PHP JSON structure unknown at compile time)
-	GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError)
-	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
-	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	// Site settings proxy — typed returns
+	GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError)
+	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) // map[string]any justified: dynamic PHP settings input
+	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -290,43 +290,39 @@ func (a *SiteServiceAdapter) SetDefaultCredential(_ context.Context, siteId, cre
 	return a.Service.DB().SetDefaultCredential(siteId, credId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	return a.Service.GetRemoteLogsStatus(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
 	return a.Service.GetRemoteLogsRotationStatus(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wordpress.LogsClearRequestData, *apperror.AppError) {
 	return a.Service.RequestRemoteLogsClear(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (*wordpress.LogsClearConfirmData, *apperror.AppError) {
 	return a.Service.ConfirmRemoteLogsClear(ctx, siteId, token)
 }
 
-func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (*wordpress.LogsEmailResultData, *apperror.AppError) {
 	return a.Service.EmailRemoteLogs(ctx, siteId, body)
 }
 
-func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError) {
-	result, appErr := a.Service.ClearAllRemoteLogs(ctx, siteId)
-	if appErr != nil {
-		return nil, appErr
-	}
-	return result, nil
+func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int64) (*site.ClearAllPluginLogsResult, *apperror.AppError) {
+	return a.Service.ClearAllRemoteLogs(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 	return a.Service.GetRemoteSiteSettings(ctx, siteId)
 }
 
-func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) {
 	return a.Service.UpdateRemoteSiteSettings(ctx, siteId, body)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
 }
 

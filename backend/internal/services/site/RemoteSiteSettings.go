@@ -12,13 +12,13 @@ import (
 )
 
 // GetRemoteSiteSettings fetches site settings from a remote WordPress site.
-func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.SiteSettings.String(),
 		Operation: operationtype.GetSiteSettings,
@@ -27,17 +27,22 @@ func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (any,
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // UpdateRemoteSiteSettings updates site settings on a remote WordPress site.
-func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError) {
+func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsUpdateResult]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Put,
 		Endpoint:  ep.SiteSettings.String(),
 		Body:      body,
@@ -47,17 +52,22 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
-func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.SiteHealthSummary.String(),
 		Operation: operationtype.GetSiteHealthSummary,
@@ -66,5 +76,10 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, result.AppError()
 	}
 
-	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
+	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+	if unwrapErr != nil {
+		return nil, unwrapErr
+	}
+
+	return &data, nil
 }

@@ -13,7 +13,7 @@ import (
 // GetRemoteSiteSettings returns site settings from a remote WordPress site
 var GetRemoteSiteSettings = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSiteSettings(ctx, siteId)
 	},
 )
@@ -29,7 +29,7 @@ func UpdateRemoteSiteSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body map[string]any
+	var body map[string]any // justified: dynamic PHP settings input
 
 	decodeErr := json.NewDecoder(r.Body).Decode(&body)
 	if decodeErr != nil {
@@ -49,7 +49,7 @@ func UpdateRemoteSiteSettings(w http.ResponseWriter, r *http.Request) {
 // GetRemoteSiteHealthSummary returns health summary from a remote WordPress site
 var GetRemoteSiteHealthSummary = handleSiteActionById(
 	apperror.ErrWPConnection,
-	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	func(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError) {
 		return Services.SiteService.GetRemoteSiteHealthSummary(ctx, siteId)
 	},
 )
