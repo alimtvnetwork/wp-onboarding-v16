@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
@@ -41,33 +42,54 @@ func isRemote404(err *apperror.AppError) bool {
 		strings.Contains(combined, "/logs/status")
 }
 
+// allNamespaces returns the known plugin namespaces to probe in parallel.
+var allNamespaces = []string{
+	wordpress.QUploadNamespace,
+	wordpress.RiseupAsiaNamespace,
+}
+
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
-// The PHP logs/status endpoint returns a flat response (not envelope-wrapped),
-// so we deserialize directly into LogsStatusPhpResponse and transform.
-// If the remote endpoint returns 404, the plugin is outdated — return a graceful fallback.
+// Probes all known namespaces in parallel (like PowerShell -pas) — no sequential ResolveNamespace().
+// The PHP logs/status endpoint returns a flat response (not envelope-wrapped).
 func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordpress.LogsStatusData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsStatus)
+	type probeResult struct {
+		data *wordpress.LogsStatusData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.LogsStatusPhpResponse](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Get,
-		Endpoint:  endpoint,
-		Operation: operationtype.GetLogsStatus,
-	})
-	if result.HasError() {
-		if isRemote404(result.AppError()) {
-			return wordpress.BuildOutdatedLogsStatus(), nil
-		}
-
-		return nil, result.AppError()
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.LogsStatus)
+			result := wordpress.DoApiCall[wordpress.LogsStatusPhpResponse](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Get,
+				Endpoint:  endpoint,
+				Operation: operationtype.GetLogsStatus,
+			})
+			if result.HasError() {
+				return
+			}
+			ch <- probeResult{data: result.Value().ToLogsStatusData()}
+		}(ns)
 	}
 
-	phpResponse := result.Value()
-	return phpResponse.ToLogsStatusData(), nil
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
+		}
+	}
+
+	return wordpress.BuildOutdatedLogsStatus(), nil
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
