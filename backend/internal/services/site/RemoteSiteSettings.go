@@ -18,9 +18,11 @@ func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wor
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteSettings)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
-		Endpoint:  ep.SiteSettings.String(),
+		Endpoint:  endpoint,
 		Operation: operationtype.GetSiteSettings,
 	})
 	if result.HasError() {
@@ -42,9 +44,11 @@ func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, bo
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteSettings)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsUpdateResult]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Put,
-		Endpoint:  ep.SiteSettings.String(),
+		Endpoint:  endpoint,
 		Body:      body,
 		Operation: operationtype.UpdateSiteSettings,
 	})
@@ -67,9 +71,11 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteHealthSummary)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.HealthSummaryData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
-		Endpoint:  ep.SiteHealthSummary.String(),
+		Endpoint:  endpoint,
 		Operation: operationtype.GetSiteHealthSummary,
 	})
 	if result.HasError() {

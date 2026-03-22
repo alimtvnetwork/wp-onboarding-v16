@@ -18,9 +18,11 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsStatus)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsStatusData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
-		Endpoint:  ep.LogsStatus.String(),
+		Endpoint:  endpoint,
 		Operation: operationtype.GetLogsStatus,
 	})
 	if result.HasError() {
@@ -42,9 +44,11 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsRotationStatus)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRotationStatusData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
-		Endpoint:  ep.LogsRotationStatus.String(),
+		Endpoint:  endpoint,
 		Operation: operationtype.GetLogsRotationStatus,
 	})
 	if result.HasError() {
@@ -66,9 +70,11 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (*wo
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsClear)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearRequestData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
-		Endpoint:  ep.LogsClear.String(),
+		Endpoint:  endpoint,
 		Operation: operationtype.RequestLogsClear,
 	})
 	if result.HasError() {
@@ -90,13 +96,15 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsConfirm)
+
 	body := wordpress.ClearTokenRequest{
 		Token: token,
 	}
 
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsClearConfirmData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  ep.LogsConfirm.String(),
+		Endpoint:  endpoint,
 		Body:      body,
 		Operation: operationtype.ConfirmLogsClear,
 	})
@@ -119,9 +127,11 @@ func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpr
 		return nil, appErr
 	}
 
+	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.LogsEmail)
+
 	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsEmailResultData]](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
-		Endpoint:  ep.LogsEmail.String(),
+		Endpoint:  endpoint,
 		Body:      body,
 		Operation: operationtype.EmailLogs,
 	})

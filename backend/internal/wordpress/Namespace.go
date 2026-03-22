@@ -11,3 +11,9 @@ func (c *Client) resolveNamespace() string {
 
 	return result.Value().Namespace
 }
+
+// ResolveNamespace returns the active uploader namespace for cross-package callers.
+// Falls back to RiseupAsiaNamespace when probing fails.
+func (c *Client) ResolveNamespace() string {
+	return c.resolveNamespace()
+}
