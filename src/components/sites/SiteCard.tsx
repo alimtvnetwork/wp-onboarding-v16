@@ -442,6 +442,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <SiteHealthSummaryPanel site={site} open={showHealthSummary} />
         </DialogContent>
       </Dialog>
+      <CloudStoragePanel
+        site={site}
+        open={showCloudStorage}
+        onOpenChange={setShowCloudStorage}
+      />
     </Card>
   );
 }
