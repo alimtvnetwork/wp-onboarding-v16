@@ -15,6 +15,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { DeployStatus } from "@/lib/constants";
 import { useErrorStore } from "@/stores/errorStore";
+import type { ApiError } from "@/lib/api/types";
 
 interface DeploySiteResult {
   siteId: number;
@@ -90,12 +91,22 @@ export function DeployUploaderDialog({
       const siteIds = sites.map((s) => s.id);
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
+
+      const resultLogs: LogEntry[] = deployResults.map((result) => ({
+        timestamp: new Date().toISOString(),
+        level: result.isSuccess ? "info" : "error",
+        step: result.isSuccess ? "deploy-success" : "deploy-failed",
+        message: result.isSuccess
+          ? `${result.siteName}: ${result.message}`
+          : `${result.siteName}: ${result.error || result.message}`,
+      }));
       
       const succeeded = deployResults.filter((r) => r.isSuccess).length;
       const failed = deployResults.length - succeeded;
 
       setLogs((prev) => [
         ...prev,
+        ...resultLogs,
         {
           timestamp: new Date().toISOString(),
           level: failed > 0 ? "warn" : "info",
@@ -110,6 +121,49 @@ export function DeployUploaderDialog({
         toast.success(`Deployed to ${succeeded} site(s) successfully`);
       } else {
         toast.warning(`Deployed to ${succeeded}/${sites.length} sites`);
+        setCurrentTab("logs");
+
+        const failedResults = deployResults.filter((result) => !result.isSuccess);
+        const summaryLines = failedResults.map((result) => `${result.siteName}: ${result.error || result.message}`);
+        const modalError: ApiError = {
+          code: "E3009",
+          message: "Bulk uploader deployment failed on one or more sites",
+          details: summaryLines.join("\n"),
+          timestamp: new Date().toISOString(),
+          context: {
+            source: "DeployUploaderDialog",
+            failedSites: failedResults.map((result) => ({
+              siteId: result.siteId,
+              siteName: result.siteName,
+              error: result.error || result.message,
+            })),
+          },
+        };
+
+        const backendLogs = [...logs, ...resultLogs, {
+          timestamp: new Date().toISOString(),
+          level: "warn" as const,
+          step: "complete",
+          message: `Deployment complete: ${succeeded} succeeded, ${failed} failed`,
+        }].map((entry) => ({
+          timestamp: entry.timestamp,
+          level: entry.level,
+          message: `[${entry.step}] ${entry.message}`,
+        }));
+
+        const { captureError, openErrorModal } = useErrorStore.getState();
+        const captured = captureError(modalError, {
+          endpoint: "/sites/bulk-bootstrap-uploader",
+          method: "POST",
+          requestBody: { siteIds },
+          responseStatus: 500,
+          backendLogs,
+          context: {
+            source: "DeployUploaderDialog",
+            triggerAction: "bulk-bootstrap-uploader",
+          },
+        });
+        openErrorModal(captured);
       }
     } catch (error: unknown) {
       setStatus(DeployStatus.Error);
