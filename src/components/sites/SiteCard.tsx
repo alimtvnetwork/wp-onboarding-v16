@@ -35,6 +35,7 @@ import {
   Settings,
   HeartPulse,
   MoreHorizontal,
+  Cloud,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord } from "@/lib/api";
@@ -49,6 +50,7 @@ import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
 import { SiteSettingsPanel } from "./SiteSettingsPanel";
 import { SiteHealthSummaryPanel } from "./SiteHealthSummaryPanel";
 import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
+import { CloudStoragePanel } from "./CloudStoragePanel";
 import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
@@ -69,6 +71,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showLogs, setShowLogs] = useState(false);
   const [showSiteSettings, setShowSiteSettings] = useState(false);
   const [showHealthSummary, setShowHealthSummary] = useState(false);
+  const [showCloudStorage, setShowCloudStorage] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
@@ -268,6 +271,9 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 <DropdownMenuItem onClick={() => setShowCredentials(true)}>
                   <Users className="h-4 w-4 mr-2" /> Credentials
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowCloudStorage(true)} disabled={site.connectionStatus !== ConnectionStatus.Connected}>
+                  <Cloud className="h-4 w-4 mr-2" /> Cloud Storage
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(site.id)}>
                   <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -436,6 +442,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <SiteHealthSummaryPanel site={site} open={showHealthSummary} />
         </DialogContent>
       </Dialog>
+      <CloudStoragePanel
+        site={site}
+        open={showCloudStorage}
+        onOpenChange={setShowCloudStorage}
+      />
     </Card>
   );
 }
