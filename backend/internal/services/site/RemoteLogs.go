@@ -12,6 +12,7 @@ import (
 )
 
 // GetRemoteLogsStatus fetches log file metadata from a remote WordPress site.
+// Returns any — justified: PHP envelope has variable JSON structure (see UnwrapPhpEnvelope).
 func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -31,6 +32,7 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *
 }
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
+// Returns any — justified: PHP envelope has variable JSON structure.
 func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -50,6 +52,7 @@ func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64)
 }
 
 // RequestRemoteLogsClear initiates Step 1 of the two-step clearing flow.
+// Returns any — justified: PHP envelope has variable JSON structure.
 func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -69,6 +72,7 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any
 }
 
 // ConfirmRemoteLogsClear executes Step 2 with the provided token.
+// Returns any — justified: PHP envelope has variable JSON structure.
 func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -93,6 +97,7 @@ func (s *Service) ConfirmRemoteLogsClear(ctx context.Context, siteId int64, toke
 }
 
 // EmailRemoteLogs proxies the email logs request to the WordPress site.
+// Returns any — justified: PHP envelope has variable JSON structure.
 func (s *Service) EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -123,6 +128,16 @@ type pluginClearResult struct {
 	Error   string `json:"error,omitempty"`
 }
 
+// logsClearTokenResponse is the typed response from the PHP clear-logs Step 1 endpoint.
+type logsClearTokenResponse struct {
+	Token string `json:"token"`
+}
+
+// logsClearConfirmResponse is the typed response from the PHP clear-logs Step 2 endpoint.
+type logsClearConfirmResponse struct {
+	Cleared bool `json:"cleared"`
+}
+
 // ClearAllRemoteLogs clears logs for both WP plugins (riseup-asia + qupload) on a site.
 // Performs the two-step clear (request token → confirm) for each namespace.
 func (s *Service) ClearAllRemoteLogs(ctx context.Context, siteId int64) (*ClearAllPluginLogsResult, *apperror.AppError) {
@@ -144,8 +159,8 @@ func clearLogsForNamespace(client *wordpress.Client, namespace string) *pluginCl
 	clearEndpoint := "/" + namespace + ep.LogsClear.String()
 	confirmEndpoint := "/" + namespace + ep.LogsConfirm.String()
 
-	// Step 1: Request token
-	tokenResult := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	// Step 1: Request token — typed response
+	tokenResult := wordpress.DoApiCall[logsClearTokenResponse](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  clearEndpoint,
 		Operation: operationtype.RequestLogsClear,
@@ -155,16 +170,15 @@ func clearLogsForNamespace(client *wordpress.Client, namespace string) *pluginCl
 	}
 
 	tokenData := tokenResult.Value()
-	token, ok := tokenData["token"].(string)
-	if !ok || token == "" {
+	if tokenData.Token == "" {
 		return &pluginClearResult{Cleared: false, Error: "no token returned from clear request"}
 	}
 
-	// Step 2: Confirm with token
-	confirmResult := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	// Step 2: Confirm with token — typed response
+	confirmResult := wordpress.DoApiCall[logsClearConfirmResponse](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Post,
 		Endpoint:  confirmEndpoint,
-		Body:      wordpress.ClearTokenRequest{Token: token},
+		Body:      wordpress.ClearTokenRequest{Token: tokenData.Token},
 		Operation: operationtype.ConfirmLogsClear,
 	})
 	if confirmResult.HasError() {
