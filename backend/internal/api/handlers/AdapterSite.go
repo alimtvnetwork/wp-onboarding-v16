@@ -23,6 +23,9 @@ type SiteServiceInterface interface {
 	TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, *apperror.AppError)
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, *apperror.AppError)
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError)
+	BootstrapUploaderWithZip(ctx context.Context, id int64, zipPath string) (*site.BootstrapResult, *apperror.AppError)
+	CreateUploaderZipOnce(uploaderPath string) (string, *apperror.AppError)
+	DeployPreflight(ctx context.Context, siteIds []int64) ([]site.PreflightSiteResult, *apperror.AppError)
 	GetCredentials(ctx context.Context, siteId int64) (site.SiteCredentials, *apperror.AppError)
 
 	// Credential CRUD
@@ -159,6 +162,18 @@ func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, 
 
 func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, *apperror.AppError) {
 	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
+}
+
+func (a *SiteServiceAdapter) BootstrapUploaderWithZip(ctx context.Context, id int64, zipPath string) (*site.BootstrapResult, *apperror.AppError) {
+	return a.Service.BootstrapUploaderWithZip(ctx, id, zipPath)
+}
+
+func (a *SiteServiceAdapter) CreateUploaderZipOnce(uploaderPath string) (string, *apperror.AppError) {
+	return a.Service.CreateUploaderZipOnce(uploaderPath)
+}
+
+func (a *SiteServiceAdapter) DeployPreflight(ctx context.Context, siteIds []int64) ([]site.PreflightSiteResult, *apperror.AppError) {
+	return a.Service.DeployPreflight(ctx, siteIds)
 }
 
 func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteId int64) ([]site.RemotePlugin, *apperror.AppError) {
