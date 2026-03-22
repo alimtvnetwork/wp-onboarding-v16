@@ -98,13 +98,12 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 }
 
 // buildHealthSummaryFromStatus fetches /status endpoint data and builds a partial HealthSummaryData.
-// This is the same data that PowerShell -pas uses (WP version, PHP version, DB status, etc).
+// This mirrors the PowerShell -pas source of truth instead of treating missing /site-health-summary as outdated.
 func (s *Service) buildHealthSummaryFromStatus(client *wordpress.Client) (*wordpress.HealthSummaryData, *apperror.AppError) {
 	namespace := client.ResolveNamespace()
 	statusResult := client.GetStatusMetadataByNamespace(namespace)
 	if statusResult.HasError() {
-		// Both endpoints failed — return outdated fallback
-		return wordpress.BuildOutdatedHealthSummary(), nil
+		return nil, statusResult.AppError()
 	}
 
 	meta := statusResult.Value()
