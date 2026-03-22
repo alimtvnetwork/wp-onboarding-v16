@@ -349,7 +349,7 @@ function AddAccountForm({ onClose, onCreate, isCreating }: AddAccountFormProps) 
       return;
     }
 
-    const body: Record<string, unknown> = {
+    const body: CloudStorageAccountCreateRequest = {
       Provider: provider,
       AccountLabel: label.trim(),
       AccessToken: token.trim(),
@@ -357,7 +357,7 @@ function AddAccountForm({ onClose, onCreate, isCreating }: AddAccountFormProps) 
 
     for (const field of config.fields) {
       const val = fields[field.key]?.trim();
-      if (val) body[field.key] = val;
+      if (val) (body as Record<string, unknown>)[field.key] = val;
     }
 
     try {
