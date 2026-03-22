@@ -12,7 +12,7 @@ import (
 )
 
 // CreateRemoteAppPassword creates an app password for a user on a remote WordPress site.
-func (s *Service) CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (any, *apperror.AppError) {
+func (s *Service) CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (*wordpress.AppPasswordCreateResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -28,17 +28,19 @@ func (s *Service) CreateRemoteAppPassword(ctx context.Context, siteId int64, inp
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // RevokeRemoteAppPassword revokes an app password on a remote WordPress site.
-func (s *Service) RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (any, *apperror.AppError) {
+func (s *Service) RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (*wordpress.AppPasswordRevokeResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[map[string]any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.AppPasswordRevokeResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Delete,
 		Endpoint:  ep.UserAppPassword.String(),
 		Operation: operationtype.RevokeAppPassword,
@@ -48,11 +50,13 @@ func (s *Service) RevokeRemoteAppPassword(ctx context.Context, siteId int64, inp
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // ExportRemoteUsersCsv exports users as CSV from a remote WordPress site.
-func (s *Service) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (any, *apperror.AppError) {
+func (s *Service) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (*wordpress.UserExportResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -65,7 +69,7 @@ func (s *Service) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query 
 		endpoint += "?" + query
 	}
 
-	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserExportResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ExportUsersCsv,
@@ -74,17 +78,19 @@ func (s *Service) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query 
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // ExportRemoteUsersSqlite exports users as SQLite ZIP from a remote WordPress site.
-func (s *Service) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+func (s *Service) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserExportResult](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  ep.UsersExportSqlite.String(),
 		Operation: operationtype.ExportUsersSqlite,
@@ -93,5 +99,7 @@ func (s *Service) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (an
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }

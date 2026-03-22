@@ -12,7 +12,7 @@ import (
 )
 
 // ListRemoteUsers fetches paginated user list from a remote WordPress site.
-func (s *Service) ListRemoteUsers(ctx context.Context, siteId int64, query string) (any, *apperror.AppError) {
+func (s *Service) ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -25,7 +25,7 @@ func (s *Service) ListRemoteUsers(ctx context.Context, siteId int64, query strin
 		endpoint += "?" + query
 	}
 
-	result := wordpress.DoApiCall[any](client, wordpress.ApiCallInput{
+	result := wordpress.DoApiCall[wordpress.UserListResponse](client, wordpress.ApiCallInput{
 		Method:    httpmethod.Get,
 		Endpoint:  endpoint,
 		Operation: operationtype.ListUsers,
@@ -34,11 +34,13 @@ func (s *Service) ListRemoteUsers(ctx context.Context, siteId int64, query strin
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // GetRemoteUser fetches a single user from a remote WordPress site.
-func (s *Service) GetRemoteUser(ctx context.Context, siteId int64, userId string) (any, *apperror.AppError) {
+func (s *Service) GetRemoteUser(ctx context.Context, siteId int64, userId string) (*wordpress.UserResponse, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -55,11 +57,13 @@ func (s *Service) GetRemoteUser(ctx context.Context, siteId int64, userId string
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // CreateRemoteUser creates a new user on a remote WordPress site.
-func (s *Service) CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (any, *apperror.AppError) {
+func (s *Service) CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (*wordpress.UserCreateResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -75,11 +79,13 @@ func (s *Service) CreateRemoteUser(ctx context.Context, siteId int64, input word
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // UpdateRemoteUser updates a user on a remote WordPress site.
-func (s *Service) UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (any, *apperror.AppError) {
+func (s *Service) UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (*wordpress.UserUpdateResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -97,11 +103,13 @@ func (s *Service) UpdateRemoteUser(ctx context.Context, siteId int64, userId str
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
 
 // DeleteRemoteUser deletes a user on a remote WordPress site.
-func (s *Service) DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (any, *apperror.AppError) {
+func (s *Service) DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (*wordpress.UserDeleteResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
@@ -123,5 +131,7 @@ func (s *Service) DeleteRemoteUser(ctx context.Context, siteId int64, userId str
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	v := result.Value()
+
+	return &v, nil
 }
