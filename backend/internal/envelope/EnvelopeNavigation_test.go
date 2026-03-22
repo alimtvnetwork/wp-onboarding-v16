@@ -116,7 +116,7 @@ func TestPagination_Defaults(t *testing.T) {
 
 func TestNavigation_FirstPage(t *testing.T) {
 	pg := NewPagination(100, 1, 10)
-	nav := pg.NavigationURLs("/api/v1/items")
+	nav := pg.NavigationUrls("/api/v1/items")
 
 	if nav.PrevPage != nil {
 		t.Error("expected no prev page on first page")
@@ -131,7 +131,7 @@ func TestNavigation_FirstPage(t *testing.T) {
 
 func TestNavigation_LastPage(t *testing.T) {
 	pg := NewPagination(100, 10, 10)
-	nav := pg.NavigationURLs("/api/v1/items")
+	nav := pg.NavigationUrls("/api/v1/items")
 
 	if nav.NextPage != nil {
 		t.Error("expected no next page on last page")
@@ -143,7 +143,7 @@ func TestNavigation_LastPage(t *testing.T) {
 
 func TestNavigation_SmallDataset(t *testing.T) {
 	pg := NewPagination(3, 1, 10)
-	nav := pg.NavigationURLs("/api/v1/items")
+	nav := pg.NavigationUrls("/api/v1/items")
 
 	if nav.NextPage != nil {
 		t.Error("expected no next page for single-page dataset")
@@ -165,11 +165,16 @@ func TestWrite(t *testing.T) {
 		t.Errorf("expected application/json, got %s", ct)
 	}
 
-	var decoded Response
+	// Decode as generic map to verify JSON structure
+	var decoded map[string]interface{}
 	if err := json.NewDecoder(w.Body).Decode(&decoded); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if !decoded.Status.IsSuccess {
+	status, ok := decoded["Status"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected Status block in JSON")
+	}
+	if status["IsSuccess"] != true {
 		t.Error("expected decoded IsSuccess=true")
 	}
 }
@@ -185,7 +190,7 @@ func TestJSON_Serialization_PascalCase(t *testing.T) {
 	}
 
 	var decoded map[string]interface{}
-	json.Unmarshal(b, &decoded)
+	json.Unmarshal(b, &decoded) //nolint:errcheck
 
 	for _, key := range []string{"Status", "Attributes", "Results", "Errors"} {
 		if _, ok := decoded[key]; !ok {
