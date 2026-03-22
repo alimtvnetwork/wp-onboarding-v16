@@ -69,21 +69,29 @@ type SiteServiceInterface interface {
 	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError)
 	ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError)
 
-	// User management proxy
-	ListRemoteUsers(ctx context.Context, siteId int64, query string) (any, *apperror.AppError)
-	GetRemoteUser(ctx context.Context, siteId int64, userId string) (any, *apperror.AppError)
-	CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (any, *apperror.AppError)
-	UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (any, *apperror.AppError)
-	DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (any, *apperror.AppError)
-	CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (any, *apperror.AppError)
-	RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (any, *apperror.AppError)
-	ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (any, *apperror.AppError)
-	ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	// User management proxy — typed returns
+	ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError)
+	GetRemoteUser(ctx context.Context, siteId int64, userId string) (*wordpress.UserResponse, *apperror.AppError)
+	CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (*wordpress.UserCreateResult, *apperror.AppError)
+	UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (*wordpress.UserUpdateResult, *apperror.AppError)
+	DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (*wordpress.UserDeleteResult, *apperror.AppError)
+	CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (*wordpress.AppPasswordCreateResult, *apperror.AppError)
+	RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (*wordpress.AppPasswordRevokeResult, *apperror.AppError)
+	ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (*wordpress.UserExportResult, *apperror.AppError)
+	ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError)
 
-	// Site settings proxy
+	// Site settings proxy — returns any (justified: PHP JSON structure unknown at compile time)
 	GetRemoteSiteSettings(ctx context.Context, siteId int64) (any, *apperror.AppError)
 	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (any, *apperror.AppError)
 	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError)
+
+	// Remote log management — returns any (justified: PHP JSON structure unknown at compile time)
+	GetRemoteLogsStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	RequestRemoteLogsClear(ctx context.Context, siteId int64) (any, *apperror.AppError)
+	ConfirmRemoteLogsClear(ctx context.Context, siteId int64, token string) (any, *apperror.AppError)
+	EmailRemoteLogs(ctx context.Context, siteId int64, body wordpress.EmailLogsRequest) (any, *apperror.AppError)
+	ClearAllRemoteLogs(ctx context.Context, siteId int64) (any, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -328,4 +336,42 @@ func (a *SiteServiceAdapter) UpdateRemoteSiteSettings(ctx context.Context, siteI
 
 func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (any, *apperror.AppError) {
 	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
+}
+
+// --- User management typed adapter methods ---
+
+func (a *SiteServiceAdapter) ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError) {
+	return a.Service.ListRemoteUsers(ctx, siteId, query)
+}
+
+func (a *SiteServiceAdapter) GetRemoteUser(ctx context.Context, siteId int64, userId string) (*wordpress.UserResponse, *apperror.AppError) {
+	return a.Service.GetRemoteUser(ctx, siteId, userId)
+}
+
+func (a *SiteServiceAdapter) CreateRemoteUser(ctx context.Context, siteId int64, input wordpress.UserCreateRequest) (*wordpress.UserCreateResult, *apperror.AppError) {
+	return a.Service.CreateRemoteUser(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) UpdateRemoteUser(ctx context.Context, siteId int64, userId string, input wordpress.UserUpdateRequest) (*wordpress.UserUpdateResult, *apperror.AppError) {
+	return a.Service.UpdateRemoteUser(ctx, siteId, userId, input)
+}
+
+func (a *SiteServiceAdapter) DeleteRemoteUser(ctx context.Context, siteId int64, userId string, reassign string) (*wordpress.UserDeleteResult, *apperror.AppError) {
+	return a.Service.DeleteRemoteUser(ctx, siteId, userId, reassign)
+}
+
+func (a *SiteServiceAdapter) CreateRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordCreateRequest) (*wordpress.AppPasswordCreateResult, *apperror.AppError) {
+	return a.Service.CreateRemoteAppPassword(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) RevokeRemoteAppPassword(ctx context.Context, siteId int64, input wordpress.AppPasswordRevokeRequest) (*wordpress.AppPasswordRevokeResult, *apperror.AppError) {
+	return a.Service.RevokeRemoteAppPassword(ctx, siteId, input)
+}
+
+func (a *SiteServiceAdapter) ExportRemoteUsersCsv(ctx context.Context, siteId int64, query string) (*wordpress.UserExportResult, *apperror.AppError) {
+	return a.Service.ExportRemoteUsersCsv(ctx, siteId, query)
+}
+
+func (a *SiteServiceAdapter) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError) {
+	return a.Service.ExportRemoteUsersSqlite(ctx, siteId)
 }

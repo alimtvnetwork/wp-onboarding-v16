@@ -147,3 +147,23 @@ type UserImportErrorDetail struct {
 	Username string `json:"Username"`
 	Error    string `json:"Error"`
 }
+
+// UserListResponse wraps a list of user summaries for the list endpoint.
+type UserListResponse struct {
+	Users []UserSummary `json:"Users"`
+	Total int           `json:"Total"`
+}
+
+// AppPasswordRevokeResult is the response from revoking an app password.
+type AppPasswordRevokeResult struct {
+	Revoked bool `json:"Revoked"`
+	UserId  int  `json:"UserId"`
+}
+
+// UserExportResult is the response from exporting users (CSV or SQLite).
+type UserExportResult struct {
+	Content  string `json:"Content,omitempty"`
+	Filename string `json:"Filename,omitempty"`
+	Format   string `json:"Format,omitempty"`
+	Count    int    `json:"Count"`
+}
