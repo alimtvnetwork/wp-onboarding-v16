@@ -995,27 +995,27 @@ export interface RequestSessionListResponse {
 
 // Remote Logs Types
 export interface RemoteLogFileInfo {
-  Name: string;
-  SizeBytes: number;
-  LineCount: number;
+  name: string;
+  sizeBytes: number;
+  lineCount: number;
 }
 
 export interface RemoteLogsStatusResponse {
-  Files: RemoteLogFileInfo[];
-  TotalSizeBytes: number;
-  ArchiveCount: number;
+  files: RemoteLogFileInfo[];
+  totalSizeBytes: number;
+  archiveCount: number;
 }
 
 export interface RemoteLogsClearResponse {
-  Token: string;
-  ExpiresIn: number;
-  Message: string;
+  token: string;
+  expiresIn: number;
+  message: string;
 }
 
 export interface RemoteLogsClearConfirmResponse {
-  Deleted: string[];
-  Failed: string[];
-  Message: string;
+  deleted: string[];
+  failed: string[];
+  message: string;
 }
 
 export interface RemoteLogsEmailResponse {
