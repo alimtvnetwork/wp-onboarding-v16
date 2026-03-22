@@ -60,13 +60,13 @@ export function CloudStorageScheduleSettings({
 
   const handleSave = async () => {
     await onSave({
-      BackupType: backupType,
-      FullBackupSchedule: fullSchedule,
-      IncrementalBackupSchedule: isIncremental ? incrSchedule : "manual",
-      FullBackupDayOfWeek: fullDay,
-      FullBackupTimeUtc: fullTime,
-      IncrementalBackupTimeUtc: incrTime,
-      RetentionCount: fullRetention,
+      backupType: backupType,
+      fullBackupSchedule: fullSchedule,
+      incrementalBackupSchedule: isIncremental ? incrSchedule : "manual",
+      fullBackupDayOfWeek: fullDay,
+      fullBackupTimeUtc: fullTime,
+      incrementalBackupTimeUtc: incrTime,
+      retentionCount: fullRetention,
     });
   };
 

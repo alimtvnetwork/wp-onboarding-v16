@@ -251,7 +251,7 @@ function BackupEntry({
           <span>{formatBytes(record.fileSizeBytes)}</span>
           <span className="flex items-center gap-1">
             <GitBranch className="h-3 w-3" />
-            {record.BranchName}
+            {record.branchName}
           </span>
           {!isFull && tablesChanged.length > 0 && (
             <span>{tablesChanged.length} tables · {record.rowsChanged} rows</span>
@@ -279,7 +279,7 @@ function BackupEntry({
             <DropdownMenuItem asChild>
               <a href={record.remoteUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-2" />
-                View on {record.BranchName === "main" ? "provider" : "branch"}
+                View on {record.branchName === "main" ? "provider" : "branch"}
               </a>
             </DropdownMenuItem>
           )}

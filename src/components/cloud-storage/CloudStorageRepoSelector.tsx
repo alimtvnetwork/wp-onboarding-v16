@@ -62,7 +62,7 @@ export function CloudStorageRepoSelector({
       const isSuccess = res.success && res.data;
 
       if (isSuccess) {
-        setRepos(res.data!.Repositories || []);
+        setRepos(res.data!.repositories || []);
       }
     } catch {
       // Silently fail — user can retry
@@ -81,7 +81,7 @@ export function CloudStorageRepoSelector({
       const isSuccess = res.success && res.data;
 
       if (isSuccess) {
-        setBranches(res.data!.Branches || []);
+        setBranches(res.data!.branches || []);
       }
     } catch {
       // Silently fail

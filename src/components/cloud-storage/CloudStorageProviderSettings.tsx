@@ -54,12 +54,12 @@ export function CloudStorageProviderSettings({
 
   const handleSave = () => {
     onSave({
-      IsEnabled: isEnabled,
-      AutoBackupEnabled: autoBackup,
-      DefaultAccountId: defaultAccountId === "none" ? null : parseInt(defaultAccountId, 10),
-      RetentionCount: retentionCount,
-      RotationEnabled: rotationEnabled,
-      BackupPrefix: backupPrefix,
+      isEnabled: isEnabled,
+      autoBackupEnabled: autoBackup,
+      defaultAccountId: defaultAccountId === "none" ? null : parseInt(defaultAccountId, 10),
+      retentionCount: retentionCount,
+      rotationEnabled: rotationEnabled,
+      backupPrefix: backupPrefix,
     });
   };
 
