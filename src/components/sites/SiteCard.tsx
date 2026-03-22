@@ -219,7 +219,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   };
 
   return (
-    <Card className="group relative transition-all duration-300 hover:shadow-[0_0_20px_-4px_hsl(var(--primary)/0.4)] hover:border-primary/50 hover:bg-gradient-to-br hover:from-primary/5 hover:via-transparent hover:to-accent/10 hover:scale-[1.01]">
+    <Card className="group relative transition-all duration-500 ease-in-out hover:bg-emerald-950/40 hover:border-emerald-500/60 hover:shadow-[0_0_24px_-4px_hsl(142_71%_45%/0.35)]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div
@@ -227,8 +227,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             onClick={() => onEdit(site)}
             title="Click to edit"
           >
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_12px_-2px_hsl(var(--primary)/0.5)]">
-              <Globe className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-500 ease-in-out group-hover:bg-emerald-500/20">
+              <Globe className="h-5 w-5 text-primary transition-colors duration-500 ease-in-out group-hover:text-emerald-400" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base truncate flex items-center gap-2">
@@ -344,7 +344,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
-        <div className="flex gap-1 pt-2 border-t transition-colors duration-300 group-hover:border-primary/20">
+        <div className="flex gap-1 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
           <Button
             variant="ghost"
             size="sm"
