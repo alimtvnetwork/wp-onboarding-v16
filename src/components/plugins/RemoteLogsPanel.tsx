@@ -115,15 +115,15 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
       </div>
 
       {file.Truncated && (
-        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
+        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-xs text-muted-foreground">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           Showing last {file.Lines} of {file.TotalLines} lines. Increase max lines to see more.
         </div>
       )}
 
       {/* Content */}
-      <ScrollArea className="h-[400px] rounded-md border bg-zinc-950 p-3">
-        <pre className="text-xs font-mono text-zinc-200 whitespace-pre-wrap break-all leading-relaxed">
+      <ScrollArea className="h-[400px] rounded-md border bg-background p-3">
+        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
           {file.Content || "(empty)"}
         </pre>
       </ScrollArea>
