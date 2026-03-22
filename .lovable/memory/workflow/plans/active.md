@@ -49,7 +49,7 @@
 | 3 | Go `interface{}` → `any` migration | 🟡 Medium | ~2,680 instances | — |
 | 4 | Cloud Storage Go pipeline `cloud_upload` stage | 🟡 Medium | Open | S-044 |
 | 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | ✅ Wired into account cards | S-047 |
-| 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | Open — systemic mismatch discovered | — |
+| 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | ✅ Done — all types, components, hooks, methods fixed | — |
 | 6 | Go Backend UserClient | 🟡 Medium | Open | — |
 | 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
 | 8 | Chunk reassembly manifest validation | 🟡 Medium | Open | S-048 |

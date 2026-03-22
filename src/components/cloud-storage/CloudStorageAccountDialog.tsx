@@ -64,19 +64,19 @@ export function CloudStorageAccountDialog({
   useEffect(() => {
     if (open) {
       if (account) {
-        setProvider(account.Provider);
-        setLabel(account.AccountLabel);
+        setProvider(account.provider);
+        setLabel(account.accountLabel);
         setToken("");
-        setRepoSelectionMode(account.RepoSelectionMode || "create");
-        setRepoName(account.RepoName || "");
-        setRepoOwner(account.RepoOwner || "");
-        setDefaultBranch(account.DefaultBranch || "main");
+        setRepoSelectionMode(account.repoSelectionMode || "create");
+        setRepoName(account.repoName || "");
+        setRepoOwner(account.repoOwner || "");
+        setDefaultBranch(account.defaultBranch || "main");
         setFieldValues({
-          Username: account.Username || "",
-          Email: account.Email || "",
-          BaseUrl: account.BaseUrl || "",
-          FolderId: account.FolderId || "",
-          FolderName: account.FolderName || "",
+          Username: account.username || "",
+          Email: account.email || "",
+          BaseUrl: account.baseUrl || "",
+          FolderId: account.folderId || "",
+          FolderName: account.folderName || "",
         });
       } else {
         setProvider("GitHub");
@@ -120,7 +120,7 @@ export function CloudStorageAccountDialog({
         body.AccessToken = token;
       }
 
-      onSubmit({ id: account.Id, body });
+      onSubmit({ id: account.id, body });
     } else {
       const data: CloudStorageAccountCreateRequest = {
         Provider: provider,
@@ -261,7 +261,7 @@ export function CloudStorageAccountDialog({
           {isGitProvider && (
             <CloudStorageRepoSelector
               provider={provider}
-              accountId={isEditing ? account?.Id : undefined}
+              accountId={isEditing ? account?.id : undefined}
               repoSelectionMode={repoSelectionMode}
               onRepoSelectionModeChange={setRepoSelectionMode}
               repoName={repoName}

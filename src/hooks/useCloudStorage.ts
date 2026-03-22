@@ -18,7 +18,7 @@ export function useCloudStorageAccounts() {
     queryFn: async () => {
       const res = await api.getCloudStorageAccounts();
       const data = requireSuccess(res, { endpoint: "/cloud-storage/accounts" });
-      return (data as { Accounts: CloudStorageAccount[] }).Accounts;
+      return (data as { accounts: CloudStorageAccount[] }).accounts;
     },
   });
 }

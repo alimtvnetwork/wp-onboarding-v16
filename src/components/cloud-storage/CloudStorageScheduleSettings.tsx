@@ -41,18 +41,18 @@ export function CloudStorageScheduleSettings({
   isSaving,
 }: CloudStorageScheduleSettingsProps) {
   const [backupType, setBackupType] = useState<BackupStrategyType>(
-    settings.BackupType || "full_only"
+    settings.backupType || "full_only"
   );
   const [fullSchedule, setFullSchedule] = useState<BackupScheduleType>(
-    settings.FullBackupSchedule || "weekly"
+    settings.fullBackupSchedule || "weekly"
   );
   const [incrSchedule, setIncrSchedule] = useState<BackupScheduleType>(
-    settings.IncrementalBackupSchedule || "daily"
+    settings.incrementalBackupSchedule || "daily"
   );
-  const [fullDay, setFullDay] = useState(settings.FullBackupDayOfWeek ?? 0);
-  const [fullTime, setFullTime] = useState(settings.FullBackupTimeUtc || "02:00");
-  const [incrTime, setIncrTime] = useState(settings.IncrementalBackupTimeUtc || "02:00");
-  const [fullRetention, setFullRetention] = useState(settings.RetentionCount || 4);
+  const [fullDay, setFullDay] = useState(settings.fullBackupDayOfWeek ?? 0);
+  const [fullTime, setFullTime] = useState(settings.fullBackupTimeUtc || "02:00");
+  const [incrTime, setIncrTime] = useState(settings.incrementalBackupTimeUtc || "02:00");
+  const [fullRetention, setFullRetention] = useState(settings.retentionCount || 4);
   const [incrRetention, setIncrRetention] = useState(6);
 
   const isIncremental = backupType === "full_and_incremental";
@@ -60,13 +60,13 @@ export function CloudStorageScheduleSettings({
 
   const handleSave = async () => {
     await onSave({
-      BackupType: backupType,
-      FullBackupSchedule: fullSchedule,
-      IncrementalBackupSchedule: isIncremental ? incrSchedule : "manual",
-      FullBackupDayOfWeek: fullDay,
-      FullBackupTimeUtc: fullTime,
-      IncrementalBackupTimeUtc: incrTime,
-      RetentionCount: fullRetention,
+      backupType: backupType,
+      fullBackupSchedule: fullSchedule,
+      incrementalBackupSchedule: isIncremental ? incrSchedule : "manual",
+      fullBackupDayOfWeek: fullDay,
+      fullBackupTimeUtc: fullTime,
+      incrementalBackupTimeUtc: incrTime,
+      retentionCount: fullRetention,
     });
   };
 

@@ -27,7 +27,7 @@ export function CloudStorageBackupSelector({
   const { data: accounts, isLoading } = useCloudStorageAccounts();
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeAccounts = (accounts ?? []).filter((a) => a.IsActive);
+  const activeAccounts = (accounts ?? []).filter((a) => a.isActive);
 
   // Auto-open if user previously had selections saved
   useEffect(() => {
@@ -39,7 +39,7 @@ export function CloudStorageBackupSelector({
           setIsOpen(true);
           // Only restore valid account IDs
           const validIds = ids.filter((id) =>
-            activeAccounts.some((a) => a.Id === id)
+            activeAccounts.some((a) => a.id === id)
           );
           if (validIds.length > 0 && selectedAccountIds.length === 0) {
             onSelectionChange(validIds);
@@ -99,10 +99,10 @@ export function CloudStorageBackupSelector({
       <CollapsibleContent className="pt-2 space-y-1">
         {activeAccounts.map((account) => (
           <AccountRow
-            key={account.Id}
+            key={account.id}
             account={account}
-            isSelected={selectedAccountIds.includes(account.Id)}
-            onToggle={() => toggleAccount(account.Id)}
+            isSelected={selectedAccountIds.includes(account.id)}
+            onToggle={() => toggleAccount(account.id)}
           />
         ))}
       </CollapsibleContent>
@@ -119,8 +119,8 @@ function AccountRow({
   isSelected: boolean;
   onToggle: () => void;
 }) {
-  const config = PROVIDER_CONFIG[account.Provider];
-  const icon = PROVIDER_ICONS[account.Provider];
+  const config = PROVIDER_CONFIG[account.provider];
+  const icon = PROVIDER_ICONS[account.provider];
 
   return (
     <label
@@ -140,9 +140,9 @@ function AccountRow({
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{account.AccountLabel}</p>
+        <p className="text-sm font-medium truncate">{account.accountLabel}</p>
         <p className="text-xs text-muted-foreground truncate">
-          {config?.label} · {account.TokenMask}
+          {config?.label} · {account.tokenMask}
         </p>
       </div>
     </label>

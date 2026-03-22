@@ -80,7 +80,7 @@ function groupByWeek(records: CloudStorageBackupHistoryRecord[]): WeekGroup[] {
   const groups = new Map<string, WeekGroup>();
 
   for (const record of records) {
-    const weekKey = getISOWeek(new Date(record.CreatedAt));
+    const weekKey = getISOWeek(new Date(record.createdAt));
     const existing = groups.get(weekKey);
     const hasGroup = !!existing;
 
@@ -93,7 +93,7 @@ function groupByWeek(records: CloudStorageBackupHistoryRecord[]): WeekGroup[] {
     }
 
     const group = groups.get(weekKey)!;
-    const isFull = record.BackupType === "full";
+    const isFull = record.backupType === "full";
 
     if (isFull) {
       group.fullBackup = record;
@@ -128,8 +128,8 @@ export function CloudStorageBackupTimeline({
       const isSuccess = res.success && res.data;
 
       if (isSuccess) {
-        setRecords(res.data!.BackupHistory || []);
-        setTotal(res.data!.Total || 0);
+        setRecords(res.data!.backupHistory || []);
+        setTotal(res.data!.total || 0);
         setPage(pageNum);
       }
     } catch {
@@ -193,7 +193,7 @@ export function CloudStorageBackupTimeline({
             {/* Incrementals */}
             {week.incrementals.map((incr) => (
               <BackupEntry
-                key={incr.Id}
+                key={incr.id}
                 record={incr}
                 onRestore={onRestore}
               />
@@ -226,10 +226,10 @@ function BackupEntry({
   record: CloudStorageBackupHistoryRecord;
   onRestore?: (backupId: number) => void;
 }) {
-  const isFull = record.BackupType === "full";
+  const isFull = record.backupType === "full";
   const Icon = isFull ? CircleDot : Circle;
-  const tablesChanged = record.TablesChanged ? JSON.parse(record.TablesChanged) as string[] : [];
-  const hasRemoteUrl = record.RemoteUrl.length > 0;
+  const tablesChanged = record.tablesChanged ? JSON.parse(record.tablesChanged) as string[] : [];
+  const hasRemoteUrl = record.remoteUrl.length > 0;
 
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 group">
@@ -242,19 +242,19 @@ function BackupEntry({
           <span className="text-sm font-medium truncate">
             {isFull ? "Full Backup" : "Incremental"}
           </span>
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[record.Status]}`}>
-            {record.Status}
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[record.status]}`}>
+            {record.status}
           </Badge>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-          <span>{formatDate(record.CreatedAt)}</span>
-          <span>{formatBytes(record.FileSizeBytes)}</span>
+          <span>{formatDate(record.createdAt)}</span>
+          <span>{formatBytes(record.fileSizeBytes)}</span>
           <span className="flex items-center gap-1">
             <GitBranch className="h-3 w-3" />
-            {record.BranchName}
+            {record.branchName}
           </span>
           {!isFull && tablesChanged.length > 0 && (
-            <span>{tablesChanged.length} tables · {record.RowsChanged} rows</span>
+            <span>{tablesChanged.length} tables · {record.rowsChanged} rows</span>
           )}
         </div>
       </div>
@@ -271,15 +271,15 @@ function BackupEntry({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onRestore?.(record.Id)}>
+          <DropdownMenuItem onClick={() => onRestore?.(record.id)}>
             <RotateCcw className="h-3.5 w-3.5 mr-2" />
             Restore
           </DropdownMenuItem>
           {hasRemoteUrl && (
             <DropdownMenuItem asChild>
-              <a href={record.RemoteUrl} target="_blank" rel="noopener noreferrer">
+              <a href={record.remoteUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-2" />
-                View on {record.BranchName === "main" ? "provider" : "branch"}
+                View on {record.branchName === "main" ? "provider" : "branch"}
               </a>
             </DropdownMenuItem>
           )}
