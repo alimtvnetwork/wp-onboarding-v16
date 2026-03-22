@@ -205,6 +205,7 @@ var variantValues = [...]string{
 	RequestLogsClear:       "request logs clear",
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",
+	RetrieveLogs:           "retrieve logs",
 	CloudStorageUpload:         "cloud storage upload",
 	CloudStorageRestore:       "cloud storage restore",
 	CloudStorageBackupHistory: "cloud storage backup history",
