@@ -13,24 +13,6 @@ type deployPreflightInput struct {
 	SiteIds []int64
 }
 
-// DeployPreflightSiteResult is the pre-flight result for a single site.
-type DeployPreflightSiteResult struct {
-	SiteId              int64
-	SiteName            string
-	SiteUrl             string
-	IsReachable         bool
-	RiseupAsiaAvailable bool
-	RiseupAsiaNamespace string `json:",omitempty"`
-	QUploadAvailable    bool
-	QUploadNamespace    string `json:",omitempty"`
-	Error               string `json:",omitempty"`
-}
-
-// DeployPreflightResponse wraps pre-flight results for all sites.
-type DeployPreflightResponse struct {
-	Results []DeployPreflightSiteResult
-}
-
 // DeployPreflight checks endpoint availability on all requested sites before deploy.
 func DeployPreflight(w http.ResponseWriter, r *http.Request) {
 	if isServiceMissing(w, Services.SiteService, "Site service") {
@@ -55,5 +37,5 @@ func DeployPreflight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, DeployPreflightResponse{Results: results})
+	respondSuccess(w, map[string]interface{}{"Results": results})
 }
