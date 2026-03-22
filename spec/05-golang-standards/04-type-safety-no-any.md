@@ -133,10 +133,13 @@ Builder functions already generic. `Response.Results any` is a justified excepti
 - ~25 `any` eliminated from factory infrastructure
 - See `.lovable/plans/handler-factory-generic-refactoring.md` for details
 
-### Phase G-4: Adapter Interfaces + Service Returns
-- Define typed return structs for Health, Logs, Settings, Users
-- Replace all `(any, *AppError)` returns with `(*TypedStruct, *AppError)`
-- This will automatically make the generic factory infer typed T parameters
+### Phase G-4: Adapter Interfaces + Service Returns ✅ Done (2026-03-22)
+- Created `PhpEnvelope[T]` generic type + `UnwrapPhpResult[T]` typed unwrapper
+- Created typed response structs: `LogsStatusData`, `LogsClearRequestData`, `LogsClearConfirmData`, `LogsEmailResultData`, `LogsRotationStatusData`, `HealthSummaryData`, `SiteSettingsData`, `SiteSettingsUpdateResult`
+- Updated `SiteServiceInterface`: all 9 `any` returns → typed returns
+- Updated service methods to use `DoApiCall[PhpEnvelope[T]]` instead of `DoApiCall[map[string]any]`
+- Eliminated `UnwrapPhpEnvelope(map[string]any)` usage from all typed endpoints
+- Only justified `any` remaining: `UpdateRemoteSiteSettings` input `map[string]any` (dynamic PHP settings)
 
 ### Phase G-5: Service Layer map[string]any → Typed Structs
 - Create request/response structs for UpdateRemoteSiteSettings, etc.
