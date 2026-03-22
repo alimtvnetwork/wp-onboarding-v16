@@ -227,8 +227,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             onClick={() => onEdit(site)}
             title="Click to edit"
           >
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-              <Globe className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_12px_-2px_hsl(var(--primary)/0.5)]">
+              <Globe className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base truncate flex items-center gap-2">
