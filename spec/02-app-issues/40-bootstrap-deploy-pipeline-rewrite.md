@@ -143,11 +143,11 @@
 ## Done Checklist
 
 - [x] Root cause documented
-- [ ] Task 1: ZIP once (Go)
-- [ ] Task 2: Cross-upload strategy (Go)
-- [ ] Task 3: Parallel site uploads (Go)
+- [x] Task 1: ZIP once (Go) — `CreateUploaderZipOnce` + handler creates ZIP once, passes to all sites
+- [x] Task 2: Cross-upload strategy (Go) — `executeCrossUpload` prefers QUpload endpoint, self-upload as last resort
+- [x] Task 3: Parallel site uploads (Go) — `bootstrapSitesParallel` with goroutines + WaitGroup
 - [ ] Task 4: Pre-flight UI
 - [ ] Task 5: Phased progress UI
 - [ ] Task 6: Delegated error logs
-- [ ] Task 7: Retry limiting
+- [x] Task 7: Retry limiting — single attempt per site, no retry loop
 - [ ] End-to-end verification

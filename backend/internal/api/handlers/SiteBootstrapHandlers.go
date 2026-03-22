@@ -4,9 +4,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // bootstrapInput is the optional JSON body for BootstrapUploader.
@@ -36,12 +38,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
 	if err != nil {
-		respondError(
-			w,
-			wordpress.HttpStatusServerError,
-			apperror.ErrDatabaseBootstrap,
-			err.Error(),
-		)
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrDatabaseBootstrap, err.Error())
 
 		return
 	}
@@ -67,28 +64,46 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(input.SiteIds) == 0 {
-		respondError(
-			w,
-			wordpress.HttpStatusBadRequest,
-			apperror.ErrConfigParse,
-			"At least one site ID is required",
-		)
+		respondError(w, wordpress.HttpStatusBadRequest, apperror.ErrConfigParse, "At least one site ID is required")
 
 		return
 	}
 
-	results := make([]BulkBootstrapSiteResult, 0, len(input.SiteIds))
+	zipPath, zipErr := Services.SiteService.CreateUploaderZipOnce(input.UploaderPath)
+	if zipErr != nil {
+		respondError(w, wordpress.HttpStatusServerError, apperror.ErrFSZip, zipErr.Error())
 
-	for _, siteId := range input.SiteIds {
-		results = append(results, bootstrapSingleSite(r, siteId, input.UploaderPath))
+		return
 	}
+	defer pathutil.RemoveFileUnchecked(zipPath)
+
+	results := bootstrapSitesParallel(r, input.SiteIds, zipPath)
 
 	respondSuccess(w, BulkBootstrapResponse{Results: results})
 }
 
-// bootstrapSingleSite deploys the uploader to one site, returning a result entry.
-func bootstrapSingleSite(r *http.Request, siteId int64, uploaderPath string) BulkBootstrapSiteResult {
-	result, err := Services.SiteService.BootstrapUploader(r.Context(), siteId, uploaderPath)
+// bootstrapSitesParallel deploys to all sites concurrently using a pre-built ZIP.
+func bootstrapSitesParallel(r *http.Request, siteIds []int64, zipPath string) []BulkBootstrapSiteResult {
+	results := make([]BulkBootstrapSiteResult, len(siteIds))
+	var wg sync.WaitGroup
+
+	for i, siteId := range siteIds {
+		wg.Add(1)
+
+		go func(idx int, id int64) {
+			defer wg.Done()
+			results[idx] = bootstrapSingleSiteWithZip(r, id, zipPath)
+		}(i, siteId)
+	}
+
+	wg.Wait()
+
+	return results
+}
+
+// bootstrapSingleSiteWithZip deploys using a pre-built ZIP and cross-upload strategy.
+func bootstrapSingleSiteWithZip(r *http.Request, siteId int64, zipPath string) BulkBootstrapSiteResult {
+	result, err := Services.SiteService.BootstrapUploaderWithZip(r.Context(), siteId, zipPath)
 	if err != nil {
 		return buildBootstrapFailure(r, siteId, err)
 	}
@@ -104,11 +119,11 @@ func bootstrapSingleSite(r *http.Request, siteId int64, uploaderPath string) Bul
 
 // buildBootstrapFailure constructs a failure result for a single bootstrap attempt.
 func buildBootstrapFailure(r *http.Request, siteId int64, err error) BulkBootstrapSiteResult {
-	siteInfo, _ := Services.SiteService.GetById(r.Context(), siteId)
+	result := Services.SiteService.GetById(r.Context(), siteId)
 
 	siteName := ""
-	if siteInfo != nil {
-		siteName = siteInfo.Name
+	if !result.HasError() {
+		siteName = result.Value().Name
 	}
 
 	return BulkBootstrapSiteResult{

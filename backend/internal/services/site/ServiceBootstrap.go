@@ -2,10 +2,8 @@ package site
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -27,7 +25,47 @@ type bootstrapContext struct {
 	Client *wordpress.Client
 }
 
-// BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
+// CreateUploaderZipOnce creates the uploader ZIP once for reuse across all sites.
+func (s *Service) CreateUploaderZipOnce(uploaderPath string) (string, *apperror.AppError) {
+	if uploaderPath == "" {
+		uploaderPath = "../wp-plugins/riseup-asia-uploader"
+	}
+
+	s.logBootstrapInfo(0, fmt.Sprintf("Creating plugin ZIP archive from %s", uploaderPath))
+
+	zipPath, err := s.createUploaderZip(uploaderPath)
+	if err != nil {
+		s.logBootstrapError(0, fmt.Sprintf("Failed to create ZIP: %v", err))
+
+		return "", err
+	}
+
+	s.logBootstrapInfo(0, fmt.Sprintf("ZIP archive created: %s", pathutil.ForDisplay(zipPath)))
+
+	return zipPath, nil
+}
+
+// BootstrapUploaderWithZip deploys using a pre-built ZIP and cross-upload strategy.
+func (s *Service) BootstrapUploaderWithZip(ctx context.Context, id int64, zipPath string) (*BootstrapResult, *apperror.AppError) {
+	bctx, err := s.initBootstrapContext(ctx, id, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return s.crossUploadAndFinalize(id, bctx, zipPath)
+}
+
+// crossUploadAndFinalize uses cross-upload strategy: QUpload endpoint to upload Riseup Asia.
+func (s *Service) crossUploadAndFinalize(id int64, bctx *bootstrapContext, zipPath string) (*BootstrapResult, *apperror.AppError) {
+	uploadResult, uploadErr := s.executeCrossUpload(id, bctx.Client, zipPath)
+	if uploadErr != nil {
+		return nil, uploadErr
+	}
+
+	return s.finalizeBootstrap(id, bctx.Site, uploadResult), nil
+}
+
+// BootstrapUploader deploys the Riseup Asia Uploader plugin to a site (single-site mode)
 func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, *apperror.AppError) {
 	bctx, err := s.initBootstrapContext(ctx, id, uploaderPath)
 	if err != nil {
@@ -45,7 +83,7 @@ func (s *Service) bootstrapUploadAndFinalize(id int64, bctx *bootstrapContext, u
 	}
 	defer pathutil.RemoveFileUnchecked(zipPath)
 
-	uploadResult, uploadErr := s.executeBootstrapUpload(id, bctx.Client, zipPath)
+	uploadResult, uploadErr := s.executeCrossUpload(id, bctx.Client, zipPath)
 	if uploadErr != nil {
 		return nil, uploadErr
 	}
@@ -79,49 +117,9 @@ func (s *Service) buildBootstrapClient(id int64, site models.Site) (*bootstrapCo
 	return &bootstrapContext{Site: site, Client: client}, nil
 }
 
-// logBootstrapStart broadcasts the initial deployment log entry.
-func (s *Service) logBootstrapStart(id int64, site models.Site) {
-	siteContext := SiteContextDetails{
-		SiteId:   id,
-		SiteName: site.Name,
-		SiteUrl:  site.Url,
-	}
-	contextDetails := toJson(siteContext)
-	startLog := bootstrapLogInput{
-		Level:   loglevel.Info,
-		SiteId:  id,
-		Message: "Starting Riseup Asia Uploader deployment",
-		Details: contextDetails,
-	}
-	s.broadcastBootstrapLog(startLog)
-}
-
-// buildBootstrapProgressCallback creates a progress callback for WordPress client operations.
-func (s *Service) buildBootstrapProgressCallback(id int64, siteName string) func(wordpress.ProgressEvent) {
-	return func(event wordpress.ProgressEvent) {
-		bootstrapDetails := BootstrapLogDetails{
-			SiteId:   id,
-			SiteName: siteName,
-			Step:     event.Step,
-			Status:   event.Status,
-			Details:  event.Details,
-		}
-		logDetails := toJson(bootstrapDetails)
-		progressLog := bootstrapLogInput{
-			Level:   loglevel.Info,
-			SiteId:  id,
-			Message: fmt.Sprintf("[%s] %s", event.Step, event.Message),
-			Details: logDetails,
-		}
-		s.broadcastBootstrapLog(progressLog)
-	}
-}
-
-// prepareBootstrapZip creates the uploader ZIP archive.
+// prepareBootstrapZip creates the uploader ZIP archive (single-site fallback).
 func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *apperror.AppError) {
-	isUploaderPathEmpty := uploaderPath == ""
-
-	if isUploaderPathEmpty {
+	if uploaderPath == "" {
 		uploaderPath = "../wp-plugins/riseup-asia-uploader"
 	}
 
@@ -135,54 +133,6 @@ func (s *Service) prepareBootstrapZip(id int64, uploaderPath string) (string, *a
 	}
 
 	return zipPath, nil
-}
-
-// logBootstrapZipStart broadcasts the ZIP creation log entry.
-func (s *Service) logBootstrapZipStart(id int64, uploaderPath string) {
-	zipStartLog := bootstrapLogInput{
-		Level:   loglevel.Info,
-		SiteId:  id,
-		Message: "Creating plugin ZIP archive",
-		Details: toJson(ZipCreationDetails{SiteId: id, Path: uploaderPath}),
-	}
-	s.broadcastBootstrapLog(zipStartLog)
-}
-
-// logBootstrapError broadcasts a bootstrap error log entry.
-func (s *Service) logBootstrapError(id int64, message string) {
-	errorLog := bootstrapLogInput{
-		Level:   loglevel.Error,
-		SiteId:  id,
-		Message: message,
-		Details: toJson(SiteIdDetail{SiteId: id}),
-	}
-	s.broadcastBootstrapLog(errorLog)
-}
-
-// logBootstrapInfo broadcasts a bootstrap info log entry.
-func (s *Service) logBootstrapInfo(id int64, message string) {
-	infoLog := bootstrapLogInput{
-		Level:   loglevel.Info,
-		SiteId:  id,
-		Message: message,
-		Details: toJson(SiteIdDetail{SiteId: id}),
-	}
-	s.broadcastBootstrapLog(infoLog)
-}
-
-// bootstrapLogInput bundles parameters for broadcastBootstrapLog.
-type bootstrapLogInput struct {
-	Level   loglevel.Variant
-	SiteId  int64
-	Message string
-	Details json.RawMessage
-}
-
-// broadcastBootstrapLog sends a bootstrap log entry via WebSocket if hub is available.
-func (s *Service) broadcastBootstrapLog(input bootstrapLogInput) {
-	if s.wsHub != nil {
-		s.wsHub.BroadcastLog(input.Level.Lower(), input.Message, input.Details)
-	}
 }
 
 // checkOnboardAvailable checks if the Onboard plugin is available
