@@ -84,7 +84,7 @@
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
 | H-2 | Publish analytics / history reporting | 🟢 Low | — | ✅ Complete |
-| H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | 🔄 In progress |
+| H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | ✅ Complete |
 
 ---
 

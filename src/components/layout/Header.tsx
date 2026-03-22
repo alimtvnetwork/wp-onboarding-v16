@@ -16,13 +16,24 @@ import {
 
 const routeNames: Record<string, string> = {
   "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/sites": "Sites",
   "/plugins": "Plugins",
+  "/plugins/core": "Core Uploader",
+  "/site-health": "Site Health",
+  "/publish-history": "Publish History",
+  "/activity": "Activity Feed",
+  "/cloud-storage": "Cloud Storage",
+  "/licensing": "Licensing",
+  "/users": "Users",
   "/sync": "Sync",
-  "/errors": "Errors",
-  "/logs": "Logs",
-  "/settings": "Settings",
   "/tests": "E2E Tests",
+  "/logs": "Logs",
+  "/sessions": "Sessions",
+  "/request-sessions": "Request Log",
+  "/api-explorer": "API Explorer",
+  "/errors": "Errors",
+  "/settings": "Settings",
 };
 
 interface HeaderProps {
