@@ -50,6 +50,7 @@ import { SiteCredentialsPanel } from "./SiteCredentialsPanel";
 import { SiteSettingsPanel } from "./SiteSettingsPanel";
 import { SiteHealthSummaryPanel } from "./SiteHealthSummaryPanel";
 import { RemoteLogsPanel } from "@/components/plugins/RemoteLogsPanel";
+import { CloudStoragePanel } from "./CloudStoragePanel";
 import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
