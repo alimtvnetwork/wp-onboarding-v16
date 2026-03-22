@@ -71,6 +71,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [showLogs, setShowLogs] = useState(false);
   const [showSiteSettings, setShowSiteSettings] = useState(false);
   const [showHealthSummary, setShowHealthSummary] = useState(false);
+  const [showCloudStorage, setShowCloudStorage] = useState(false);
   const { data: settings } = useSettings();
   const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
