@@ -79,6 +79,9 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		Operation: operationtype.GetSiteHealthSummary,
 	})
 	if result.HasError() {
+		if isRemote404(result.AppError()) {
+			return wordpress.BuildOutdatedHealthSummary(), nil
+		}
 		return nil, result.AppError()
 	}
 

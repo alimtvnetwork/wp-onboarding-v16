@@ -1081,6 +1081,8 @@ export interface SiteSettingsUpdateResponse {
 // ---------------------------------------------------------------------------
 
 export interface SiteHealthSummaryResponse {
+  pluginOutdated?: boolean;
+  outdatedMessage?: string;
   system: {
     phpVersion: string;
     wpVersion: string;
