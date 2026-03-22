@@ -1,4 +1,5 @@
 // Cloud Storage types — matches Go backend CloudStorageTypes.go
+// Keys are camelCase (transformed from Go PascalCase by transformKeys)
 
 export type CloudStorageProvider = 'GitHub' | 'GitLab' | 'GoogleDrive';
 
@@ -6,18 +7,18 @@ export type CloudStorageProvider = 'GitHub' | 'GitLab' | 'GoogleDrive';
 export type RepoSelectionMode = 'create' | 'existing';
 
 export interface CloudStorageRepository {
-  Name: string;
-  FullName: string;
-  IsPrivate: boolean;
-  DefaultBranch: string;
-  UpdatedAt: string;
+  name: string;
+  fullName: string;
+  isPrivate: boolean;
+  defaultBranch: string;
+  updatedAt: string;
 }
 
 export interface CloudStorageBranch {
-  Name: string;
-  IsDefault: boolean;
-  LastCommitSha: string;
-  LastCommitDate: string;
+  name: string;
+  isDefault: boolean;
+  lastCommitSha: string;
+  lastCommitDate: string;
 }
 
 // ── Phase 5B: Backup strategy types ─────────────────────────────
@@ -27,51 +28,51 @@ export type CloudStorageBackupType = 'full' | 'incremental';
 export type CloudStorageBackupStatus = 'pending' | 'uploading' | 'success' | 'failed';
 
 export interface CloudStorageBackupHistoryRecord {
-  Id: number;
-  AccountId: number;
-  BackupType: CloudStorageBackupType;
-  FileName: string;
-  RemotePath: string;
-  RemoteUrl: string;
-  CommitSha: string;
-  BranchName: string;
-  BaseFullBackupId: number | null;
-  FileSizeBytes: number;
-  TablesChanged: string;
-  RowsChanged: number;
-  Duration: number;
-  Status: CloudStorageBackupStatus;
-  ErrorMessage: string;
-  CreatedAt: string;
+  id: number;
+  accountId: number;
+  backupType: CloudStorageBackupType;
+  fileName: string;
+  remotePath: string;
+  remoteUrl: string;
+  commitSha: string;
+  branchName: string;
+  baseFullBackupId: number | null;
+  fileSizeBytes: number;
+  tablesChanged: string;
+  rowsChanged: number;
+  duration: number;
+  status: CloudStorageBackupStatus;
+  errorMessage: string;
+  createdAt: string;
 }
 
 export interface CloudStorageBackupHistoryListResponse {
-  BackupHistory: CloudStorageBackupHistoryRecord[];
-  Total: number;
-  Page: number;
-  PerPage: number;
+  backupHistory: CloudStorageBackupHistoryRecord[];
+  total: number;
+  page: number;
+  perPage: number;
 }
 
 // ── Core account types ──────────────────────────────────────────
 
 export interface CloudStorageAccount {
-  Id: number;
-  Provider: CloudStorageProvider;
-  AccountLabel: string;
-  Username: string;
-  Email: string;
-  TokenMask: string;
-  BaseUrl: string;
-  RepoName: string;
-  RepoOwner: string;
-  RepoSelectionMode: RepoSelectionMode;
-  DefaultBranch: string;
-  FolderId: string;
-  FolderName: string;
-  IsActive: boolean;
-  LastUsedAt: string;
-  LastError: string;
-  CreatedAt: string;
+  id: number;
+  provider: CloudStorageProvider;
+  accountLabel: string;
+  username: string;
+  email: string;
+  tokenMask: string;
+  baseUrl: string;
+  repoName: string;
+  repoOwner: string;
+  repoSelectionMode: RepoSelectionMode;
+  defaultBranch: string;
+  folderId: string;
+  folderName: string;
+  isActive: boolean;
+  lastUsedAt: string;
+  lastError: string;
+  createdAt: string;
 }
 
 export interface CloudStorageAccountCreateRequest {
@@ -107,34 +108,34 @@ export interface CloudStorageAccountUpdateRequest {
 }
 
 export interface CloudStorageSettings {
-  IsEnabled: boolean;
-  AutoBackupEnabled: boolean;
-  DefaultAccountId: number | null;
-  RetentionCount: number;
-  RotationEnabled: boolean;
-  BackupPrefix: string;
-  BackupType: BackupStrategyType;
-  FullBackupSchedule: BackupScheduleType;
-  IncrementalBackupSchedule: BackupScheduleType;
-  FullBackupDayOfWeek: number;
-  FullBackupTimeUtc: string;
-  IncrementalBackupTimeUtc: string;
+  isEnabled: boolean;
+  autoBackupEnabled: boolean;
+  defaultAccountId: number | null;
+  retentionCount: number;
+  rotationEnabled: boolean;
+  backupPrefix: string;
+  backupType: BackupStrategyType;
+  fullBackupSchedule: BackupScheduleType;
+  incrementalBackupSchedule: BackupScheduleType;
+  fullBackupDayOfWeek: number;
+  fullBackupTimeUtc: string;
+  incrementalBackupTimeUtc: string;
 }
 
 export interface CloudStorageTestResult {
-  Success: boolean;
-  ConnectionStatus?: string;
-  Username?: string;
-  Message?: string;
-  Error?: string;
+  success: boolean;
+  connectionStatus?: string;
+  username?: string;
+  message?: string;
+  error?: string;
 }
 
 export interface CloudStorageFileInfo {
-  Name: string;
-  Path: string;
-  Size: number;
-  CreatedAt?: string;
-  RemoteUrl?: string;
+  name: string;
+  path: string;
+  size: number;
+  createdAt?: string;
+  remoteUrl?: string;
 }
 
 export const PROVIDER_CONFIG: Record<CloudStorageProvider, {
