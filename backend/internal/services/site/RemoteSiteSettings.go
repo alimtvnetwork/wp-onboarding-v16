@@ -77,21 +77,15 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 		return nil, appErr
 	}
 
-	// All known namespaces to probe (same as PowerShell -pas probes all configured plugins)
-	namespaces := []string{
-		wordpress.QUploadNamespace,
-		wordpress.RiseupAsiaNamespace,
-	}
-
 	var wg sync.WaitGroup
 
 	// Channel 1: try rich /site-health-summary on each namespace in parallel
 	type healthProbeResult struct {
 		data *wordpress.HealthSummaryData
 	}
-	healthCh := make(chan healthProbeResult, len(namespaces))
+	healthCh := make(chan healthProbeResult, len(allNamespaces))
 
-	for _, ns := range namespaces {
+	for _, ns := range allNamespaces {
 		wg.Add(1)
 		go func(namespace string) {
 			defer wg.Done()
@@ -116,9 +110,9 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 	type statusProbeResult struct {
 		data *wordpress.HealthSummaryData
 	}
-	statusCh := make(chan statusProbeResult, len(namespaces))
+	statusCh := make(chan statusProbeResult, len(allNamespaces))
 
-	for _, ns := range namespaces {
+	for _, ns := range allNamespaces {
 		wg.Add(1)
 		go func(namespace string) {
 			defer wg.Done()
