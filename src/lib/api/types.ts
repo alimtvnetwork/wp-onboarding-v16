@@ -1004,6 +1004,8 @@ export interface RemoteLogsStatusResponse {
   files: RemoteLogFileInfo[];
   totalSizeBytes: number;
   archiveCount: number;
+  pluginOutdated?: boolean;
+  outdatedMessage?: string;
 }
 
 export interface RemoteLogsClearResponse {
