@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,11 +34,13 @@ import {
   AlertTriangle,
   Loader2,
   Clock,
-  Shield,
+  ChevronDown,
+  History,
 } from "lucide-react";
 import type { CloudStorageAccount } from "@/types/cloudStorage";
 import { PROVIDER_CONFIG } from "@/types/cloudStorage";
 import { formatDistanceToNow } from "date-fns";
+import { CloudStorageBackupTimeline } from "./CloudStorageBackupTimeline";
 
 interface CloudStorageAccountCardProps {
   account: CloudStorageAccount;
