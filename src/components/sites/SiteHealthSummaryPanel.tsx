@@ -30,14 +30,17 @@ interface SiteHealthSummaryPanelProps {
 export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelProps) {
   const queryKey = ["sites", site.id, "site-health-summary"];
 
-  const { data: health, isLoading, refetch, isFetching } = useQuery({
+  const { data: health, isLoading, error, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.getRemoteSiteHealthSummary(site.id);
-      return requireSuccess(response, { endpoint: `/sites/${site.id}/site-health-summary`, method: "GET" }) as SiteHealthSummaryResponse;
+      if (!response.success) {
+        throw new Error(response.error?.message || "Failed to load health summary");
+      }
+      return response.data as SiteHealthSummaryResponse;
     },
     enabled: open,
-    retry: false,
+    retry: 1,
     staleTime: 60_000,
     meta: { suppressGlobalError: true },
   });
