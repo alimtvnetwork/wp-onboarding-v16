@@ -85,7 +85,7 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 	}
 	healthCh := make(chan healthProbeResult, len(allNamespaces))
 
-	for _, ns := range namespaces {
+	for _, ns := range allNamespaces {
 		wg.Add(1)
 		go func(namespace string) {
 			defer wg.Done()
