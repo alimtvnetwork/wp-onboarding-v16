@@ -100,11 +100,9 @@ export default function Sites() {
   // Handle bulk deploy
   const handleBulkDeploy = async (siteIds: number[]) => {
     const response = await api.bulkBootstrapUploader(siteIds);
-    if (!response.success) {
-      throw new Error(response.error?.message || "Bulk deploy failed");
-    }
+    const data = requireSuccess(response, { endpoint: "/sites/bulk-bootstrap-uploader", method: "POST" });
     queryClient.invalidateQueries({ queryKey: ["sites"] });
-    return response.data?.results || [];
+    return data.results || [];
   };
 
   // Compute error info outside of render to avoid triggering captureError during render
