@@ -116,10 +116,29 @@ func getIdParam(r *http.Request, name string) (int64, error) {
 
 // isServiceMissing checks if a service is nil, writing 503 if unavailable.
 // Returns true if the service is missing (positive guard for failure).
+// Used by manual handlers that pass a concrete service interface.
 func isServiceMissing(w http.ResponseWriter, service any, name string) bool {
 	isMissing := service == nil
 
 	if isMissing {
+		respondError(
+			w,
+			wordpress.HttpStatusServiceUnavailable,
+			apperror.ErrNotFound,
+			responsemessagetype.ServiceNotAvailable.String(),
+		)
+
+		return true
+	}
+
+	return false
+}
+
+// isServiceNotReady checks if a service is ready via a bool function, writing 503 if not.
+// Returns true if the service is NOT ready (positive guard for failure).
+// Used by handler factory configs that use IsReady func() bool.
+func isServiceNotReady(w http.ResponseWriter, isReady func() bool, name string) bool {
+	if !isReady() {
 		respondError(
 			w,
 			wordpress.HttpStatusServiceUnavailable,

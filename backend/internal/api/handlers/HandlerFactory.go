@@ -1,7 +1,11 @@
 // Package handlers - Generic handler factories to eliminate CRUD boilerplate
 //
-// All factories use lazy service resolution (func() any) because the global
+// All factories use lazy service resolution via IsReady func() bool because the global
 // Services registry is nil at package init time and only populated during server startup.
+//
+// Factory functions are generic [T any] — the type parameter T is inferred from the
+// callback return type. This eliminates any from all callback signatures while keeping
+// the final http.HandlerFunc non-generic (Go requirement for package-level vars).
 package handlers
 
 import (
@@ -17,19 +21,19 @@ import (
 
 // handlerIdConfig bundles parameters for single-ID handler factories.
 type handlerIdConfig struct {
-	GetService  func() any
+	IsReady     func() bool
 	ServiceName string
 	ParamName   string
 	ErrCode     apperror.ErrorCode
 }
 
-// handleActionById creates a handler: isServiceMissing → parseId → fn(ctx, id) → respondSuccess
-func handleActionById(
+// handleActionById creates a handler: isServiceNotReady → parseId → fn(ctx, id) → respondSuccess
+func handleActionById[T any](
 	cfg handlerIdConfig,
-	fn func(ctx context.Context, id int64) (any, *apperror.AppError),
+	fn func(ctx context.Context, id int64) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceNotReady(w, cfg.IsReady, cfg.ServiceName) {
 			return
 		}
 
@@ -54,13 +58,13 @@ func handleActionById(
 	}
 }
 
-// handleDeleteById creates a handler: isServiceMissing → parseId → fn(ctx, id) → respondDeleted
+// handleDeleteById creates a handler: isServiceNotReady → parseId → fn(ctx, id) → respondDeleted
 func handleDeleteById(
 	cfg handlerIdConfig,
 	fn func(ctx context.Context, id int64) *apperror.AppError,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceNotReady(w, cfg.IsReady, cfg.ServiceName) {
 			return
 		}
 
@@ -86,14 +90,14 @@ func handleDeleteById(
 }
 
 // handleListNilSafe creates a handler: nil-safe service check → fn(ctx) → respondSuccess
-func handleListNilSafe(
-	getService func() any,
+func handleListNilSafe[T any](
+	isReady func() bool,
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context) (any, *apperror.AppError),
+	fn func(ctx context.Context) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if getService() == nil {
-			respondSuccess(w, []any{})
+		if !isReady() {
+			respondSuccess(w, []struct{}{})
 
 			return
 		}
@@ -115,9 +119,9 @@ func handleListNilSafe(
 }
 
 // handleSiteActionById creates a handler for site-scoped actions.
-func handleSiteActionById(
+func handleSiteActionById[T any](
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context, siteId int64) (any, *apperror.AppError),
+	fn func(ctx context.Context, siteId int64) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isSiteServiceMissing(w) {
@@ -153,9 +157,9 @@ func handleSiteActionById(
 }
 
 // handleSiteActionByIdWithQuery creates a handler that passes query string to the action.
-func handleSiteActionByIdWithQuery(
+func handleSiteActionByIdWithQuery[T any](
 	errCode apperror.ErrorCode,
-	fn func(ctx context.Context, siteId int64, query string) (any, *apperror.AppError),
+	fn func(ctx context.Context, siteId int64, query string) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isSiteServiceMissing(w) {
@@ -194,18 +198,18 @@ func handleSiteActionByIdWithQuery(
 
 // noArgsConfig bundles parameters for no-args handler factories.
 type noArgsConfig struct {
-	GetService  func() any
+	IsReady     func() bool
 	ServiceName string
 	ErrCode     apperror.ErrorCode
 }
 
-// handleNoArgs creates a handler: isServiceMissing → fn(ctx) → respondSuccess
-func handleNoArgs(
+// handleNoArgs creates a handler: isServiceNotReady → fn(ctx) → respondSuccess
+func handleNoArgs[T any](
 	cfg noArgsConfig,
-	fn func(ctx context.Context) (any, *apperror.AppError),
+	fn func(ctx context.Context) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceNotReady(w, cfg.IsReady, cfg.ServiceName) {
 			return
 		}
 
@@ -227,20 +231,20 @@ func handleNoArgs(
 
 // twoIdConfig bundles parameters for two-ID handler factories.
 type twoIdConfig struct {
-	GetService  func() any
+	IsReady     func() bool
 	ServiceName string
 	Param1Name  string
 	Param2Name  string
 	ErrCode     apperror.ErrorCode
 }
 
-// handleTwoIds creates a handler: isServiceMissing → parseId(param1) → parseId(param2) → fn(ctx, id1, id2) → respondSuccess
-func handleTwoIds(
+// handleTwoIds creates a handler: isServiceNotReady → parseId(param1) → parseId(param2) → fn(ctx, id1, id2) → respondSuccess
+func handleTwoIds[T any](
 	cfg twoIdConfig,
-	fn func(ctx context.Context, id1, id2 int64) (any, *apperror.AppError),
+	fn func(ctx context.Context, id1, id2 int64) (T, *apperror.AppError),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isServiceMissing(w, cfg.GetService(), cfg.ServiceName) {
+		if isServiceNotReady(w, cfg.IsReady, cfg.ServiceName) {
 			return
 		}
 
