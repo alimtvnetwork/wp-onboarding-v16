@@ -153,7 +153,45 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
     return { hasErrors, totalLines, totalSize, errorFiles, files: logsStatus.files };
   })();
 
-  if (isLoading) {
+  const handleClearAllLogs = async () => {
+    if (!confirm("Clear all logs for both plugins (Riseup Asia + QUpload)?")) return;
+    setIsClearingLogs(true);
+    try {
+      const response = await api.clearAllRemoteLogs(site.id);
+      const data = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-logs/clear-all`, method: "POST" });
+      const rOk = data.riseup?.cleared;
+      const qOk = data.qupload?.cleared;
+      if (rOk && qOk) {
+        toast.success("All logs cleared");
+      } else {
+        const failures: string[] = [];
+        if (!rOk) failures.push(`Riseup: ${data.riseup?.error || "failed"}`);
+        if (!qOk) failures.push(`QUpload: ${data.qupload?.error || "failed"}`);
+        toast.warning(`Partial clear: ${failures.join("; ")}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["sites", site.id, "remote-logs-status"] });
+    } catch (err) {
+      const { captureError, captureException, openErrorModal } = useErrorStore.getState();
+      if (isApiClientError(err)) {
+        const captured = captureError(err.apiError, {
+          endpoint: err.meta.requestUrl,
+          method: err.meta.method,
+          context: { source: "SiteHealthSummaryPanel.clearLogs" },
+        });
+        openErrorModal(captured);
+      } else {
+        const captured = captureException(err, {
+          source: "SiteHealthSummaryPanel.clearLogs",
+          endpoint: `/sites/${site.id}/remote-logs/clear-all`,
+          method: "POST",
+        });
+        openErrorModal(captured);
+      }
+    } finally {
+      setIsClearingLogs(false);
+    }
+  };
+
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
