@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import type { LogEntryDetails } from "@/lib/api";
+import { isApiClientError } from "@/lib/api";
 import { CheckCircle, XCircle, Loader2, Upload, Copy } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { DeployStatus } from "@/lib/constants";
+import { useErrorStore } from "@/stores/errorStore";
 
 interface DeploySiteResult {
   siteId: number;
