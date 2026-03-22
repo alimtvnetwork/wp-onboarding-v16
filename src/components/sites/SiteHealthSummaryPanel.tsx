@@ -24,8 +24,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { api, Site, RemotePlugin } from "@/lib/api";
-import type { SiteHealthSummaryResponse, RemoteLogsStatusResponse } from "@/lib/api";
-import { resolvePublicUrl } from "@/lib/endpoints";
+import type { SiteHealthSummaryResponse } from "@/lib/api";
+import type { RemoteLogsStatusResponse } from "@/lib/api/types";
 
 interface SiteHealthSummaryPanelProps {
   site: Site;
