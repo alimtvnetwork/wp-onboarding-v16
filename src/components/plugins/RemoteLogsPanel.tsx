@@ -237,18 +237,18 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
               <>
                 {hasFiles ? (
                   <div className="space-y-1.5">
-                    {status.Files.map((file) => (
+                    {status.files.map((file) => (
                       <div
-                        key={file.Name}
+                        key={file.name}
                         className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
                       >
                         <span className="font-mono text-xs text-foreground">
-                          {file.Name}
+                          {file.name}
                         </span>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{file.LineCount.toLocaleString()} lines</span>
+                          <span>{file.lineCount.toLocaleString()} lines</span>
                           <Badge variant="outline" className="text-xs">
-                            {formatBytes(file.SizeBytes)}
+                            {formatBytes(file.sizeBytes)}
                           </Badge>
                         </div>
                       </div>
