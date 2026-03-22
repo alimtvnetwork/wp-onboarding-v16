@@ -126,21 +126,36 @@ Both packages already use proper generics.
 ### Phase G-2: Response & Envelope Layer ✅ Already Done  
 Builder functions already generic. `Response.Results any` is a justified exception.
 
-### Phase G-3: Handler Factory + Service Getters
-- Replace `GetService func() any` with typed interface per domain
-- Replace `func(ctx) (any, *AppError)` with typed handler functions
+### Phase G-3: Handler Factory + Service Getters ✅ Done (2026-03-22)
+- Replaced `GetService func() any` → `IsReady func() bool` in all config structs
+- Made all 6 factory functions generic `[T any]` — callbacks now return `(T, *AppError)`
+- Replaced `func() any` legacy wrappers with `func() bool` readiness checks
+- ~25 `any` eliminated from factory infrastructure
+- See `.lovable/plans/handler-factory-generic-refactoring.md` for details
 
 ### Phase G-4: Adapter Interfaces + Service Returns
 - Define typed return structs for Health, Logs, Settings, Users
 - Replace all `(any, *AppError)` returns with `(*TypedStruct, *AppError)`
+- This will automatically make the generic factory infer typed T parameters
 
 ### Phase G-5: Service Layer map[string]any → Typed Structs
 - Create request/response structs for UpdateRemoteSiteSettings, etc.
 
-### Phase G-6: WebSocket + Logger
-- Type the broadcast payload with a `BroadcastPayload` interface
-- Type logger format args
+### Phase G-6: WebSocket + Logger ✅ Done
+- Typed broadcast payload with `BroadcastPayload` interface
+- Typed logger format args
 
 ---
+
+### Updated Violation Count (post Phase G-3)
+
+| Category | Count | Priority |
+|----------|-------|----------|
+| Handler factory infrastructure `any` | ~~25~~ **0** | ✅ Done |
+| Adapter interface `(any, *AppError)` returns | ~27 | 🔴 High (Phase G-4) |
+| Service methods returning `any` | ~40 | 🔴 High (Phase G-4) |
+| `map[string]any` in service params | ~15 | 🟡 Medium (Phase G-5) |
+| `any` in handler callbacks (from service layer) | ~22 | 🟡 Resolves with G-4 |
+| **Remaining actionable violations** | **~104** | |
 
 *Reference: `.lovable/plan.md` Phase G (Type Safety)*
