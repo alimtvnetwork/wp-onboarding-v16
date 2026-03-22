@@ -104,9 +104,9 @@ export function RemoteLogsPanel({ siteId, siteName }: RemoteLogsPanelProps) {
       const data: RemoteLogsClearResponse | undefined = response.data;
 
       if (data) {
-        setClearToken(data.Token);
-        setClearExpiry(data.ExpiresIn);
-        toast.info("Clear token issued — confirm within " + data.ExpiresIn + "s");
+        setClearToken(data.token);
+        setClearExpiry(data.expiresIn);
+        toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
       }
     } catch {
       toast.error("Failed to initiate log clearing");
