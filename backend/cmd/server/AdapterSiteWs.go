@@ -41,7 +41,25 @@ func (a *SiteWSHubAdapter) BroadcastRemotePluginLogWithSession(input site.Remote
 	})
 }
 
-// BroadcastWithSession delegates to ws.Hub.BroadcastWithSession.
-func (a *SiteWSHubAdapter) BroadcastWithSession(eventType string, data any, sessionId string) {
-	a.hub.BroadcastWithSession(eventType, data, sessionId)
+// BroadcastRemoteActionStarted converts site event to ws typed broadcast.
+func (a *SiteWSHubAdapter) BroadcastRemoteActionStarted(data site.RemoteActionStartedEvent, sessionId string) {
+	a.hub.BroadcastRemoteActionStarted(ws.RemoteActionStartedData{
+		SiteId:     data.SiteId,
+		SiteName:   data.SiteName,
+		Action:     data.Action,
+		PluginSlug: data.PluginSlug,
+	}, sessionId)
+}
+
+// BroadcastRemoteActionComplete converts site event to ws typed broadcast.
+func (a *SiteWSHubAdapter) BroadcastRemoteActionComplete(data site.RemoteActionCompleteEvent, sessionId string) {
+	a.hub.BroadcastRemoteActionComplete(ws.RemoteActionCompleteData{
+		SiteId:     data.SiteId,
+		SiteName:   data.SiteName,
+		Action:     data.Action,
+		PluginSlug: data.PluginSlug,
+		IsSuccess:  data.IsSuccess,
+		Error:      data.Error,
+		DurationMs: data.DurationMs,
+	}, sessionId)
 }
