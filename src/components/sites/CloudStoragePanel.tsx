@@ -358,7 +358,7 @@ function AddAccountForm({ onClose, onCreate, isCreating }: AddAccountFormProps) 
 
     for (const field of config.fields) {
       const val = fields[field.key]?.trim();
-      if (val) (body as Record<string, unknown>)[field.key] = val;
+      if (val) (body as unknown as Record<string, unknown>)[field.key] = val;
     }
 
     try {
