@@ -1,6 +1,6 @@
 # Master Roadmap & Backlog
 
-> Updated: 2026-03-18
+> Updated: 2026-03-22
 
 ---
 
@@ -57,25 +57,11 @@
 
 ### ✅ Phase G: Go Type Safety — `any` Elimination (Complete)
 - **Standard:** `any` prohibited in production Go except justified exceptions
-- **Exceptions:** generic constraints `[T any]`, logger `keyvals ...any`, `Message.Data any`, PHP envelope unwrap, `json.Marshal`-style body params, test files
 - **All 6 sub-phases complete** (G-1 through G-6)
 - Spec: `spec/05-golang-standards/04-type-safety-no-any.md`
-- Issue: `spec/02-app-issues/38-go-type-safety-any-elimination.md` — **Resolved**
-
-#### Phase G Sub-tasks
-
-| # | Task | Scope | Files | Status |
-|---|------|-------|-------|--------|
-| G-1 | Generic `Result[T]` in `pkg/apperror` + `pkg/dbutil` | Foundation | ~12 | ✅ Already compliant |
-| G-2 | Typed Response & Envelope structs | Response layer | ~5 | ✅ Already compliant |
-| G-3 | Typed Service Getters + Factory analysis | Handler infra | ~2 | ✅ Done (typed getters added; factory `any` justified as internal pattern) |
-| G-4 | Typed Adapter interfaces + Service returns | Adapter layer | ~30 | ✅ Done (User mgmt fully typed; Logs/Settings/Health justified `any` — PHP JSON) |
-| G-5 | Service layer typed structs (`map[string]any` → structs) | Services | ~15 | ✅ Done (clearLogs typed; PHP-proxied `any` justified — envelope unwrap) |
-| G-6 | WebSocket + Logger typing | Infra | ~8 | ✅ Done (untyped `BroadcastWithSession(any)` eliminated; typed `BroadcastRemoteActionStarted/Complete`; Logger `keyvals ...any` justified — slog pattern; `Message.Data any` justified — runtime JSON container; `[T any]` constraints correct Go generics) |
 
 ### ✅ Phase H-1: Licensing Admin Dashboard
 - React dashboard with license CRUD, audit log viewer, health badge
-- Standalone API client targeting licensing server via `VITE_LICENSING_URL`
 
 ---
 
@@ -89,17 +75,31 @@
 | A-2 | Verify EnvelopeBuilder fallback fix | 🔴 Critical | A-1 | Blocked |
 | A-3 | Verify preflight check works on remote | 🟡 Medium | A-1 | Blocked |
 
-**Expected outputs:** Confirmed working uploads; no 500 errors; `-check` passes all sites
-**Acceptance criteria:** All remote sites on v2.17.0+; `-check` returns green for all endpoints
-
 ---
 
-### Phase H: Future Features
+### 🔴 Phase J: Bootstrap Deploy Pipeline Rewrite (2026-03-22)
+
+**Issue:** `spec/02-app-issues/40-bootstrap-deploy-pipeline-rewrite.md`
+
+**Problem:** Go bootstrap deployer has fundamental architectural flaws: self-update causes 500 errors, ZIP created per-site, sequential processing, no cross-upload strategy, no pre-flight, no progress visualization, missing delegated error logs.
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| H-2 | Publish analytics / history reporting | 🟢 Low | — | ✅ Complete |
-| H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | ✅ Complete |
+| J-1 | Rewrite Go bootstrap — ZIP once, pass to all sites | 🔴 Critical | — | Todo |
+| J-2 | Implement cross-upload strategy (QUpload→Riseup, Riseup→QUpload) | 🔴 Critical | J-1 | Todo |
+| J-3 | Parallel site uploads with goroutines | 🟡 High | J-1, J-2 | Todo |
+| J-4 | Pre-flight endpoint check UI (like PowerShell -pas) | 🟡 High | — | Todo |
+| J-5 | Phased progress UI in deploy dialog (ZIP→Upload→Summary) | 🟡 High | J-1, J-3 | Todo |
+| J-6 | Delegated error logs in error modal (remote 500 response bodies) | 🟡 High | — | Todo |
+| J-7 | Retry limiting — max 1 attempt per plugin per site | 🟢 Medium | J-2 | Todo |
+
+**Acceptance criteria:**
+- Deploy uses cross-upload: QUpload endpoint for Riseup Asia, Riseup Asia endpoint for QUpload
+- ZIP created once, reused for all sites
+- Sites uploaded in parallel
+- Pre-flight shows version comparison before deploy
+- 500 errors include remote response body in error modal delegated tab
+- No infinite retry loops
 
 ---
 
@@ -112,11 +112,14 @@
 | I-3 | PowerShell -d skip PHP propagation if no changes | 🟢 Medium | — | ✅ Done |
 | I-4 | Redeploy to fix plugin_slug error (v2.30.0) | 🟡 High | User runs deploy | Blocked |
 
-**Specs:**
-- `spec/02-app-issues/34-double-envelope-wrapping-health-logs.md`
-- `spec/02-app-issues/35-sitecard-button-layout-redesign.md`
-- `spec/02-app-issues/36-plugin-slug-still-missing-v2.30.md`
-- `spec/02-app-issues/37-powershell-deploy-skip-php-propagation.md`
+---
+
+### Phase H: Future Features
+
+| # | Task | Priority | Dependencies | Status |
+|---|------|----------|------------|--------|
+| H-2 | Publish analytics / history reporting | 🟢 Low | — | ✅ Complete |
+| H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | ✅ Complete |
 
 ---
 
@@ -126,11 +129,13 @@
 
 **Recommended implementation order:**
 
-1. **I-1: Fix double-envelope wrapping** — 🔴 Critical, unblocked, fixes Health/Logs/Settings panels
-2. **I-2: Redesign SiteCard buttons** — 🟡 High, unblocked, UX improvement
-3. **I-3: PowerShell -d optimization** — 🟢 Medium, unblocked
-4. **H-3: User Management** — in progress; needs route/sidebar wiring
-5. **Phase A / I-4: Deploy & Verify** — blocked on user running `.\run.ps1 -d`
+1. **J-1: Rewrite Go bootstrap — ZIP once** — 🔴 Critical, unblocked
+2. **J-2: Cross-upload strategy** — 🔴 Critical, depends on J-1
+3. **J-3: Parallel site uploads** — 🟡 High, depends on J-1 + J-2
+4. **J-4: Pre-flight endpoint check UI** — 🟡 High, unblocked (can parallelize with J-1)
+5. **J-5: Phased progress UI** — 🟡 High, depends on J-1 + J-3
+6. **J-6: Delegated error logs** — 🟡 High, unblocked (can parallelize)
+7. **J-7: Retry limiting** — 🟢 Medium, depends on J-2
 
 **Blocked (needs user action):**
 - Phase A: All deployment tasks
