@@ -104,6 +104,8 @@ The `-v` flag shows raw JSON request bodies and response bodies for all REST API
 | `-cl -v`, `-cla -v` | Pre-clear: GET /logs/retrieve (line counts + sizes), then DELETE /logs/clear and POST /logs/clear/confirm request+response |
 | `-cas -v`, `-purge -v` | Pre-clear retrieval + all log clear + audit clear request+response |
 | `-pas -v` | Raw /status response JSON |
+| `-ss -v` | GET /site-settings request+response JSON |
+| `-ss -set ... -v` | PUT /site-settings request body + response JSON |
 
 ## Deployment Order (First-Time)
 
