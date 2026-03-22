@@ -129,12 +129,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         setClearExpiry(data.expiresIn);
         toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
       }
-    } catch {
-      toast.error("Failed to initiate log clearing");
-    } finally {
-      setIsClearing(false);
-    }
-  };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to initiate log clearing";
+      captureError(
+        { code: "E2010", message: msg, timestamp: new Date().toISOString() },
+        { endpoint: `/sites/${siteId}/remote-logs/clear`, method: "DELETE" }
+      );
 
   const handleClearConfirm = async () => {
     if (!clearToken) return;
