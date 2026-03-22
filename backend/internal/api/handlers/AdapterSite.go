@@ -329,6 +329,10 @@ func (a *SiteServiceAdapter) ClearAllRemoteLogs(ctx context.Context, siteId int6
 	return a.Service.ClearAllRemoteLogs(ctx, siteId)
 }
 
+func (a *SiteServiceAdapter) RetrieveRemoteLogs(ctx context.Context, siteId int64, params site.LogsRetrieveParams) (*wordpress.LogsRetrieveResult, *apperror.AppError) {
+	return a.Service.RetrieveRemoteLogs(ctx, siteId, params)
+}
+
 func (a *SiteServiceAdapter) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 	return a.Service.GetRemoteSiteSettings(ctx, siteId)
 }
