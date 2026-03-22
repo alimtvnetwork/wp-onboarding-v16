@@ -107,6 +107,5 @@ func buildRetrieveQuery(p LogsRetrieveParams) string {
 		q.Set("max_lines", strconv.Itoa(p.MaxLines))
 	}
 
-	_ = fmt.Sprint // ensure fmt is used
 	return q.Encode()
 }
