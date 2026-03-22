@@ -111,10 +111,20 @@ type LogsEmailResultData struct {
 
 // LogsRotationStatusData is the typed response from the PHP logs rotation status endpoint.
 type LogsRotationStatusData struct {
-	IsEnabled    bool   `json:"isEnabled"`
-	MaxSizeBytes int64  `json:"maxSizeBytes"`
-	MaxFiles     int    `json:"maxFiles"`
-	Interval     string `json:"interval"`
+	IsEnabled       bool   `json:"isEnabled"`
+	MaxSizeBytes    int64  `json:"maxSizeBytes"`
+	MaxFiles        int    `json:"maxFiles"`
+	Interval        string `json:"interval"`
+	PluginOutdated  bool   `json:"pluginOutdated,omitempty"`
+	OutdatedMessage string `json:"outdatedMessage,omitempty"`
+}
+
+// BuildOutdatedLogsRotationStatus returns a graceful fallback when the remote plugin lacks the logs rotation endpoint.
+func BuildOutdatedLogsRotationStatus() *LogsRotationStatusData {
+	return &LogsRotationStatusData{
+		PluginOutdated:  true,
+		OutdatedMessage: "Remote plugin is outdated — the /logs/rotation-status endpoint is not available. Please update the plugin using Deploy Uploader.",
+	}
 }
 
 // BuildOutdatedLogsStatus returns a graceful fallback LogsStatusData
