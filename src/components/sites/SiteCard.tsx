@@ -219,7 +219,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   };
 
   return (
-    <Card className="group transition-colors hover:bg-secondary/30">
+    <Card className="group relative transition-all duration-300 hover:shadow-[0_0_20px_-4px_hsl(var(--primary)/0.4)] hover:border-primary/50 hover:bg-gradient-to-br hover:from-primary/5 hover:via-transparent hover:to-accent/10 hover:scale-[1.01]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div
@@ -227,8 +227,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             onClick={() => onEdit(site)}
             title="Click to edit"
           >
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-              <Globe className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_12px_-2px_hsl(var(--primary)/0.5)]">
+              <Globe className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base truncate flex items-center gap-2">
@@ -344,7 +344,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
-        <div className="flex gap-1 pt-2 border-t">
+        <div className="flex gap-1 pt-2 border-t transition-colors duration-300 group-hover:border-primary/20">
           <Button
             variant="ghost"
             size="sm"
