@@ -121,11 +121,11 @@ func bootstrapSingleSiteWithZip(r *http.Request, siteId int64, zipPath string) B
 // buildBootstrapFailure constructs a failure result for a single bootstrap attempt.
 // Extracts remote response body from the ApiError cause chain for delegated error diagnostics.
 func buildBootstrapFailure(r *http.Request, siteId int64, err error) BulkBootstrapSiteResult {
-	result := Services.SiteService.GetById(r.Context(), siteId)
+	siteResult, siteErr := Services.SiteService.GetById(r.Context(), siteId)
 
 	siteName := ""
-	if !result.HasError() {
-		siteName = result.Value().Name
+	if siteErr == nil && siteResult != nil {
+		siteName = siteResult.Name
 	}
 
 	failResult := BulkBootstrapSiteResult{
