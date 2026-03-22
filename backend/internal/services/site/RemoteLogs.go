@@ -65,7 +65,7 @@ func (s *Service) RequestRemoteLogsClear(ctx context.Context, siteId int64) (any
 		return nil, result.AppError()
 	}
 
-	return result.Value(), nil
+	return wordpress.UnwrapPhpEnvelope(result.Value()), nil
 }
 
 // ConfirmRemoteLogsClear executes Step 2 with the provided token.
