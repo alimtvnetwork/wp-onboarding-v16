@@ -83,7 +83,7 @@ func (s *Service) GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) 
 	type healthProbeResult struct {
 		data *wordpress.HealthSummaryData
 	}
-	healthCh := make(chan healthProbeResult, len(namespaces))
+	healthCh := make(chan healthProbeResult, len(allNamespaces))
 
 	for _, ns := range namespaces {
 		wg.Add(1)
