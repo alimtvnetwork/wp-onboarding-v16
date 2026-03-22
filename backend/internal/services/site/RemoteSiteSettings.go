@@ -13,59 +13,99 @@ import (
 )
 
 // GetRemoteSiteSettings fetches site settings from a remote WordPress site.
+// Probes all known namespaces in parallel — no sequential ResolveNamespace() overhead.
 func (s *Service) GetRemoteSiteSettings(ctx context.Context, siteId int64) (*wordpress.SiteSettingsData, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteSettings)
+	type probeResult struct {
+		data *wordpress.SiteSettingsData
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsData]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Get,
-		Endpoint:  endpoint,
-		Operation: operationtype.GetSiteSettings,
-	})
-	if result.HasError() {
-		if isRemote404(result.AppError()) {
-			return wordpress.BuildOutdatedSiteSettings(), nil
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.SiteSettings)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsData]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Get,
+				Endpoint:  endpoint,
+				Operation: operationtype.GetSiteSettings,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
+	}
+
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
 		}
-		return nil, result.AppError()
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
-	}
-
-	return &data, nil
+	return wordpress.BuildOutdatedSiteSettings(), nil
 }
 
 // UpdateRemoteSiteSettings updates site settings on a remote WordPress site.
+// Probes all known namespaces in parallel — no sequential ResolveNamespace() overhead.
 func (s *Service) UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
 		return nil, appErr
 	}
 
-	endpoint := wordpress.BuildNamespacedEndpoint(client.ResolveNamespace(), ep.SiteSettings)
+	type probeResult struct {
+		data   *wordpress.SiteSettingsUpdateResult
+		appErr *apperror.AppError
+	}
+	ch := make(chan probeResult, len(allNamespaces))
+	var wg sync.WaitGroup
 
-	result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsUpdateResult]](client, wordpress.ApiCallInput{
-		Method:    httpmethod.Put,
-		Endpoint:  endpoint,
-		Body:      body,
-		Operation: operationtype.UpdateSiteSettings,
-	})
-	if result.HasError() {
-		return nil, result.AppError()
+	for _, ns := range allNamespaces {
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
+			endpoint := wordpress.BuildNamespacedEndpoint(namespace, ep.SiteSettings)
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.SiteSettingsUpdateResult]](client, wordpress.ApiCallInput{
+				Method:    httpmethod.Put,
+				Endpoint:  endpoint,
+				Body:      body,
+				Operation: operationtype.UpdateSiteSettings,
+			})
+			if result.HasError() {
+				return
+			}
+			data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				return
+			}
+			ch <- probeResult{data: &data}
+		}(ns)
 	}
 
-	data, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-	if unwrapErr != nil {
-		return nil, unwrapErr
+	wg.Wait()
+	close(ch)
+
+	for probe := range ch {
+		if probe.data != nil {
+			return probe.data, nil
+		}
 	}
 
-	return &data, nil
+	return nil, apperror.New(apperror.ErrWPConnection, "site settings update failed on all namespaces")
 }
 
 // GetRemoteSiteHealthSummary fetches health summary from a remote WordPress site.
