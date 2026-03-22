@@ -36,6 +36,7 @@ import type {
   RemoteLogsClearResponse,
 } from "@/lib/api/types";
 import { toast } from "sonner";
+import { useErrorStore } from "@/stores/errorStore";
 
 interface RemoteLogsPanelProps {
   siteId: number;
