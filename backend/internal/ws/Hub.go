@@ -182,6 +182,7 @@ const (
 	EventError      = "error"
 	EventConnection = "connection"
 	EventLog        = "log"
+	EventPreflightSiteResult = "preflightSiteResult"
 )
 
 // NewHub creates a new Hub instance

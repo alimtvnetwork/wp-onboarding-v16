@@ -150,3 +150,8 @@ func (h *Hub) BroadcastRemoteActionStarted(data RemoteActionStartedData, session
 func (h *Hub) BroadcastRemoteActionComplete(data RemoteActionCompleteData, sessionId string) {
 	BroadcastTypedWithSession(h, EventRemotePluginActionComplete, data, sessionId)
 }
+
+// BroadcastPreflightSiteResult sends a single site's preflight result immediately.
+func (h *Hub) BroadcastPreflightSiteResult(data PreflightSiteResultData) {
+	Broadcast(h, EventPreflightSiteResult, data)
+}

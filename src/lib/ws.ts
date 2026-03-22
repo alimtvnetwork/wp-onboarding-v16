@@ -239,6 +239,7 @@ export const WS_EVENTS = {
   SNAPSHOT_PROGRESS: "snapshotProgress",
   SNAPSHOT_TABLE_COMPLETE: "snapshotTableComplete",
   SNAPSHOT_COMPLETE: "snapshotComplete",
+  PREFLIGHT_SITE_RESULT: "preflightSiteResult",
   ERROR: "error",
   CONNECTION: "connection",
   LOG: "log",
