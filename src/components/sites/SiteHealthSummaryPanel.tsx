@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,12 @@ import {
   FileText,
   AlertTriangle,
   ArrowRight,
+  Trash2,
 } from "lucide-react";
-import { api, Site, RemotePlugin } from "@/lib/api";
+import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
+import { isApiClientError } from "@/lib/api";
+import { useErrorStore } from "@/stores/errorStore";
+import { toast } from "sonner";
 import type { SiteHealthSummaryResponse } from "@/lib/api";
 import type { RemoteLogsStatusResponse } from "@/lib/api/types";
 
@@ -33,6 +38,8 @@ interface SiteHealthSummaryPanelProps {
 }
 
 export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelProps) {
+  const queryClient = useQueryClient();
+  const [isClearingLogs, setIsClearingLogs] = useState(false);
   const queryKey = ["sites", site.id, "site-health-summary"];
 
   const { data: health, isLoading, error, refetch, isFetching } = useQuery({
@@ -145,6 +152,45 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
     const totalSize = logsStatus.totalSizeBytes;
     return { hasErrors, totalLines, totalSize, errorFiles, files: logsStatus.files };
   })();
+
+  const handleClearAllLogs = async () => {
+    if (!confirm("Clear all logs for both plugins (Riseup Asia + QUpload)?")) return;
+    setIsClearingLogs(true);
+    try {
+      const response = await api.clearAllRemoteLogs(site.id);
+      const data = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-logs/clear-all`, method: "POST" });
+      const rOk = data.riseup?.cleared;
+      const qOk = data.qupload?.cleared;
+      if (rOk && qOk) {
+        toast.success("All logs cleared");
+      } else {
+        const failures: string[] = [];
+        if (!rOk) failures.push(`Riseup: ${data.riseup?.error || "failed"}`);
+        if (!qOk) failures.push(`QUpload: ${data.qupload?.error || "failed"}`);
+        toast.warning(`Partial clear: ${failures.join("; ")}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["sites", site.id, "remote-logs-status"] });
+    } catch (err) {
+      const { captureError, captureException, openErrorModal } = useErrorStore.getState();
+      if (isApiClientError(err)) {
+        const captured = captureError(err.apiError, {
+          endpoint: err.meta.requestUrl,
+          method: err.meta.method,
+          context: { source: "SiteHealthSummaryPanel.clearLogs" },
+        });
+        openErrorModal(captured);
+      } else {
+        const captured = captureException(err, {
+          source: "SiteHealthSummaryPanel.clearLogs",
+          endpoint: `/sites/${site.id}/remote-logs/clear-all`,
+          method: "POST",
+        });
+        openErrorModal(captured);
+      }
+    } finally {
+      setIsClearingLogs(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -303,6 +349,24 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
                         : `${(logsSummary.totalSize / 1048576).toFixed(1)}MB`}
                     {" total"}
                   </span>
+                </div>
+              )}
+              {logsSummary.totalLines > 0 && (
+                <div className="mt-2 pt-2 border-t">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs gap-1.5 w-full"
+                    onClick={handleClearAllLogs}
+                    disabled={isClearingLogs}
+                  >
+                    {isClearingLogs ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                    Clear All Logs
+                  </Button>
                 </div>
               )}
             </CardContent>
