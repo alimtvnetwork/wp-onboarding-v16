@@ -48,7 +48,7 @@ interface CloudStorageAccountCardProps {
   onDelete: (id: number) => void;
   onTest: (id: number) => void;
   isTesting: boolean;
-  testResult?: { Success: boolean; Message?: string; Error?: string } | null;
+  testResult?: { success: boolean; message?: string; error?: string } | null;
 }
 
 export function CloudStorageAccountCard({
