@@ -116,6 +116,7 @@ $ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
 . (Join-Path $ModulesDir "mode-check.ps1")
 . (Join-Path $ModulesDir "mode-plugin-status.ps1")
 . (Join-Path $ModulesDir "mode-site-settings.ps1")
+. (Join-Path $ModulesDir "deploy-tracker.ps1")
 
 # ============================================================================
 # TEST MODE: Run Go tests and exit early
@@ -477,20 +478,31 @@ if ($deploy) {
     # Phase 1: Git pull
     Invoke-GitPull
 
-    # Phase 1b: Check if wp-plugins/ changed — skip PHP propagation if not
-    # See: spec/02-app-issues/37-powershell-deploy-skip-php-propagation.md
-    $wpPluginsChanged = $true
-    try {
-        $changedFiles = git diff --name-only HEAD@{1} HEAD -- "wp-plugins/" 2>$null
-        if ($LASTEXITCODE -eq 0 -and -not $changedFiles) {
-            $wpPluginsChanged = $false
-            Write-Host "[Deploy] No wp-plugins/ changes detected — skipping PHP upload & status" -ForegroundColor Green
-        } elseif ($changedFiles) {
-            $changeCount = ($changedFiles | Measure-Object).Count
-            Write-Host "[Deploy] $changeCount file(s) changed in wp-plugins/ — propagating to sites" -ForegroundColor Yellow
+    # Phase 1b: Per-plugin PHP change detection using .deployed/ tracker
+    # Replaces the old git diff HEAD@{1} approach with persistent SHA tracking
+    Write-Host "[Deploy] Checking per-plugin PHP changes..." -ForegroundColor Cyan
+
+    $pluginRegistry = @{}
+    $skipList = @()
+    if ($Config.wpPlugins -and $Config.wpPlugins.plugins) {
+        # Convert PSCustomObject to hashtable for iteration
+        $Config.wpPlugins.plugins.PSObject.Properties | ForEach-Object {
+            $pluginRegistry[$_.Name] = $_.Value
         }
-    } catch {
-        Write-Host "[Deploy] Could not check git diff, proceeding with full deploy" -ForegroundColor DarkGray
+    }
+    if ($Config.wpPlugins -and $Config.wpPlugins.skipPlugins) {
+        $skipList = @($Config.wpPlugins.skipPlugins)
+    }
+
+    $pluginsNeedingDeploy = @(Get-PluginsNeedingDeploy -PluginRegistry $pluginRegistry -SkipList $skipList)
+    $wpPluginsChanged = $pluginsNeedingDeploy.Count -gt 0
+
+    if (-not $wpPluginsChanged) {
+        Write-Host ""
+        Write-Host "[Deploy] All plugins up to date — skipping PHP upload & status" -ForegroundColor Green
+    } else {
+        Write-Host ""
+        Write-Host "[Deploy] $($pluginsNeedingDeploy.Count) plugin(s) need deployment: $($pluginsNeedingDeploy -join ', ')" -ForegroundColor Yellow
     }
 
     if ($wpPluginsChanged) {
@@ -502,6 +514,17 @@ if ($deploy) {
         Write-Host ""
         $script:uasExitCode = 0
         Invoke-UploadAllSitesMode
+
+        # Phase 2b: Record successful deploy state for each plugin
+        foreach ($slug in $pluginsNeedingDeploy) {
+            $pluginVersion = ""
+            try {
+                $versionJson = Get-Content (Join-Path $ScriptDir "public" "version.json") -Raw | ConvertFrom-Json
+                if ($slug -eq "qupload") { $pluginVersion = $versionJson.quploadVersion }
+                else { $pluginVersion = $versionJson.wpPluginVersion }
+            } catch {}
+            Save-PluginDeployState -PluginSlug $slug -Version $pluginVersion
+        }
 
         # Phase 3: Plugin status check
         Write-Host ""
