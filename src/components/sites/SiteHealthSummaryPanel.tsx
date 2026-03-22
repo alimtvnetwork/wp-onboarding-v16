@@ -19,7 +19,7 @@ import {
   Camera,
   Archive,
 } from "lucide-react";
-import { api, Site, requireSuccess } from "@/lib/api";
+import { api, Site } from "@/lib/api";
 import type { SiteHealthSummaryResponse } from "@/lib/api";
 
 interface SiteHealthSummaryPanelProps {
