@@ -103,7 +103,23 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" });
       setStatus(data);
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs`, "GET");
+      const message = err instanceof Error ? err.message.toLowerCase() : "";
+      const isOutdatedLogsEndpoint =
+        message.includes("/logs/status") &&
+        (message.includes("status 404") || message.includes("not found"));
+
+      if (isOutdatedLogsEndpoint) {
+        setStatus({
+          files: [],
+          totalSizeBytes: 0,
+          archiveCount: 0,
+          pluginOutdated: true,
+          outdatedMessage:
+            "Remote plugin is outdated — the /logs/status endpoint is not available. Please update the plugin using Deploy Uploader.",
+        });
+      } else {
+        surfaceError(err, `/sites/${siteId}/remote-logs`, "GET");
+      }
     } finally {
       setIsLoading(false);
     }
