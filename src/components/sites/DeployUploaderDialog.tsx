@@ -529,13 +529,18 @@ export function DeployUploaderDialog({
                         ) : (
                           <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
                         )}
-                        <span className={`${
+                        <span className={`flex-1 ${
                           s === "done" ? "text-muted-foreground line-through" :
                           s === "active" ? "text-foreground font-medium" :
                           "text-muted-foreground/60"
                         }`}>
                           {task.icon} {task.label}
                         </span>
+                        {(s === "done" || s === "active") && getSubtaskElapsed(task.key) && (
+                          <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">
+                            {getSubtaskElapsed(task.key)}
+                          </span>
+                        )}
                         {s === "done" && (
                           <span className="text-xs text-primary font-mono">✓</span>
                         )}
