@@ -32,6 +32,23 @@ interface DeploySiteResult {
   remoteUrl?: string;
 }
 
+interface PreflightPluginStatus {
+  name?: string;
+  available: boolean;
+  namespace?: string;
+  status?: string;
+  httpStatus?: number;
+  message?: string;
+  version?: string;
+  wpVersion?: string;
+  phpVersion?: string;
+  pluginName?: string;
+  apiNamespace?: string;
+  serverTime?: string;
+  dbAvailable?: string;
+  remoteSiteUrl?: string;
+}
+
 interface PreflightSiteResult {
   siteId: number;
   siteName: string;
@@ -41,6 +58,8 @@ interface PreflightSiteResult {
   riseupAsiaNamespace?: string;
   qUploadAvailable: boolean;
   qUploadNamespace?: string;
+  riseupAsia?: PreflightPluginStatus;
+  qUpload?: PreflightPluginStatus;
   error?: string;
 }
 
