@@ -75,7 +75,7 @@ interface PreflightSiteResult {
   error?: string;
 }
 
-type DeployPhase = "preflight" | "zipping" | "uploading" | "complete";
+type DeployPhase = "preflight" | "zipping" | "uploading" | "verifying" | "complete";
 
 interface DeployUploaderDialogProps {
   open: boolean;
