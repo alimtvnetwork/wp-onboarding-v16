@@ -15,7 +15,7 @@ import { isApiClientError } from "@/lib/api";
 import {
   CheckCircle, XCircle, Loader2, Upload, Copy, Shield, AlertTriangle,
   ChevronDown, ChevronRight, Database, Globe, Server, Clock, FileWarning,
-  ExternalLink,
+  ExternalLink, RefreshCw,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -85,6 +85,9 @@ interface DeployUploaderDialogProps {
   title?: string;
 }
 
+// Module-level cache so reopening dialog shows previous results
+let preflightCache: PreflightSiteResult[] = [];
+
 export function DeployUploaderDialog({
   open,
   onOpenChange,
@@ -96,7 +99,7 @@ export function DeployUploaderDialog({
   const [status, setStatus] = useState<DeployStatus>(DeployStatus.Idle);
   const [results, setResults] = useState<DeploySiteResult[]>([]);
   const [currentTab, setCurrentTab] = useState("progress");
-  const [preflightResults, setPreflightResults] = useState<PreflightSiteResult[]>([]);
+  const [preflightResults, setPreflightResults] = useState<PreflightSiteResult[]>(preflightCache);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
@@ -132,17 +135,23 @@ export function DeployUploaderDialog({
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // Run pre-flight when dialog opens
+  // On open: use cache if available, run preflight in background
   useEffect(() => {
     if (open && sites.length > 0) {
       setLogs([]);
       setResults([]);
       setStatus(DeployStatus.Idle);
       setCurrentTab("progress");
-      setPreflightResults([]);
       setDeployPhase("preflight");
       setExpandedSites(new Set());
-      runPreflight();
+
+      // Restore cache
+      if (preflightCache.length > 0) {
+        setPreflightResults(preflightCache);
+      } else {
+        setPreflightResults([]);
+        runPreflight();
+      }
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -155,12 +164,11 @@ export function DeployUploaderDialog({
       if (!result?.siteId) return;
       setPreflightResults((prev) => {
         const existing = prev.findIndex((p) => p.siteId === result.siteId);
-        if (existing >= 0) {
-          const updated = [...prev];
-          updated[existing] = result;
-          return updated;
-        }
-        return [...prev, result];
+        const updated = existing >= 0
+          ? prev.map((p, i) => (i === existing ? result : p))
+          : [...prev, result];
+        preflightCache = updated;
+        return updated;
       });
     });
 
@@ -170,6 +178,7 @@ export function DeployUploaderDialog({
   const runPreflight = useCallback(async () => {
     setPreflightLoading(true);
     setPreflightResults([]);
+    preflightCache = [];
     try {
       const siteIds = sites.map((s) => s.id);
       const response = await api.deployPreflight(siteIds);
@@ -182,6 +191,7 @@ export function DeployUploaderDialog({
               merged.push(r);
             }
           }
+          preflightCache = merged;
           return merged;
         });
       }
@@ -377,7 +387,7 @@ export function DeployUploaderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             {getStatusIcon()}
             {title}
           </DialogTitle>
@@ -387,10 +397,10 @@ export function DeployUploaderDialog({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="progress">Progress</TabsTrigger>
             <TabsTrigger value="preflight">
-              <Shield className="h-3 w-3 mr-1" />
+              <Shield className="h-3.5 w-3.5 mr-1.5" />
               Pre-flight
               {preflightResults.length > 0 && (
-                <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0 h-4">
+                <Badge variant="secondary" className="ml-1.5 text-xs px-1.5 py-0 h-5">
                   {okChecks}/{totalPluginChecks}
                 </Badge>
               )}
@@ -410,11 +420,11 @@ export function DeployUploaderDialog({
               </div>
             )}
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex items-center gap-3">
                 {getStatusIcon()}
                 <div>
-                  <p className="font-medium">
+                  <p className="font-semibold text-base text-foreground">
                     {status === DeployStatus.Idle ? "Ready to Deploy" : getPhaseLabel()}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -425,8 +435,8 @@ export function DeployUploaderDialog({
             </div>
 
             {/* Site list with expandable preflight details */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Target Sites</h4>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Target Sites</h4>
               <div className="max-h-[400px] overflow-y-auto space-y-2">
                 {sites.map((site) => {
                   const result = results.find((r) => r.siteId === site.id);
@@ -440,18 +450,18 @@ export function DeployUploaderDialog({
                       open={isExpanded}
                       onOpenChange={() => hasPreflightData && toggleSiteExpanded(site.id)}
                     >
-                      <div className="rounded-lg border bg-card overflow-hidden">
+                      <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
                         <CollapsibleTrigger asChild disabled={!hasPreflightData}>
-                          <div className={`p-3 ${hasPreflightData ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}>
+                          <div className={`p-3.5 ${hasPreflightData ? "cursor-pointer hover:bg-muted/30 transition-colors" : ""}`}>
                             {/* Row 1: Site name + open link + status */}
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 {hasPreflightData && (
                                   isExpanded
-                                    ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                    : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                    ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                                 )}
-                                <span className="text-sm font-semibold truncate">{site.name}</span>
+                                <span className="text-sm font-semibold text-foreground truncate">{site.name}</span>
                                 <TooltipProvider delayDuration={200}>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -460,9 +470,9 @@ export function DeployUploaderDialog({
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                                        className="text-muted-foreground hover:text-primary transition-colors shrink-0"
                                       >
-                                        <ExternalLink className="h-3 w-3" />
+                                        <ExternalLink className="h-3.5 w-3.5" />
                                       </a>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="text-xs font-mono">
@@ -471,15 +481,15 @@ export function DeployUploaderDialog({
                                   </Tooltip>
                                 </TooltipProvider>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-2 shrink-0">
                                 {result && (
                                   result.isSuccess ? (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">
-                                      <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Done
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
+                                      <CheckCircle className="h-3 w-3 mr-1" /> Done
                                     </Badge>
                                   ) : (
-                                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                                      <XCircle className="h-2.5 w-2.5 mr-0.5" /> Failed
+                                    <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                      <XCircle className="h-3 w-3 mr-1" /> Failed
                                     </Badge>
                                   )
                                 )}
@@ -487,17 +497,17 @@ export function DeployUploaderDialog({
                                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 )}
                                 {status === DeployStatus.Idle && preflightLoading && !preflight && (
-                                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                                 )}
                                 {preflight && !preflight.isReachable && (
-                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Unreachable</Badge>
+                                  <Badge variant="destructive" className="text-xs px-2 py-0.5">Unreachable</Badge>
                                 )}
                               </div>
                             </div>
 
                             {/* Row 2: Plugin version summary (always visible) */}
                             {preflight && (
-                              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <PluginSummaryBadge
                                   label="QUpload"
                                   available={preflight.qUploadAvailable}
@@ -517,8 +527,8 @@ export function DeployUploaderDialog({
 
                         <CollapsibleContent>
                           {hasPreflightData && (
-                            <div className="border-t border-border/50 px-3 pb-3 pt-2.5 space-y-2.5">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <div className="border-t border-border/40 px-3.5 pb-3.5 pt-3 space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <PluginDetailCard
                                   label="QUpload"
                                   sublabel="cross-upload"
@@ -527,7 +537,6 @@ export function DeployUploaderDialog({
                                   namespace={preflight.qUploadNamespace}
                                   localVersion={localQuploadVersion}
                                   preferred
-                                  siteUrl={preflight.siteUrl}
                                 />
                                 <PluginDetailCard
                                   label="Riseup Asia"
@@ -536,12 +545,11 @@ export function DeployUploaderDialog({
                                   available={preflight.riseupAsiaAvailable}
                                   namespace={preflight.riseupAsiaNamespace}
                                   localVersion={localWpPluginVersion}
-                                  siteUrl={preflight.siteUrl}
                                 />
                               </div>
                               {!preflight.qUploadAvailable && !preflight.riseupAsiaAvailable && (
-                                <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 p-2 rounded">
-                                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                                  <AlertTriangle className="h-4 w-4 shrink-0" />
                                   No upload endpoint available — deploy will fail
                                 </div>
                               )}
@@ -557,24 +565,24 @@ export function DeployUploaderDialog({
 
             {/* Results summary */}
             {results.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Results</h4>
-                <div className="space-y-1">
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-foreground">Results</h4>
+                <div className="space-y-2">
                   {results.map((result) => (
                     <div
                       key={result.siteId}
-                      className={`p-2.5 rounded-lg text-sm ${
+                      className={`p-3 rounded-lg text-sm ${
                         result.isSuccess ? "bg-primary/10 border border-primary/20" : "bg-destructive/10 border border-destructive/20"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{result.siteName}</span>
-                        <span className={result.isSuccess ? "text-primary text-xs font-medium" : "text-destructive text-xs font-medium"}>
+                        <span className="font-semibold text-foreground">{result.siteName}</span>
+                        <span className={result.isSuccess ? "text-primary text-sm font-medium" : "text-destructive text-sm font-medium"}>
                           {result.isSuccess ? "✓ Success" : "✗ Failed"}
                         </span>
                       </div>
                       {result.error && (
-                        <p className="text-xs text-destructive mt-1">{result.error}</p>
+                        <p className="text-sm text-destructive mt-1">{result.error}</p>
                       )}
                     </div>
                   ))}
@@ -587,34 +595,34 @@ export function DeployUploaderDialog({
           <TabsContent value="preflight" className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-medium">Plugin Status Summary</h4>
+                <h4 className="text-sm font-semibold text-foreground">Plugin Status Summary</h4>
                 {preflightResults.length > 0 && !preflightLoading && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Sites: {preflightResults.length} · Checks: {totalPluginChecks} · OK: {okChecks} · Failed: {failedChecks}
                   </p>
                 )}
               </div>
               <Button variant="ghost" size="sm" onClick={runPreflight} disabled={preflightLoading}>
-                {preflightLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Shield className="h-3 w-3 mr-1" />}
+                {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
                 Refresh
               </Button>
             </div>
 
             {preflightLoading && preflightResults.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <div className="flex items-center justify-center py-10 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Checking endpoints...
+                <span className="text-sm">Checking endpoints...</span>
               </div>
             )}
 
             {preflightResults.length > 0 && (
               <div className="space-y-3">
                 {preflightResults.map((pf) => (
-                  <div key={pf.siteId} className="rounded-lg border bg-card overflow-hidden">
+                  <div key={pf.siteId} className="rounded-lg border border-border/60 bg-card overflow-hidden">
                     {/* Site header */}
-                    <div className="flex items-center justify-between p-3 border-b bg-muted/20">
+                    <div className="flex items-center justify-between p-3.5 border-b border-border/40 bg-muted/20">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-semibold text-sm">{pf.siteName}</span>
+                        <span className="font-semibold text-sm text-foreground">{pf.siteName}</span>
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -622,9 +630,9 @@ export function DeployUploaderDialog({
                                 href={pf.siteUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-foreground transition-colors"
+                                className="text-muted-foreground hover:text-primary transition-colors"
                               >
-                                <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3.5 w-3.5" />
                               </a>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs font-mono">
@@ -634,20 +642,20 @@ export function DeployUploaderDialog({
                         </TooltipProvider>
                       </div>
                       {pf.isReachable ? (
-                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
-                          <CheckCircle className="h-2.5 w-2.5 mr-1" /> Reachable
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
+                          <CheckCircle className="h-3 w-3 mr-1" /> Reachable
                         </Badge>
                       ) : (
-                        <Badge variant="destructive" className="text-[10px]">
-                          <XCircle className="h-2.5 w-2.5 mr-1" /> Unreachable
+                        <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                          <XCircle className="h-3 w-3 mr-1" /> Unreachable
                         </Badge>
                       )}
                     </div>
 
                     {/* Plugin details */}
                     {pf.isReachable && (
-                      <div className="p-3 space-y-2.5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      <div className="p-3.5 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <PluginDetailCard
                             label="QUpload"
                             sublabel="cross-upload"
@@ -656,7 +664,6 @@ export function DeployUploaderDialog({
                             namespace={pf.qUploadNamespace}
                             localVersion={localQuploadVersion}
                             preferred
-                            siteUrl={pf.siteUrl}
                           />
                           <PluginDetailCard
                             label="Riseup Asia"
@@ -665,12 +672,11 @@ export function DeployUploaderDialog({
                             available={pf.riseupAsiaAvailable}
                             namespace={pf.riseupAsiaNamespace}
                             localVersion={localWpPluginVersion}
-                            siteUrl={pf.siteUrl}
                           />
                         </div>
                         {!pf.qUploadAvailable && !pf.riseupAsiaAvailable && (
-                          <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 p-2 rounded">
-                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
                             No upload endpoint available — deploy will fail
                           </div>
                         )}
@@ -678,8 +684,8 @@ export function DeployUploaderDialog({
                     )}
 
                     {pf.error && (
-                      <div className="px-3 pb-3">
-                        <p className="text-xs text-destructive">{pf.error}</p>
+                      <div className="px-3.5 pb-3.5">
+                        <p className="text-sm text-destructive">{pf.error}</p>
                       </div>
                     )}
                   </div>
@@ -692,7 +698,7 @@ export function DeployUploaderDialog({
           <TabsContent value="logs" className="space-y-2">
             <div className="flex justify-end">
               <Button variant="ghost" size="sm" onClick={handleCopyLogs} disabled={logs.length === 0}>
-                <Copy className="h-3 w-3 mr-1" />
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
                 Copy
               </Button>
             </div>
@@ -701,24 +707,40 @@ export function DeployUploaderDialog({
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          {status === DeployStatus.Idle && (
-            <Button onClick={handleDeploy} disabled={sites.length === 0 || preflightLoading}>
-              <Upload className="h-4 w-4 mr-2" />
-              Deploy to {sites.length} Site(s)
-            </Button>
-          )}
-          {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-          )}
-          {status === DeployStatus.Deploying && (
-            <Button disabled>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Deploying...
-            </Button>
-          )}
+        {/* Footer: Deploy + Refresh together, Deploy NOT blocked by preflight */}
+        <div className="flex items-center justify-between pt-4 border-t border-border/40">
+          <div className="flex items-center gap-2">
+            {preflightResults.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {okChecks}/{totalPluginChecks} checks passed
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {status === DeployStatus.Idle && (
+              <>
+                <Button variant="outline" size="sm" onClick={runPreflight} disabled={preflightLoading}>
+                  {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+                  Refresh
+                </Button>
+                <Button onClick={handleDeploy} disabled={sites.length === 0}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Deploy to {sites.length} Site(s)
+                </Button>
+              </>
+            )}
+            {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            )}
+            {status === DeployStatus.Deploying && (
+              <Button disabled>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Deploying...
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -741,26 +763,29 @@ function PluginSummaryBadge({
   const isUpToDate = available && remoteVersion && localVersion && remoteVersion === localVersion;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md border ${
+    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border font-medium ${
       available
         ? needsPublish
           ? "bg-warning/10 text-warning border-warning/20"
           : "bg-primary/10 text-primary border-primary/20"
         : "bg-muted text-muted-foreground border-border"
     }`}>
-      {available ? <CheckCircle className="h-2.5 w-2.5" /> : <XCircle className="h-2.5 w-2.5" />}
-      <span className="font-medium">{label}</span>
+      {available ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+      <span>{label}</span>
       {available && remoteVersion && (
-        <span className="font-mono opacity-80">v{remoteVersion}</span>
+        <span className="font-mono">v{remoteVersion}</span>
       )}
       {isUpToDate && (
-        <span className="opacity-60">✓</span>
+        <span className="opacity-70">✓ up to date</span>
       )}
       {needsPublish && localVersion && (
-        <span className="font-mono opacity-80">→ v{localVersion}</span>
+        <>
+          <span className="opacity-60">→</span>
+          <span className="font-mono">v{localVersion}</span>
+        </>
       )}
       {!available && (
-        <span className="opacity-60">—</span>
+        <span className="opacity-60">— not installed</span>
       )}
     </span>
   );
@@ -775,7 +800,6 @@ function PluginDetailCard({
   namespace,
   localVersion,
   preferred,
-  siteUrl,
 }: {
   label: string;
   sublabel: string;
@@ -784,7 +808,6 @@ function PluginDetailCard({
   namespace?: string;
   localVersion?: string;
   preferred?: boolean;
-  siteUrl?: string;
 }) {
   const remoteVersion = plugin?.version;
   const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
@@ -792,109 +815,119 @@ function PluginDetailCard({
   const versionUnknown = available && !remoteVersion;
 
   return (
-    <div className={`rounded-lg border p-3 text-xs space-y-2 ${
+    <div className={`rounded-lg border p-3.5 space-y-2.5 ${
       available
         ? needsPublish
           ? "border-warning/30 bg-warning/5"
-          : "border-primary/20 bg-primary/5"
-        : "border-border bg-muted/20"
+          : "border-border/60 bg-muted/20"
+        : "border-border/40 bg-muted/10"
     }`}>
       {/* Plugin header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {available ? (
-            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+            <CheckCircle className="h-4 w-4 text-primary shrink-0" />
           ) : (
-            <XCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
           )}
-          <span className="font-semibold text-foreground">{label}</span>
-          <span className="text-muted-foreground text-[10px]">({sublabel})</span>
+          <span className="font-semibold text-sm text-foreground">{label}</span>
+          <span className="text-muted-foreground text-xs">({sublabel})</span>
         </div>
         {preferred && available && !needsPublish && (
-          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20">
+          <Badge variant="secondary" className="text-xs px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
             ★ Preferred
           </Badge>
         )}
       </div>
 
       {!available && (
-        <p className="text-muted-foreground italic">Not installed</p>
+        <p className="text-sm text-muted-foreground italic">Not installed</p>
       )}
 
       {available && (
         <>
-          {/* Version row */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Version row: local → remote (pushing direction) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {localVersion && (
+              <Badge variant="outline" className="text-xs px-2 py-0.5 font-mono border-foreground/20">
+                local v{localVersion}
+              </Badge>
+            )}
+            {localVersion && remoteVersion && (
+              <span className="text-muted-foreground text-xs">→</span>
+            )}
             {remoteVersion && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono border-foreground/20">
-                v{remoteVersion}
+              <Badge
+                variant={needsPublish ? "destructive" : "secondary"}
+                className="text-xs px-2 py-0.5 font-mono"
+              >
+                remote v{remoteVersion}
               </Badge>
             )}
             {versionUnknown && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground border-muted-foreground/30">
-                version unknown
+              <Badge variant="outline" className="text-xs px-2 py-0.5 text-muted-foreground border-muted-foreground/30">
+                remote version unknown
               </Badge>
             )}
-            {localVersion && (
-              <>
-                <span className="text-muted-foreground">→</span>
-                <Badge
-                  variant={needsPublish ? "destructive" : "secondary"}
-                  className="text-[10px] px-1.5 py-0 font-mono"
-                >
-                  local v{localVersion}
-                </Badge>
-              </>
-            )}
             {isUpToDate && (
-              <span className="text-primary text-[10px] font-medium">(up to date)</span>
+              <span className="text-primary text-xs font-medium">(up to date)</span>
             )}
             {needsPublish && (
-              <span className="text-warning text-[10px] font-medium flex items-center gap-0.5">
-                <AlertTriangle className="h-2.5 w-2.5" /> Needs publish
+              <span className="text-warning text-xs font-medium flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Needs publish
               </span>
             )}
           </div>
 
-          {/* Environment metadata — compact single line */}
+          {/* Environment metadata */}
           {(plugin?.wpVersion || plugin?.phpVersion || plugin?.dbAvailable) && (
-            <div className="flex items-center gap-2 text-muted-foreground flex-wrap text-[10px]">
+            <div className="flex items-center gap-3 text-muted-foreground flex-wrap text-xs">
               {plugin?.wpVersion && (
-                <span className="flex items-center gap-0.5">
-                  <Server className="h-2.5 w-2.5" /> WP {plugin.wpVersion}
+                <span className="flex items-center gap-1">
+                  <Server className="h-3 w-3" /> WP {plugin.wpVersion}
                 </span>
               )}
               {plugin?.phpVersion && (
-                <span className="flex items-center gap-0.5">
+                <span className="flex items-center gap-1">
                   PHP {plugin.phpVersion}
                 </span>
               )}
               {plugin?.apiNamespace && (
-                <span className="font-mono">
-                  {plugin.apiNamespace}
+                <span className="font-mono text-xs">
+                  API {plugin.apiNamespace}
                 </span>
               )}
               {plugin?.dbAvailable && (
-                <span className="flex items-center gap-0.5">
-                  <Database className="h-2.5 w-2.5" />
-                  {plugin.dbAvailable === "true" || plugin.dbAvailable === "1" ? "✓" : "✗"}
+                <span className="flex items-center gap-1">
+                  <Database className="h-3 w-3" />
+                  DB {plugin.dbAvailable === "true" || plugin.dbAvailable === "1" ? "✓" : "✗"}
                 </span>
               )}
             </div>
           )}
 
-          {/* Server time */}
-          {plugin?.serverTime && (
-            <div className="flex items-center gap-1 text-muted-foreground text-[10px]">
-              <Clock className="h-2.5 w-2.5" />
-              <span>{plugin.serverTime}</span>
+          {/* Server time + remote URL */}
+          {(plugin?.serverTime || plugin?.remoteSiteUrl) && (
+            <div className="flex items-center gap-3 text-muted-foreground text-xs">
+              {plugin?.serverTime && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {plugin.serverTime}
+                </span>
+              )}
+              {plugin?.remoteSiteUrl && (
+                <span className="flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  {plugin.remoteSiteUrl}
+                </span>
+              )}
             </div>
           )}
 
           {/* Status message / logs info */}
           {plugin?.message && plugin.status !== "OK" && (
-            <div className="flex items-center gap-1 text-warning">
-              <FileWarning className="h-3 w-3 shrink-0" />
+            <div className="flex items-center gap-1.5 text-warning text-xs">
+              <FileWarning className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{plugin.message}</span>
             </div>
           )}
