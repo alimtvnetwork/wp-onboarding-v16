@@ -330,7 +330,8 @@ export function DeployUploaderDialog({
       }
     } catch (error: unknown) {
       setStatus(DeployStatus.Error);
-      setDeployPhase("complete");
+      transitionPhase("complete");
+      stopTimer();
       const errorMsg = error instanceof Error ? error.message : "Deployment failed";
       setLogs((prev) => [
         ...prev,
