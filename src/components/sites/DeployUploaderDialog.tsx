@@ -214,9 +214,38 @@ export function DeployUploaderDialog({
     });
   };
 
+  // Helper to transition phases with timing
+  const transitionPhase = (phase: DeployPhase) => {
+    const now = Date.now();
+    setPhaseTimings((prev) => {
+      const updated = { ...prev };
+      // End previous active phase
+      for (const key of Object.keys(updated)) {
+        if (!updated[key].end) updated[key] = { ...updated[key], end: now };
+      }
+      // Start new phase (unless "complete")
+      if (phase !== "complete") {
+        updated[phase] = { start: now };
+      }
+      return updated;
+    });
+    setDeployPhase(phase);
+  };
+
+  // Start live timer during deploy
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setTimerTick((t) => t + 1), 100);
+  };
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+
   const handleDeploy = async () => {
     setStatus(DeployStatus.Deploying);
-    setDeployPhase("zipping");
+    setPhaseTimings({});
+    startTimer();
+    transitionPhase("zipping");
     setLogs([{
       timestamp: new Date().toISOString(),
       level: "info",
