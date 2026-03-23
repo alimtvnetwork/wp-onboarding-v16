@@ -233,8 +233,15 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/retrieve`, method: "GET" });
       setRetrieveData(data);
       setShowViewer(true);
+
+      // Check if any plugin returned data
+      const hasAnyContent = data.plugins?.some(p => p.available);
+      if (!hasAnyContent) {
+        toast.warning("No log retrieval endpoints available — the remote plugin may be outdated or missing the /logs/retrieve endpoint.");
+      }
     } catch (err) {
       surfaceError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
+      // Do NOT silently fail — the error modal will show
     } finally {
       setIsRetrieving(false);
     }
