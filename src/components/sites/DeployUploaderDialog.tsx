@@ -75,7 +75,7 @@ interface PreflightSiteResult {
   error?: string;
 }
 
-type DeployPhase = "preflight" | "zipping" | "uploading" | "complete";
+type DeployPhase = "preflight" | "zipping" | "uploading" | "verifying" | "complete";
 
 interface DeployUploaderDialogProps {
   open: boolean;
@@ -218,14 +218,13 @@ export function DeployUploaderDialog({
       timestamp: new Date().toISOString(),
       level: "info",
       step: "init",
-      message: `Starting deployment to ${sites.length} site(s)...`,
+      message: `Starting deployment to ${sites.length} site(s) — pushing v${localWpPluginVersion || "?"}`,
     }]);
 
     try {
       const siteIds = sites.map((s) => s.id);
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
-      setDeployPhase("complete");
 
       const resultLogs: LogEntry[] = deployResults.map((result) => ({
         timestamp: new Date().toISOString(),
@@ -245,15 +244,52 @@ export function DeployUploaderDialog({
         {
           timestamp: new Date().toISOString(),
           level: failed > 0 ? "warn" : "info",
-          step: "complete",
-          message: `Deployment complete: ${succeeded} succeeded, ${failed} failed`,
+          step: "upload-done",
+          message: `Upload complete: ${succeeded} succeeded, ${failed} failed`,
         },
       ]);
 
+      // Auto-verify: refresh pre-flight to confirm versions on remote
+      setDeployPhase("verifying");
+      setLogs((prev) => [...prev, {
+        timestamp: new Date().toISOString(),
+        level: "info",
+        step: "verify",
+        message: "Verifying deployed versions across all sites...",
+      }]);
+
+      try {
+        setPreflightLoading(true);
+        setPreflightResults([]);
+        preflightCache = [];
+        const response = await api.deployPreflight(siteIds);
+        const data = response.data;
+        if (data?.results) {
+          setPreflightResults(data.results);
+          preflightCache = data.results;
+        }
+        setLogs((prev) => [...prev, {
+          timestamp: new Date().toISOString(),
+          level: "info",
+          step: "verify",
+          message: `Post-deploy verification complete — ${data?.results?.length || 0} site(s) checked`,
+        }]);
+      } catch {
+        setLogs((prev) => [...prev, {
+          timestamp: new Date().toISOString(),
+          level: "warn",
+          step: "verify",
+          message: "Post-deploy verification failed — use Refresh to retry",
+        }]);
+      } finally {
+        setPreflightLoading(false);
+      }
+
+      setDeployPhase("complete");
       setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
 
       if (failed === 0) {
-        toast.success(`Deployed to ${succeeded} site(s) successfully`);
+        toast.success(`Deployed v${localWpPluginVersion || "?"} to ${succeeded} site(s) successfully`);
       } else {
         toast.warning(`Deployed to ${succeeded}/${sites.length} sites`);
         setCurrentTab("logs");
@@ -358,19 +394,38 @@ export function DeployUploaderDialog({
   const getPhaseProgress = () => {
     switch (deployPhase) {
       case "preflight": return 0;
-      case "zipping": return 25;
-      case "uploading": return 60;
+      case "zipping": return 20;
+      case "uploading": return 55;
+      case "verifying": return 85;
       case "complete": return 100;
     }
   };
 
   const getPhaseLabel = () => {
+    const ver = localWpPluginVersion ? ` v${localWpPluginVersion}` : "";
     switch (deployPhase) {
       case "preflight": return "Pre-flight checks";
-      case "zipping": return "Creating ZIP archives...";
-      case "uploading": return "Uploading to sites (cross-upload)...";
+      case "zipping": return `Creating ZIP archives${ver}...`;
+      case "uploading": return `Uploading${ver} to ${sites.length} site(s)...`;
+      case "verifying": return "Verifying deployed versions...";
       case "complete": return status === DeployStatus.Completed ? "Deployment complete" : "Deployment finished with errors";
     }
+  };
+
+  // Subtask chain items for the progress display
+  const deploySubtasks = [
+    { key: "zipping", label: `ZIP plugins${localWpPluginVersion ? ` v${localWpPluginVersion}` : ""}`, icon: "📦" },
+    { key: "uploading", label: `Upload to ${sites.length} site(s)`, icon: "📤" },
+    { key: "verifying", label: "Verify remote versions", icon: "🔍" },
+  ] as const;
+
+  const getSubtaskStatus = (key: string) => {
+    const order = ["zipping", "uploading", "verifying", "complete"];
+    const currentIdx = order.indexOf(deployPhase);
+    const taskIdx = order.indexOf(key);
+    if (taskIdx < currentIdx) return "done";
+    if (taskIdx === currentIdx) return "active";
+    return "pending";
   };
 
   // Compute totals for preflight summary
@@ -410,25 +465,60 @@ export function DeployUploaderDialog({
 
           {/* ── Progress Tab ── */}
           <TabsContent value="progress" className="space-y-4">
-            {status === DeployStatus.Deploying && (
-              <div className="space-y-2">
+            {/* Phase progress bar */}
+            {(status === DeployStatus.Deploying || status === DeployStatus.Completed || status === DeployStatus.Error) && (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{getPhaseLabel()}</span>
-                  <span className="font-mono text-xs">{getPhaseProgress()}%</span>
+                  <span className="text-muted-foreground font-medium">{getPhaseLabel()}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{getPhaseProgress()}%</span>
                 </div>
                 <Progress value={getPhaseProgress()} className="h-2" />
+
+                {/* Chained subtask list */}
+                <div className="space-y-1.5 pt-1">
+                  {deploySubtasks.map((task) => {
+                    const s = getSubtaskStatus(task.key);
+                    return (
+                      <div key={task.key} className="flex items-center gap-2.5 text-sm">
+                        {s === "done" ? (
+                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                        ) : s === "active" ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
+                        )}
+                        <span className={`${
+                          s === "done" ? "text-muted-foreground line-through" :
+                          s === "active" ? "text-foreground font-medium" :
+                          "text-muted-foreground/60"
+                        }`}>
+                          {task.icon} {task.label}
+                        </span>
+                        {s === "done" && (
+                          <span className="text-xs text-primary font-mono">✓</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
+            {/* Status banner */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex items-center gap-3">
                 {getStatusIcon()}
                 <div>
                   <p className="font-semibold text-base text-foreground">
-                    {status === DeployStatus.Idle ? "Ready to Deploy" : getPhaseLabel()}
+                    {status === DeployStatus.Idle
+                      ? `Ready to Deploy${localWpPluginVersion ? ` v${localWpPluginVersion}` : ""}`
+                      : getPhaseLabel()}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {sites.length} site(s) selected
+                    {localWpPluginVersion && status === DeployStatus.Idle && (
+                      <> · Riseup Asia v{localWpPluginVersion}{localQuploadVersion ? ` · QUpload v${localQuploadVersion}` : ""}</>
+                    )}
                   </p>
                 </div>
               </div>
@@ -707,7 +797,7 @@ export function DeployUploaderDialog({
           </TabsContent>
         </Tabs>
 
-        {/* Footer: Deploy + Refresh together, Deploy NOT blocked by preflight */}
+        {/* Footer: Deploy + Refresh together, Refresh always visible */}
         <div className="flex items-center justify-between pt-4 border-t border-border/40">
           <div className="flex items-center gap-2">
             {preflightResults.length > 0 && (
@@ -717,17 +807,15 @@ export function DeployUploaderDialog({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={runPreflight} disabled={preflightLoading || status === DeployStatus.Deploying}>
+              {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+              Refresh
+            </Button>
             {status === DeployStatus.Idle && (
-              <>
-                <Button variant="outline" size="sm" onClick={runPreflight} disabled={preflightLoading}>
-                  {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
-                  Refresh
-                </Button>
-                <Button onClick={handleDeploy} disabled={sites.length === 0}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Deploy to {sites.length} Site(s)
-                </Button>
-              </>
+              <Button onClick={handleDeploy} disabled={sites.length === 0}>
+                <Upload className="h-4 w-4 mr-2" />
+                Deploy to {sites.length} Site(s)
+              </Button>
             )}
             {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
               <Button variant="outline" onClick={() => onOpenChange(false)}>
