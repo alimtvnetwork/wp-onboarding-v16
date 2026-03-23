@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import type { LogEntryDetails } from "@/lib/api";
@@ -19,6 +20,7 @@ import { useErrorStore } from "@/stores/errorStore";
 import type { ApiError } from "@/lib/api/types";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 interface DeploySiteResult {
   siteId: number;
@@ -32,6 +34,23 @@ interface DeploySiteResult {
   remoteUrl?: string;
 }
 
+interface PreflightPluginStatus {
+  name?: string;
+  available: boolean;
+  namespace?: string;
+  status?: string;
+  httpStatus?: number;
+  message?: string;
+  version?: string;
+  wpVersion?: string;
+  phpVersion?: string;
+  pluginName?: string;
+  apiNamespace?: string;
+  serverTime?: string;
+  dbAvailable?: string;
+  remoteSiteUrl?: string;
+}
+
 interface PreflightSiteResult {
   siteId: number;
   siteName: string;
@@ -41,6 +60,8 @@ interface PreflightSiteResult {
   riseupAsiaNamespace?: string;
   qUploadAvailable: boolean;
   qUploadNamespace?: string;
+  riseupAsia?: PreflightPluginStatus;
+  qUpload?: PreflightPluginStatus;
   error?: string;
 }
 
@@ -69,6 +90,9 @@ export function DeployUploaderDialog({
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const { data: versionInfo } = useVersionInfo();
+  const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
+  const localQuploadVersion = (versionInfo as unknown as Record<string, string>)?.quploadVersion;
   const { lastMessage } = useWebSocket();
 
   // Listen for WebSocket log messages
@@ -481,11 +505,15 @@ export function DeployUploaderDialog({
                           available={pf.qUploadAvailable}
                           namespace={pf.qUploadNamespace}
                           preferred
+                          remoteVersion={pf.qUpload?.version}
+                          localVersion={localQuploadVersion}
                         />
                         <EndpointCard
                           label="Riseup Asia (fallback)"
                           available={pf.riseupAsiaAvailable}
                           namespace={pf.riseupAsiaNamespace}
+                          remoteVersion={pf.riseupAsia?.version}
+                          localVersion={localWpPluginVersion}
                         />
                       </div>
                     )}
@@ -552,7 +580,16 @@ function EndpointBadge({ label, available, namespace }: { label: string; availab
   );
 }
 
-function EndpointCard({ label, available, namespace, preferred }: { label: string; available: boolean; namespace?: string; preferred?: boolean }) {
+function EndpointCard({ label, available, namespace, preferred, remoteVersion, localVersion }: {
+  label: string;
+  available: boolean;
+  namespace?: string;
+  preferred?: boolean;
+  remoteVersion?: string;
+  localVersion?: string;
+}) {
+  const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
+
   return (
     <div className={`p-2 rounded border text-xs ${
       available ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"
@@ -569,7 +606,25 @@ function EndpointCard({ label, available, namespace, preferred }: { label: strin
         <span className="text-muted-foreground font-mono">{namespace}</span>
       )}
       {!available && <span className="text-muted-foreground">Not installed</span>}
-      {preferred && available && (
+      {available && remoteVersion && (
+        <div className="flex items-center gap-1 mt-1 flex-wrap">
+          <Badge variant="outline" className="text-[10px] px-1 py-0">v{remoteVersion}</Badge>
+          {localVersion && (
+            <>
+              <span className="text-muted-foreground">→</span>
+              <Badge variant={needsPublish ? "destructive" : "secondary"} className="text-[10px] px-1 py-0">
+                local v{localVersion}
+              </Badge>
+            </>
+          )}
+        </div>
+      )}
+      {needsPublish && (
+        <div className="mt-1 text-[10px] text-destructive font-medium flex items-center gap-1">
+          <AlertTriangle className="h-2.5 w-2.5" /> Needs publish
+        </div>
+      )}
+      {preferred && available && !needsPublish && (
         <div className="mt-1 text-[10px] text-primary font-medium">★ Preferred</div>
       )}
     </div>
