@@ -132,8 +132,15 @@ export function DeployUploaderDialog({
       } else if (msg.includes("uploading") || msg.includes("cross-upload") || msg.includes("endpoint")) {
         transitionPhase("uploading");
       }
+
+      // Track per-site completion from WS messages
+      for (const site of sites) {
+        if (msg.includes(site.name.toLowerCase()) && (msg.includes("success") || msg.includes("uploaded") || msg.includes("activated"))) {
+          setCompletedSiteIds((prev) => new Set(prev).add(site.id));
+        }
+      }
     }
-  }, [lastMessage, status]);
+  }, [lastMessage, status, sites]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
