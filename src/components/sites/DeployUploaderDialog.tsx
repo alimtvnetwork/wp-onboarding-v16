@@ -15,7 +15,9 @@ import { isApiClientError } from "@/lib/api";
 import {
   CheckCircle, XCircle, Loader2, Upload, Copy, Shield, AlertTriangle,
   ChevronDown, ChevronRight, Database, Globe, Server, Clock, FileWarning,
+  ExternalLink,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { DeployStatus } from "@/lib/constants";
