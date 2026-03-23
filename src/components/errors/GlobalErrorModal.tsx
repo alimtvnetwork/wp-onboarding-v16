@@ -14,6 +14,7 @@ import type { PHPStackFrame } from "./ErrorModalTypes";
 import { generateErrorReport, getSuggestedFixes } from "./errorReportGenerator";
 import { BackendSection } from "./BackendSection";
 import { FrontendSection } from "./FrontendSection";
+import { DelegatedSection, hasDelegatedContent } from "./DelegatedSection";
 import { DownloadDropdown, CopyDropdown } from "./ErrorModalActions";
 
 /**
