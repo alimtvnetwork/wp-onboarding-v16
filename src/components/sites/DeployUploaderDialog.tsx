@@ -12,7 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import type { LogEntryDetails } from "@/lib/api";
 import { isApiClientError } from "@/lib/api";
-import { CheckCircle, XCircle, Loader2, Upload, Copy, Shield, AlertTriangle } from "lucide-react";
+import {
+  CheckCircle, XCircle, Loader2, Upload, Copy, Shield, AlertTriangle,
+  ChevronDown, ChevronRight, Database, Globe, Server, Clock, FileWarning,
+} from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { DeployStatus } from "@/lib/constants";
@@ -21,6 +24,11 @@ import type { ApiError } from "@/lib/api/types";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface DeploySiteResult {
   siteId: number;
@@ -89,6 +97,7 @@ export function DeployUploaderDialog({
   const [preflightResults, setPreflightResults] = useState<PreflightSiteResult[]>([]);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
+  const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
   const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
@@ -108,7 +117,6 @@ export function DeployUploaderDialog({
       };
       setLogs((prev) => [...prev, logEntry]);
 
-      // Detect phase from log messages
       const msg = logEntry.message.toLowerCase();
       if (msg.includes("creating plugin zip") || msg.includes("zip archive created")) {
         setDeployPhase("zipping");
@@ -118,7 +126,6 @@ export function DeployUploaderDialog({
     }
   }, [lastMessage, status]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
@@ -132,6 +139,7 @@ export function DeployUploaderDialog({
       setCurrentTab("progress");
       setPreflightResults([]);
       setDeployPhase("preflight");
+      setExpandedSites(new Set());
       runPreflight();
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,11 +170,9 @@ export function DeployUploaderDialog({
     setPreflightResults([]);
     try {
       const siteIds = sites.map((s) => s.id);
-      // HTTP call still returns full results as fallback; WS streams them incrementally
       const response = await api.deployPreflight(siteIds);
       const data = response.data;
       if (data?.results) {
-        // Merge any results not yet received via WS
         setPreflightResults((prev) => {
           const merged = [...prev];
           for (const r of data.results) {
@@ -178,12 +184,20 @@ export function DeployUploaderDialog({
         });
       }
     } catch {
-      // Pre-flight failure is non-blocking
       toast.error("Pre-flight check failed — you can still deploy");
     } finally {
       setPreflightLoading(false);
     }
   }, [sites]);
+
+  const toggleSiteExpanded = (siteId: number) => {
+    setExpandedSites((prev) => {
+      const next = new Set(prev);
+      if (next.has(siteId)) next.delete(siteId);
+      else next.add(siteId);
+      return next;
+    });
+  };
 
   const handleDeploy = async () => {
     setStatus(DeployStatus.Deploying);
@@ -209,7 +223,7 @@ export function DeployUploaderDialog({
           ? `${result.siteName}: ${result.message}`
           : `${result.siteName}: ${result.error || result.message}`,
       }));
-      
+
       const succeeded = deployResults.filter((r) => r.isSuccess).length;
       const failed = deployResults.length - succeeded;
 
@@ -225,7 +239,7 @@ export function DeployUploaderDialog({
       ]);
 
       setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
-      
+
       if (failed === 0) {
         toast.success(`Deployed to ${succeeded} site(s) successfully`);
       } else {
@@ -249,7 +263,6 @@ export function DeployUploaderDialog({
     const failedResults = deployResults.filter((r) => !r.isSuccess);
     const summaryLines = failedResults.map((r) => `${r.siteName}: ${r.error || r.message}`);
 
-    // Combine all remote response bodies for delegated error diagnostics
     const remoteResponses = failedResults
       .filter((r) => r.remoteResponseBody)
       .map((r) => `--- ${r.siteName} (${r.remoteStatusCode || "?"} from ${r.remoteUrl || "unknown"}) ---\n${r.remoteResponseBody}`)
@@ -348,9 +361,19 @@ export function DeployUploaderDialog({
     }
   };
 
+  // Compute totals for preflight summary
+  const totalPluginChecks = preflightResults.length * 2;
+  const okChecks = preflightResults.reduce((sum, pf) => {
+    let count = 0;
+    if (pf.qUpload?.status === "OK") count++;
+    if (pf.riseupAsia?.status === "OK") count++;
+    return sum + count;
+  }, 0);
+  const failedChecks = totalPluginChecks - okChecks;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {getStatusIcon()}
@@ -364,12 +387,17 @@ export function DeployUploaderDialog({
             <TabsTrigger value="preflight">
               <Shield className="h-3 w-3 mr-1" />
               Pre-flight
+              {preflightResults.length > 0 && (
+                <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0 h-4">
+                  {okChecks}/{totalPluginChecks}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="logs">Logs ({logs.length})</TabsTrigger>
           </TabsList>
 
+          {/* ── Progress Tab ── */}
           <TabsContent value="progress" className="space-y-4">
-            {/* Phase progress */}
             {status === DeployStatus.Deploying && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -380,7 +408,6 @@ export function DeployUploaderDialog({
               </div>
             )}
 
-            {/* Status */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">
                 {getStatusIcon()}
@@ -395,43 +422,96 @@ export function DeployUploaderDialog({
               </div>
             </div>
 
-            {/* Site list with live status */}
+            {/* Site list with expandable preflight details */}
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Target Sites</h4>
-              <div className="max-h-48 overflow-y-auto space-y-1">
+              <div className="max-h-[400px] overflow-y-auto space-y-1.5">
                 {sites.map((site) => {
                   const result = results.find((r) => r.siteId === site.id);
                   const preflight = preflightResults.find((p) => p.siteId === site.id);
+                  const isExpanded = expandedSites.has(site.id);
+                  const hasPreflightData = preflight && preflight.isReachable;
+
                   return (
-                    <div
+                    <Collapsible
                       key={site.id}
-                      className="flex items-center justify-between p-2.5 rounded bg-muted/30"
+                      open={isExpanded}
+                      onOpenChange={() => hasPreflightData && toggleSiteExpanded(site.id)}
                     >
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium">{site.name}</span>
-                        {preflight && (
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <EndpointBadge label="QUpload" available={preflight.qUploadAvailable} namespace={preflight.qUploadNamespace} />
-                            <EndpointBadge label="Riseup" available={preflight.riseupAsiaAvailable} namespace={preflight.riseupAsiaNamespace} />
+                      <div className="rounded-lg border bg-card overflow-hidden">
+                        <CollapsibleTrigger asChild disabled={!hasPreflightData}>
+                          <div className={`flex items-center justify-between p-3 ${hasPreflightData ? "cursor-pointer hover:bg-muted/50" : ""}`}>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {hasPreflightData && (
+                                isExpanded
+                                  ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium">{site.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2 truncate">{site.url}</span>
+                                {preflight && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <EndpointBadge label="QUpload" available={preflight.qUploadAvailable} namespace={preflight.qUploadNamespace} />
+                                    <EndpointBadge label="Riseup" available={preflight.riseupAsiaAvailable} namespace={preflight.riseupAsiaNamespace} />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {result && (
+                                result.isSuccess ? (
+                                  <CheckCircle className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 text-destructive" />
+                                )
+                              )}
+                              {status === DeployStatus.Deploying && !result && (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              )}
+                              {status === DeployStatus.Idle && preflightLoading && !preflight && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                              )}
+                              {preflight && !preflight.isReachable && (
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Unreachable</Badge>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </CollapsibleTrigger>
+
+                        <CollapsibleContent>
+                          {hasPreflightData && (
+                            <div className="border-t px-3 pb-3 pt-2 space-y-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <PluginDetailCard
+                                  label="QUpload"
+                                  sublabel="cross-upload"
+                                  plugin={preflight.qUpload}
+                                  available={preflight.qUploadAvailable}
+                                  namespace={preflight.qUploadNamespace}
+                                  localVersion={localQuploadVersion}
+                                  preferred
+                                />
+                                <PluginDetailCard
+                                  label="Riseup Asia"
+                                  sublabel="fallback"
+                                  plugin={preflight.riseupAsia}
+                                  available={preflight.riseupAsiaAvailable}
+                                  namespace={preflight.riseupAsiaNamespace}
+                                  localVersion={localWpPluginVersion}
+                                />
+                              </div>
+                              {!preflight.qUploadAvailable && !preflight.riseupAsiaAvailable && (
+                                <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 p-2 rounded">
+                                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                  No upload endpoint available — deploy will fail
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CollapsibleContent>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {result && (
-                          result.isSuccess ? (
-                            <CheckCircle className="h-4 w-4 text-primary" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          )
-                        )}
-                        {status === DeployStatus.Deploying && !result && (
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        )}
-                        {status === DeployStatus.Idle && preflightLoading && (
-                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
+                    </Collapsible>
                   );
                 })}
               </div>
@@ -465,9 +545,17 @@ export function DeployUploaderDialog({
             )}
           </TabsContent>
 
+          {/* ── Pre-flight Tab ── */}
           <TabsContent value="preflight" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Endpoint Availability</h4>
+              <div>
+                <h4 className="text-sm font-medium">Plugin Status Summary</h4>
+                {preflightResults.length > 0 && !preflightLoading && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sites: {preflightResults.length} · Plugins: 2 · Checks: {totalPluginChecks} · OK: {okChecks} · Failed: {failedChecks}
+                  </p>
+                )}
+              </div>
               <Button variant="ghost" size="sm" onClick={runPreflight} disabled={preflightLoading}>
                 {preflightLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Shield className="h-3 w-3 mr-1" />}
                 Refresh
@@ -482,48 +570,63 @@ export function DeployUploaderDialog({
             )}
 
             {preflightResults.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {preflightResults.map((pf) => (
-                  <div key={pf.siteId} className="p-3 rounded-lg border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{pf.siteName}</span>
+                  <div key={pf.siteId} className="rounded-lg border bg-card overflow-hidden">
+                    {/* Site header */}
+                    <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-medium text-sm">{pf.siteName}</span>
+                          <span className="text-xs text-muted-foreground ml-2 truncate">{pf.siteUrl}</span>
+                        </div>
+                      </div>
                       {pf.isReachable ? (
-                        <span className="text-xs text-primary flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" /> Reachable
-                        </span>
+                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                          <CheckCircle className="h-2.5 w-2.5 mr-1" /> Reachable
+                        </Badge>
                       ) : (
-                        <span className="text-xs text-destructive flex items-center gap-1">
-                          <XCircle className="h-3 w-3" /> Unreachable
-                        </span>
+                        <Badge variant="destructive" className="text-[10px]">
+                          <XCircle className="h-2.5 w-2.5 mr-1" /> Unreachable
+                        </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground mb-2 truncate">{pf.siteUrl}</div>
+
+                    {/* Plugin details */}
                     {pf.isReachable && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <EndpointCard
-                          label="QUpload (cross-upload)"
-                          available={pf.qUploadAvailable}
-                          namespace={pf.qUploadNamespace}
-                          preferred
-                          remoteVersion={pf.qUpload?.version}
-                          localVersion={localQuploadVersion}
-                        />
-                        <EndpointCard
-                          label="Riseup Asia (fallback)"
-                          available={pf.riseupAsiaAvailable}
-                          namespace={pf.riseupAsiaNamespace}
-                          remoteVersion={pf.riseupAsia?.version}
-                          localVersion={localWpPluginVersion}
-                        />
+                      <div className="p-3 space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <PluginDetailCard
+                            label="QUpload"
+                            sublabel="cross-upload"
+                            plugin={pf.qUpload}
+                            available={pf.qUploadAvailable}
+                            namespace={pf.qUploadNamespace}
+                            localVersion={localQuploadVersion}
+                            preferred
+                          />
+                          <PluginDetailCard
+                            label="Riseup Asia"
+                            sublabel="fallback"
+                            plugin={pf.riseupAsia}
+                            available={pf.riseupAsiaAvailable}
+                            namespace={pf.riseupAsiaNamespace}
+                            localVersion={localWpPluginVersion}
+                          />
+                        </div>
+                        {!pf.qUploadAvailable && !pf.riseupAsiaAvailable && (
+                          <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 p-2 rounded">
+                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                            No upload endpoint available — deploy will fail
+                          </div>
+                        )}
                       </div>
                     )}
+
                     {pf.error && (
-                      <p className="text-xs text-destructive mt-1">{pf.error}</p>
-                    )}
-                    {pf.isReachable && !pf.qUploadAvailable && !pf.riseupAsiaAvailable && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-destructive">
-                        <AlertTriangle className="h-3 w-3" />
-                        No upload endpoint available — deploy will fail
+                      <div className="px-3 pb-3">
+                        <p className="text-xs text-destructive">{pf.error}</p>
                       </div>
                     )}
                   </div>
@@ -532,6 +635,7 @@ export function DeployUploaderDialog({
             )}
           </TabsContent>
 
+          {/* ── Logs Tab ── */}
           <TabsContent value="logs" className="space-y-2">
             <div className="flex justify-end">
               <Button variant="ghost" size="sm" onClick={handleCopyLogs} disabled={logs.length === 0}>
@@ -568,6 +672,7 @@ export function DeployUploaderDialog({
   );
 }
 
+/* ── Small inline badge for endpoint availability ── */
 function EndpointBadge({ label, available, namespace }: { label: string; available: boolean; namespace?: string }) {
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${
@@ -580,52 +685,143 @@ function EndpointBadge({ label, available, namespace }: { label: string; availab
   );
 }
 
-function EndpointCard({ label, available, namespace, preferred, remoteVersion, localVersion }: {
+/* ── Rich plugin detail card with full metadata ── */
+function PluginDetailCard({
+  label,
+  sublabel,
+  plugin,
+  available,
+  namespace,
+  localVersion,
+  preferred,
+}: {
   label: string;
+  sublabel: string;
+  plugin?: PreflightPluginStatus;
   available: boolean;
   namespace?: string;
-  preferred?: boolean;
-  remoteVersion?: string;
   localVersion?: string;
+  preferred?: boolean;
 }) {
+  const remoteVersion = plugin?.version;
   const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
+  const isUpToDate = available && remoteVersion && localVersion && remoteVersion === localVersion;
+  const versionUnknown = available && !remoteVersion;
 
   return (
-    <div className={`p-2 rounded border text-xs ${
-      available ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"
+    <div className={`rounded-lg border p-3 text-xs space-y-2 ${
+      available
+        ? needsPublish
+          ? "border-amber-500/30 bg-amber-500/5"
+          : "border-primary/30 bg-primary/5"
+        : "border-border bg-muted/30"
     }`}>
-      <div className="flex items-center gap-1 mb-1">
-        {available ? (
-          <CheckCircle className="h-3 w-3 text-primary" />
-        ) : (
-          <XCircle className="h-3 w-3 text-muted-foreground" />
-        )}
-        <span className="font-medium">{label}</span>
-      </div>
-      {available && namespace && (
-        <span className="text-muted-foreground font-mono">{namespace}</span>
-      )}
-      {!available && <span className="text-muted-foreground">Not installed</span>}
-      {available && remoteVersion && (
-        <div className="flex items-center gap-1 mt-1 flex-wrap">
-          <Badge variant="outline" className="text-[10px] px-1 py-0">v{remoteVersion}</Badge>
-          {localVersion && (
-            <>
-              <span className="text-muted-foreground">→</span>
-              <Badge variant={needsPublish ? "destructive" : "secondary"} className="text-[10px] px-1 py-0">
-                local v{localVersion}
-              </Badge>
-            </>
+      {/* Plugin header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          {available ? (
+            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+          ) : (
+            <XCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           )}
+          <span className="font-semibold">{label}</span>
+          <span className="text-muted-foreground">({sublabel})</span>
         </div>
+        {preferred && available && !needsPublish && (
+          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20">
+            ★ Preferred
+          </Badge>
+        )}
+      </div>
+
+      {!available && (
+        <p className="text-muted-foreground">Not installed</p>
       )}
-      {needsPublish && (
-        <div className="mt-1 text-[10px] text-destructive font-medium flex items-center gap-1">
-          <AlertTriangle className="h-2.5 w-2.5" /> Needs publish
-        </div>
-      )}
-      {preferred && available && !needsPublish && (
-        <div className="mt-1 text-[10px] text-primary font-medium">★ Preferred</div>
+
+      {available && (
+        <>
+          {/* Version row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {remoteVersion && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                v{remoteVersion}
+              </Badge>
+            )}
+            {versionUnknown && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                version unknown
+              </Badge>
+            )}
+            {localVersion && (
+              <>
+                <span className="text-muted-foreground">→</span>
+                <Badge variant={needsPublish ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0 font-mono">
+                  local v{localVersion}
+                </Badge>
+              </>
+            )}
+            {isUpToDate && (
+              <span className="text-primary text-[10px] font-medium ml-1">(up to date)</span>
+            )}
+            {needsPublish && (
+              <span className="text-destructive text-[10px] font-medium flex items-center gap-0.5 ml-1">
+                <AlertTriangle className="h-2.5 w-2.5" /> Needs publish
+              </span>
+            )}
+          </div>
+
+          {/* Environment metadata */}
+          {(plugin?.wpVersion || plugin?.phpVersion || plugin?.dbAvailable) && (
+            <div className="flex items-center gap-3 text-muted-foreground flex-wrap">
+              {plugin?.wpVersion && (
+                <span className="flex items-center gap-1">
+                  <Server className="h-3 w-3" /> WP {plugin.wpVersion}
+                </span>
+              )}
+              {plugin?.phpVersion && (
+                <span className="flex items-center gap-1">
+                  <Server className="h-3 w-3" /> PHP {plugin.phpVersion}
+                </span>
+              )}
+              {plugin?.apiNamespace && (
+                <span className="flex items-center gap-1 font-mono">
+                  API {plugin.apiNamespace}
+                </span>
+              )}
+              {plugin?.dbAvailable && (
+                <span className="flex items-center gap-1">
+                  <Database className="h-3 w-3" />
+                  DB {plugin.dbAvailable === "true" || plugin.dbAvailable === "1" ? "✓" : "✗"}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Server time & URL */}
+          {(plugin?.serverTime || plugin?.remoteSiteUrl) && (
+            <div className="flex items-center gap-3 text-muted-foreground flex-wrap">
+              {plugin?.serverTime && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {plugin.serverTime}
+                </span>
+              )}
+              {plugin?.remoteSiteUrl && (
+                <span className="flex items-center gap-1 truncate">
+                  <Globe className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{plugin.remoteSiteUrl}</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Status message / logs info */}
+          {plugin?.message && plugin.status !== "OK" && (
+            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <FileWarning className="h-3 w-3 shrink-0" />
+              <span className="truncate">{plugin.message}</span>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
