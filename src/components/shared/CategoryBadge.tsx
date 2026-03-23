@@ -26,6 +26,7 @@ export function CategoryBadge({ category, size = "default", className }: Categor
       variant="outline"
       className={cn(
         colorClass,
+        "group-hover:bg-site-card-hover-foreground/20 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30",
         size === "sm" && "text-[10px] px-1.5 py-0",
         className
       )}

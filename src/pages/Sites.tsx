@@ -237,7 +237,7 @@ export default function Sites() {
           action={{ label: "Add Site", onClick: () => setShowAddDialog(true) }}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
           {filteredSites?.map((site) => (
             <SiteCard
               key={site.id}

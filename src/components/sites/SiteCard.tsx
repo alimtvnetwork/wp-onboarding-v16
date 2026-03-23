@@ -249,12 +249,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
           {/* Header actions: Edit + Overflow */}
           <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(site)} title="Edit site">
+            <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground" onClick={() => onEdit(site)} title="Edit site">
               <Edit className="h-3.5 w-3.5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
