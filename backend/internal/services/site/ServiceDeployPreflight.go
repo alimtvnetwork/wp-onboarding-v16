@@ -255,4 +255,12 @@ func classifyPreflightFailure(statusCode int, fallback string) (string, string) 
 	}
 }
 
+// buildPreflightClient decrypts credentials and creates a WordPress client for preflight checks.
+func (s *Service) buildPreflightClient(site models.Site) (*wordpress.Client, error) {
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt credentials: %w", err)
+	}
+	return s.wpClientFactory(site.Url, site.Username, string(password), nil), nil
+}
 
