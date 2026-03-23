@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import type { LogEntryDetails } from "@/lib/api";
@@ -19,6 +20,7 @@ import { useErrorStore } from "@/stores/errorStore";
 import type { ApiError } from "@/lib/api/types";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 interface DeploySiteResult {
   siteId: number;
