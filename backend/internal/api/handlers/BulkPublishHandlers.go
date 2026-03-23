@@ -54,7 +54,7 @@ func BulkPublishPlugin(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.PublishService.BulkPublish(r.Context(), serviceInput)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E5010", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E5010", appErr.Error(), appErr)
 
 		return
 	}

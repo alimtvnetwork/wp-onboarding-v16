@@ -39,7 +39,7 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrDatabaseBootstrap, err.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrDatabaseBootstrap, err.Error(), err)
 
 		return
 	}

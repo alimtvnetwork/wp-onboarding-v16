@@ -262,7 +262,7 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 func fetchRemoteFilesOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
 	files, appErr := Services.SiteService.GetRemotePluginFiles(r.Context(), parsed.SiteId, parsed.PluginSlug)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, appErr.Error(), appErr)
 
 		return
 	}

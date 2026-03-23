@@ -37,7 +37,7 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteId, settings)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3026", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3026", appErr.Error(), appErr)
 		return
 	}
 
