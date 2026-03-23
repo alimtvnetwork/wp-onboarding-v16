@@ -286,19 +286,19 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       <CardContent className="pt-0 space-y-3">
         {/* Linked Plugins */}
         {mappings && mappings.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {mappings.slice(0, 2).map((mapping: PluginMapping) => (
-              <Badge key={mapping.id} variant="secondary" className="text-xs flex items-center gap-1 max-w-[140px]">
-                <Package className="h-3 w-3 shrink-0" />
-                <span className="truncate">{mapping.remoteSlug}</span>
+              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50">
+                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                <span className="truncate max-w-[100px]">{mapping.remoteSlug}</span>
               </Badge>
             ))}
             {mappings.length > 2 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">
                     +{mappings.length - 2} more
-                  </Badge>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {mappings.slice(2).map((mapping: PluginMapping) => (
@@ -360,63 +360,63 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
         )}
 
-        {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
-        <div className="flex gap-0.5 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
+        {/* Bottom bar: 3 visible + overflow menu */}
+        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title="View plugins on this site"
+            title="Plugins"
           >
             <Eye className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline truncate">Plugins</span>
+            <span className="truncate">Plugins</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowHealthSummary(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title="Site health summary"
+            title="Health"
           >
             <HeartPulse className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline truncate">Health</span>
+            <span className="truncate">Health</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowLogs(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title="View remote logs"
+            title="Logs"
           >
             <FileText className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline truncate">Logs</span>
+            <span className="truncate">Logs</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
-            onClick={() => setShowSiteSettings(true)}
-            disabled={site.connectionStatus !== ConnectionStatus.Connected}
-            title="Site settings"
-          >
-            <Settings className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline truncate">Settings</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
-            onClick={handleDeployUploader}
-            disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
-            title="Deploy Riseup Asia Uploader"
-          >
-            {deployingUploader ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
-            <span className="hidden sm:inline truncate">Deploy</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0" title="More actions">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setShowSiteSettings(true)}
+                disabled={site.connectionStatus !== ConnectionStatus.Connected}
+              >
+                <Settings className="h-4 w-4 mr-2" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDeployUploader}
+                disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
+              >
+                {deployingUploader ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                Deploy
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardContent>
 
