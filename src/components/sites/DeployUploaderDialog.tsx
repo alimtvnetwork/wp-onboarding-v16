@@ -106,6 +106,7 @@ export function DeployUploaderDialog({
   const [, setTimerTick] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
+  const [completedSiteIds, setCompletedSiteIds] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
   const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
