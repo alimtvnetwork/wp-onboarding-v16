@@ -255,6 +255,7 @@ export function DeployUploaderDialog({
   const handleDeploy = async () => {
     setStatus(DeployStatus.Deploying);
     setPhaseTimings({});
+    setCompletedSiteIds(new Set());
     startTimer();
     transitionPhase("zipping");
     setLogs([{
