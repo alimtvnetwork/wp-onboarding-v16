@@ -134,7 +134,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	appErr := Services.SiteService.DeleteRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3023", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3023", appErr.Error(), appErr)
 		return
 	}
 
