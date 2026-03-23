@@ -352,7 +352,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
               </span>
             )}
             {lastBackup && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/70">
+              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/80">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
