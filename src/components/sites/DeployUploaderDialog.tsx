@@ -102,6 +102,9 @@ export function DeployUploaderDialog({
   const [preflightResults, setPreflightResults] = useState<PreflightSiteResult[]>(preflightCache);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
+  const [phaseTimings, setPhaseTimings] = useState<Record<string, { start: number; end?: number }>>({});
+  const [, setTimerTick] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
