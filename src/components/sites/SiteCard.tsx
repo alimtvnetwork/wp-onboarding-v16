@@ -188,11 +188,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle className="h-4 w-4 text-primary" />;
+        return <CheckCircle className="h-4 w-4 text-primary group-hover:text-site-card-hover-foreground" />;
       case "disconnected":
-        return <XCircle className="h-4 w-4 text-destructive" />;
+        return <XCircle className="h-4 w-4 text-destructive group-hover:text-site-card-hover-foreground" />;
       default:
-        return <HelpCircle className="h-4 w-4 text-muted-foreground" />;
+        return <HelpCircle className="h-4 w-4 text-muted-foreground group-hover:text-site-card-hover-foreground" />;
     }
   };
 
