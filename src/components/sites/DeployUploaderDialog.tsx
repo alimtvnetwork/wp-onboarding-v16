@@ -282,7 +282,7 @@ export function DeployUploaderDialog({
       ]);
 
       // Auto-verify: refresh pre-flight to confirm versions on remote
-      setDeployPhase("verifying");
+      transitionPhase("verifying");
       setLogs((prev) => [...prev, {
         timestamp: new Date().toISOString(),
         level: "info",
