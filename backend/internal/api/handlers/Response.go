@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -43,6 +44,78 @@ func respondError(
 	message string,
 ) {
 	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code.String(), message))
+}
+
+// respondErrorWithDelegated writes an error envelope that includes delegated server diagnostics.
+// Extracts WordPress ApiError from the error chain to populate DelegatedRequestServer fields.
+// Use this instead of respondError when the error originates from a delegated WordPress call.
+func respondErrorWithDelegated(
+	w http.ResponseWriter,
+	status wordpress.HttpStatusType,
+	code apperror.ErrorCode,
+	message string,
+	err error,
+) {
+	resp := envelope.ErrorWithStack(status.Int(), code.String(), message)
+
+	apiErr := extractApiErrorFromChain(err)
+	if apiErr != nil {
+		drs := buildDelegatedRequestServer(apiErr)
+		resp = resp.WithDelegatedRequestServer(drs)
+
+		hasResponseBody := apiErr.ResponseBody != ""
+		if hasResponseBody {
+			resp = resp.WithRemoteResponseBody(apiErr.ResponseBody)
+		}
+	}
+
+	envelope.Write(w, resp)
+}
+
+// extractApiErrorFromChain unwraps the error chain to find a WordPress ApiError.
+func extractApiErrorFromChain(err error) *wordpress.ApiError {
+	// Direct ApiError
+	var apiErr *wordpress.ApiError
+	if errors.As(err, &apiErr) {
+		return apiErr
+	}
+
+	// AppError wrapping an ApiError
+	var appErr *apperror.AppError
+	if errors.As(err, &appErr) && appErr.Unwrap() != nil {
+		var inner *wordpress.ApiError
+		if errors.As(appErr.Unwrap(), &inner) {
+			return inner
+		}
+	}
+
+	return nil
+}
+
+// buildDelegatedRequestServer converts a WordPress ApiError into envelope DelegatedRequestServer.
+func buildDelegatedRequestServer(apiErr *wordpress.ApiError) *envelope.DelegatedRequestServer {
+	drs := &envelope.DelegatedRequestServer{
+		DelegatedEndpoint: apiErr.Endpoint,
+		Method:            strings.ToUpper(apiErr.Method),
+		StatusCode:        apiErr.StatusCode,
+	}
+
+	hasStackTrace := apiErr.StackTrace != ""
+	if hasStackTrace {
+		drs.StackTrace = strings.Split(apiErr.StackTrace, "\n")
+	}
+
+	hasRequestBody := apiErr.RequestBody != ""
+	if hasRequestBody {
+		drs.RequestBody = apiErr.RequestBody
+	}
+
+	hasResponseBody := apiErr.ResponseBody != ""
+	if hasResponseBody {
+		drs.Response = apiErr.ResponseBody
+	}
+
+	return drs
 }
 
 // respondBadRequest is a shorthand for respondError with HttpStatusBadRequest.

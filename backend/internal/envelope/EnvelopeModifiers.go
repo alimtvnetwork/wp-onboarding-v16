@@ -41,6 +41,20 @@ func (r Response[T]) WithBackendTrace(lines []string) Response[T] {
 	return r
 }
 
+// WithDelegatedRequestServer attaches delegated server request diagnostics.
+// Populated when the Go backend proxies a request to a downstream service (e.g. WordPress PHP)
+// and the downstream call fails.
+func (r Response[T]) WithDelegatedRequestServer(drs *DelegatedRequestServer) Response[T] {
+	if drs == nil {
+		return r
+	}
+
+	r.ensureErrors()
+	r.Errors.DelegatedRequestServer = drs
+
+	return r
+}
+
 // WithDelegatedErrorStack attaches delegated service error stack lines.
 // Only populated if IncludeStackTrace is enabled.
 func (r Response[T]) WithDelegatedErrorStack(lines []string) Response[T] {

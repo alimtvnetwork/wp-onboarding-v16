@@ -54,13 +54,27 @@ type Navigation struct {
 	CloserLinks []string
 }
 
+// DelegatedRequestServer carries diagnostics from a delegated (proxied) request
+// to a downstream service (e.g. WordPress PHP). Populated by the Go proxy layer
+// when a delegated call fails, so the frontend can display PHP-level diagnostics.
+type DelegatedRequestServer struct {
+	DelegatedEndpoint  string   `json:",omitempty"`
+	Method             string   `json:",omitempty"`
+	StatusCode         int      `json:",omitempty"`
+	StackTrace         []string `json:",omitempty"`
+	RequestBody        any      `json:",omitempty"`
+	Response           any      `json:",omitempty"`
+	AdditionalMessages string   `json:",omitempty"`
+}
+
 // Errors carries error information. Top-level, conditionally included.
 type Errors struct {
-	BackendMessage             string
-	DelegatedServiceErrorStack []string `json:",omitempty"`
-	Backend                    []string `json:",omitempty"`
-	Frontend                   []string `json:",omitempty"`
-	RemoteResponseBody         string   `json:",omitempty"`
+	BackendMessage             string                   `json:",omitempty"`
+	DelegatedServiceErrorStack []string                 `json:",omitempty"`
+	DelegatedRequestServer     *DelegatedRequestServer  `json:",omitempty"`
+	Backend                    []string                 `json:",omitempty"`
+	Frontend                   []string                 `json:",omitempty"`
+	RemoteResponseBody         string                   `json:",omitempty"`
 }
 
 // MethodsStack carries debug call-chain traces. Top-level, conditionally included.
