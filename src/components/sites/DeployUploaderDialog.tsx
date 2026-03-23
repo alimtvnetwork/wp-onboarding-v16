@@ -91,8 +91,8 @@ export function DeployUploaderDialog({
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
-  const localWpPluginVersion = (versionInfo as Record<string, unknown>)?.wpPluginVersion as string | undefined;
-  const localQuploadVersion = (versionInfo as Record<string, unknown>)?.quploadVersion as string | undefined;
+  const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
+  const localQuploadVersion = (versionInfo as unknown as Record<string, string>)?.quploadVersion;
   const { lastMessage } = useWebSocket();
 
   // Listen for WebSocket log messages
