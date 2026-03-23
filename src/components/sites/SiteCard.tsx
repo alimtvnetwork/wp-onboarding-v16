@@ -286,19 +286,19 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       <CardContent className="pt-0 space-y-3">
         {/* Linked Plugins */}
         {mappings && mappings.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {mappings.slice(0, 2).map((mapping: PluginMapping) => (
-              <Badge key={mapping.id} variant="secondary" className="text-xs flex items-center gap-1 max-w-[140px]">
-                <Package className="h-3 w-3 shrink-0" />
-                <span className="truncate">{mapping.remoteSlug}</span>
+              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50">
+                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                <span className="truncate max-w-[100px]">{mapping.remoteSlug}</span>
               </Badge>
             ))}
             {mappings.length > 2 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">
                     +{mappings.length - 2} more
-                  </Badge>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {mappings.slice(2).map((mapping: PluginMapping) => (
