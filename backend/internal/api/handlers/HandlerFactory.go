@@ -142,11 +142,12 @@ func handleSiteActionById[T any](
 
 		result, appErr := fn(r.Context(), siteId)
 		if appErr != nil {
-			respondError(
+			respondErrorWithDelegated(
 				w,
-				wordpress.HttpStatusServerError,
+				resolveHttpStatus(appErr, wordpress.HttpStatusServerError),
 				errCode,
 				appErr.Error(),
+				appErr,
 			)
 
 			return
