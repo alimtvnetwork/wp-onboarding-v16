@@ -197,7 +197,7 @@ func RevokeRemoteAppPassword(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.RevokeRemoteAppPassword(r.Context(), siteId, input)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
