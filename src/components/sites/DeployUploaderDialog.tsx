@@ -505,11 +505,15 @@ export function DeployUploaderDialog({
                           available={pf.qUploadAvailable}
                           namespace={pf.qUploadNamespace}
                           preferred
+                          remoteVersion={pf.qUpload?.version}
+                          localVersion={localQuploadVersion}
                         />
                         <EndpointCard
                           label="Riseup Asia (fallback)"
                           available={pf.riseupAsiaAvailable}
                           namespace={pf.riseupAsiaNamespace}
+                          remoteVersion={pf.riseupAsia?.version}
+                          localVersion={localWpPluginVersion}
                         />
                       </div>
                     )}
