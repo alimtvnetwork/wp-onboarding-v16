@@ -118,6 +118,16 @@ func buildDelegatedRequestServer(apiErr *wordpress.ApiError) *envelope.Delegated
 	return drs
 }
 
+// respondBadRequest is a shorthand for respondError with HttpStatusBadRequest.
+func respondBadRequest(w http.ResponseWriter, code apperror.ErrorCode, message string) {
+	respondError(w, wordpress.HttpStatusBadRequest, code, message)
+}
+
+// respondServerError is a shorthand for respondError with HttpStatusServerError.
+func respondServerError(w http.ResponseWriter, code apperror.ErrorCode, message string) {
+	respondError(w, wordpress.HttpStatusServerError, code, message)
+}
+
 // respondNotFound is a shorthand for respondError with HttpStatusNotFound.
 func respondNotFound(w http.ResponseWriter, code apperror.ErrorCode, message string) {
 	respondError(w, wordpress.HttpStatusNotFound, code, message)
