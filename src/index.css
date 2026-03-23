@@ -125,6 +125,11 @@ All colors MUST be HSL.
     --input: 0 0% 20%;
     --ring: 120 45% 39%;
 
+    /* Site card hover tokens — dark theme */
+    --site-card-hover: 101 62% 46%;
+    --site-card-hover-fg: 0 0% 10%;
+    --site-card-hover-shadow: 2px 2px 1px rgba(255, 255, 255, 0.12);
+
     /* Toast semantic tokens — dark theme */
     --toast-bg: 220 13% 14%;
     --toast-fg: 0 0% 98%;
