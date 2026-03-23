@@ -21,6 +21,7 @@ use WP_REST_Response;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\ResponseKeyType;
+use QUpload\Helpers\EnvelopeBuilder;
 use QUpload\Helpers\PathHelper;
 
 trait LogEmailTrait
@@ -102,19 +103,17 @@ trait LogEmailTrait
 
     /** Build the success response after sending log email. */
     private function buildEmailSuccessResponse(string $recipient, array $collected, string $machineName, string $clientIp): WP_REST_Response {
-        return new WP_REST_Response(
-            array(
-                ResponseKeyType::Success->value => true,
-                'sent_to'                       => $recipient,
-                'files_attached'                => $collected['file_names'],
-                'total_size_bytes'              => $collected['total_size'],
-                'requested_by'                  => array(
+        return EnvelopeBuilder::success('Log files emailed successfully')
+            ->setSingleResult(array(
+                'sent_to'          => $recipient,
+                'files_attached'   => $collected['file_names'],
+                'total_size_bytes' => $collected['total_size'],
+                'requested_by'     => array(
                     'machine' => $machineName,
                     'ip'      => $clientIp,
                 ),
-            ),
-            HttpStatusType::Ok->value,
-        );
+            ))
+            ->toResponse();
     }
 
     // ── Log File Collection ──────────────────────────────────────────
