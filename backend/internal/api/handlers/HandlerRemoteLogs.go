@@ -65,7 +65,7 @@ func ConfirmClearRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.ConfirmRemoteLogsClear(r.Context(), siteId, body.Token)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
