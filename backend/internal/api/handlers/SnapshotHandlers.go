@@ -86,7 +86,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	snapshot, appErr := Services.SiteService.GetRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3021", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3021", appErr.Error(), appErr)
 		return
 	}
 
