@@ -183,8 +183,22 @@ GET /error-history?limit=100
 ### Frontend Stack Trace
 
 ```
-Error: [E3001] failed to fetch snapshot settings: get snapshot settings (GET http://localhost:8080/riseup-asia-uploader/v1/snapshots/settings): status 403
+Error: [E3001] failed to fetch snapshot settings...
     at queryFn (http://localhost:8080/assets/index-Bk9djDqy.js:1052:5917)
+```
+
+### Delegated Request
+
+**GET** https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings
+**Status:** 403
+**Note:** Endpoint 'snapshots' is not enabled in plugin settings.
+
+### Delegated Stack Trace
+
+```
+#0 riseup-asia-uploader.php(1098): FileLogger->error()
+#1 class-wp-hook.php(341): Plugin->enrichErrorResponse()
+#2 plugin.php(205): WP_Hook->apply_filters()
 ```
 
 ---
