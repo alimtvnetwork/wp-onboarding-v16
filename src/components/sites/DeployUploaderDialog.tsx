@@ -127,9 +127,9 @@ export function DeployUploaderDialog({
 
       const msg = logEntry.message.toLowerCase();
       if (msg.includes("creating plugin zip") || msg.includes("zip archive created")) {
-        setDeployPhase("zipping");
+        transitionPhase("zipping");
       } else if (msg.includes("uploading") || msg.includes("cross-upload") || msg.includes("endpoint")) {
-        setDeployPhase("uploading");
+        transitionPhase("uploading");
       }
     }
   }, [lastMessage, status]);
