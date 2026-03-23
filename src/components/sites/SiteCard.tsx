@@ -219,7 +219,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   };
 
   return (
-    <Card className="group relative transition-all duration-300 ease-in-out hover:bg-site-card-hover hover:border-transparent hover:text-site-card-hover-foreground shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
+    <Card className="group relative transition-all duration-500 ease-in-out hover:bg-site-card-hover hover:border-site-card-hover hover:text-site-card-hover-foreground shadow-sm hover:shadow-[var(--site-card-hover-shadow)] hover:scale-[1.01]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div
@@ -239,7 +239,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate group-hover:text-site-card-hover-foreground/70"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate group-hover:text-site-card-hover-foreground/80"
                 onClick={(e) => e.stopPropagation()}
               >
                 {site.url.replace(/^https?:\/\//, "")}
@@ -352,7 +352,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
               </span>
             )}
             {lastBackup && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/70">
+              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/80">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
