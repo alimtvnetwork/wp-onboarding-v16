@@ -45,99 +45,132 @@ type PreflightSiteResult struct {
 }
 
 // DeployPreflight checks endpoint availability on all requested sites in parallel.
+// Each plugin check across each site runs as its own goroutine (6 goroutines for 3 sites × 2 plugins).
 func (s *Service) DeployPreflight(ctx context.Context, siteIds []int64) ([]PreflightSiteResult, *apperror.AppError) {
-	results := make([]PreflightSiteResult, len(siteIds))
-	var wg sync.WaitGroup
-
-	for i, siteId := range siteIds {
-		wg.Add(1)
-
-		go func(idx int, id int64) {
-			defer wg.Done()
-			result := s.preflightSingleSite(ctx, id)
-			results[idx] = result
-
-			// Stream each result immediately via WebSocket
-			if s.wsHub != nil {
-				s.wsHub.BroadcastPreflightSiteResult(result)
-			}
-		}(i, siteId)
+	type siteContext struct {
+		index  int
+		siteId int64
+		site   models.Site
+		client *wordpress.Client
+		err    string
 	}
 
-	wg.Wait()
+	// Phase 1: Resolve all sites and build clients (sequential — fast, DB-only)
+	siteCtxs := make([]siteContext, len(siteIds))
+	for i, id := range siteIds {
+		sc := siteContext{index: i, siteId: id}
+		result := s.GetById(ctx, id)
+		if result.HasError() {
+			sc.err = fmt.Sprintf("Site not found: %v", result.AppError())
+		} else {
+			sc.site = result.Value()
+			client, clientErr := s.buildPreflightClient(sc.site)
+			if clientErr != nil {
+				sc.err = clientErr.Error()
+			} else {
+				sc.client = client
+			}
+		}
+		siteCtxs[i] = sc
+	}
 
-	return results, nil
-}
+	// Phase 2: Fire ALL plugin checks as independent goroutines (6 for 3 sites × 2 plugins)
+	type pluginResult struct {
+		siteIndex int
+		plugin    string // "riseup" or "qupload"
+		status    PreflightPluginStatus
+	}
 
-// preflightSingleSite checks both plugin endpoints on a single site.
-func (s *Service) preflightSingleSite(ctx context.Context, siteId int64) PreflightSiteResult {
-	result := s.GetById(ctx, siteId)
-	if result.HasError() {
-		return PreflightSiteResult{
-			SiteId: siteId,
-			Error:  fmt.Sprintf("Site not found: %v", result.AppError()),
+	results := make([]PreflightSiteResult, len(siteIds))
+	// Initialize results with site info
+	for _, sc := range siteCtxs {
+		r := PreflightSiteResult{
+			SiteId:   sc.siteId,
+			SiteName: sc.site.Name,
+			SiteUrl:  sc.site.Url,
+		}
+		if sc.err != "" {
+			r.Error = sc.err
+			r.IsReachable = false
+			r.RiseupAsia = PreflightPluginStatus{Name: "riseup-asia-uploader", Status: "UNREACHABLE", Message: sc.err}
+			r.QUpload = PreflightPluginStatus{Name: "qupload", Status: "UNREACHABLE", Message: sc.err}
+		} else {
+			r.IsReachable = true
+		}
+		results[sc.index] = r
+	}
+
+	// Collect plugin results via channel
+	reachable := make([]siteContext, 0, len(siteCtxs))
+	for _, sc := range siteCtxs {
+		if sc.err == "" {
+			reachable = append(reachable, sc)
+		} else {
+			// Broadcast unreachable immediately
+			if s.wsHub != nil {
+				s.wsHub.BroadcastPreflightSiteResult(results[sc.index])
+			}
 		}
 	}
-	site := result.Value()
 
-	client, clientErr := s.buildPreflightClient(site)
-	if clientErr != nil {
-		return buildUnreachablePreflight(siteId, site, clientErr.Error())
+	if len(reachable) == 0 {
+		return results, nil
 	}
 
-	return s.checkSiteEndpoints(siteId, site, client)
-}
-
-// buildPreflightClient creates a WordPress client for pre-flight checks.
-func (s *Service) buildPreflightClient(site models.Site) (*wordpress.Client, *apperror.AppError) {
-	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
-	}
-
-	client := s.wpClientFactory(site.Url, site.Username, string(decrypted), nil)
-
-	return client, nil
-}
-
-// checkSiteEndpoints probes both Riseup Asia and QUpload endpoints in parallel.
-// Each plugin check (availability + metadata) runs concurrently for maximum speed.
-func (s *Service) checkSiteEndpoints(siteId int64, site models.Site, client *wordpress.Client) PreflightSiteResult {
-	preflight := PreflightSiteResult{
-		SiteId:      siteId,
-		SiteName:    site.Name,
-		SiteUrl:     site.Url,
-		IsReachable: true,
-	}
-
+	ch := make(chan pluginResult, len(reachable)*2)
 	var wg sync.WaitGroup
-	var riseupStatus, quploadStatus PreflightPluginStatus
 
-	wg.Add(2)
+	for _, sc := range reachable {
+		// Goroutine for Riseup Asia
+		wg.Add(1)
+		go func(sc siteContext) {
+			defer wg.Done()
+			riseupResult := sc.client.CheckRiseupAsiaAvailable()
+			status := buildPluginPreflightStatus(sc.client, "riseup-asia-uploader", riseupResult)
+			ch <- pluginResult{siteIndex: sc.index, plugin: "riseup", status: status}
+		}(sc)
 
+		// Goroutine for QUpload
+		wg.Add(1)
+		go func(sc siteContext) {
+			defer wg.Done()
+			quploadResult := sc.client.CheckQUploadAvailable()
+			status := buildPluginPreflightStatus(sc.client, "qupload", quploadResult)
+			ch <- pluginResult{siteIndex: sc.index, plugin: "qupload", status: status}
+		}(sc)
+	}
+
+	// Close channel when all goroutines complete
 	go func() {
-		defer wg.Done()
-		riseupResult := client.CheckRiseupAsiaAvailable()
-		riseupStatus = buildPluginPreflightStatus(client, "riseup-asia-uploader", riseupResult)
+		wg.Wait()
+		close(ch)
 	}()
 
-	go func() {
-		defer wg.Done()
-		quploadResult := client.CheckQUploadAvailable()
-		quploadStatus = buildPluginPreflightStatus(client, "qupload", quploadResult)
-	}()
+	// Track completion per site to broadcast as soon as both plugins finish
+	pluginsDone := make(map[int]int) // siteIndex -> count of completed plugins
 
-	wg.Wait()
+	for pr := range ch {
+		r := &results[pr.siteIndex]
+		if pr.plugin == "riseup" {
+			r.RiseupAsia = pr.status
+			r.RiseupAsiaAvailable = pr.status.Available
+			r.RiseupAsiaNamespace = pr.status.Namespace
+		} else {
+			r.QUpload = pr.status
+			r.QUploadAvailable = pr.status.Available
+			r.QUploadNamespace = pr.status.Namespace
+		}
 
-	preflight.RiseupAsia = riseupStatus
-	preflight.RiseupAsiaAvailable = riseupStatus.Available
-	preflight.RiseupAsiaNamespace = riseupStatus.Namespace
+		pluginsDone[pr.siteIndex]++
+		if pluginsDone[pr.siteIndex] == 2 {
+			// Both plugins done for this site — broadcast
+			if s.wsHub != nil {
+				s.wsHub.BroadcastPreflightSiteResult(*r)
+			}
+		}
+	}
 
-	preflight.QUpload = quploadStatus
-	preflight.QUploadAvailable = quploadStatus.Available
-	preflight.QUploadNamespace = quploadStatus.Namespace
-
-	return preflight
+	return results, nil
 }
 
 func buildPluginPreflightStatus(client *wordpress.Client, slug string, availabilityResult apperror.Result[*wordpress.UploaderAvailability]) PreflightPluginStatus {
