@@ -269,6 +269,8 @@ export function DeployUploaderDialog({
       const siteIds = sites.map((s) => s.id);
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
+      // Mark all sites as completed from results
+      setCompletedSiteIds(new Set(deployResults.map((r) => r.siteId)));
 
       const resultLogs: LogEntry[] = deployResults.map((result) => ({
         timestamp: new Date().toISOString(),
