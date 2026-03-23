@@ -126,9 +126,9 @@ All colors MUST be HSL.
     --ring: 120 45% 39%;
 
     /* Site card hover tokens — dark theme */
-    --site-card-hover: 101 62% 46%;
-    --site-card-hover-fg: 0 0% 10%;
-    --site-card-hover-shadow: 2px 2px 1px rgba(255, 255, 255, 0.12);
+    --site-card-hover: 142 50% 35%;
+    --site-card-hover-fg: 0 0% 100%;
+    --site-card-hover-shadow: 2px 2px 1px hsla(142, 50%, 60%, 0.15);
 
     /* Toast semantic tokens — dark theme */
     --toast-bg: 220 13% 14%;
