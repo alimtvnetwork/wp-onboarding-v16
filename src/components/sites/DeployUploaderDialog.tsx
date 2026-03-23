@@ -394,19 +394,38 @@ export function DeployUploaderDialog({
   const getPhaseProgress = () => {
     switch (deployPhase) {
       case "preflight": return 0;
-      case "zipping": return 25;
-      case "uploading": return 60;
+      case "zipping": return 20;
+      case "uploading": return 55;
+      case "verifying": return 85;
       case "complete": return 100;
     }
   };
 
   const getPhaseLabel = () => {
+    const ver = localWpPluginVersion ? ` v${localWpPluginVersion}` : "";
     switch (deployPhase) {
       case "preflight": return "Pre-flight checks";
-      case "zipping": return "Creating ZIP archives...";
-      case "uploading": return "Uploading to sites (cross-upload)...";
+      case "zipping": return `Creating ZIP archives${ver}...`;
+      case "uploading": return `Uploading${ver} to ${sites.length} site(s)...`;
+      case "verifying": return "Verifying deployed versions...";
       case "complete": return status === DeployStatus.Completed ? "Deployment complete" : "Deployment finished with errors";
     }
+  };
+
+  // Subtask chain items for the progress display
+  const deploySubtasks = [
+    { key: "zipping", label: `ZIP plugins${localWpPluginVersion ? ` v${localWpPluginVersion}` : ""}`, icon: "📦" },
+    { key: "uploading", label: `Upload to ${sites.length} site(s)`, icon: "📤" },
+    { key: "verifying", label: "Verify remote versions", icon: "🔍" },
+  ] as const;
+
+  const getSubtaskStatus = (key: string) => {
+    const order = ["zipping", "uploading", "verifying", "complete"];
+    const currentIdx = order.indexOf(deployPhase);
+    const taskIdx = order.indexOf(key);
+    if (taskIdx < currentIdx) return "done";
+    if (taskIdx === currentIdx) return "active";
+    return "pending";
   };
 
   // Compute totals for preflight summary
