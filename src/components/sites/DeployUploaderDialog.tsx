@@ -465,25 +465,60 @@ export function DeployUploaderDialog({
 
           {/* ── Progress Tab ── */}
           <TabsContent value="progress" className="space-y-4">
-            {status === DeployStatus.Deploying && (
-              <div className="space-y-2">
+            {/* Phase progress bar */}
+            {(status === DeployStatus.Deploying || status === DeployStatus.Completed || status === DeployStatus.Error) && (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{getPhaseLabel()}</span>
-                  <span className="font-mono text-xs">{getPhaseProgress()}%</span>
+                  <span className="text-muted-foreground font-medium">{getPhaseLabel()}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{getPhaseProgress()}%</span>
                 </div>
                 <Progress value={getPhaseProgress()} className="h-2" />
+
+                {/* Chained subtask list */}
+                <div className="space-y-1.5 pt-1">
+                  {deploySubtasks.map((task) => {
+                    const s = getSubtaskStatus(task.key);
+                    return (
+                      <div key={task.key} className="flex items-center gap-2.5 text-sm">
+                        {s === "done" ? (
+                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                        ) : s === "active" ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
+                        )}
+                        <span className={`${
+                          s === "done" ? "text-muted-foreground line-through" :
+                          s === "active" ? "text-foreground font-medium" :
+                          "text-muted-foreground/60"
+                        }`}>
+                          {task.icon} {task.label}
+                        </span>
+                        {s === "done" && (
+                          <span className="text-xs text-primary font-mono">✓</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
+            {/* Status banner */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex items-center gap-3">
                 {getStatusIcon()}
                 <div>
                   <p className="font-semibold text-base text-foreground">
-                    {status === DeployStatus.Idle ? "Ready to Deploy" : getPhaseLabel()}
+                    {status === DeployStatus.Idle
+                      ? `Ready to Deploy${localWpPluginVersion ? ` v${localWpPluginVersion}` : ""}`
+                      : getPhaseLabel()}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {sites.length} site(s) selected
+                    {localWpPluginVersion && status === DeployStatus.Idle && (
+                      <> · Riseup Asia v{localWpPluginVersion}{localQuploadVersion ? ` · QUpload v${localQuploadVersion}` : ""}</>
+                    )}
                   </p>
                 </div>
               </div>
