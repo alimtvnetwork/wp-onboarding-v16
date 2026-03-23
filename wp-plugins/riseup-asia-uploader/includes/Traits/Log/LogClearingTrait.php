@@ -26,6 +26,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Logging\FileLogger;
 
 trait LogClearingTrait
@@ -392,19 +393,15 @@ trait LogClearingTrait
 
     /** Build a standardized error response. Shared with LogEmailTrait. */
     private function buildLogErrorResponse(string $error, string $code, HttpStatusType $status, string $message = ''): WP_REST_Response {
-        $data = array(
-            ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => $error,
-            'code'                          => $code,
-        );
+        $displayMessage = ($message !== '') ? $message : $error;
 
-        $hasMessage = ($message !== '');
-
-        if ($hasMessage) {
-            $data['message'] = $message;
-        }
-
-        return new WP_REST_Response($data, $status->value);
+        return EnvelopeBuilder::error($displayMessage, $status->value)
+            ->setSingleResult(array(
+                'error'   => $error,
+                'code'    => $code,
+                'message' => $displayMessage,
+            ))
+            ->toResponse();
     }
 
     /** Build the transient key for a clear token. */
