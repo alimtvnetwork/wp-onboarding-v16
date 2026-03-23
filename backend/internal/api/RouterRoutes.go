@@ -29,6 +29,9 @@ func wireHandlerServices(cfg ServerConfig) {
 func registerRoutes(api *mux.Router, cfg ServerConfig) {
 	registerCoreRoutes(api)
 	registerSiteRoutes(api)
+	registerUserRoutes(api)
+	registerSiteSettingsRoutes(api)
+	registerSnapshotRoutes(api)
 	registerPluginRoutes(api)
 	registerGitSyncRoutes(api)
 	registerPublishRoutes(api)

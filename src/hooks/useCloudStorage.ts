@@ -16,9 +16,14 @@ export function useCloudStorageAccounts() {
   return useQuery({
     queryKey: [ACCOUNTS_KEY],
     queryFn: async () => {
-      const res = await api.getCloudStorageAccounts();
-      const data = requireSuccess(res, { endpoint: "/cloud-storage/accounts" });
-      return (data as { accounts: CloudStorageAccount[] }).accounts;
+      try {
+        const res = await api.getCloudStorageAccounts();
+        const data = requireSuccess(res, { endpoint: "/cloud-storage/accounts" });
+        return (data as { accounts: CloudStorageAccount[] }).accounts;
+      } catch {
+        // Cloud storage backend not yet implemented — return empty
+        return [];
+      }
     },
   });
 }
