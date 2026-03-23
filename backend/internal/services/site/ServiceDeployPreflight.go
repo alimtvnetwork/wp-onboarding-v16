@@ -255,24 +255,4 @@ func classifyPreflightFailure(statusCode int, fallback string) (string, string) 
 	}
 }
 
-// buildUnreachablePreflight constructs a preflight result for an unreachable site.
-func buildUnreachablePreflight(siteId int64, site models.Site, errMsg string) PreflightSiteResult {
-	return PreflightSiteResult{
-		SiteId:      siteId,
-		SiteName:    site.Name,
-		SiteUrl:     site.Url,
-		IsReachable: false,
-		RiseupAsia: PreflightPluginStatus{
-			Name:    "riseup-asia-uploader",
-			Status:  "UNREACHABLE",
-			Message: errMsg,
-		},
-		QUpload: PreflightPluginStatus{
-			Name:    "qupload",
-			Status:  "UNREACHABLE",
-			Message: errMsg,
-		},
-		Error: errMsg,
-	}
-}
 
