@@ -50,9 +50,9 @@ Structured PHP stack frames parsed from WordPress error responses (via `PhpStack
 
 ## UI Design
 
-### Tab Placement
+### Top-Level Section Placement
 
-Add a **"Delegated"** tab (with `Globe` icon) to the `BackendSection` tabs, positioned after "Request" and before "Traversal". The tab only appears when delegated data exists.
+The "Delegated" section is a **top-level tab** alongside "Backend" and "Frontend" in the Global Error Modal — NOT a sub-tab within BackendSection. It appears only when delegated data exists, with an orange-themed Globe icon.
 
 ### Tab Content — Sections (in order)
 

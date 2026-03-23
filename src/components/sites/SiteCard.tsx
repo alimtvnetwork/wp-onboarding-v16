@@ -188,11 +188,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle className="h-4 w-4 text-primary" />;
+        return <CheckCircle className="h-4 w-4 text-primary group-hover:text-site-card-hover-foreground" />;
       case "disconnected":
-        return <XCircle className="h-4 w-4 text-destructive" />;
+        return <XCircle className="h-4 w-4 text-destructive group-hover:text-site-card-hover-foreground" />;
       default:
-        return <HelpCircle className="h-4 w-4 text-muted-foreground" />;
+        return <HelpCircle className="h-4 w-4 text-muted-foreground group-hover:text-site-card-hover-foreground" />;
     }
   };
 
@@ -249,12 +249,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
           {/* Header actions: Edit + Overflow */}
           <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(site)} title="Edit site">
+            <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground" onClick={() => onEdit(site)} title="Edit site">
               <Edit className="h-3.5 w-3.5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -288,15 +288,15 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {mappings && mappings.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {mappings.slice(0, 2).map((mapping: PluginMapping) => (
-              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50">
-                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50 group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
+                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground group-hover:text-site-card-hover-foreground" />
                 <span className="truncate max-w-[100px]">{mapping.remoteSlug}</span>
               </Badge>
             ))}
             {mappings.length > 2 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">
+                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
                     +{mappings.length - 2} more
                   </button>
                 </DropdownMenuTrigger>
@@ -316,19 +316,19 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {/* Status Badge */}
         <div className="flex items-center justify-between">
           <div
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)}`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)} group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30`}
           >
-            {getStatusIcon(site.connectionStatus)}
+            <span className="group-hover:text-site-card-hover-foreground">{getStatusIcon(site.connectionStatus)}</span>
             <span>{getStatusText(site.connectionStatus)}</span>
           </div>
           
           {site.connectionStatus === ConnectionStatus.Connected ? (
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Retest
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="outline" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Test
             </Button>
@@ -337,7 +337,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
         {/* Last tested info */}
         {site.lastTestedAt && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground group-hover:text-site-card-hover-foreground/70">
             Last tested: {new Date(site.lastTestedAt).toLocaleDateString()}
           </p>
         )}
@@ -346,13 +346,13 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Backup Running</span>
               </span>
             )}
             {lastBackup && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/70">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
