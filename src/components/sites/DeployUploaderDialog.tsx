@@ -102,6 +102,9 @@ export function DeployUploaderDialog({
   const [preflightResults, setPreflightResults] = useState<PreflightSiteResult[]>(preflightCache);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
+  const [phaseTimings, setPhaseTimings] = useState<Record<string, { start: number; end?: number }>>({});
+  const [, setTimerTick] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
@@ -124,9 +127,9 @@ export function DeployUploaderDialog({
 
       const msg = logEntry.message.toLowerCase();
       if (msg.includes("creating plugin zip") || msg.includes("zip archive created")) {
-        setDeployPhase("zipping");
+        transitionPhase("zipping");
       } else if (msg.includes("uploading") || msg.includes("cross-upload") || msg.includes("endpoint")) {
-        setDeployPhase("uploading");
+        transitionPhase("uploading");
       }
     }
   }, [lastMessage, status]);
@@ -142,6 +145,8 @@ export function DeployUploaderDialog({
       setResults([]);
       setStatus(DeployStatus.Idle);
       setCurrentTab("progress");
+      setPhaseTimings({});
+      stopTimer();
       setDeployPhase("preflight");
       setExpandedSites(new Set());
 
@@ -211,9 +216,38 @@ export function DeployUploaderDialog({
     });
   };
 
+  // Helper to transition phases with timing
+  const transitionPhase = (phase: DeployPhase) => {
+    const now = Date.now();
+    setPhaseTimings((prev) => {
+      const updated = { ...prev };
+      // End previous active phase
+      for (const key of Object.keys(updated)) {
+        if (!updated[key].end) updated[key] = { ...updated[key], end: now };
+      }
+      // Start new phase (unless "complete")
+      if (phase !== "complete") {
+        updated[phase] = { start: now };
+      }
+      return updated;
+    });
+    setDeployPhase(phase);
+  };
+
+  // Start live timer during deploy
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setTimerTick((t) => t + 1), 100);
+  };
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+
   const handleDeploy = async () => {
     setStatus(DeployStatus.Deploying);
-    setDeployPhase("zipping");
+    setPhaseTimings({});
+    startTimer();
+    transitionPhase("zipping");
     setLogs([{
       timestamp: new Date().toISOString(),
       level: "info",
@@ -250,7 +284,7 @@ export function DeployUploaderDialog({
       ]);
 
       // Auto-verify: refresh pre-flight to confirm versions on remote
-      setDeployPhase("verifying");
+      transitionPhase("verifying");
       setLogs((prev) => [...prev, {
         timestamp: new Date().toISOString(),
         level: "info",
@@ -285,7 +319,8 @@ export function DeployUploaderDialog({
         setPreflightLoading(false);
       }
 
-      setDeployPhase("complete");
+      transitionPhase("complete");
+      stopTimer();
       setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
 
       if (failed === 0) {
@@ -297,7 +332,8 @@ export function DeployUploaderDialog({
       }
     } catch (error: unknown) {
       setStatus(DeployStatus.Error);
-      setDeployPhase("complete");
+      transitionPhase("complete");
+      stopTimer();
       const errorMsg = error instanceof Error ? error.message : "Deployment failed";
       setLogs((prev) => [
         ...prev,
@@ -428,6 +464,14 @@ export function DeployUploaderDialog({
     return "pending";
   };
 
+  const getSubtaskElapsed = (key: string): string | null => {
+    const timing = phaseTimings[key];
+    if (!timing) return null;
+    const end = timing.end ?? Date.now();
+    const ms = end - timing.start;
+    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+  };
+
   // Compute totals for preflight summary
   const totalPluginChecks = preflightResults.length * 2;
   const okChecks = preflightResults.reduce((sum, pf) => {
@@ -487,13 +531,18 @@ export function DeployUploaderDialog({
                         ) : (
                           <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
                         )}
-                        <span className={`${
+                        <span className={`flex-1 ${
                           s === "done" ? "text-muted-foreground line-through" :
                           s === "active" ? "text-foreground font-medium" :
                           "text-muted-foreground/60"
                         }`}>
                           {task.icon} {task.label}
                         </span>
+                        {(s === "done" || s === "active") && getSubtaskElapsed(task.key) && (
+                          <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">
+                            {getSubtaskElapsed(task.key)}
+                          </span>
+                        )}
                         {s === "done" && (
                           <span className="text-xs text-primary font-mono">✓</span>
                         )}
