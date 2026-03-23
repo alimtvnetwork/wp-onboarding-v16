@@ -346,13 +346,13 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Backup Running</span>
               </span>
             )}
             {lastBackup && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/70">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
