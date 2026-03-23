@@ -914,9 +914,26 @@ export function DeployUploaderDialog({
               </Button>
             )}
             {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStatus(DeployStatus.Idle);
+                    setDeployPhase("preflight");
+                    setResults([]);
+                    setLogs([]);
+                    setPhaseTimings({});
+                    setCompletedSiteIds(new Set());
+                    stopTimer();
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Deploy Again
+                </Button>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+              </>
             )}
             {status === DeployStatus.Deploying && (
               <Button disabled>
