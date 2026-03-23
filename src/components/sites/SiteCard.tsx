@@ -361,61 +361,61 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: Plugins, Health, Logs, Settings, Deploy */}
-        <div className="flex gap-1 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
+        <div className="flex gap-0.5 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="View plugins on this site"
           >
             <Eye className="h-3.5 w-3.5 shrink-0" />
-            Plugins
+            <span className="hidden sm:inline truncate">Plugins</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
             onClick={() => setShowHealthSummary(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Site health summary"
           >
             <HeartPulse className="h-3.5 w-3.5 shrink-0" />
-            Health
+            <span className="hidden sm:inline truncate">Health</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
             onClick={() => setShowLogs(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="View remote logs"
           >
             <FileText className="h-3.5 w-3.5 shrink-0" />
-            Logs
+            <span className="hidden sm:inline truncate">Logs</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
             onClick={() => setShowSiteSettings(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Site settings"
           >
             <Settings className="h-3.5 w-3.5 shrink-0" />
-            Settings
+            <span className="hidden sm:inline truncate">Settings</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2"
+            className="flex-1 h-8 text-xs gap-1 px-1.5 min-w-0"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== ConnectionStatus.Connected}
             title="Deploy Riseup Asia Uploader"
           >
             {deployingUploader ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
-            Deploy
+            <span className="hidden sm:inline truncate">Deploy</span>
           </Button>
         </div>
       </CardContent>
