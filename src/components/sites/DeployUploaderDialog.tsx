@@ -145,6 +145,8 @@ export function DeployUploaderDialog({
       setResults([]);
       setStatus(DeployStatus.Idle);
       setCurrentTab("progress");
+      setPhaseTimings({});
+      stopTimer();
       setDeployPhase("preflight");
       setExpandedSites(new Set());
 
