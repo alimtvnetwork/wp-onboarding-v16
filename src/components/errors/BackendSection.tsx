@@ -55,14 +55,6 @@ export function BackendSection({
 
   const hasRemoteResponseBody = typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0;
 
-  const hasDelegatedContent = phpStackFrames.length > 0
-    || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
-    || (delegatedStackTrace && delegatedStackTrace.length > 0)
-    || !!delegatedServer
-    || (sessionPhpFrames && sessionPhpFrames.length > 0)
-    || !!sessionDiag?.phpStackTraceLog
-    || hasRemoteResponseBody;
-
   const hasExecutionContent = (error.backendLogs && error.backendLogs.length > 0)
     || (envelopeMethodsBackend && envelopeMethodsBackend.length > 0);
 
