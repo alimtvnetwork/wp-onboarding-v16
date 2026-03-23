@@ -106,6 +106,7 @@ export function DeployUploaderDialog({
   const [, setTimerTick] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
+  const [completedSiteIds, setCompletedSiteIds] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
   const { data: versionInfo } = useVersionInfo();
   const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
@@ -131,8 +132,15 @@ export function DeployUploaderDialog({
       } else if (msg.includes("uploading") || msg.includes("cross-upload") || msg.includes("endpoint")) {
         transitionPhase("uploading");
       }
+
+      // Track per-site completion from WS messages
+      for (const site of sites) {
+        if (msg.includes(site.name.toLowerCase()) && (msg.includes("success") || msg.includes("uploaded") || msg.includes("activated"))) {
+          setCompletedSiteIds((prev) => new Set(prev).add(site.id));
+        }
+      }
     }
-  }, [lastMessage, status]);
+  }, [lastMessage, status, sites]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,6 +154,7 @@ export function DeployUploaderDialog({
       setStatus(DeployStatus.Idle);
       setCurrentTab("progress");
       setPhaseTimings({});
+      setCompletedSiteIds(new Set());
       stopTimer();
       setDeployPhase("preflight");
       setExpandedSites(new Set());
@@ -246,6 +255,7 @@ export function DeployUploaderDialog({
   const handleDeploy = async () => {
     setStatus(DeployStatus.Deploying);
     setPhaseTimings({});
+    setCompletedSiteIds(new Set());
     startTimer();
     transitionPhase("zipping");
     setLogs([{
@@ -259,6 +269,8 @@ export function DeployUploaderDialog({
       const siteIds = sites.map((s) => s.id);
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
+      // Mark all sites as completed from results
+      setCompletedSiteIds(new Set(deployResults.map((r) => r.siteId)));
 
       const resultLogs: LogEntry[] = deployResults.map((result) => ({
         timestamp: new Date().toISOString(),
@@ -523,28 +535,63 @@ export function DeployUploaderDialog({
                   {deploySubtasks.map((task) => {
                     const s = getSubtaskStatus(task.key);
                     return (
-                      <div key={task.key} className="flex items-center gap-2.5 text-sm">
-                        {s === "done" ? (
-                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                        ) : s === "active" ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-                        ) : (
-                          <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
-                        )}
-                        <span className={`flex-1 ${
-                          s === "done" ? "text-muted-foreground line-through" :
-                          s === "active" ? "text-foreground font-medium" :
-                          "text-muted-foreground/60"
-                        }`}>
-                          {task.icon} {task.label}
-                        </span>
-                        {(s === "done" || s === "active") && getSubtaskElapsed(task.key) && (
-                          <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">
-                            {getSubtaskElapsed(task.key)}
+                      <div key={task.key} className="space-y-1">
+                        <div className="flex items-center gap-2.5 text-sm">
+                          {s === "done" ? (
+                            <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                          ) : s === "active" ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                          ) : (
+                            <div className="h-4 w-4 rounded-full border border-border/60 shrink-0" />
+                          )}
+                          <span className={`flex-1 ${
+                            s === "done" ? "text-muted-foreground line-through" :
+                            s === "active" ? "text-foreground font-medium" :
+                            "text-muted-foreground/60"
+                          }`}>
+                            {task.icon} {task.label}
                           </span>
-                        )}
-                        {s === "done" && (
-                          <span className="text-xs text-primary font-mono">✓</span>
+                          {(s === "done" || s === "active") && getSubtaskElapsed(task.key) && (
+                            <span className="font-mono text-xs text-muted-foreground/70 tabular-nums">
+                              {getSubtaskElapsed(task.key)}
+                            </span>
+                          )}
+                          {s === "done" && (
+                            <span className="text-xs text-primary font-mono">✓</span>
+                          )}
+                        </div>
+
+                        {/* Per-site sub-items for upload task */}
+                        {task.key === "uploading" && (s === "active" || s === "done") && (
+                          <div className="ml-7 space-y-0.5">
+                            {sites.map((site) => {
+                              const siteResult = results.find((r) => r.siteId === site.id);
+                              const isDone = completedSiteIds.has(site.id);
+                              const isFailed = siteResult && !siteResult.isSuccess;
+                              return (
+                                <div key={site.id} className="flex items-center gap-2 text-xs">
+                                  {isDone ? (
+                                    isFailed ? (
+                                      <XCircle className="h-3 w-3 text-destructive shrink-0" />
+                                    ) : (
+                                      <CheckCircle className="h-3 w-3 text-primary shrink-0" />
+                                    )
+                                  ) : s === "active" ? (
+                                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
+                                  ) : (
+                                    <div className="h-3 w-3 rounded-full border border-border/40 shrink-0" />
+                                  )}
+                                  <span className={
+                                    isDone
+                                      ? isFailed ? "text-destructive" : "text-muted-foreground"
+                                      : "text-muted-foreground/70"
+                                  }>
+                                    {site.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     );
