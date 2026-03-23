@@ -90,6 +90,9 @@ export function DeployUploaderDialog({
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [deployPhase, setDeployPhase] = useState<DeployPhase>("preflight");
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const { data: versionInfo } = useVersionInfo();
+  const localWpPluginVersion = (versionInfo as Record<string, unknown>)?.wpPluginVersion as string | undefined;
+  const localQuploadVersion = (versionInfo as Record<string, unknown>)?.quploadVersion as string | undefined;
   const { lastMessage } = useWebSocket();
 
   // Listen for WebSocket log messages
