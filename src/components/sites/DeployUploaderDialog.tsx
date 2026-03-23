@@ -772,16 +772,16 @@ function PluginSummaryBadge({
     }`}>
       {available ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
       <span>{label}</span>
-      {available && remoteVersion && (
-        <span className="font-mono">v{remoteVersion}</span>
+      {available && localVersion && (
+        <span className="font-mono">v{localVersion}</span>
       )}
       {isUpToDate && (
         <span className="opacity-70">✓ up to date</span>
       )}
-      {needsPublish && localVersion && (
+      {needsPublish && remoteVersion && (
         <>
           <span className="opacity-60">→</span>
-          <span className="font-mono">v{localVersion}</span>
+          <span className="font-mono">v{remoteVersion}</span>
         </>
       )}
       {!available && (
