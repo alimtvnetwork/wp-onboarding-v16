@@ -361,7 +361,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: 3 visible + overflow menu */}
-        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-emerald-500/30">
+        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-500 ease-in-out group-hover:border-[#54b435]/20">
           <Button
             variant="ghost"
             size="sm"
