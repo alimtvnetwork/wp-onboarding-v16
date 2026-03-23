@@ -26,6 +26,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Logging\FileLogger;
 
 trait LogClearingTrait
