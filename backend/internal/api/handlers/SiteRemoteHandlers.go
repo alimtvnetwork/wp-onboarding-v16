@@ -104,7 +104,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 func clearCacheOrFail(w http.ResponseWriter, r *http.Request, id int64) {
 	appErr := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, appErr.Error(), appErr)
 
 		return
 	}
@@ -262,7 +262,7 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 func fetchRemoteFilesOrFail(w http.ResponseWriter, r *http.Request, parsed *remotePluginParsed) {
 	files, appErr := Services.SiteService.GetRemotePluginFiles(r.Context(), parsed.SiteId, parsed.PluginSlug)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginFiles, appErr.Error(), appErr)
 
 		return
 	}

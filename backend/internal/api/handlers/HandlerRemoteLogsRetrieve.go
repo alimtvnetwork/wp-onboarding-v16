@@ -26,7 +26,7 @@ func RetrieveRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.RetrieveRemoteLogs(r.Context(), siteId, params)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
