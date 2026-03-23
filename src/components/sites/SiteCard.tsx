@@ -239,7 +239,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate group-hover:text-site-card-hover-foreground/70"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate group-hover:text-site-card-hover-foreground/80"
                 onClick={(e) => e.stopPropagation()}
               >
                 {site.url.replace(/^https?:\/\//, "")}
