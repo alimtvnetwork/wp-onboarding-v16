@@ -76,7 +76,7 @@ export function GlobalErrorModal() {
   const gitCommit = versionInfo?.gitCommit;
   const buildTime = versionInfo?.buildTime;
   
-  const [activeSection, setActiveSection] = useState<"backend" | "frontend">("backend");
+  const [activeSection, setActiveSection] = useState<"backend" | "frontend" | "delegated">("backend");
   const [showRawStack, setShowRawStack] = useState(false);
   const [showInternalFrames, setShowInternalFrames] = useState(false);
   
