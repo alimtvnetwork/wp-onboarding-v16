@@ -50,9 +50,9 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     /* Site card hover tokens — light theme */
-    --site-card-hover: 101 62% 46%;
-    --site-card-hover-fg: 0 0% 10%;
-    --site-card-hover-shadow: 2px 2px 1px rgba(0, 0, 0, 0.2);
+    --site-card-hover: 142 55% 42%;
+    --site-card-hover-fg: 0 0% 100%;
+    --site-card-hover-shadow: 2px 2px 1px hsla(142, 55%, 30%, 0.3);
 
     /* Toast semantic tokens — light theme */
     --toast-bg: 220 13% 18%;
