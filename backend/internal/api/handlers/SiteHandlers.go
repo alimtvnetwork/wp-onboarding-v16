@@ -229,7 +229,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 func testCredentialsOrFail(w http.ResponseWriter, r *http.Request, input credentialsInput) {
 	result, appErr := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.Url, input.Username, input.Password)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrWPConnection, appErr.Error(), appErr)
 
 		return
 	}
