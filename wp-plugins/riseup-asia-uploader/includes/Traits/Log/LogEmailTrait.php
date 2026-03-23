@@ -24,6 +24,7 @@ use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\PathHelper;
 
 trait LogEmailTrait
