@@ -462,6 +462,14 @@ export function DeployUploaderDialog({
     return "pending";
   };
 
+  const getSubtaskElapsed = (key: string): string | null => {
+    const timing = phaseTimings[key];
+    if (!timing) return null;
+    const end = timing.end ?? Date.now();
+    const ms = end - timing.start;
+    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+  };
+
   // Compute totals for preflight summary
   const totalPluginChecks = preflightResults.length * 2;
   const okChecks = preflightResults.reduce((sum, pf) => {
