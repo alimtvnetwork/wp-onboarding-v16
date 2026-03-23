@@ -86,7 +86,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	snapshot, appErr := Services.SiteService.GetRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3021", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3021", appErr.Error(), appErr)
 		return
 	}
 
@@ -109,7 +109,7 @@ func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteId, opts)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3022", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3022", appErr.Error(), appErr)
 		return
 	}
 
@@ -134,7 +134,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	appErr := Services.SiteService.DeleteRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3023", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3023", appErr.Error(), appErr)
 		return
 	}
 
@@ -159,7 +159,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.RestoreRemoteSnapshot(r.Context(), siteId, snapshotId)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, "E3024", appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, "E3024", appErr.Error(), appErr)
 		return
 	}
 

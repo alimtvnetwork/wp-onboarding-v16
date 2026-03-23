@@ -42,7 +42,7 @@ func GetRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.GetRemoteUser(r.Context(), siteId, userId)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
@@ -71,7 +71,7 @@ func CreateRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.CreateRemoteUser(r.Context(), siteId, input)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
@@ -108,7 +108,7 @@ func UpdateRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.UpdateRemoteUser(r.Context(), siteId, userId, input)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
@@ -139,7 +139,7 @@ func DeleteRemoteUser(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.DeleteRemoteUser(r.Context(), siteId, userId, reassign)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
@@ -168,7 +168,7 @@ func CreateRemoteAppPassword(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.CreateRemoteAppPassword(r.Context(), siteId, input)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
@@ -197,7 +197,7 @@ func RevokeRemoteAppPassword(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.RevokeRemoteAppPassword(r.Context(), siteId, input)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
