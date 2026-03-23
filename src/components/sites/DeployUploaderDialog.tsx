@@ -317,7 +317,8 @@ export function DeployUploaderDialog({
         setPreflightLoading(false);
       }
 
-      setDeployPhase("complete");
+      transitionPhase("complete");
+      stopTimer();
       setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
 
       if (failed === 0) {
