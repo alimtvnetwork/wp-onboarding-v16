@@ -104,7 +104,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 func clearCacheOrFail(w http.ResponseWriter, r *http.Request, id int64) {
 	appErr := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id)
 	if appErr != nil {
-		respondError(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, appErr.Error())
+		respondErrorWithDelegated(w, wordpress.HttpStatusServerError, apperror.ErrWPPluginGet, appErr.Error(), appErr)
 
 		return
 	}
