@@ -218,14 +218,13 @@ export function DeployUploaderDialog({
       timestamp: new Date().toISOString(),
       level: "info",
       step: "init",
-      message: `Starting deployment to ${sites.length} site(s)...`,
+      message: `Starting deployment to ${sites.length} site(s) — pushing v${localWpPluginVersion || "?"}`,
     }]);
 
     try {
       const siteIds = sites.map((s) => s.id);
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
-      setDeployPhase("complete");
 
       const resultLogs: LogEntry[] = deployResults.map((result) => ({
         timestamp: new Date().toISOString(),
@@ -245,15 +244,52 @@ export function DeployUploaderDialog({
         {
           timestamp: new Date().toISOString(),
           level: failed > 0 ? "warn" : "info",
-          step: "complete",
-          message: `Deployment complete: ${succeeded} succeeded, ${failed} failed`,
+          step: "upload-done",
+          message: `Upload complete: ${succeeded} succeeded, ${failed} failed`,
         },
       ]);
 
+      // Auto-verify: refresh pre-flight to confirm versions on remote
+      setDeployPhase("verifying");
+      setLogs((prev) => [...prev, {
+        timestamp: new Date().toISOString(),
+        level: "info",
+        step: "verify",
+        message: "Verifying deployed versions across all sites...",
+      }]);
+
+      try {
+        setPreflightLoading(true);
+        setPreflightResults([]);
+        preflightCache = [];
+        const response = await api.deployPreflight(siteIds);
+        const data = response.data;
+        if (data?.results) {
+          setPreflightResults(data.results);
+          preflightCache = data.results;
+        }
+        setLogs((prev) => [...prev, {
+          timestamp: new Date().toISOString(),
+          level: "info",
+          step: "verify",
+          message: `Post-deploy verification complete — ${data?.results?.length || 0} site(s) checked`,
+        }]);
+      } catch {
+        setLogs((prev) => [...prev, {
+          timestamp: new Date().toISOString(),
+          level: "warn",
+          step: "verify",
+          message: "Post-deploy verification failed — use Refresh to retry",
+        }]);
+      } finally {
+        setPreflightLoading(false);
+      }
+
+      setDeployPhase("complete");
       setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
 
       if (failed === 0) {
-        toast.success(`Deployed to ${succeeded} site(s) successfully`);
+        toast.success(`Deployed v${localWpPluginVersion || "?"} to ${succeeded} site(s) successfully`);
       } else {
         toast.warning(`Deployed to ${succeeded}/${sites.length} sites`);
         setCurrentTab("logs");
