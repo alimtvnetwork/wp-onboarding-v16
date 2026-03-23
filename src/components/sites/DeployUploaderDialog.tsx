@@ -797,7 +797,7 @@ export function DeployUploaderDialog({
           </TabsContent>
         </Tabs>
 
-        {/* Footer: Deploy + Refresh together, Deploy NOT blocked by preflight */}
+        {/* Footer: Deploy + Refresh together, Refresh always visible */}
         <div className="flex items-center justify-between pt-4 border-t border-border/40">
           <div className="flex items-center gap-2">
             {preflightResults.length > 0 && (
@@ -807,17 +807,15 @@ export function DeployUploaderDialog({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={runPreflight} disabled={preflightLoading || status === DeployStatus.Deploying}>
+              {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+              Refresh
+            </Button>
             {status === DeployStatus.Idle && (
-              <>
-                <Button variant="outline" size="sm" onClick={runPreflight} disabled={preflightLoading}>
-                  {preflightLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
-                  Refresh
-                </Button>
-                <Button onClick={handleDeploy} disabled={sites.length === 0}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Deploy to {sites.length} Site(s)
-                </Button>
-              </>
+              <Button onClick={handleDeploy} disabled={sites.length === 0}>
+                <Upload className="h-4 w-4 mr-2" />
+                Deploy to {sites.length} Site(s)
+              </Button>
             )}
             {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
               <Button variant="outline" onClick={() => onOpenChange(false)}>
