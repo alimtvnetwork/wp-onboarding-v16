@@ -96,7 +96,7 @@ func EmailRemoteLogs(w http.ResponseWriter, r *http.Request) {
 
 	result, appErr := Services.SiteService.EmailRemoteLogs(r.Context(), siteId, body)
 	if appErr != nil {
-		respondError(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error())
+		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
 	}
 
