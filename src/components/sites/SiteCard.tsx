@@ -316,19 +316,19 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {/* Status Badge */}
         <div className="flex items-center justify-between">
           <div
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)}`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)} group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30`}
           >
-            {getStatusIcon(site.connectionStatus)}
+            <span className="group-hover:text-site-card-hover-foreground">{getStatusIcon(site.connectionStatus)}</span>
             <span>{getStatusText(site.connectionStatus)}</span>
           </div>
           
           {site.connectionStatus === ConnectionStatus.Connected ? (
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Retest
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="outline" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Test
             </Button>
