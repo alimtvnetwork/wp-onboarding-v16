@@ -573,7 +573,16 @@ function EndpointBadge({ label, available, namespace }: { label: string; availab
   );
 }
 
-function EndpointCard({ label, available, namespace, preferred }: { label: string; available: boolean; namespace?: string; preferred?: boolean }) {
+function EndpointCard({ label, available, namespace, preferred, remoteVersion, localVersion }: {
+  label: string;
+  available: boolean;
+  namespace?: string;
+  preferred?: boolean;
+  remoteVersion?: string;
+  localVersion?: string;
+}) {
+  const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
+
   return (
     <div className={`p-2 rounded border text-xs ${
       available ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"
@@ -590,7 +599,25 @@ function EndpointCard({ label, available, namespace, preferred }: { label: strin
         <span className="text-muted-foreground font-mono">{namespace}</span>
       )}
       {!available && <span className="text-muted-foreground">Not installed</span>}
-      {preferred && available && (
+      {available && remoteVersion && (
+        <div className="flex items-center gap-1 mt-1 flex-wrap">
+          <Badge variant="outline" className="text-[10px] px-1 py-0">v{remoteVersion}</Badge>
+          {localVersion && (
+            <>
+              <span className="text-muted-foreground">→</span>
+              <Badge variant={needsPublish ? "destructive" : "secondary"} className="text-[10px] px-1 py-0">
+                local v{localVersion}
+              </Badge>
+            </>
+          )}
+        </div>
+      )}
+      {needsPublish && (
+        <div className="mt-1 text-[10px] text-destructive font-medium flex items-center gap-1">
+          <AlertTriangle className="h-2.5 w-2.5" /> Needs publish
+        </div>
+      )}
+      {preferred && available && !needsPublish && (
         <div className="mt-1 text-[10px] text-primary font-medium">★ Preferred</div>
       )}
     </div>
