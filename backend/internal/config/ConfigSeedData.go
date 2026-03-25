@@ -191,6 +191,14 @@ func seedAllPlugins(db *database.DB, cfg *Config, log *logger.Logger, siteIds []
 	for i, plugin := range cfg.Seed.Plugins {
 		resolvedPath := plugin.ResolvePath()
 		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", resolvedPath)
+
+		if !dirExists(resolvedPath) {
+			log.Warn("Plugin directory does not exist on this OS, skipping",
+				"name", plugin.Name, "resolvedPath", resolvedPath, "os", runtime.GOOS)
+
+			continue
+		}
+
 		totalMappings += seedSinglePlugin(db, log, plugin, siteIds)
 	}
 
