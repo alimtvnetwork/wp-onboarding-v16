@@ -99,11 +99,12 @@ func createMappingsForAllPlugins(db *database.DB, cfg *Config, log *logger.Logge
 	mappingsCreated := 0
 
 	for _, plugin := range cfg.Seed.Plugins {
-		pluginId, err := db.GetPluginIdByPath(plugin.Path)
+		resolvedPath := plugin.ResolvePath()
+		pluginId, err := db.GetPluginIdByPath(resolvedPath)
 		isPluginMissing := err != nil || pluginId == 0
 
 		if isPluginMissing {
-			log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", plugin.Path, "error", err)
+			log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", resolvedPath, "error", err)
 			continue
 		}
 
