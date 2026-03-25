@@ -1,4 +1,17 @@
 {
-  "lastDeployedAt": "",
-  "plugins": {}
+  "lastDeployedAt": "2026-03-23T09:54:43Z",
+  "plugins": {
+    "qupload": {
+      "version": "2.30.0",
+      "lastCommitSha": "e63747a9c9d16e989d266f82aa17df1fb880a329",
+      "pluginSlug": "qupload",
+      "deployedAt": "2026-03-23T09:54:43Z"
+    },
+    "riseup-asia-uploader": {
+      "version": "2.30.0",
+      "lastCommitSha": "e63747a9c9d16e989d266f82aa17df1fb880a329",
+      "pluginSlug": "riseup-asia-uploader",
+      "deployedAt": "2026-03-23T09:54:43Z"
+    }
+  }
 }

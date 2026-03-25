@@ -1,4 +1,20 @@
 {
   "pluginSlug": "qupload",
-  "versions": []
+  "versions": [
+    {
+      "commitSha": "27db7091389940f139e527cfaaf6abd7814e2ee2",
+      "version": "2.30.0",
+      "deployedAt": "2026-03-22T17:04:04Z"
+    },
+    {
+      "commitSha": "eff69c5a003ccb0fc6589f30959a498bcd2a275b",
+      "version": "2.30.0",
+      "deployedAt": "2026-03-23T09:04:26Z"
+    },
+    {
+      "commitSha": "e63747a9c9d16e989d266f82aa17df1fb880a329",
+      "version": "2.30.0",
+      "deployedAt": "2026-03-23T09:54:43Z"
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "Url": "/api/v1/sites/1/remote-plugins/astra-addon/astra-addon.php/disable",
+  "Method": "POST",
+  "Body": {
+    "SiteId": 1,
+    "PluginSlug": "astra-addon/astra-addon.php",
+    "Action": "disable"
+  }
+}

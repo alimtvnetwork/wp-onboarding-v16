@@ -1,0 +1,10 @@
+{
+  "RequestUrl": "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/plugins",
+  "ResponseUrl": "https://demoat.attoproperty.com.au",
+  "StatusCode": 200,
+  "Body": {
+    "IsSuccess": true,
+    "Action": "disable",
+    "Plugin": "astra-addon/astra-addon.php"
+  }
+}
