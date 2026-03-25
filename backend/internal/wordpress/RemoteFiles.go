@@ -73,7 +73,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) apperro
 	}
 	rawResult := c.doApiCallRaw(callInput)
 	if rawResult.HasError() {
-		return apperror.Fail[[]RemoteFile](rawResult.AppError())
+		return apperror.Fail[[]RemoteFile](mapNotFoundError(rawResult.AppError(), "plugin not found on remote", slug))
 	}
 
 	decodeResult := decodeApiResponse[syncManifestResult](rawResult.Value(), "sync manifest")

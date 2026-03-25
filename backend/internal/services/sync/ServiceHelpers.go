@@ -217,8 +217,16 @@ func (s *serviceImpl) fetchAndParseManifest(
 
 	remoteFiles := make(map[string]FileEntry)
 	if manifestResult.HasError() {
-		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
-			"pluginId", pluginId, "siteId", siteId, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
+		isPluginMissing := manifestResult.AppError().Code == apperror.ErrNotFound
+
+		if isPluginMissing {
+			s.log.Info("Plugin not installed on remote site, treating as not synced",
+				"pluginId", pluginId, "siteId", siteId, "slug", mapping.RemoteSlug)
+		} else {
+			s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
+				"pluginId", pluginId, "siteId", siteId, "slug", mapping.RemoteSlug, "error", manifestResult.AppError())
+		}
+
 		fallbackProgress := SyncProgressInput{
 			PluginId: pluginId,
 			SiteId:   siteId,
