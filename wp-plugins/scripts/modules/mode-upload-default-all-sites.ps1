@@ -65,7 +65,7 @@ function Invoke-UploadDefaultAllSitesMode {
     }
 
     # ── Verify QUpload script ──────────────────────────────────────────────
-    $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+    $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
     if (-not (Test-Path $quploadScript)) {
         Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
         exit 1
@@ -111,7 +111,7 @@ function Invoke-UploadDefaultAllSitesMode {
     }
 
     # ── Phase 2: Upload ───────────────────────────────────────────────────
-    $uploadLogsDir = Join-Path $ScriptDir "logs" "u-as-upload"
+    $uploadLogsDir = Join-Path (Join-Path $ScriptDir "logs") "u-as-upload"
     if (-not (Test-Path $uploadLogsDir)) {
         New-Item -ItemType Directory -Path $uploadLogsDir -Force | Out-Null
     }

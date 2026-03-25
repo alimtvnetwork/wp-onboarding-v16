@@ -137,7 +137,7 @@ function Invoke-ZipAllParallelMode {
             . $ModulePath
             $folders = @($PluginPaths | ForEach-Object { Get-Item $_ })
             Invoke-ParallelPhpCheck -PluginFolders $folders -Sequential
-        } -ArgumentList (Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
+        } -ArgumentList (Join-Path (Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules") "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
 
         Write-Host ""
         Write-Host "  ── Phase 1: ZIP ──────────────────────────────────────────" -ForegroundColor Cyan

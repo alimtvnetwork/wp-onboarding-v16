@@ -222,7 +222,7 @@ function Invoke-ParallelPhpCheck {
         Write-Host "    [PHP] Starting: $($folder.Name)" -ForegroundColor DarkGray
     }
 
-    $phpCheckModulePath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "php-check-parallel.ps1"
+    $phpCheckModulePath = Join-Path (Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules") "php-check-parallel.ps1"
 
     $jobs = @()
     $jobIndex = 0

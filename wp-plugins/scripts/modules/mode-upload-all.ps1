@@ -10,13 +10,13 @@ function Invoke-UploadAllMode {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+    $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
     if (-not (Test-Path $quploadScript)) {
         Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
         exit 1
     }
 
-    $qConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "qupload-config.json"
+    $qConfigPath = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "qupload-config.json"
     if (-not (Test-Path $qConfigPath)) {
         Write-Host "ERROR: qupload-config.json not found at: $qConfigPath" -ForegroundColor Red
         exit 1

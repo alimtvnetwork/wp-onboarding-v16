@@ -78,7 +78,7 @@ function Invoke-PluginStatusMode {
     Write-Host ""
 
     # ── Prepare log folder ─────────────────────────────────────────────
-    $statusLogsDir = Join-Path $ScriptDir "logs" "plugin-status"
+    $statusLogsDir = Join-Path (Join-Path $ScriptDir "logs") "plugin-status"
     if (Test-Path $statusLogsDir) {
         $existingLogs = @(Get-ChildItem -Path $statusLogsDir -File -ErrorAction SilentlyContinue)
         if ($existingLogs.Count -gt 0) {
