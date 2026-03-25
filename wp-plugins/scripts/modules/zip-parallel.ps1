@@ -14,8 +14,8 @@ function Invoke-ParallelPluginZip {
 
     Write-Host "  Zipping $($PluginFolders.Count) plugin(s) in parallel..." -ForegroundColor Yellow
 
-    $zipSinglePath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "zip-single.ps1"
-    $pluginHelpersPath = Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "plugin-helpers.ps1"
+    $zipSinglePath = Join-Path (Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules") "zip-single.ps1"
+    $pluginHelpersPath = Join-Path (Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules") "plugin-helpers.ps1"
 
     $zipJobs = @()
     $jobIndex = 0

@@ -90,7 +90,7 @@ if ([string]::IsNullOrWhiteSpace($ScriptDir)) {
 # ============================================================================
 # DOT-SOURCE MODULES (order matters: helpers first, then dependents)
 # ============================================================================
-$ModulesDir = Join-Path $ScriptDir "wp-plugins" "scripts" "modules"
+$ModulesDir = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules"
 
 . (Join-Path $ModulesDir "helpers.ps1")
 . (Join-Path $ModulesDir "install.ps1")
@@ -519,7 +519,7 @@ if ($deploy) {
         foreach ($slug in $pluginsNeedingDeploy) {
             $pluginVersion = ""
             try {
-                $versionJson = Get-Content (Join-Path $ScriptDir "public" "version.json") -Raw | ConvertFrom-Json
+                $versionJson = Get-Content (Join-Path (Join-Path $ScriptDir "public") "version.json") -Raw | ConvertFrom-Json
                 if ($slug -eq "qupload") { $pluginVersion = $versionJson.quploadVersion }
                 else { $pluginVersion = $versionJson.wpPluginVersion }
             } catch {}
@@ -560,7 +560,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # ── Show recent changelog (latest 3 entries from version.json) ─────────────
-$versionJsonPath = Join-Path $ScriptDir "public" "version.json"
+$versionJsonPath = Join-Path (Join-Path $ScriptDir "public") "version.json"
 if (Test-Path $versionJsonPath) {
     try {
         $versionData = Get-Content $versionJsonPath -Raw | ConvertFrom-Json
@@ -999,7 +999,7 @@ try {
     $TotalStopwatch.Stop()
 
     # Read version info from version.json
-    $versionJsonPath = Join-Path $ScriptDir "public" "version.json"
+    $versionJsonPath = Join-Path (Join-Path $ScriptDir "public") "version.json"
     $appVersion = ""
     $scriptVersionLabel = ""
     $wpPluginVersionLabel = ""

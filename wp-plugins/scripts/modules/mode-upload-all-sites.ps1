@@ -49,7 +49,7 @@ function Invoke-UploadAllSitesMode {
     }
 
     # ── Verify QUpload script ──────────────────────────────────────────────
-    $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+    $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
     if (-not (Test-Path $quploadScript)) {
         Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
         exit 1
@@ -106,7 +106,7 @@ function Invoke-UploadAllSitesMode {
             # Reconstruct folder objects from paths
             $folders = @($PluginPaths | ForEach-Object { Get-Item $_ })
             Invoke-ParallelPhpCheck -PluginFolders $folders -Sequential
-        } -ArgumentList (Join-Path $ScriptDir "wp-plugins" "scripts" "modules" "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
+        } -ArgumentList (Join-Path (Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "modules") "php-check-parallel.ps1"), @($pluginFolders | ForEach-Object { $_.FullName })
 
         # Run ZIP in foreground (it has its own parallel jobs)
         Write-Host ""
@@ -156,7 +156,7 @@ function Invoke-UploadAllSitesMode {
     $pluginFolders = $uploadablePlugins
 
     # ── Phase 2: Upload ───────────────────────────────────────────────────
-    $uploadLogsDir = Join-Path $ScriptDir "logs" "uas-upload"
+    $uploadLogsDir = Join-Path (Join-Path $ScriptDir "logs") "uas-upload"
     if (Test-Path $uploadLogsDir) {
         $existingLogs = @(Get-ChildItem -Path $uploadLogsDir -File)
         if ($existingLogs.Count -gt 0) {

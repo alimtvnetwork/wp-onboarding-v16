@@ -30,13 +30,13 @@ function Invoke-UploadComboMode {
 
     Write-Host "  Plugin: $defaultUploader (via QUpload)" -ForegroundColor Yellow
 
-    $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+    $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
     if (-not (Test-Path $quploadScript)) {
         Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
         exit 1
     }
 
-    $qConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "qupload-config.json"
+    $qConfigPath = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "qupload-config.json"
     if (Test-Path $qConfigPath) {
         $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
         $qConfig.pluginFolderPath = $riseupPath
@@ -91,7 +91,7 @@ function Invoke-UploadMode {
         Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
     }
 
-    $uploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-v2.ps1"
+    $uploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-v2.ps1"
     if (-not (Test-Path $uploadScript)) {
         Write-Host "ERROR: upload-plugin-v2.ps1 not found at: $uploadScript" -ForegroundColor Red
         exit 1
@@ -117,7 +117,7 @@ function Invoke-UploadMode {
             exit 1
         }
 
-        $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+        $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
         if (-not (Test-Path $quploadScript)) {
             Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
             exit 1
@@ -142,7 +142,7 @@ function Invoke-UploadMode {
         if ($verbose) { $debugArgs += "-vb" }
         & $quploadScript -jc $jsonConfigStr -a @debugArgs
     } else {
-        $wpConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "wp-plugin-config.json"
+        $wpConfigPath = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "wp-plugin-config.json"
         if (Test-Path $wpConfigPath) {
             $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
             $wpConfig.pluginFolderPath = $pluginPath
@@ -204,13 +204,13 @@ function Invoke-QUploadMode {
         Write-Host "  Plugin: $defaultQUploader" -ForegroundColor Yellow
     }
 
-    $quploadScript = Join-Path $ScriptDir "wp-plugins" "scripts" "upload-plugin-U-Q.ps1"
+    $quploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-plugin-U-Q.ps1"
     if (-not (Test-Path $quploadScript)) {
         Write-Host "ERROR: upload-plugin-U-Q.ps1 not found at: $quploadScript" -ForegroundColor Red
         exit 1
     }
 
-    $qConfigPath = Join-Path $ScriptDir "wp-plugins" "scripts" "qupload-config.json"
+    $qConfigPath = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "qupload-config.json"
     if (Test-Path $qConfigPath) {
         $qConfig = Get-Content $qConfigPath -Raw | ConvertFrom-Json
         $qConfig.pluginFolderPath = $qPluginPath
