@@ -22,11 +22,24 @@ function Configure-PnpmStore {
     }
 
     if ($PnpmStorePath) {
-        Write-Host "  Configuring pnpm store path: $PnpmStorePath" -ForegroundColor Gray
-        if (-not (Test-Path $PnpmStorePath)) {
-            New-Item -ItemType Directory -Path $PnpmStorePath -Force | Out-Null
+        $storeDriveRoot = Get-DriveRoot $PnpmStorePath
+        $driveExists = $true
+        if ($storeDriveRoot) {
+            $driveLetter = $storeDriveRoot.TrimEnd(':', '\', '/')
+            if (-not (Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue)) {
+                $driveExists = $false
+            }
         }
-        pnpm config set --location=project store-dir $PnpmStorePath 2>$null
+
+        if ($driveExists) {
+            Write-Host "  Configuring pnpm store path: $PnpmStorePath" -ForegroundColor Gray
+            if (-not (Test-Path $PnpmStorePath)) {
+                New-Item -ItemType Directory -Path $PnpmStorePath -Force | Out-Null
+            }
+            pnpm config set --location=project store-dir $PnpmStorePath 2>$null
+        } else {
+            Write-Host "  WARNING: Drive '$storeDriveRoot' not found — skipping store-dir config ($PnpmStorePath). Using pnpm default store." -ForegroundColor Yellow
+        }
     }
 
     pnpm config set --location=project virtual-store-dir .pnpm 2>$null
