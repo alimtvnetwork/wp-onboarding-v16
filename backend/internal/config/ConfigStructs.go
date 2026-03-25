@@ -1,6 +1,8 @@
 package config
 
 import (
+	"runtime"
+
 	"wp-plugin-publish/internal/enums/backuptype"
 	loglevel "wp-plugin-publish/internal/enums/logleveltype"
 	pluginselection "wp-plugin-publish/internal/enums/pluginselectiontype"
@@ -120,9 +122,28 @@ type SeedSite struct {
 // SeedPlugin represents a plugin to seed
 type SeedPlugin struct {
 	Name        string
-	Path        string
+	Path        string // legacy single-path field (backward compat)
+	WindowsPath string // Windows-specific path (takes priority on Windows)
+	UnixPath    string // Unix/macOS/Linux path (takes priority on non-Windows)
 	Category    string
 	GitEnabled  bool
 	AutoPublish bool
 	SiteNames   []string
+}
+
+// ResolvePath returns the OS-appropriate plugin path.
+// Priority: OS-specific path (WindowsPath/UnixPath) > legacy Path field.
+func (p SeedPlugin) ResolvePath() string {
+	isWindows := runtime.GOOS == "windows"
+
+	if isWindows && p.WindowsPath != "" {
+		return p.WindowsPath
+	}
+
+	isUnix := !isWindows
+	if isUnix && p.UnixPath != "" {
+		return p.UnixPath
+	}
+
+	return p.Path
 }

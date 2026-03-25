@@ -189,7 +189,8 @@ func seedAllPlugins(db *database.DB, cfg *Config, log *logger.Logger, siteIds []
 	totalMappings := 0
 
 	for i, plugin := range cfg.Seed.Plugins {
-		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", plugin.Path)
+		resolvedPath := plugin.ResolvePath()
+		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", resolvedPath)
 		totalMappings += seedSinglePlugin(db, log, plugin, siteIds)
 	}
 
@@ -212,7 +213,8 @@ func seedSinglePlugin(db *database.DB, log *logger.Logger, plugin SeedPlugin, si
 
 // resolveOrCreatePlugin finds an existing plugin by path or creates a new one.
 func resolveOrCreatePlugin(db *database.DB, log *logger.Logger, plugin SeedPlugin) int64 {
-	existingId, lookupErr := db.GetPluginIdByPath(plugin.Path)
+	resolvedPath := plugin.ResolvePath()
+	existingId, lookupErr := db.GetPluginIdByPath(resolvedPath)
 	isExisting := lookupErr == nil && existingId > 0
 
 	if isExisting {
@@ -222,7 +224,7 @@ func resolveOrCreatePlugin(db *database.DB, log *logger.Logger, plugin SeedPlugi
 
 	input := database.SeedPluginInput{
 		Name:        plugin.Name,
-		Path:        plugin.Path,
+		Path:        resolvedPath,
 		Category:    plugin.Category,
 		GitEnabled:  plugin.GitEnabled,
 		AutoPublish: plugin.AutoPublish,
