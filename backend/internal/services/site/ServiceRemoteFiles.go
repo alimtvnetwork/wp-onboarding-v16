@@ -8,6 +8,7 @@ import (
 )
 
 // GetRemotePluginFiles lists files in a remote plugin via the WordPress client.
+// Returns an empty slice (not an error) when the plugin is not installed on the remote site.
 func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, pluginSlug string) ([]wordpress.RemoteFile, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -16,6 +17,10 @@ func (s *Service) GetRemotePluginFiles(ctx context.Context, siteId int64, plugin
 
 	result := client.GetPluginFiles(ctx, pluginSlug)
 	if result.HasError() {
+		if result.AppError().Code == apperror.ErrNotFound {
+			return []wordpress.RemoteFile{}, nil
+		}
+
 		return nil, apperror.Wrap(result.AppError(), apperror.ErrWPConnection, "failed to list remote plugin files")
 	}
 
