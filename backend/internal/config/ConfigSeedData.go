@@ -2,12 +2,21 @@ package config
 
 import (
 	"encoding/base64"
+	"os"
+	"runtime"
 	"strings"
 
 	"wp-plugin-publish/internal/crypto"
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 )
+
+// dirExists returns true if the given path is an existing directory.
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+
+	return err == nil && info.IsDir()
+}
 
 // seedAllSites processes all configured seed sites and returns their IDs.
 func seedAllSites(db *database.DB, cfg *Config, log *logger.Logger, encryptionKey []byte) []int64 {
@@ -191,6 +200,14 @@ func seedAllPlugins(db *database.DB, cfg *Config, log *logger.Logger, siteIds []
 	for i, plugin := range cfg.Seed.Plugins {
 		resolvedPath := plugin.ResolvePath()
 		log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", resolvedPath)
+
+		if !dirExists(resolvedPath) {
+			log.Warn("Plugin directory does not exist on this OS, skipping",
+				"name", plugin.Name, "resolvedPath", resolvedPath, "os", runtime.GOOS)
+
+			continue
+		}
+
 		totalMappings += seedSinglePlugin(db, log, plugin, siteIds)
 	}
 
