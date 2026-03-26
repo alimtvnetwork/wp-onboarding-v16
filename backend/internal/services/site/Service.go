@@ -169,6 +169,7 @@ func (s *Service) GetDecryptedPassword(ctx context.Context, id int64) apperror.R
 	}
 
 	return apperror.Ok(string(password))
+}
 
 // SiteCredentials holds decrypted credentials for API access
 type SiteCredentials struct {
