@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,8 +107,8 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
     <div className="space-y-3">
       {/* Metadata row */}
       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-        <Badge variant="outline" className="text-xs font-mono">{file.Lines} / {file.TotalLines} lines</Badge>
-        <Badge variant="outline" className="text-xs font-mono">{formatBytes(file.TotalSize)}</Badge>
+        <Badge variant="outline" className="text-xs font-mono border-primary/30 bg-primary/10 text-primary">{file.Lines} / {file.TotalLines} lines</Badge>
+        <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/50">{formatBytes(file.TotalSize)}</Badge>
         {file.Truncated && (
           <Badge variant="destructive" className="text-xs">Truncated</Badge>
         )}
@@ -118,15 +118,15 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
       </div>
 
       {file.Truncated && (
-        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-xs text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
           Showing last {file.Lines} of {file.TotalLines} lines. Increase max lines to see more.
         </div>
       )}
 
       {/* Content */}
-      <ScrollArea className="h-[400px] rounded-md border border-border/50 bg-muted/30 p-3">
-        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
+      <ScrollArea className="h-[460px] rounded-xl border border-border/60 bg-muted/20 p-4 shadow-sm">
+        <pre className="text-sm font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
           {file.Content || "(empty)"}
         </pre>
       </ScrollArea>
@@ -380,12 +380,17 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
   const hasFiles = status?.files && status.files.length > 0;
   const availablePlugins = retrieveData?.plugins.filter(p => p.available) ?? [];
+  const totalLoadedBytes = useMemo(() => {
+    return availablePlugins.reduce((sum, plugin) => {
+      return sum + (plugin.infoLog?.TotalSize ?? 0) + (plugin.errorLog?.TotalSize ?? 0) + (plugin.stacktrace?.TotalSize ?? 0);
+    }, 0);
+  }, [availablePlugins]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
-      <Card>
+      <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+          <CardHeader className="cursor-pointer rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isOpen ? (
@@ -394,11 +399,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-sm font-medium">Remote Logs</CardTitle>
+                <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
+                {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
               </div>
               {status && (
-                <Badge variant="secondary" className="text-xs">
-                  {formatBytes(status.totalSizeBytes)}
+                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
+                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
                   {status.archiveCount > 0 && (
                     <span className="ml-1 text-muted-foreground">
                       · {status.archiveCount} archived
@@ -411,7 +417,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <CardContent className="pt-0">
+          <CardContent className="pt-5">
             {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
@@ -434,8 +440,8 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
             {/* Main Tabbed Interface */}
             {!isLoading && status && !status.pluginOutdated && (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full grid grid-cols-3 h-10 mb-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-5">
+                <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl border border-border/60 bg-muted/30 p-1">
                   <TabsTrigger value="overview" className="text-xs gap-1.5">
                     <ScrollText className="h-3.5 w-3.5" />
                     Overview
@@ -452,13 +458,28 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                 </TabsList>
 
                 {/* ── OVERVIEW TAB ──────────────────────────────── */}
-                <TabsContent value="overview" className="space-y-4 mt-0">
+                <TabsContent value="overview" className="mt-0 space-y-5">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total Size</p>
+                      <p className="mt-2 text-2xl font-semibold text-foreground">{formatBytes(status.totalSizeBytes)}</p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Log Files</p>
+                      <p className="mt-2 text-2xl font-semibold text-foreground">{status.files.length}</p>
+                    </div>
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Archives</p>
+                      <p className="mt-2 text-2xl font-semibold text-foreground">{status.archiveCount}</p>
+                    </div>
+                  </div>
+
                   {hasFiles ? (
-                    <div className="space-y-1.5">
+                    <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-3">
                       {status.files.map((file) => (
                         <div
                           key={file.name}
-                          className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2.5 text-sm"
+                          className="flex items-center justify-between rounded-xl border border-border/50 bg-background/70 px-4 py-3 text-sm shadow-sm"
                         >
                           <span className="font-mono text-xs text-foreground">{file.name}</span>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -469,8 +490,8 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2 py-8 text-sm text-muted-foreground">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div className="flex flex-col items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-8 text-sm text-muted-foreground">
+                      <CheckCircle className="h-5 w-5 text-primary" />
                       No log files found
                     </div>
                   )}
@@ -483,7 +504,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   )}
 
                   {/* Quick actions in overview */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
                     <Button size="sm" variant="outline" onClick={fetchStatus} disabled={isLoading}>
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
                     </Button>
@@ -514,38 +535,33 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                 </TabsContent>
 
                 {/* ── VIEWER TAB ────────────────────────────────── */}
-                <TabsContent value="viewer" className="space-y-4 mt-0">
+                <TabsContent value="viewer" className="mt-0 space-y-4">
                   {isRetrieving && !retrieveData ? (
-                    /* Loading skeleton */
-                    <div className="space-y-4 animate-pulse">
-                      {/* Toolbar skeleton */}
+                    <div className="space-y-4 animate-pulse rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-muted/20 to-background p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-20 rounded-md bg-muted" />
-                          <div className="h-8 w-[110px] rounded-md bg-muted" />
+                          <div className="h-9 w-24 rounded-lg bg-muted" />
+                          <div className="h-9 w-[120px] rounded-lg bg-muted" />
                         </div>
-                        <div className="h-8 w-28 rounded-md bg-muted" />
+                        <div className="h-9 w-32 rounded-lg bg-muted" />
                       </div>
-                      {/* Plugin tab skeleton */}
-                      <div className="h-10 w-full rounded-md bg-muted" />
-                      {/* Log type tabs skeleton */}
-                      <div className="h-9 w-full rounded-md bg-muted/70" />
-                      {/* Metadata badges skeleton */}
+                      <div className="h-11 w-full rounded-xl bg-muted" />
+                      <div className="h-10 w-full rounded-xl bg-muted/70" />
                       <div className="flex items-center gap-2">
                         <div className="h-5 w-24 rounded-full bg-muted" />
                         <div className="h-5 w-16 rounded-full bg-muted" />
                       </div>
-                      {/* Content area skeleton */}
-                      <div className="h-[400px] rounded-md border border-border/50 bg-muted/30 p-3 space-y-2">
+                      <div className="h-[460px] rounded-xl border border-border/50 bg-background/70 p-4 space-y-2">
                         {Array.from({ length: 12 }).map((_, i) => (
                           <div key={i} className="h-3 rounded bg-muted" style={{ width: `${60 + Math.random() * 40}%` }} />
                         ))}
                       </div>
                     </div>
                   ) : !retrieveData ? (
-                    <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
-                      <Eye className="h-8 w-8 opacity-30" />
+                    <div className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-muted/10 py-12 text-muted-foreground">
+                      <Eye className="h-10 w-10 opacity-30" />
                       <p className="text-sm">No logs loaded yet</p>
+                      <p className="max-w-md text-center text-xs text-muted-foreground">Load the latest remote logs to inspect info, error, and stacktrace output in a larger viewer.</p>
                       <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                         Load Logs
@@ -554,7 +570,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   ) : (
                     <>
                       {/* Toolbar */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
                         <div className="flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving}>
                             {isRetrieving ? (
@@ -587,8 +603,8 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
                       {/* Plugin Tabs */}
                       {availablePlugins.length > 1 ? (
-                        <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                          <TabsList className="w-full">
+                           <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
+                           <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/60 bg-muted/25 p-1">
                             {availablePlugins.map((p) => (
                               <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
                                 {p.label}
@@ -602,13 +618,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                           ))}
                         </Tabs>
                       ) : availablePlugins.length === 1 ? (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-2 font-medium">{availablePlugins[0].label}</p>
+                         <div className="rounded-xl border border-border/60 bg-muted/10 p-3">
+                           <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{availablePlugins[0].label}</p>
                           <PluginLogsTabs plugin={availablePlugins[0]} />
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                         <div className="flex flex-col items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 py-8 text-muted-foreground">
+                           <AlertTriangle className="h-5 w-5 text-amber-600" />
                           <p className="text-sm">No plugin log endpoints available on this site.</p>
                         </div>
                       )}
@@ -617,9 +633,9 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                 </TabsContent>
 
                 {/* ── ACTIONS TAB ───────────────────────────────── */}
-                <TabsContent value="actions" className="space-y-4 mt-0">
+                <TabsContent value="actions" className="mt-0 space-y-4">
                   {/* Clear Logs — Two-step */}
-                  <div className="rounded-md border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-3">
                     <h4 className="text-sm font-medium flex items-center gap-2">
                       <Trash2 className="h-4 w-4 text-destructive" />
                       Clear Logs
@@ -657,7 +673,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   </div>
 
                   {/* Clear All Plugins */}
-                  <div className="rounded-md border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
                     <h4 className="text-sm font-medium flex items-center gap-2 text-destructive">
                       <Trash2 className="h-4 w-4" />
                       Clear All Plugins
@@ -681,7 +697,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   </div>
 
                   {/* Email Logs */}
-                  <div className="rounded-md border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-3">
                     <h4 className="text-sm font-medium flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       Email Logs

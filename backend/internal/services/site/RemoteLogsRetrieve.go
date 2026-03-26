@@ -51,8 +51,7 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				endpoint = basePath + "?" + queryString
 			}
 
-			// PHP /logs/retrieve returns flat response (not envelope-wrapped)
-			result := wordpress.DoApiCall[wordpress.LogsRetrievePhpResponse](client, wordpress.ApiCallInput{
+			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRetrievePhpResponse]](client, wordpress.ApiCallInput{
 				Method:    httpmethod.Get,
 				Endpoint:  endpoint,
 				Operation: operationtype.RetrieveLogs,
@@ -69,7 +68,11 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				return
 			}
 
-			php := result.Value()
+			php, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
+			if unwrapErr != nil {
+				ch <- nsResult{ns: namespace, data: pluginData}
+				return
+			}
 			pluginData.Available = true
 			pluginData.InfoLog = php.InfoLog
 			pluginData.ErrorLog = php.ErrorLog
