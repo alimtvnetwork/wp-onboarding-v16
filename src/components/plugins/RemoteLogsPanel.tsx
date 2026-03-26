@@ -413,16 +413,35 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                 <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
                 {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
               </div>
-              {status && (
-                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                  {status.archiveCount > 0 && (
-                    <span className="ml-1 text-muted-foreground">
-                      · {status.archiveCount} archived
-                    </span>
-                  )}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {isDemoMode && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 bg-amber-500/15 text-amber-400">
+                    <FlaskConical className="h-3 w-3 mr-1" /> Demo
+                  </Badge>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    isDemoMode ? deactivateDemo() : activateDemo();
+                  }}
+                >
+                  <FlaskConical className="h-3.5 w-3.5 mr-1" />
+                  {isDemoMode ? "Exit Demo" : "Demo"}
+                </Button>
+                {status && (
+                  <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
+                    {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
+                    {status.archiveCount > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        · {status.archiveCount} archived
+                      </span>
+                    )}
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
         </CollapsibleTrigger>
