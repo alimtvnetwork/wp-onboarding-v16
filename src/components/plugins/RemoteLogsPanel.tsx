@@ -453,6 +453,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     }
   }, [hasMismatch, status, siteId]);
 
+  return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
       <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
         <CollapsibleTrigger asChild>
