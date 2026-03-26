@@ -4,6 +4,8 @@
 > **Status:** Implemented
 > **Updated:** 2026-03-22
 
+> **Diagram:** [remote-log-retrieval-flow.mmd](./remote-log-retrieval-flow.mmd)
+
 ---
 
 ## 1. Overview

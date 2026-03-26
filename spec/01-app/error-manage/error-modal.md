@@ -4,6 +4,8 @@
 > **Status:** Implemented
 > **Updated:** 2026-03-26
 
+> **Diagram:** [delegated-error-flow.mmd](./delegated-error-flow.mmd)
+
 ---
 
 ## 1. Overview

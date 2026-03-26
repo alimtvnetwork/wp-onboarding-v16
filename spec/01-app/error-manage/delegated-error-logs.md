@@ -2,6 +2,8 @@
 
 ## Overview
 
+> **Diagram:** [delegated-error-flow.mmd](./delegated-error-flow.mmd)
+
 When the Go backend proxies a request to a WordPress PHP server (the "delegated server"), the PHP response may include structured error diagnostics — stack traces, error messages, status codes, and response bodies. These must be surfaced clearly in the Error Modal under a dedicated **"Delegated"** tab, formatted consistently with how Go backend traces are displayed.
 
 ## Architecture Flow
