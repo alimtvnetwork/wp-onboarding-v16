@@ -152,6 +152,22 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const fileExists = !!file?.Exists;
   const content = file?.Content || "";
 
+  // Parse lines with severity
+  const allLines = useMemo(() => {
+    const raw = content.split("\n");
+    return raw.map((text, i) => ({
+      text,
+      lineNumber: i + 1,
+      severity: detectSeverity(text),
+    }));
+  }, [content]);
+
+  // Apply severity filter
+  const filteredLines = useMemo(() => {
+    if (severityFilter === "all") return allLines;
+    return allLines.filter((l) => l.severity === severityFilter);
+  }, [allLines, severityFilter]);
+
   const getVisibleText = useCallback(() => {
     return filteredLines.map((l) => l.text).join("\n");
   }, [filteredLines]);
@@ -177,22 +193,6 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     URL.revokeObjectURL(url);
     toast.success(`${filteredLines.length} lines downloaded`);
   }, [getVisibleText, label, severityFilter, searchTerm, filteredLines.length]);
-
-  // Parse lines with severity
-  const allLines = useMemo(() => {
-    const raw = content.split("\n");
-    return raw.map((text, i) => ({
-      text,
-      lineNumber: i + 1,
-      severity: detectSeverity(text),
-    }));
-  }, [content]);
-
-  // Apply severity filter
-  const filteredLines = useMemo(() => {
-    if (severityFilter === "all") return allLines;
-    return allLines.filter((l) => l.severity === severityFilter);
-  }, [allLines, severityFilter]);
 
   // Find search matches (indices into filteredLines)
   const matchIndices = useMemo(() => {
