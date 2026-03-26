@@ -431,30 +431,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   );
   const hasMismatch = retrieveData && statusHasContent && !retrieveHasContent;
 
-  // Auto-open Global Error Modal when mismatch is detected
-  const mismatchFiredRef = useRef(false);
-  useEffect(() => {
-    if (hasMismatch && !mismatchFiredRef.current) {
-      mismatchFiredRef.current = true;
-      const { captureException, openErrorModal } = useErrorStore.getState();
-      const mismatchDetails = status?.files?.filter(f => f.lineCount > 0).map(f => `${f.name}: ${f.lineCount} lines`).join(", ") ?? "unknown";
-      const captured = captureException(
-        new Error(`Data mismatch: status reports [${mismatchDetails}] but retrieve returned no file data. The status and retrieve endpoints may be hitting different plugin namespaces.`),
-        {
-          source: "RemoteLogsPanel",
-          endpoint: `/sites/${siteId}/remote-logs/retrieve`,
-          method: "GET",
-        }
-      );
-      openErrorModal(captured);
-      toast.warning("Data mismatch detected — Error Modal opened automatically", {
-        description: "The status and retrieve endpoints returned conflicting data. Check the Error Modal for details.",
-      });
-    }
-    if (!hasMismatch) {
-      mismatchFiredRef.current = false;
-    }
-  }, [hasMismatch, status, siteId]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
