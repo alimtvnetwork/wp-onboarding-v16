@@ -57,6 +57,7 @@ import { useErrorStore } from "@/stores/errorStore";
 import { isApiClientError } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
+import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
 
 interface RemoteLogsPanelProps {
   siteId: number;
@@ -161,6 +162,22 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [includeArchives, setIncludeArchives] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
+  // Inline error diagnostics
+  const [inlineErrors, setInlineErrors] = useState<InlineDiagnostic[]>([]);
+
+  const captureInlineError = useCallback((err: unknown, endpoint: string, method: string) => {
+    const diag = extractDiagnostic(err, endpoint, method);
+    setInlineErrors(prev => [diag, ...prev].slice(0, 5)); // keep last 5
+  }, []);
+
+  const dismissInlineError = useCallback((idx: number) => {
+    setInlineErrors(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const openInGlobalModal = useCallback((err: unknown, endpoint: string, method: string) => {
+    surfaceError(err, endpoint, method);
+  }, []);
+
   const fetchStatus = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -183,7 +200,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
             "Remote plugin is outdated — the /logs/status endpoint is not available. Please update the plugin using Deploy Uploader.",
         });
       } else {
-        surfaceError(err, `/sites/${siteId}/remote-logs`, "GET");
+        captureInlineError(err, `/sites/${siteId}/remote-logs`, "GET");
       }
     } finally {
       setIsLoading(false);
@@ -203,7 +220,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         toast.warning("No log retrieval endpoints available — the remote plugin may be outdated.");
       }
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
+      captureInlineError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
     } finally {
       setIsRetrieving(false);
     }
@@ -269,7 +286,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setClearExpiry(data.expiresIn);
       toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs/clear`, "DELETE");
+      captureInlineError(err, `/sites/${siteId}/remote-logs/clear`, "DELETE");
     } finally {
       setIsClearing(false);
     }
@@ -285,7 +302,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setClearToken(null);
       await fetchStatus();
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs/clear/confirm`, "POST");
+      captureInlineError(err, `/sites/${siteId}/remote-logs/clear/confirm`, "POST");
     } finally {
       setIsConfirming(false);
     }
@@ -312,7 +329,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       }
       await fetchStatus();
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs/clear-all`, "POST");
+      captureInlineError(err, `/sites/${siteId}/remote-logs/clear-all`, "POST");
     } finally {
       setIsClearingAll(false);
     }
@@ -332,7 +349,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setEmailRecipient("");
       setIncludeArchives(false);
     } catch (err) {
-      surfaceError(err, `/sites/${siteId}/remote-logs/email`, "POST");
+      captureInlineError(err, `/sites/${siteId}/remote-logs/email`, "POST");
     } finally {
       setIsSendingEmail(false);
     }
@@ -378,6 +395,29 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
         <CollapsibleContent>
           <CardContent className="pt-5">
+            {/* Inline Error Diagnostics */}
+            {inlineErrors.length > 0 && (
+              <div className="space-y-3 mb-5">
+                {inlineErrors.map((diag, idx) => (
+                  <InlineErrorDiagnostic
+                    key={`${diag.timestamp}-${idx}`}
+                    diagnostic={diag}
+                    onDismiss={() => dismissInlineError(idx)}
+                    onOpenGlobalModal={() => {
+                      // Re-surface in the global modal for the full experience
+                      const { captureException, openErrorModal } = useErrorStore.getState();
+                      const captured = captureException(new Error(diag.message), {
+                        source: "RemoteLogsPanel",
+                        endpoint: diag.endpoint,
+                        method: diag.method,
+                      });
+                      openErrorModal(captured);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
