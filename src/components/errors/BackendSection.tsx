@@ -350,7 +350,7 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
           </div>
         )}
         {errorLogContent && (
-          <ScrollArea className="h-[400px] rounded-md border bg-muted">
+          <ScrollArea className="h-[400px] rounded-b-lg border-t border-amber-500/20 bg-muted">
             <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{errorLogContent}</pre>
           </ScrollArea>
         )}
