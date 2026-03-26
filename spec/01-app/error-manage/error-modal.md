@@ -16,21 +16,23 @@ The Global Error Modal displays structured error diagnostics for backend, fronte
 
 ## 2. Draggable Feature
 
-The modal header is a **drag handle** — users can click and drag anywhere on the header bar (excluding buttons/links) to reposition the modal on screen.
+The modal header is a **drag handle** — users can click/tap and drag anywhere on the header bar (excluding buttons/links) to reposition the modal on screen. Supports both mouse and touch input.
 
 ### Implementation
 
-- **Hook:** `src/hooks/useDraggable.ts` — `useDraggable()` returns `{ style, onMouseDown, resetPosition, isDragged }`
-- **Drag handle:** The `<DialogHeader>` element receives `onMouseDown` and cursor classes (`cursor-grab` / `active:cursor-grabbing`)
+- **Hook:** `src/hooks/useDraggable.ts` — `useDraggable()` returns `{ style, onMouseDown, onTouchStart, resetPosition, isDragged }`
+- **Drag handle:** The `<DialogHeader>` element receives `onMouseDown`, `onTouchStart`, and cursor classes (`cursor-grab` / `active:cursor-grabbing`)
 - **Visual indicator:** A `GripHorizontal` icon in the header signals draggability (hidden on mobile)
 - **Reset button:** When the modal has been dragged, a `RotateCcw` button appears to snap it back to center
 - **Auto-reset:** Position resets when the modal closes or a new error is selected
-- **Exclusions:** Clicks on buttons, links, and inputs inside the header do NOT initiate a drag
+- **Exclusions:** Clicks/taps on buttons, links, and inputs inside the header do NOT initiate a drag
 
 ### Behavior
 
-- Left-click only (ignores right-click, middle-click)
+- **Mouse:** Left-click only (ignores right-click, middle-click)
+- **Touch:** Single-finger drag via `touchstart`/`touchmove`/`touchend`/`touchcancel`; `preventDefault` on `touchmove` blocks page scrolling during drag
 - Transform-based positioning (no layout reflow)
+- Shared `applyMove` function ensures identical clamping for both input methods
 - Boundary clamping: at least 80px of the modal stays visible on every screen edge (`EDGE_MARGIN = 80`)
 
 ---
