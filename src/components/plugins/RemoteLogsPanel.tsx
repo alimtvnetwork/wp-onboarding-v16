@@ -447,6 +447,9 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         }
       );
       openErrorModal(captured);
+      toast.warning("Data mismatch detected — Error Modal opened automatically", {
+        description: "The status and retrieve endpoints returned conflicting data. Check the Error Modal for details.",
+      });
     }
     if (!hasMismatch) {
       mismatchFiredRef.current = false;
