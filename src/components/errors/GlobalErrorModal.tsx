@@ -70,6 +70,7 @@ function parsePhpStackFromRemoteBody(raw: string): PHPStackFrame[] {
 }
 
 export function GlobalErrorModal() {
+  const { selectedError, isModalOpen, closeErrorModal, errorQueue, currentQueueIndex, navigateQueue, getQueuedErrorsMarkdown } = useErrorStore();
   const { style: dragStyle, onMouseDown: onDragMouseDown, resetPosition, isDragged } = useDraggable();
   const { data: versionInfo } = useVersionInfo();
   const appName = versionInfo?.appName || "WP Plugin Publish";
