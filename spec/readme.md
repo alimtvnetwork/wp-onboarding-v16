@@ -11,7 +11,7 @@
 |---|--------|-------------|-----------|
 | 01 | [01-app/](./01-app/) | Application specs, feature definitions, behavioral requirements | `README.md` |
 | 02 | [02-app-issues/](./02-app-issues/) | Issue write-ups — root cause, fix, prevention for every mistake | `README.md` |
-| 03 | [03-audits/ → 11-audits/](./11-audits/) | Audit reports and findings | — |
+| 03 | [03-ui-design/](./03-ui-design/) | UI design specifications (site card contrast, etc.) | — |
 | 04 | [04-coding-guidelines/](./04-coding-guidelines/) | DRY principles and general coding standards | `00-master-coding-guidelines.md` |
 | 05 | [05-typescript-standards/](./05-typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
 | 06 | [06-golang-standards/](./06-golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
@@ -25,7 +25,7 @@
 | 14 | [14-e2-activity-feed/](./14-e2-activity-feed/) | Fleet-wide activity audit log (Feature E2) | `e2.1-go-endpoint-spec.md` |
 | 15 | [15-generic-enforce/](./15-generic-enforce/) | Cross-language generic/type enforcement patterns | `readme.md` |
 | 16 | [16-user-management/](./16-user-management/) | User management features | — |
-| 17 | [17-parallel-powershell-scripts/](./17-parallel-powershell-scripts/) | Parallel PowerShell script execution | — |
+| 17 | [17-parallel-powershell-scripts/](./17-parallel-powershell-scripts/) | Parallel PowerShell script execution | `00-overview.md` |
 
 ### WordPress Subfolder Structure (`09-wordpress/`)
 
