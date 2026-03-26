@@ -8,6 +8,7 @@ import (
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pluginutil"
 )
 
 // CheckQUploadAvailable checks if the QUpload plugin is installed and reachable.

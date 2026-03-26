@@ -7,6 +7,7 @@ import (
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pluginutil"
 )
 
 // RemoteBackupResult holds the response from the remote plugin backup endpoint.
