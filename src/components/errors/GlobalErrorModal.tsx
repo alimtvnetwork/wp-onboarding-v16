@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor, Globe } from "lucide-react";
+import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor, Globe, GripHorizontal, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -16,6 +16,7 @@ import { BackendSection } from "./BackendSection";
 import { FrontendSection } from "./FrontendSection";
 import { DelegatedSection, hasDelegatedContent } from "./DelegatedSection";
 import { DownloadDropdown, CopyDropdown } from "./ErrorModalActions";
+import { useDraggable } from "@/hooks/useDraggable";
 
 /**
  * Parse PHP stack trace frames from a raw remoteResponseBody string.

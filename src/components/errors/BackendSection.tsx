@@ -302,11 +302,13 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
         </div>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+      <div className="rounded-lg border-2 border-amber-500/30 bg-amber-500/5">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/20 bg-amber-500/10 rounded-t-lg">
+          <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
             <Terminal className="h-4 w-4" />
-            Backend Error Log (error.log.txt)
+            Go Backend Error Log
+            <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">error.log.txt</Badge>
+            <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">Session-scoped</Badge>
           </h4>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={onRefreshLog} disabled={errorLogLoading}>
