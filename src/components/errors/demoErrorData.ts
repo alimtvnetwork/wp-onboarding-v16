@@ -133,9 +133,9 @@ export function createDemoError(): CapturedError {
 
     // UI context
     uiClickPath: [
-      { timestamp: new Date(Date.now() - 3000).toISOString(), target: "Sites", selector: "nav a[href='/sites']", type: "click" as const },
-      { timestamp: new Date(Date.now() - 2000).toISOString(), target: "demo-site.example.com", selector: "tr[data-site-id='3']", type: "click" as const },
-      { timestamp: new Date(Date.now() - 500).toISOString(), target: "Activate", selector: "button.activate-plugin", type: "click" as const },
+      { id: "demo-1", timestamp: new Date(Date.now() - 3000).toISOString(), element: "Link", text: "Sites", path: "nav a", action: "click", route: "/dashboard" },
+      { id: "demo-2", timestamp: new Date(Date.now() - 2000).toISOString(), element: "Row", text: "demo-site.example.com", path: "tr[data-site-id='3']", action: "click", route: "/sites" },
+      { id: "demo-3", timestamp: new Date(Date.now() - 500).toISOString(), element: "Button", text: "Activate", path: "button.activate-plugin", action: "click", route: "/sites/3/plugins" },
     ],
     uiClickPathString: "Sites → demo-site.example.com → Activate",
     uiClickPathArrow: "nav > Sites → row > demo-site → btn > Activate",
