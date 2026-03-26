@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/api";
-import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database, Cloud, AlertCircle } from "lucide-react";
+import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database, Cloud, AlertCircle, FlaskConical, ScrollText } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { SnapshotSettingsTab } from "@/components/settings/SnapshotSettingsTab";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -946,6 +946,43 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">
                 Keyboard shortcut: <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px] font-mono">Ctrl+Shift+E</kbd>
               </p>
+
+              {/* Remote Logs Demo */}
+              <div className="border-t border-border/50 pt-4 mt-4" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <ScrollText className="h-4 w-4" />
+                    Remote Logs Demo
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Open the Remote Logs panel with realistic sample data (info, error, and stacktrace logs) without needing a live backend.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    import("@/components/plugins/demoRemoteLogsData").then(({ createDemoLogsStatus, createDemoRetrieveResult }) => {
+                      // Store demo data in sessionStorage for the RemoteLogsPanel to pick up
+                      sessionStorage.setItem("remoteLogs:demoStatus", JSON.stringify(createDemoLogsStatus()));
+                      sessionStorage.setItem("remoteLogs:demoRetrieve", JSON.stringify(createDemoRetrieveResult()));
+                      sessionStorage.setItem("remoteLogs:demoActivate", "true");
+                      toast.success("Remote Logs demo data ready — navigate to a site to see the panel in demo mode", {
+                        style: {
+                          background: "linear-gradient(135deg, hsl(35 92% 50%) 0%, hsl(25 92% 45%) 100%)",
+                          color: "white",
+                          border: "none",
+                        },
+                      });
+                    });
+                  }}
+                  className="w-full sm:w-auto text-xs"
+                >
+                  <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
+                  Activate Demo Data
+                </Button>
+              </div>
             </div>
           </div>
         );
