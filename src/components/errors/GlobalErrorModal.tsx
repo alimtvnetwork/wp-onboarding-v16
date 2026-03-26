@@ -288,11 +288,6 @@ export function GlobalErrorModal() {
                 <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Frontend
               </Button>
-              <Button variant={activeSection === "frontend" ? "default" : "outline"} size="sm"
-                onClick={() => setActiveSection("frontend")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none">
-                <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Frontend
-              </Button>
               <Button variant={activeSection === "delegated" ? "default" : "outline"} size="sm"
                 onClick={() => setActiveSection("delegated")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-orange-500/30">
                 <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
