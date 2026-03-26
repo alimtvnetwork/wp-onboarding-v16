@@ -135,8 +135,9 @@ export function GlobalErrorModal() {
       setErrorLogFetched(false);
       setErrorLogError(null);
       setActiveSection("backend");
+      resetPosition();
     }
-  }, [isModalOpen, selectedError?.id]);
+  }, [isModalOpen, selectedError?.id, resetPosition]);
   
   if (!selectedError) return null;
 
@@ -199,6 +200,7 @@ export function GlobalErrorModal() {
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
       <DialogContent
         data-error-modal
+        style={dragStyle}
         className={cn(
           "flex flex-col p-0 gap-0 overflow-hidden",
           "w-full h-full max-w-full max-h-full rounded-none",
@@ -206,9 +208,14 @@ export function GlobalErrorModal() {
           "lg:max-w-6xl"
         )}
       >
-        {/* Header */}
-        <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0">
+        {/* Header — draggable */}
+        <DialogHeader
+          className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0 cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={onDragMouseDown}
+        >
           <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <GripHorizontal className="h-4 w-4 text-muted-foreground/50 shrink-0 hidden sm:block" />
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <AlertCircle className={cn(
                 "h-5 w-5 sm:h-6 sm:w-6 shrink-0",
