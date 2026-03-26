@@ -515,16 +515,39 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
                 {/* ── VIEWER TAB ────────────────────────────────── */}
                 <TabsContent value="viewer" className="space-y-4 mt-0">
-                  {!retrieveData ? (
+                  {isRetrieving && !retrieveData ? (
+                    /* Loading skeleton */
+                    <div className="space-y-4 animate-pulse">
+                      {/* Toolbar skeleton */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-20 rounded-md bg-muted" />
+                          <div className="h-8 w-[110px] rounded-md bg-muted" />
+                        </div>
+                        <div className="h-8 w-28 rounded-md bg-muted" />
+                      </div>
+                      {/* Plugin tab skeleton */}
+                      <div className="h-10 w-full rounded-md bg-muted" />
+                      {/* Log type tabs skeleton */}
+                      <div className="h-9 w-full rounded-md bg-muted/70" />
+                      {/* Metadata badges skeleton */}
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-24 rounded-full bg-muted" />
+                        <div className="h-5 w-16 rounded-full bg-muted" />
+                      </div>
+                      {/* Content area skeleton */}
+                      <div className="h-[400px] rounded-md border border-border/50 bg-muted/30 p-3 space-y-2">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div key={i} className="h-3 rounded bg-muted" style={{ width: `${60 + Math.random() * 40}%` }} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : !retrieveData ? (
                     <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
                       <Eye className="h-8 w-8 opacity-30" />
                       <p className="text-sm">No logs loaded yet</p>
                       <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
-                        {isRetrieving ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        )}
+                        <Eye className="mr-1.5 h-3.5 w-3.5" />
                         Load Logs
                       </Button>
                     </div>
