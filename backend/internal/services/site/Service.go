@@ -13,7 +13,6 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
-	"wp-plugin-publish/pkg/urlutil"
 )
 
 // Config holds service configuration
