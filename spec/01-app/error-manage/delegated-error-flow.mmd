@@ -1,0 +1,65 @@
+graph TB
+    subgraph PHP["WordPress PHP Server"]
+        PHP_EP["REST Endpoint<br/>/wp-json/riseup-asia-api/v1/..."]
+        PHP_ERR["PHP Fatal Error<br/>Class not found / Exception"]
+        PHP_STACK["PHP Stack Trace<br/>EnvelopeBuilder"]
+        PHP_RESP["JSON Error Response<br/>code + message + data.error + stackTrace"]
+
+        PHP_EP --> PHP_ERR
+        PHP_ERR --> PHP_STACK
+        PHP_STACK --> PHP_RESP
+    end
+
+    subgraph GO["Go Backend"]
+        direction TB
+        GO_SVC["Service Layer<br/>ServicePluginLifecycle.go"]
+        GO_WP["wordpress.DoApiCall<br/>Client.go"]
+        GO_EXTRACT["extractApiErrorFromChain<br/>Response.go"]
+        GO_DRS["buildDelegatedRequestServer<br/>Endpoint, Method, Status,<br/>StackTrace, Response, RequestBody"]
+        GO_ENV["Envelope Response<br/>WithDelegatedRequestServer<br/>WithDelegatedErrorStack"]
+        GO_LOG["ServiceErrorLog.go<br/>error.log.txt<br/>Session-scoped entries"]
+        GO_MW["MiddlewareErrorLog.go<br/>Structured log parsing"]
+
+        GO_SVC --> GO_WP
+        GO_WP -->|"HTTP 500"| GO_EXTRACT
+        GO_EXTRACT --> GO_DRS
+        GO_DRS --> GO_ENV
+        GO_EXTRACT --> GO_LOG
+        GO_ENV --> GO_MW
+    end
+
+    subgraph FE["React Frontend"]
+        direction TB
+        FE_API["api.requireSuccess<br/>surfaceError helper"]
+        FE_STORE["errorStore.ts<br/>CapturedError with<br/>envelopeErrors + phpStackFrames"]
+        FE_MODAL["GlobalErrorModal.tsx<br/>Draggable, 3 top-level sections"]
+
+        subgraph SECTIONS["Error Modal Sections"]
+            direction LR
+            SEC_BE["Backend<br/>Overview / Log / Stack<br/>Execution / Session"]
+            SEC_FE["Frontend<br/>Parsed Frames<br/>Click Path / Fixes"]
+            SEC_DEL["Delegated<br/>PHP Stack Trace<br/>Request + Response<br/>DelegatedRequestServer"]
+        end
+
+        FE_REPORT["errorReportGenerator.ts<br/>Compact + Full reports<br/>Delegated Request section"]
+
+        FE_API --> FE_STORE
+        FE_STORE --> FE_MODAL
+        FE_MODAL --> SECTIONS
+        FE_STORE --> FE_REPORT
+    end
+
+    PHP_RESP -->|"HTTP Response<br/>Status + JSON body"| GO_WP
+    GO_ENV -->|"API Envelope<br/>Errors.DelegatedRequestServer<br/>Errors.DelegatedServiceErrorStack"| FE_API
+    GO_LOG -->|"GET /api/v1/error-log<br/>Session-filtered content"| SEC_BE
+
+    classDef phpNode fill:#dc2626,color:#ffffff,stroke:#991b1b
+    classDef goNode fill:#059669,color:#ffffff,stroke:#047857
+    classDef feNode fill:#2563eb,color:#ffffff,stroke:#1d4ed8
+    classDef sectionNode fill:#f59e0b,color:#000000,stroke:#d97706
+    classDef subgraphStyle fill:transparent
+
+    class PHP_EP,PHP_ERR,PHP_STACK,PHP_RESP phpNode
+    class GO_SVC,GO_WP,GO_EXTRACT,GO_DRS,GO_ENV,GO_LOG,GO_MW goNode
+    class FE_API,FE_STORE,FE_MODAL,FE_REPORT feNode
+    class SEC_BE,SEC_FE,SEC_DEL sectionNode
