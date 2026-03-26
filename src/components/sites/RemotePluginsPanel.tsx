@@ -1370,7 +1370,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
       {/* Debug Logs Sub-Dialog */}
       <Dialog open={showDebugLogs} onOpenChange={setShowDebugLogs}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-background/95 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
