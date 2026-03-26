@@ -33,7 +33,7 @@ func seedAllSites(db *database.DB, cfg *Config, log *logger.Logger, encryptionKe
 
 // seedSingleSite creates or finds a single site; returns its ID or 0 on failure.
 func seedSingleSite(db *database.DB, log *logger.Logger, site SeedSite, encryptionKey []byte) int64 {
-	normalizedUrl := normalizeUrl(site.URL)
+	normalizedUrl := urlutil.NormalizeWordPressUrl(site.URL)
 	credentials := resolveCredentials(site)
 
 	existingId, lookupErr := db.GetSiteIdByUrl(normalizedUrl)
