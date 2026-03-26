@@ -45,7 +45,7 @@ Three top-level section buttons in the action bar:
 |---------|------|-------|-----------|
 | **Backend** | `Server` | Default | Always |
 | **Frontend** | `Monitor` | Default | Always |
-| **Delegated** | `Globe` | Orange (`border-orange-500/30`) | Only when delegated data exists |
+| **Delegated Logs** | `Globe` | Orange (`border-orange-500/30`) | Always (label: "Delegated Logs" on desktop, "Delegated" on mobile) |
 
 ---
 
