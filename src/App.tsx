@@ -192,7 +192,23 @@ function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener("unhandledrejection", handleRejection);
-    return () => window.removeEventListener("unhandledrejection", handleRejection);
+
+    // Ctrl+Shift+E → open demo error modal
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "E") {
+        e.preventDefault();
+        import("@/components/errors/demoErrorData").then(({ createDemoError, createDemoBackendError }) => {
+          const { openErrorQueue } = useErrorStore.getState();
+          openErrorQueue([createDemoError(), createDemoBackendError()], 0);
+        });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("unhandledrejection", handleRejection);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   return <>{children}</>;
