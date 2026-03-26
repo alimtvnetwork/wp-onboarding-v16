@@ -216,7 +216,6 @@ export function GlobalErrorModal() {
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <GripHorizontal className="h-4 w-4 text-muted-foreground/50 shrink-0 hidden sm:block" />
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <AlertCircle className={cn(
                 "h-5 w-5 sm:h-6 sm:w-6 shrink-0",
                 selectedError.level === "error" ? "text-destructive"
