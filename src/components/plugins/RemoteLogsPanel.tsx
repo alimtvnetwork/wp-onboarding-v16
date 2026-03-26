@@ -632,7 +632,37 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         </Button>
                       </div>
 
-                      {/* Plugin Tabs */}
+                      {/* Log Type Summary Banner */}
+                      {availablePlugins.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
+                          <ScrollText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {availablePlugins.map((p) => {
+                            const info = p.infoLog?.Lines ?? 0;
+                            const err = p.errorLog?.Lines ?? 0;
+                            const stack = p.stacktrace?.Lines ?? 0;
+                            return (
+                              <div key={p.namespace} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                {availablePlugins.length > 1 && (
+                                  <span className="font-medium text-foreground/70">{p.label}:</span>
+                                )}
+                                <span className={info > 0 ? "text-foreground" : "opacity-50"}>
+                                  Info {info > 0 ? `${info}` : "—"}
+                                </span>
+                                <span className="opacity-30">·</span>
+                                <span className={err > 0 ? "text-destructive" : "opacity-50"}>
+                                  Error {err > 0 ? `${err}` : "—"}
+                                </span>
+                                <span className="opacity-30">·</span>
+                                <span className={stack > 0 ? "text-foreground" : "opacity-50"}>
+                                  Trace {stack > 0 ? `${stack}` : "—"}
+                                </span>
+                                {availablePlugins.length > 1 && <span className="opacity-20 mx-1">|</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       {availablePlugins.length > 1 ? (
                            <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
                            <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/60 bg-muted/25 p-1">
