@@ -228,6 +228,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   }, []);
 
   const fetchStatus = useCallback(async () => {
+    if (isDemoMode) {
+      toast.info("Demo mode — using sample data (no backend call)");
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await api.getRemoteLogsStatus(siteId);
@@ -254,9 +258,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     } finally {
       setIsLoading(false);
     }
-  }, [siteId]);
+  }, [siteId, isDemoMode]);
 
   const fetchLogContent = useCallback(async () => {
+    if (isDemoMode) {
+      toast.info("Demo mode — using sample data (no backend call)");
+      return;
+    }
     setIsRetrieving(true);
     try {
       const response = await api.retrieveRemoteLogs(siteId, { max_lines: maxLines });
@@ -274,7 +282,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     } finally {
       setIsRetrieving(false);
     }
-  }, [siteId, maxLines]);
+  }, [siteId, maxLines, isDemoMode]);
 
   useEffect(() => {
     if (autoOpen && !status) {
