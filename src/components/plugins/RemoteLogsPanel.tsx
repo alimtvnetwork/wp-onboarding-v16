@@ -110,8 +110,11 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   const errorLines = plugin.errorLog?.Lines ?? 0;
   const stackLines = plugin.stacktrace?.Lines ?? 0;
 
+  // Auto-select the first non-empty log tab
+  const defaultLogTab = infoLines > 0 ? "info" : errorLines > 0 ? "error" : stackLines > 0 ? "stacktrace" : "info";
+
   return (
-    <Tabs defaultValue="info" className="w-full">
+    <Tabs defaultValue={defaultLogTab} className="w-full">
       <TabsList className="w-full grid grid-cols-3 h-9">
         <TabsTrigger value="info" className="text-xs gap-1.5">
           Info {infoLines > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{infoLines}</Badge>}
