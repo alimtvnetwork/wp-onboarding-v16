@@ -1,3 +1,4 @@
+// Package apperror — first-error combinators for multi-error aggregation.
 package apperror
 
 // FirstError returns the first non-nil AppError from the given list.

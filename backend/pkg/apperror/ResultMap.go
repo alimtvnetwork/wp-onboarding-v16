@@ -1,3 +1,4 @@
+// Package apperror — ResultMap wraps map returns with structured error handling.
 package apperror
 
 // ResultMap wraps a map of key-value pairs with an optional error.

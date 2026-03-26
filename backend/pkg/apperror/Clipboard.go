@@ -1,3 +1,4 @@
+// Package apperror — AI-friendly clipboard formatting for structured errors.
 package apperror
 
 import (
