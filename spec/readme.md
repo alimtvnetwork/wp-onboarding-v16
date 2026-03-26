@@ -47,6 +47,18 @@
 |------|-------------|
 | [dry-refactoring-summary.md](./dry-refactoring-summary.md) | Complete summary of the 10-phase DRY refactoring initiative |
 | [licensing-strategy.md](./licensing-strategy.md) | Licensing strategy and implementation plan |
+| [issues/](./issues/) | Ad-hoc issue investigations (e.g., status parsing PHP noise) |
+
+---
+
+## Architecture Diagrams
+
+| File | Description |
+|------|-------------|
+| [01-app/error-manage/delegated-error-flow.mmd](./01-app/error-manage/delegated-error-flow.mmd) | Delegated error flow: PHP → Go → React |
+| [01-app/deploy/deploy-preflight-flow.mmd](./01-app/deploy/deploy-preflight-flow.mmd) | Deploy pre-flight parallel probing |
+| [01-app/deploy/cross-upload-resilience.mmd](./01-app/deploy/cross-upload-resilience.mmd) | Cross-upload partner plugin fallback strategy |
+| [09-wordpress/07-log-retrieval/remote-log-retrieval-flow.mmd](./09-wordpress/07-log-retrieval/remote-log-retrieval-flow.mmd) | Remote log retrieval: PHP → Go → React |
 
 ---
 
