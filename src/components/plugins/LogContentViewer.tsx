@@ -20,6 +20,7 @@ import {
   Filter,
   WrapText,
   ArrowDownToLine,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { LogRetrieveFileData } from "@/lib/api/types";
