@@ -56,6 +56,7 @@ import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 import { isApiClientError } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LogContentViewer } from "./LogContentViewer";
 
 interface RemoteLogsPanelProps {
   siteId: number;
@@ -91,47 +92,6 @@ function surfaceError(err: unknown, fallbackEndpoint: string, fallbackMethod: st
     method: fallbackMethod,
   });
   openErrorModal(captured);
-}
-
-// ── Log Content Viewer ─────────────────────────────────────────
-function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: string }) {
-  if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
-  if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(file.Content);
-    toast.success(`${label} copied to clipboard`);
-  };
-
-  return (
-    <div className="space-y-3">
-      {/* Metadata row */}
-      <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-        <Badge variant="outline" className="text-xs font-mono border-primary/30 bg-primary/10 text-primary">{file.Lines} / {file.TotalLines} lines</Badge>
-        <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/50">{formatBytes(file.TotalSize)}</Badge>
-        {file.Truncated && (
-          <Badge variant="destructive" className="text-xs">Truncated</Badge>
-        )}
-        <Button size="sm" variant="ghost" className="h-6 px-2 ml-auto" onClick={handleCopy}>
-          <Copy className="h-3 w-3 mr-1" /> Copy
-        </Button>
-      </div>
-
-      {file.Truncated && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-          Showing last {file.Lines} of {file.TotalLines} lines. Increase max lines to see more.
-        </div>
-      )}
-
-      {/* Content */}
-      <ScrollArea className="h-[460px] rounded-xl border border-border/60 bg-muted/20 p-4 shadow-sm">
-        <pre className="text-sm font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
-          {file.Content || "(empty)"}
-        </pre>
-      </ScrollArea>
-    </div>
-  );
 }
 
 // ── Plugin Logs Tab Content ────────────────────────────────────
