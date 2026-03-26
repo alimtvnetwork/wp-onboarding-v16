@@ -270,7 +270,15 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   }, []);
 
   if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
-  if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
+  if (!file.Exists) return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 py-6 text-center">
+      <AlertTriangle className="h-5 w-5 text-amber-500" />
+      <p className="text-sm text-amber-400 font-medium">No {label} file found</p>
+      <p className="text-xs text-muted-foreground max-w-sm">
+        The remote plugin reported this file does not exist. If the Overview shows content, the retrieve endpoint may be using a different plugin namespace.
+      </p>
+    </div>
+  );
 
   return (
     <div className="space-y-3">

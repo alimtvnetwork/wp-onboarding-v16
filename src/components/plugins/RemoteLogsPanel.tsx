@@ -367,6 +367,15 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     }, 0);
   }, [availablePlugins]);
 
+  // Detect mismatch: status says files exist with content but retrieve returned all-empty
+  const statusHasContent = status?.files?.some(f => f.exists && f.lineCount > 0) ?? false;
+  const retrieveHasContent = availablePlugins.some(p =>
+    (p.infoLog?.Exists && (p.infoLog?.Lines ?? 0) > 0) ||
+    (p.errorLog?.Exists && (p.errorLog?.Lines ?? 0) > 0) ||
+    (p.stacktrace?.Exists && (p.stacktrace?.Lines ?? 0) > 0)
+  );
+  const hasMismatch = retrieveData && statusHasContent && !retrieveHasContent;
+
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
       <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
