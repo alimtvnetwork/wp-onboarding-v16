@@ -31,7 +31,7 @@ The modal header is a **drag handle** — users can click and drag anywhere on t
 
 - Left-click only (ignores right-click, middle-click)
 - Transform-based positioning (no layout reflow)
-- No boundary clamping (user can drag freely)
+- Boundary clamping: at least 80px of the modal stays visible on every screen edge (`EDGE_MARGIN = 80`)
 
 ---
 
@@ -108,13 +108,28 @@ When multiple errors exist:
 
 ---
 
-## 9. Files
+## 9. Demo Mode
+
+A mock/demo mode allows previewing all modal sections without a live Go backend.
+
+- **Settings trigger:** Settings → Developer → "Open Demo Modal" button
+- **Keyboard shortcut:** `Ctrl+Shift+E` (global, any page)
+- **Mock data:** `src/components/errors/demoErrorData.ts` — creates 2 sample errors:
+  1. **Delegated error** — full PHP stack traces, `DelegatedRequestServer`, envelope errors, backend logs, click path
+  2. **Backend-only error** — Go stack trace, database connection failure, no delegated data
+- **Queue testing:** Both errors are queued for prev/next navigation testing
+
+---
+
+## 10. Files
 
 - `src/components/errors/GlobalErrorModal.tsx` — Main modal shell with draggable header
-- `src/hooks/useDraggable.ts` — Reusable drag-to-move hook
+- `src/hooks/useDraggable.ts` — Reusable drag-to-move hook with boundary clamping
 - `src/components/errors/BackendSection.tsx` — Backend tab with sub-tabs
 - `src/components/errors/FrontendSection.tsx` — Frontend stack and fixes
 - `src/components/errors/DelegatedSection.tsx` — PHP/WordPress delegated errors
 - `src/components/errors/ErrorModalActions.tsx` — Download and Copy dropdown menus
 - `src/components/errors/ErrorModalTypes.ts` — Shared types
 - `src/components/errors/errorReportGenerator.ts` — Report generation utilities
+- `src/components/errors/demoErrorData.ts` — Mock error data for demo mode
+- `src/components/errors/errorLogAdapter.ts` — Maps backend ErrorLog to CapturedError
