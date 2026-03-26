@@ -243,26 +243,33 @@ export function GlobalErrorModal() {
               </div>
             </div>
             
-            {hasMultipleErrors && (
-              <div className="flex items-center gap-1 shrink-0">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('prev')} title="Previous error">
-                  <ChevronLeft className="h-4 w-4" />
+            <div className="flex items-center gap-1 shrink-0">
+              {isDragged && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={resetPosition} title="Reset position">
+                  <RotateCcw className="h-3 w-3" />
                 </Button>
-                <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
-                  {currentQueueIndex + 1}/{errorQueue.length}
-                </Badge>
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('next')} title="Next error">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden" onClick={copyAllErrors} title="Copy all errors">
-                  <CopyPlus className="h-3 w-3" />
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex" onClick={copyAllErrors} title="Copy all errors">
-                  <CopyPlus className="h-3 w-3 mr-1" />
-                  All
-                </Button>
-              </div>
-            )}
+              )}
+              {hasMultipleErrors && (
+                <>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('prev')} title="Previous error">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
+                    {currentQueueIndex + 1}/{errorQueue.length}
+                  </Badge>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('next')} title="Next error">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden" onClick={copyAllErrors} title="Copy all errors">
+                    <CopyPlus className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex" onClick={copyAllErrors} title="Copy all errors">
+                    <CopyPlus className="h-3 w-3 mr-1" />
+                    All
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
