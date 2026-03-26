@@ -31,7 +31,7 @@ func seedIfVersionNewer(db *database.DB, cfg *Config, log *logger.Logger) *apper
 		return appErr
 	}
 
-	isNewer := compareVersions(cfg.Version, currentVersion) > 0
+	isNewer := semver.Compare(cfg.Version, currentVersion) > 0
 
 	if isNewer {
 		return applySeed(db, cfg, log, currentVersion)
