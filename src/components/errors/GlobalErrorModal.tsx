@@ -71,7 +71,7 @@ function parsePhpStackFromRemoteBody(raw: string): PHPStackFrame[] {
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal, errorQueue, currentQueueIndex, navigateQueue, getQueuedErrorsMarkdown } = useErrorStore();
-  const { style: dragStyle, onMouseDown: onDragMouseDown, resetPosition, isDragged } = useDraggable();
+  const { style: dragStyle, onMouseDown: onDragMouseDown, onTouchStart: onDragTouchStart, resetPosition, isDragged } = useDraggable();
   const { data: versionInfo } = useVersionInfo();
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
@@ -212,6 +212,7 @@ export function GlobalErrorModal() {
         <DialogHeader
           className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0 cursor-grab active:cursor-grabbing select-none"
           onMouseDown={onDragMouseDown}
+          onTouchStart={onDragTouchStart}
         >
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
