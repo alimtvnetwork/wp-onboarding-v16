@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ import {
   Settings,
   ScrollText,
   Zap,
+  FlaskConical,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -143,6 +144,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Retrieve state
   const [retrieveData, setRetrieveData] = useState<LogsRetrieveResult | null>(null);
@@ -151,6 +153,25 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
   // Active top-level tab
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Demo mode toggle
+  const activateDemo = useCallback(async () => {
+    const { createDemoLogsStatus, createDemoRetrieveResult } = await import("./demoRemoteLogsData");
+    setStatus(createDemoLogsStatus());
+    setRetrieveData(createDemoRetrieveResult());
+    setIsDemoMode(true);
+    setIsOpen(true);
+    setActiveTab("viewer");
+    toast.info("Demo mode activated — showing sample log data");
+  }, []);
+
+  const deactivateDemo = useCallback(() => {
+    setStatus(null);
+    setRetrieveData(null);
+    setIsDemoMode(false);
+    setActiveTab("overview");
+    toast.info("Demo mode deactivated");
+  }, []);
 
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
@@ -392,22 +413,53 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                 <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
                 {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
               </div>
-              {status && (
-                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                  {status.archiveCount > 0 && (
-                    <span className="ml-1 text-muted-foreground">
-                      · {status.archiveCount} archived
-                    </span>
-                  )}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {isDemoMode && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 bg-amber-500/15 text-amber-400">
+                    <FlaskConical className="h-3 w-3 mr-1" /> Demo
+                  </Badge>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    isDemoMode ? deactivateDemo() : activateDemo();
+                  }}
+                >
+                  <FlaskConical className="h-3.5 w-3.5 mr-1" />
+                  {isDemoMode ? "Exit Demo" : "Demo"}
+                </Button>
+                {status && (
+                  <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
+                    {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
+                    {status.archiveCount > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        · {status.archiveCount} archived
+                      </span>
+                    )}
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
           <CardContent className="pt-5">
+            {/* Demo Mode Banner */}
+            {isDemoMode && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 mb-4 text-xs text-amber-400">
+                <FlaskConical className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-medium">Demo Mode</span>
+                <span className="text-muted-foreground">— Showing sample data. No backend connection required.</span>
+                <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-xs text-amber-400 hover:text-amber-300" onClick={deactivateDemo}>
+                  Exit Demo
+                </Button>
+              </div>
+            )}
+
             {/* Inline Error Diagnostics */}
             {inlineErrors.length > 0 && (
               <div className="space-y-3 mb-5">
