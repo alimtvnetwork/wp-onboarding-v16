@@ -431,7 +431,28 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   );
   const hasMismatch = retrieveData && statusHasContent && !retrieveHasContent;
 
-  return (
+  // Auto-open Global Error Modal when mismatch is detected
+  const mismatchFiredRef = useRef(false);
+  useEffect(() => {
+    if (hasMismatch && !mismatchFiredRef.current) {
+      mismatchFiredRef.current = true;
+      const { captureException, openErrorModal } = useErrorStore.getState();
+      const mismatchDetails = status?.files?.filter(f => f.lineCount > 0).map(f => `${f.name}: ${f.lineCount} lines`).join(", ") ?? "unknown";
+      const captured = captureException(
+        new Error(`Data mismatch: status reports [${mismatchDetails}] but retrieve returned no file data. The status and retrieve endpoints may be hitting different plugin namespaces.`),
+        {
+          source: "RemoteLogsPanel",
+          endpoint: `/sites/${siteId}/remote-logs/retrieve`,
+          method: "GET",
+        }
+      );
+      openErrorModal(captured);
+    }
+    if (!hasMismatch) {
+      mismatchFiredRef.current = false;
+    }
+  }, [hasMismatch, status, siteId]);
+
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
       <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
         <CollapsibleTrigger asChild>
