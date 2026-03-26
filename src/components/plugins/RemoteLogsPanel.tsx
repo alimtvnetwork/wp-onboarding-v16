@@ -186,6 +186,9 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
           setIsDemoMode(true);
           setIsOpen(true);
           setActiveTab("viewer");
+          toast.success("Demo mode auto-activated from Settings", {
+            description: "Showing sample log data — no backend required.",
+          });
         }
       } finally {
         sessionStorage.removeItem("remoteLogs:demoActivate");
