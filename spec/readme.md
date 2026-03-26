@@ -1,6 +1,6 @@
 # Specifications Index
 
-> **Updated:** 2026-03-18  
+> **Updated:** 2026-03-26  
 > **Purpose:** Central index of all specification folders in this project.
 
 ---
