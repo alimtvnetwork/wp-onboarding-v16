@@ -641,6 +641,24 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         </Button>
                       </div>
 
+                      {/* Mismatch Warning */}
+                      {hasMismatch && (
+                        <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-amber-400">Data mismatch detected</p>
+                            <p className="text-xs text-muted-foreground">
+                              The Overview shows log files with content ({status?.files?.filter(f => f.lineCount > 0).map(f => `${f.name}: ${f.lineCount} lines`).join(", ")}),
+                              but the retrieve endpoint returned no file data. This usually means the status and retrieve endpoints are hitting different plugin namespaces,
+                              or the remote plugin needs updating.
+                            </p>
+                            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-500/30" onClick={fetchLogContent}>
+                              <RefreshCw className="mr-1.5 h-3 w-3" /> Retry Retrieval
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Log Type Summary Banner */}
                       {availablePlugins.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
