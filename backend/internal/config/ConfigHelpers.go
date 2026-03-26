@@ -102,7 +102,7 @@ func createMappingsForAllPlugins(db *database.DB, cfg *Config, log *logger.Logge
 	for _, plugin := range cfg.Seed.Plugins {
 		resolvedPath := plugin.ResolvePath()
 
-		if !dirExists(resolvedPath) {
+		if !pathutil.IsDirExists(resolvedPath) {
 			log.Warn("Plugin directory does not exist, skipping mapping",
 				"name", plugin.Name, "resolvedPath", resolvedPath, "os", runtime.GOOS)
 			continue
