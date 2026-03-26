@@ -258,7 +258,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     } finally {
       setIsLoading(false);
     }
-  }, [siteId]);
+  }, [siteId, isDemoMode]);
 
   const fetchLogContent = useCallback(async () => {
     if (isDemoMode) {
@@ -282,7 +282,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     } finally {
       setIsRetrieving(false);
     }
-  }, [siteId, maxLines]);
+  }, [siteId, maxLines, isDemoMode]);
 
   useEffect(() => {
     if (autoOpen && !status) {
