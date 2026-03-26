@@ -260,6 +260,15 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const jumpToFirstError = useCallback(() => {
+    setSeverityFilter("error");
+    setCurrentMatchIdx(0);
+    // Scroll to top of content after filter applies
+    setTimeout(() => {
+      scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]")?.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+  }, []);
+
   if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
   if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
 
@@ -280,9 +289,9 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
           <Badge
             variant="outline"
             className="text-xs cursor-pointer border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-            onClick={() => setSeverityFilter(severityFilter === "error" ? "all" : "error")}
+            onClick={jumpToFirstError}
           >
-            {counts.error} errors
+            {counts.error} errors ↗
           </Badge>
         )}
         {counts.warning > 0 && (
