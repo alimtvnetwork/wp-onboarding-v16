@@ -744,9 +744,31 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                               but the retrieve endpoint returned no file data. This usually means the status and retrieve endpoints are hitting different plugin namespaces,
                               or the remote plugin needs updating.
                             </p>
-                            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-500/30" onClick={fetchLogContent}>
-                              <RefreshCw className="mr-1.5 h-3 w-3" /> Retry Retrieval
-                            </Button>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/30" onClick={fetchLogContent}>
+                                <RefreshCw className="mr-1.5 h-3 w-3" /> Retry Retrieval
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-amber-500/30"
+                                onClick={() => {
+                                  const { captureException, openErrorModal } = useErrorStore.getState();
+                                  const mismatchDetails = status?.files?.filter(f => f.lineCount > 0).map(f => `${f.name}: ${f.lineCount} lines`).join(", ") ?? "unknown";
+                                  const captured = captureException(
+                                    new Error(`Data mismatch: status reports [${mismatchDetails}] but retrieve returned no file data. The status and retrieve endpoints may be hitting different plugin namespaces.`),
+                                    {
+                                      source: "RemoteLogsPanel",
+                                      endpoint: `/sites/${siteId}/remote-logs/retrieve`,
+                                      method: "GET",
+                                    }
+                                  );
+                                  openErrorModal(captured);
+                                }}
+                              >
+                                <AlertTriangle className="mr-1.5 h-3 w-3" /> Open in Error Modal
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
