@@ -368,7 +368,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   }, [availablePlugins]);
 
   // Detect mismatch: status says files exist with content but retrieve returned all-empty
-  const statusHasContent = status?.files?.some(f => f.exists && f.lineCount > 0) ?? false;
+  const statusHasContent = status?.files?.some(f => f.lineCount > 0) ?? false;
   const retrieveHasContent = availablePlugins.some(p =>
     (p.infoLog?.Exists && (p.infoLog?.Lines ?? 0) > 0) ||
     (p.errorLog?.Exists && (p.errorLog?.Lines ?? 0) > 0) ||
