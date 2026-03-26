@@ -7,6 +7,7 @@ import (
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pluginutil"
 )
 
 // RemoteBackupResult holds the response from the remote plugin backup endpoint.
@@ -21,7 +22,7 @@ type RemoteBackupResult struct {
 // CreateRemoteBackup triggers a remote plugin backup on the WordPress site.
 func (c *Client) CreateRemoteBackup(slug string) apperror.Result[RemoteBackupResult] {
 	namespace := c.resolveNamespace()
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + namespace + ep.PluginBackup.String()
 
 	return DoApiCall[RemoteBackupResult](c, ApiCallInput{
