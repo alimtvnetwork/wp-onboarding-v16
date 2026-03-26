@@ -1,0 +1,83 @@
+graph TB
+    subgraph PHP["WordPress PHP Plugins"]
+        direction TB
+        subgraph RA["Riseup Asia Plugin"]
+            RA_EP["GET /wp-json/<br/>riseup-asia-api/v1/logs/retrieve"]
+            RA_FILES["Log Files<br/>info.log / error.log / stacktrace.log"]
+            RA_RESP["JSON Response<br/>Exists, Content, Lines,<br/>TotalLines, Truncated"]
+            RA_FILES --> RA_EP
+            RA_EP --> RA_RESP
+        end
+        subgraph QU["QUpload Plugin"]
+            QU_EP["GET /wp-json/<br/>qupload-api/v1/logs/retrieve"]
+            QU_FILES["Log Files<br/>info.log / error.log / stacktrace.log"]
+            QU_RESP["JSON Response<br/>Exists, Content, Lines,<br/>TotalLines, Truncated"]
+            QU_FILES --> QU_EP
+            QU_EP --> QU_RESP
+        end
+    end
+
+    subgraph GO["Go Backend - Parallel Probing"]
+        direction TB
+        GO_HANDLER["HandlerRemoteLogsRetrieve.go<br/>GET /api/sites/id/remote-logs/retrieve<br/>Query: max_lines, include_info/error/stacktrace"]
+        GO_SVC["RemoteLogsRetrieve.go<br/>Service method"]
+
+        subgraph GOROUTINES["2 Parallel Goroutines"]
+            direction LR
+            GR1["goroutine 1<br/>riseup-asia-api/v1<br/>/logs/retrieve"]
+            GR2["goroutine 2<br/>qupload-api/v1<br/>/logs/retrieve"]
+        end
+
+        GO_COMBINE["Combined Response<br/>plugins array with<br/>namespace, label, available,<br/>infoLog, errorLog, stacktrace"]
+
+        GO_HANDLER --> GO_SVC
+        GO_SVC --> GOROUTINES
+        GR1 --> GO_COMBINE
+        GR2 --> GO_COMBINE
+    end
+
+    subgraph FE["React Frontend - RemoteLogsPanel"]
+        direction TB
+        FE_API["api.retrieveRemoteLogs<br/>GET with max_lines param"]
+        FE_STATE["Response State<br/>PluginLogsData per namespace"]
+
+        subgraph VIEWER["Tabbed Log Viewer"]
+            direction TB
+            subgraph PTABS["Plugin Tabs"]
+                direction LR
+                PT_RA["Riseup Asia"]
+                PT_QU["QUpload"]
+            end
+            subgraph LTABS["Log Type Tabs - nested"]
+                direction LR
+                LT_INFO["Info<br/>Line count badge"]
+                LT_ERR["Error<br/>Line count badge"]
+                LT_ST["Stacktrace<br/>Line count badge"]
+            end
+            CONTENT["Monospace Viewer<br/>400px scroll area<br/>Truncation warning<br/>Metadata badges"]
+            PTABS --> LTABS
+            LTABS --> CONTENT
+        end
+
+        FE_ACTIONS["Actions<br/>Refresh / Copy / Download All<br/>Max Lines selector 50-2000"]
+
+        FE_API --> FE_STATE
+        FE_STATE --> VIEWER
+        FE_STATE --> FE_ACTIONS
+    end
+
+    RA_RESP -->|"HTTP Response"| GR1
+    QU_RESP -->|"HTTP Response"| GR2
+    GO_COMBINE -->|"API Envelope<br/>plugins array"| FE_API
+
+    classDef phpNode fill:#dc2626,color:#ffffff,stroke:#991b1b
+    classDef goNode fill:#059669,color:#ffffff,stroke:#047857
+    classDef feNode fill:#2563eb,color:#ffffff,stroke:#1d4ed8
+    classDef viewerNode fill:#8b5cf6,color:#ffffff,stroke:#7c3aed
+    classDef goroutineNode fill:#0d9488,color:#ffffff,stroke:#0f766e
+
+    class RA_EP,RA_FILES,RA_RESP,QU_EP,QU_FILES,QU_RESP phpNode
+    class GO_HANDLER,GO_SVC,GO_COMBINE goNode
+    class GR1,GR2 goroutineNode
+    class FE_API,FE_STATE,FE_ACTIONS feNode
+    class PT_RA,PT_QU,LT_INFO,LT_ERR,LT_ST,CONTENT viewerNode
