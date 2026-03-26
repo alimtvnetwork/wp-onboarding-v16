@@ -1,4 +1,10 @@
+// Package apperror — typed diagnostic context and formatting for structured errors.
 package apperror
+
+import (
+	"fmt"
+	"strings"
+)
 
 // ErrorDiagnostic holds typed diagnostic context for application errors.
 type ErrorDiagnostic struct {
@@ -155,4 +161,67 @@ func (e *AppError) WithUsername(u string) *AppError {
 func (e *AppError) WithDiagnostic(d ErrorDiagnostic) *AppError {
 	e.Diagnostic = d
 	return e
+}
+
+// --- Diagnostic formatting ---
+
+// formatDiagnostic formats all non-zero diagnostic fields.
+func formatDiagnostic(d ErrorDiagnostic) string {
+	var b strings.Builder
+
+	writeStringField(&b, "path", d.Path)
+	writeStringField(&b, "file", d.File)
+	writeStringField(&b, "destPath", d.DestPath)
+	writeStringField(&b, "backupDir", d.BackupDir)
+	writeStringField(&b, "url", d.Url)
+	writeStringField(&b, "slug", d.Slug)
+	writeStringField(&b, "filePath", d.FilePath)
+	writeStringField(&b, "pluginSlug", d.PluginSlug)
+	writeStringField(&b, "plugin", d.Plugin)
+	writeInt64Field(&b, "siteId", d.SiteId)
+	writeInt64Field(&b, "pluginId", d.PluginId)
+	writeInt64Field(&b, "snapshotId", d.SnapshotId)
+	writeInt64Field(&b, "mappingId", d.MappingId)
+	writeInt64Field(&b, "versionId", d.VersionId)
+	writeStringField(&b, "sessionId", d.SessionId)
+	writeStringField(&b, "runId", d.RunId)
+	writeIntField(&b, "statusCode", d.StatusCode)
+	writeStringField(&b, "method", d.Method)
+	writeStringField(&b, "endpoint", d.Endpoint)
+	writeStringField(&b, "username", d.Username)
+
+	return b.String()
+}
+
+// writeStringField writes a diagnostic field if non-empty.
+func writeStringField(b *strings.Builder, name, value string) {
+	isValueEmpty := value == ""
+
+	if isValueEmpty {
+		return
+	}
+
+	b.WriteString(fmt.Sprintf("  %s: %s\n", name, value))
+}
+
+// writeInt64Field writes a diagnostic field if non-zero.
+func writeInt64Field(b *strings.Builder, name string, value int64) {
+	isValueZero := value == 0
+
+	if isValueZero {
+		return
+	}
+
+	b.WriteString(fmt.Sprintf("  %s: %d\n", name, value))
+}
+
+// writeIntField writes a diagnostic field if non-zero.
+func writeIntField(b *strings.Builder, name string, value int) {
+	isValueZero := value == 0
+
+	if isValueZero {
+		return
+	}
+
+	b.WriteString(fmt.Sprintf("  %s: %d\n", name, value))
 }
