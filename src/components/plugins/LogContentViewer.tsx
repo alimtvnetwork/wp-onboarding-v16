@@ -289,9 +289,9 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
           <Badge
             variant="outline"
             className="text-xs cursor-pointer border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-            onClick={() => setSeverityFilter(severityFilter === "error" ? "all" : "error")}
+            onClick={jumpToFirstError}
           >
-            {counts.error} errors
+            {counts.error} errors ↗
           </Badge>
         )}
         {counts.warning > 0 && (
