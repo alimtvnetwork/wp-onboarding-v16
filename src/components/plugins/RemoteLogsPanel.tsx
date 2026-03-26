@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ import {
   Settings,
   ScrollText,
   Zap,
+  FlaskConical,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -143,6 +144,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Retrieve state
   const [retrieveData, setRetrieveData] = useState<LogsRetrieveResult | null>(null);
@@ -151,6 +153,25 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
   // Active top-level tab
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Demo mode toggle
+  const activateDemo = useCallback(async () => {
+    const { createDemoLogsStatus, createDemoRetrieveResult } = await import("./demoRemoteLogsData");
+    setStatus(createDemoLogsStatus());
+    setRetrieveData(createDemoRetrieveResult());
+    setIsDemoMode(true);
+    setIsOpen(true);
+    setActiveTab("viewer");
+    toast.info("Demo mode activated — showing sample log data");
+  }, []);
+
+  const deactivateDemo = useCallback(() => {
+    setStatus(null);
+    setRetrieveData(null);
+    setIsDemoMode(false);
+    setActiveTab("overview");
+    toast.info("Demo mode deactivated");
+  }, []);
 
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
