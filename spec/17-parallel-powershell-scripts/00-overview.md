@@ -3,6 +3,8 @@
 > **Created:** 2026-03-14  
 > **Status:** Implemented  
 > **Relates to:** [spec/12-powershell-integration](../12-powershell-integration/), [parallel-work-sync-output](../12-powershell-integration/parallel-work-sync-output.md)
+>
+> **Diagrams:** [Deploy Pre-flight Flow](../01-app/deploy/deploy-preflight-flow.mmd) · [Cross-Upload Resilience](../01-app/deploy/cross-upload-resilience.mmd)
 
 ---
 
