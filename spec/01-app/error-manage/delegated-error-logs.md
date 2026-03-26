@@ -1,10 +1,14 @@
 # Delegated Error Logs (PHP) — Specification
 
-## Overview
+> **Location:** `src/components/errors/DelegatedSection.tsx`
+> **Status:** Implemented
+> **Updated:** 2026-03-26
 
 > **Diagram:** [delegated-error-flow.mmd](./delegated-error-flow.mmd)
 
-When the Go backend proxies a request to a WordPress PHP server (the "delegated server"), the PHP response may include structured error diagnostics — stack traces, error messages, status codes, and response bodies. These must be surfaced clearly in the Error Modal under a dedicated **"Delegated"** tab, formatted consistently with how Go backend traces are displayed.
+## Overview
+
+When the Go backend proxies a request to a WordPress PHP server (the "delegated server"), the PHP response may include structured error diagnostics — stack traces, error messages, status codes, and response bodies. These are surfaced in the Error Modal under a dedicated **"Delegated"** top-level tab, formatted consistently with how Go backend traces are displayed.
 
 ## Architecture Flow
 
@@ -26,7 +30,7 @@ When the Go backend proxies a request to a WordPress PHP server (the "delegated 
           └─────────────────────────────────────┘
 ```
 
-The Go backend already extracts and attaches this data to the response envelope. The frontend already stores it in `CapturedError.envelopeErrors`. What's missing is a **dedicated, well-structured UI tab** to present it.
+The Go backend extracts and attaches this data to the response envelope. The frontend stores it in `CapturedError.envelopeErrors` and displays it in the Delegated section.
 
 ## Data Sources
 
