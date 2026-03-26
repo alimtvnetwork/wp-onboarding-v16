@@ -8,6 +8,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // seedSetting is a typed key-value pair for seeding settings.
@@ -102,7 +103,7 @@ func createMappingsForAllPlugins(db *database.DB, cfg *Config, log *logger.Logge
 	for _, plugin := range cfg.Seed.Plugins {
 		resolvedPath := plugin.ResolvePath()
 
-		if !dirExists(resolvedPath) {
+		if !pathutil.IsDirExists(resolvedPath) {
 			log.Warn("Plugin directory does not exist, skipping mapping",
 				"name", plugin.Name, "resolvedPath", resolvedPath, "os", runtime.GOOS)
 			continue

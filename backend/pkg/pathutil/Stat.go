@@ -64,6 +64,13 @@ func IsFileMissing(path string) bool {
 	return !Exists(path)
 }
 
+// IsDirExists returns true if the given path is an existing directory.
+func IsDirExists(path string) bool {
+	info, err := os.Stat(path)
+
+	return err == nil && info.IsDir()
+}
+
 // FileSize returns the file size in bytes, or 0 if the file cannot be stat'd.
 func FileSize(path string) int64 {
 	fi, appErr := StatFile(path)
