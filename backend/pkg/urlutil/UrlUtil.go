@@ -1,28 +1,52 @@
 // Package urlutil provides URL normalization utilities.
 package urlutil
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
-// NormalizeWordPressUrl strips common WordPress paths and enforces HTTPS.
+// NormalizeWordPressUrl normalizes a WordPress site URL for consistent storage.
+// It ensures HTTPS, strips common WP paths, and removes query/fragment.
 func NormalizeWordPressUrl(rawUrl string) string {
-	u := strings.TrimSpace(rawUrl)
-	u = strings.TrimRight(u, "/")
+	rawUrl = ensureScheme(strings.TrimSpace(rawUrl))
 
-	for _, suffix := range []string{"/wp-admin", "/wp-login.php", "/wp-json"} {
-		u = strings.TrimSuffix(u, suffix)
+	parsed, err := url.Parse(rawUrl)
+	if err != nil {
+		return strings.TrimSuffix(rawUrl, "/")
 	}
 
-	isHttp := strings.HasPrefix(u, "http://")
+	parsed.Path = stripWordPressPaths(parsed.Path)
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String()
+}
 
-	if isHttp {
-		u = "https://" + strings.TrimPrefix(u, "http://")
+// ensureScheme prepends https:// if no scheme is present.
+func ensureScheme(rawUrl string) string {
+	hasHttpPrefix := strings.HasPrefix(rawUrl, "http://")
+	hasHttpsPrefix := strings.HasPrefix(rawUrl, "https://")
+	hasScheme :=
+		hasHttpPrefix ||
+			hasHttpsPrefix
+
+	if hasScheme {
+		return rawUrl
 	}
 
-	isHttpsMissing := !strings.HasPrefix(u, "https://")
+	return "https://" + rawUrl
+}
 
-	if isHttpsMissing {
-		u = "https://" + u
+// stripWordPressPaths removes common WordPress path suffixes from a URL path.
+func stripWordPressPaths(path string) string {
+	pathsToStrip := []string{"/wp-admin/", "/wp-admin", "/wp-login.php", "/wp-json/", "/wp-json"}
+	for _, p := range pathsToStrip {
+		if strings.HasPrefix(path, p) {
+			return strings.TrimSuffix(strings.TrimPrefix(path, strings.TrimSuffix(p, "/")), "/")
+		}
+		if strings.HasSuffix(path, p) {
+			return strings.TrimSuffix(strings.TrimSuffix(path, p), "/")
+		}
 	}
-
-	return u
+	return strings.TrimSuffix(path, "/")
 }
