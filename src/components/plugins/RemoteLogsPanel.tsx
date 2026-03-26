@@ -448,6 +448,18 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
         <CollapsibleContent>
           <CardContent className="pt-5">
+            {/* Demo Mode Banner */}
+            {isDemoMode && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 mb-4 text-xs text-amber-400">
+                <FlaskConical className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-medium">Demo Mode</span>
+                <span className="text-muted-foreground">— Showing sample data. No backend connection required.</span>
+                <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-xs text-amber-400 hover:text-amber-300" onClick={deactivateDemo}>
+                  Exit Demo
+                </Button>
+              </div>
+            )}
+
             {/* Inline Error Diagnostics */}
             {inlineErrors.length > 0 && (
               <div className="space-y-3 mb-5">
