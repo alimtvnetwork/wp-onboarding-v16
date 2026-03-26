@@ -18,10 +18,18 @@ import {
   ChevronDown,
   AlertTriangle,
   Filter,
+  WrapText,
+  ArrowDownToLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { LogRetrieveFileData } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -136,6 +144,9 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const matchRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [wordWrap, setWordWrap] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(false);
 
   const fileExists = !!file?.Exists;
   const content = file?.Content || "";
@@ -224,6 +235,10 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     return c;
   }, [allLines]);
 
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
   if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
 
@@ -260,6 +275,21 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
         )}
 
         <div className="ml-auto flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant={wordWrap ? "secondary" : "ghost"}
+                className="h-6 w-6 p-0"
+                onClick={() => setWordWrap(w => !w)}
+              >
+                <WrapText className="h-3 w-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              {wordWrap ? "Disable" : "Enable"} word wrap
+            </TooltipContent>
+          </Tooltip>
           <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => setShowSearch((s) => !s)}>
             <Search className="h-3 w-3 mr-1" /> Search
           </Button>
@@ -331,8 +361,9 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
       )}
 
       {/* Content */}
+      <div className="relative">
       <ScrollArea className="h-[460px] rounded-xl border border-border/60 bg-muted/20 shadow-sm" ref={scrollRef}>
-        <div className="p-4 font-mono text-[13px] leading-[1.6]">
+        <div className={cn("p-4 font-mono text-[13px] leading-[1.6]", !wordWrap && "whitespace-pre overflow-x-auto")}>
           {filteredLines.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
               {severityFilter !== "all" ? "No lines match this filter." : "(empty)"}
@@ -360,8 +391,25 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
               );
             })
           )}
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
+
+      {/* Scroll-to-bottom FAB */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="absolute bottom-3 right-5 h-7 w-7 p-0 rounded-full shadow-lg border border-border/60 opacity-80 hover:opacity-100 transition-opacity z-10"
+            onClick={scrollToBottom}
+          >
+            <ArrowDownToLine className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="text-xs">Scroll to bottom</TooltipContent>
+      </Tooltip>
+      </div>
     </div>
   );
 }
