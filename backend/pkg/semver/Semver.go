@@ -1,13 +1,14 @@
-package config
+// Package semver provides semantic version comparison utilities.
+package semver
 
 import (
 	"strconv"
 	"strings"
 )
 
-// compareVersions compares two semantic versions
+// Compare compares two semantic versions.
 // Returns: -1 if a < b, 0 if a == b, 1 if a > b
-func compareVersions(a, b string) int {
+func Compare(a, b string) int {
 	isEqual := a == b
 
 	if isEqual {
@@ -24,7 +25,7 @@ func compareVersions(a, b string) int {
 	partsB := strings.Split(b, ".")
 
 	for i := 0; i < 3; i++ {
-		result := compareVersionPart(partsA, partsB, i)
+		result := comparePart(partsA, partsB, i)
 		isDecisive := result != 0
 
 		if isDecisive {
@@ -35,10 +36,10 @@ func compareVersions(a, b string) int {
 	return 0
 }
 
-// compareVersionPart compares a single version segment at the given index.
-func compareVersionPart(partsA []string, partsB []string, index int) int {
-	numA := parseVersionPart(partsA, index)
-	numB := parseVersionPart(partsB, index)
+// comparePart compares a single version segment at the given index.
+func comparePart(partsA []string, partsB []string, index int) int {
+	numA := parsePart(partsA, index)
+	numB := parsePart(partsB, index)
 
 	isAGreater := numA > numB
 
@@ -55,8 +56,8 @@ func compareVersionPart(partsA []string, partsB []string, index int) int {
 	return 0
 }
 
-// parseVersionPart extracts an integer from a version parts slice at the given index.
-func parseVersionPart(parts []string, index int) int {
+// parsePart extracts an integer from a version parts slice at the given index.
+func parsePart(parts []string, index int) int {
 	isWithinBounds := index < len(parts)
 
 	if isWithinBounds {

@@ -4,6 +4,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/semver"
 )
 
 // SeedIfNeeded seeds the database from config if version is newer
@@ -30,7 +31,7 @@ func seedIfVersionNewer(db *database.DB, cfg *Config, log *logger.Logger) *apper
 		return appErr
 	}
 
-	isNewer := compareVersions(cfg.Version, currentVersion) > 0
+	isNewer := semver.Compare(cfg.Version, currentVersion) > 0
 
 	if isNewer {
 		return applySeed(db, cfg, log, currentVersion)
