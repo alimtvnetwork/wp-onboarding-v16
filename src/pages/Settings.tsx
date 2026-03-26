@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/api";
-import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database, Cloud } from "lucide-react";
+import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database, Cloud, AlertCircle } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { SnapshotSettingsTab } from "@/components/settings/SnapshotSettingsTab";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -908,6 +908,44 @@ export default function Settings() {
                   Clear Dedup Hashes
                 </Button>
               </div>
+            </div>
+
+            {/* Demo Error Modal */}
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <AlertCircle className="h-4 w-4" />
+                    Error Modal Demo
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Open the error modal with realistic mock data to preview all sections (Backend, Frontend, Delegated) without a live Go backend.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    import("@/components/errors/demoErrorData").then(({ createDemoError, createDemoBackendError }) => {
+                      const demoErrors = [createDemoError(), createDemoBackendError()];
+                      useErrorStore.getState().openErrorQueue(demoErrors, 0);
+                      toast.success("Demo error modal opened with 2 sample errors", {
+                        style: {
+                          background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                          color: "white",
+                          border: "none",
+                        },
+                      });
+                    });
+                  }}
+                  className="w-full sm:w-auto text-xs"
+                >
+                  Open Demo Modal
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Keyboard shortcut: <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px] font-mono">Ctrl+Shift+E</kbd>
+              </p>
             </div>
           </div>
         );
