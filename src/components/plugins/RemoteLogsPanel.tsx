@@ -40,6 +40,9 @@ import {
   Copy,
   Download,
   Eye,
+  Settings,
+  ScrollText,
+  Zap,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -92,8 +95,8 @@ function surfaceError(err: unknown, fallbackEndpoint: string, fallbackMethod: st
 
 // ── Log Content Viewer ─────────────────────────────────────────
 function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: string }) {
-  if (!file) return <p className="text-sm text-muted-foreground py-2">Not requested</p>;
-  if (!file.Exists) return <p className="text-sm text-muted-foreground py-2">No {label} file found.</p>;
+  if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
+  if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(file.Content);
@@ -101,11 +104,11 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
   };
 
   return (
-    <div className="space-y-2">
-      {/* Metadata */}
+    <div className="space-y-3">
+      {/* Metadata row */}
       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-        <Badge variant="outline" className="text-xs">{file.Lines} / {file.TotalLines} lines</Badge>
-        <Badge variant="outline" className="text-xs">{formatBytes(file.TotalSize)}</Badge>
+        <Badge variant="outline" className="text-xs font-mono">{file.Lines} / {file.TotalLines} lines</Badge>
+        <Badge variant="outline" className="text-xs font-mono">{formatBytes(file.TotalSize)}</Badge>
         {file.Truncated && (
           <Badge variant="destructive" className="text-xs">Truncated</Badge>
         )}
@@ -116,13 +119,13 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
 
       {file.Truncated && (
         <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-xs text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
           Showing last {file.Lines} of {file.TotalLines} lines. Increase max lines to see more.
         </div>
       )}
 
       {/* Content */}
-      <ScrollArea className="h-[400px] rounded-md border bg-background p-3">
+      <ScrollArea className="h-[400px] rounded-md border border-border/50 bg-muted/30 p-3">
         <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
           {file.Content || "(empty)"}
         </pre>
@@ -135,9 +138,9 @@ function LogContentViewer({ file, label }: { file?: LogRetrieveFileData; label: 
 function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   if (!plugin.available) {
     return (
-      <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-        Plugin not available on this site
+      <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        <p>Plugin not available on this site</p>
       </div>
     );
   }
@@ -148,15 +151,15 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
 
   return (
     <Tabs defaultValue="info" className="w-full">
-      <TabsList className="w-full grid grid-cols-3">
-        <TabsTrigger value="info" className="text-xs">
-          Info {infoLines > 0 && <Badge variant="secondary" className="ml-1 text-[10px] px-1">{infoLines}</Badge>}
+      <TabsList className="w-full grid grid-cols-3 h-9">
+        <TabsTrigger value="info" className="text-xs gap-1.5">
+          Info {infoLines > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{infoLines}</Badge>}
         </TabsTrigger>
-        <TabsTrigger value="error" className="text-xs">
-          Error {errorLines > 0 && <Badge variant="destructive" className="ml-1 text-[10px] px-1">{errorLines}</Badge>}
+        <TabsTrigger value="error" className="text-xs gap-1.5">
+          Error {errorLines > 0 && <Badge variant="destructive" className="text-[10px] px-1 h-4">{errorLines}</Badge>}
         </TabsTrigger>
-        <TabsTrigger value="stacktrace" className="text-xs">
-          Stacktrace {stackLines > 0 && <Badge variant="secondary" className="ml-1 text-[10px] px-1">{stackLines}</Badge>}
+        <TabsTrigger value="stacktrace" className="text-xs gap-1.5">
+          Trace {stackLines > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{stackLines}</Badge>}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="info" className="mt-3">
@@ -177,11 +180,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
 
-  // Retrieve state (content viewer)
+  // Retrieve state
   const [retrieveData, setRetrieveData] = useState<LogsRetrieveResult | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
   const [maxLines, setMaxLines] = useState(200);
-  const [showViewer, setShowViewer] = useState(false);
+
+  // Active top-level tab
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
@@ -198,7 +203,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
   const fetchStatus = useCallback(async () => {
     setIsLoading(true);
-
     try {
       const response = await api.getRemoteLogsStatus(siteId);
       const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs`, method: "GET" });
@@ -232,16 +236,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       const response = await api.retrieveRemoteLogs(siteId, { max_lines: maxLines });
       const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/retrieve`, method: "GET" });
       setRetrieveData(data);
-      setShowViewer(true);
+      setActiveTab("viewer");
 
-      // Check if any plugin returned data
       const hasAnyContent = data.plugins?.some(p => p.available);
       if (!hasAnyContent) {
-        toast.warning("No log retrieval endpoints available — the remote plugin may be outdated or missing the /logs/retrieve endpoint.");
+        toast.warning("No log retrieval endpoints available — the remote plugin may be outdated.");
       }
     } catch (err) {
       surfaceError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
-      // Do NOT silently fail — the error modal will show
     } finally {
       setIsRetrieving(false);
     }
@@ -409,10 +411,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className="pt-0">
             {/* Loading */}
             {isLoading && (
-              <div className="flex items-center justify-center py-6">
+              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             )}
@@ -430,133 +432,126 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
             )}
 
-            {/* File List */}
+            {/* Main Tabbed Interface */}
             {!isLoading && status && !status.pluginOutdated && (
-              <>
-                {hasFiles ? (
-                  <div className="space-y-1.5">
-                    {status.files.map((file) => (
-                      <div
-                        key={file.name}
-                        className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
-                      >
-                        <span className="font-mono text-xs text-foreground">{file.name}</span>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{file.lineCount.toLocaleString()} lines</span>
-                          <Badge variant="outline" className="text-xs">{formatBytes(file.sizeBytes)}</Badge>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full grid grid-cols-3 h-10 mb-4">
+                  <TabsTrigger value="overview" className="text-xs gap-1.5">
+                    <ScrollText className="h-3.5 w-3.5" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="viewer" className="text-xs gap-1.5">
+                    <Eye className="h-3.5 w-3.5" />
+                    Viewer
+                    {retrieveData && <Badge variant="secondary" className="text-[10px] px-1 h-4 ml-1">✓</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="actions" className="text-xs gap-1.5">
+                    <Zap className="h-3.5 w-3.5" />
+                    Actions
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* ── OVERVIEW TAB ──────────────────────────────── */}
+                <TabsContent value="overview" className="space-y-4 mt-0">
+                  {hasFiles ? (
+                    <div className="space-y-1.5">
+                      {status.files.map((file) => (
+                        <div
+                          key={file.name}
+                          className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2.5 text-sm"
+                        >
+                          <span className="font-mono text-xs text-foreground">{file.name}</span>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>{file.lineCount.toLocaleString()} lines</span>
+                            <Badge variant="outline" className="text-xs font-mono">{formatBytes(file.sizeBytes)}</Badge>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    No log files found
-                  </div>
-                )}
-
-                {status.archiveCount > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Archive className="h-3.5 w-3.5" />
-                    {status.archiveCount} archived rotation{status.archiveCount !== 1 ? "s" : ""}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 border-t pt-3 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={fetchStatus} disabled={isLoading}>
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
-                  </Button>
-
-                  {/* View Logs (retrieve content) */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={fetchLogContent}
-                    disabled={isRetrieving || !hasFiles}
-                  >
-                    {isRetrieving ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Eye className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    View Logs
-                  </Button>
-
-                  {/* Max Lines Selector */}
-                  <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
-                    <SelectTrigger className="h-8 w-[100px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[50, 100, 200, 500, 1000, 2000].map((n) => (
-                        <SelectItem key={n} value={String(n)} className="text-xs">{n} lines</SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Clear — two-step */}
-                  {!clearToken ? (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleClearStep1}
-                      disabled={isClearing || !hasFiles}
-                    >
-                      {isClearing ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      )}
-                      Clear Logs
-                    </Button>
+                    </div>
                   ) : (
-                    <div className="flex items-center gap-1.5">
-                      <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming}>
-                        {isConfirming ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
-                        )}
-                        Confirm ({clearExpiry}s)
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={handleClearCancel}>Cancel</Button>
+                    <div className="flex flex-col items-center gap-2 py-8 text-sm text-muted-foreground">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      No log files found
                     </div>
                   )}
 
-                  {/* Clear All (both plugins) */}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={handleClearAllPlugins}
-                    disabled={isClearingAll}
-                    title="Clear logs for both Riseup Asia and QUpload plugins"
-                  >
-                    {isClearingAll ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    Clear All Plugins
-                  </Button>
+                  {status.archiveCount > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Archive className="h-3.5 w-3.5" />
+                      {status.archiveCount} archived rotation{status.archiveCount !== 1 ? "s" : ""}
+                    </div>
+                  )}
 
-                  {/* Email */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowEmailDialog(true)}
-                    disabled={!hasFiles}
-                  >
-                    <Mail className="mr-1.5 h-3.5 w-3.5" /> Email Logs
-                  </Button>
-                </div>
+                  {/* Quick actions in overview */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                    <Button size="sm" variant="outline" onClick={fetchStatus} disabled={isLoading}>
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={fetchLogContent}
+                      disabled={isRetrieving || !hasFiles}
+                    >
+                      {isRetrieving ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      View Logs
+                    </Button>
+                    <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
+                      <SelectTrigger className="h-8 w-[110px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[50, 100, 200, 500, 1000, 2000].map((n) => (
+                          <SelectItem key={n} value={String(n)} className="text-xs">{n} lines</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
 
-                {/* ── Log Content Viewer ─────────────────────────────── */}
-                {showViewer && retrieveData && (
-                  <div className="border-t pt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Log Content</h4>
-                      <div className="flex items-center gap-2">
+                {/* ── VIEWER TAB ────────────────────────────────── */}
+                <TabsContent value="viewer" className="space-y-4 mt-0">
+                  {!retrieveData ? (
+                    <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
+                      <Eye className="h-8 w-8 opacity-30" />
+                      <p className="text-sm">No logs loaded yet</p>
+                      <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
+                        {isRetrieving ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Load Logs
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Toolbar */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving}>
+                            {isRetrieving ? (
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                            )}
+                            Reload
+                          </Button>
+                          <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
+                            <SelectTrigger className="h-8 w-[110px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[50, 100, 200, 500, 1000, 2000].map((n) => (
+                                <SelectItem key={n} value={String(n)} className="text-xs">{n} lines</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
@@ -565,45 +560,123 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         >
                           <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setShowViewer(false)}
-                          className="text-xs"
-                        >
-                          Hide
-                        </Button>
                       </div>
-                    </div>
 
-                    {availablePlugins.length > 1 ? (
-                      <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                        <TabsList className="w-full">
+                      {/* Plugin Tabs */}
+                      {availablePlugins.length > 1 ? (
+                        <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
+                          <TabsList className="w-full">
+                            {availablePlugins.map((p) => (
+                              <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
+                                {p.label}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
                           {availablePlugins.map((p) => (
-                            <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
-                              {p.label}
-                            </TabsTrigger>
+                            <TabsContent key={p.namespace} value={p.namespace} className="mt-3">
+                              <PluginLogsTabs plugin={p} />
+                            </TabsContent>
                           ))}
-                        </TabsList>
-                        {availablePlugins.map((p) => (
-                          <TabsContent key={p.namespace} value={p.namespace} className="mt-3">
-                            <PluginLogsTabs plugin={p} />
-                          </TabsContent>
-                        ))}
-                      </Tabs>
-                    ) : availablePlugins.length === 1 ? (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">{availablePlugins[0].label}</p>
-                        <PluginLogsTabs plugin={availablePlugins[0]} />
-                      </div>
+                        </Tabs>
+                      ) : availablePlugins.length === 1 ? (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2 font-medium">{availablePlugins[0].label}</p>
+                          <PluginLogsTabs plugin={availablePlugins[0]} />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                          <p className="text-sm">No plugin log endpoints available on this site.</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+
+                {/* ── ACTIONS TAB ───────────────────────────────── */}
+                <TabsContent value="actions" className="space-y-4 mt-0">
+                  {/* Clear Logs — Two-step */}
+                  <div className="rounded-md border border-border/50 p-4 space-y-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                      Clear Logs
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Remove log files from the active plugin on this site. Requires two-step confirmation.
+                    </p>
+                    {!clearToken ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleClearStep1}
+                        disabled={isClearing || !hasFiles}
+                      >
+                        {isClearing ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Clear Logs
+                      </Button>
                     ) : (
-                      <p className="text-sm text-muted-foreground py-4">
-                        No plugin log endpoints available on this site.
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming}>
+                          {isConfirming ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+                          )}
+                          Confirm ({clearExpiry}s)
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleClearCancel}>Cancel</Button>
+                      </div>
                     )}
                   </div>
-                )}
-              </>
+
+                  {/* Clear All Plugins */}
+                  <div className="rounded-md border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2 text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                      Clear All Plugins
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Clear logs for <strong>both</strong> Riseup Asia and QUpload plugins simultaneously.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleClearAllPlugins}
+                      disabled={isClearingAll}
+                    >
+                      {isClearingAll ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Clear All Plugins
+                    </Button>
+                  </div>
+
+                  {/* Email Logs */}
+                  <div className="rounded-md border border-border/50 p-4 space-y-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Email Logs
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Send log files as email attachments for external review.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowEmailDialog(true)}
+                      disabled={!hasFiles}
+                    >
+                      <Mail className="mr-1.5 h-3.5 w-3.5" /> Send Email
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             )}
           </CardContent>
         </CollapsibleContent>
