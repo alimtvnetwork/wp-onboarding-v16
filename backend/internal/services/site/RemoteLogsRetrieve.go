@@ -24,6 +24,7 @@ type LogsRetrieveParams struct {
 // RetrieveRemoteLogs fetches log file contents from BOTH plugin namespaces in parallel.
 // Unlike other log methods that return first-wins, this returns ALL available results
 // so the UI can show tabs per plugin.
+// The PHP /logs/retrieve endpoint returns a flat response (not envelope-wrapped).
 func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params LogsRetrieveParams) (*wordpress.LogsRetrieveResult, *apperror.AppError) {
 	client, appErr := s.createWPClient(ctx, siteId)
 	if appErr != nil {
@@ -51,7 +52,8 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				endpoint = basePath + "?" + queryString
 			}
 
-			result := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRetrievePhpResponse]](client, wordpress.ApiCallInput{
+			// Flat response — NOT envelope-wrapped (matches /logs/status pattern)
+			result := wordpress.DoApiCall[wordpress.LogsRetrievePhpResponse](client, wordpress.ApiCallInput{
 				Method:    httpmethod.Get,
 				Endpoint:  endpoint,
 				Operation: operationtype.RetrieveLogs,
@@ -68,11 +70,7 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				return
 			}
 
-			php, unwrapErr := wordpress.UnwrapPhpResult(result.Value())
-			if unwrapErr != nil {
-				ch <- nsResult{ns: namespace, data: pluginData}
-				return
-			}
+			php := result.Value()
 			pluginData.Available = true
 			pluginData.InfoLog = php.InfoLog
 			pluginData.ErrorLog = php.ErrorLog
