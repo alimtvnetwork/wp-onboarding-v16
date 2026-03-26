@@ -69,7 +69,7 @@ func (c *Client) UploadPluginViaQUpload(input UploadInput) apperror.Result[*Uplo
 
 // EnablePluginViaQUpload activates a plugin via QUpload's activate endpoint.
 func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Enable.String()
 
 	callInput := ApiCallInput{
@@ -87,7 +87,7 @@ func (c *Client) EnablePluginViaQUpload(slug string) *apperror.AppError {
 
 // DisablePluginViaQUpload deactivates a plugin via QUpload's deactivate endpoint.
 func (c *Client) DisablePluginViaQUpload(slug string) *apperror.AppError {
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Disable.String()
 
 	callInput := ApiCallInput{
@@ -124,7 +124,7 @@ func (c *Client) ListPluginsViaQUpload() apperror.Result[[]UploaderPluginInfo] {
 
 // DeletePluginViaQUpload deletes a plugin via QUpload's delete endpoint.
 func (c *Client) DeletePluginViaQUpload(slug string) *apperror.AppError {
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + QUploadNamespace + ep.Delete.String()
 
 	callInput := ApiCallInput{

@@ -21,7 +21,7 @@ type RemoteBackupResult struct {
 // CreateRemoteBackup triggers a remote plugin backup on the WordPress site.
 func (c *Client) CreateRemoteBackup(slug string) apperror.Result[RemoteBackupResult] {
 	namespace := c.resolveNamespace()
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + namespace + ep.PluginBackup.String()
 
 	return DoApiCall[RemoteBackupResult](c, ApiCallInput{

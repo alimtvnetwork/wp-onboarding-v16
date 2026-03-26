@@ -23,7 +23,7 @@ type pluginLifecycleInput struct {
 // pluginLifecycleAction is the shared implementation for Enable, Disable, and Delete.
 func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) *apperror.AppError {
 	namespace := c.resolveNamespace()
-	normalizedSlug := normalizePluginSlug(input.Slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(input.Slug)
 	endpoint := "/" + namespace + input.Endpoint.String()
 
 	callInput := ApiCallInput{
@@ -49,7 +49,7 @@ type PluginExistsResult struct {
 // CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
 func (c *Client) CheckPluginExistsViaUploader(slug string) apperror.Result[*PluginExistsResult] {
 	namespace := c.resolveNamespace()
-	normalizedSlug := normalizePluginSlug(slug)
+	normalizedSlug := pluginutil.ExtractFolderSlug(slug)
 	endpoint := "/" + namespace + ep.PluginExists.String()
 
 	callInput := ApiCallInput{
