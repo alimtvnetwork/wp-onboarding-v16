@@ -4,8 +4,6 @@ package site
 import (
 	"context"
 	"encoding/json"
-	"net/url"
-	"strings"
 	"sync"
 
 	"wp-plugin-publish/internal/database"
@@ -15,6 +13,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
+	"wp-plugin-publish/pkg/urlutil"
 )
 
 // Config holds service configuration

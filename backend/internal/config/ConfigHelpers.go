@@ -8,6 +8,7 @@ import (
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/urlutil"
 )
 
 // seedSetting is a typed key-value pair for seeding settings.
