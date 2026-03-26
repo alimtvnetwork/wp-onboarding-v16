@@ -137,23 +137,24 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const matchRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
-  if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
+  const fileExists = !!file?.Exists;
+  const content = file?.Content || "";
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
+    if (!file) return;
     navigator.clipboard.writeText(file.Content);
     toast.success(`${label} copied to clipboard`);
-  };
+  }, [file, label]);
 
   // Parse lines with severity
   const allLines = useMemo(() => {
-    const raw = (file.Content || "").split("\n");
+    const raw = content.split("\n");
     return raw.map((text, i) => ({
       text,
       lineNumber: i + 1,
       severity: detectSeverity(text),
     }));
-  }, [file.Content]);
+  }, [content]);
 
   // Apply severity filter
   const filteredLines = useMemo(() => {
@@ -200,7 +201,7 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   // Keyboard shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "f" && file.Exists) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f" && fileExists) {
         e.preventDefault();
         setShowSearch(true);
       }
@@ -212,7 +213,7 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [showSearch, navigateMatch, file.Exists]);
+  }, [showSearch, navigateMatch, fileExists]);
 
   // Severity counts
   const counts = useMemo(() => {
@@ -222,6 +223,9 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     }
     return c;
   }, [allLines]);
+
+  if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
+  if (!file.Exists) return <p className="text-sm text-muted-foreground py-4 text-center">No {label} file found.</p>;
 
   return (
     <div className="space-y-3">
