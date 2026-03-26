@@ -67,6 +67,13 @@ interface RemoteLogsPanelProps {
   autoOpen?: boolean;
 }
 
+interface CapturedInlineError {
+  diagnostic: InlineDiagnostic;
+  originalError: unknown;
+  endpoint: string;
+  method: string;
+}
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
@@ -213,11 +220,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Inline error diagnostics
-  const [inlineErrors, setInlineErrors] = useState<InlineDiagnostic[]>([]);
+  const [inlineErrors, setInlineErrors] = useState<CapturedInlineError[]>([]);
 
   const captureInlineError = useCallback((err: unknown, endpoint: string, method: string) => {
     const diag = extractDiagnostic(err, endpoint, method);
-    setInlineErrors(prev => [diag, ...prev].slice(0, 5)); // keep last 5
+    setInlineErrors((prev) => [
+      { diagnostic: diag, originalError: err, endpoint, method },
+      ...prev,
+    ].slice(0, 5)); // keep last 5
   }, []);
 
   const dismissInlineError = useCallback((idx: number) => {
@@ -490,21 +500,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
             {/* Inline Error Diagnostics */}
             {inlineErrors.length > 0 && (
               <div className="space-y-3 mb-5">
-                {inlineErrors.map((diag, idx) => (
+                {inlineErrors.map(({ diagnostic, originalError, endpoint, method }, idx) => (
                   <InlineErrorDiagnostic
-                    key={`${diag.timestamp}-${idx}`}
-                    diagnostic={diag}
+                    key={`${diagnostic.timestamp}-${idx}`}
+                    diagnostic={diagnostic}
                     onDismiss={() => dismissInlineError(idx)}
-                    onOpenGlobalModal={() => {
-                      // Re-surface in the global modal for the full experience
-                      const { captureException, openErrorModal } = useErrorStore.getState();
-                      const captured = captureException(new Error(diag.message), {
-                        source: "RemoteLogsPanel",
-                        endpoint: diag.endpoint,
-                        method: diag.method,
-                      });
-                      openErrorModal(captured);
-                    }}
+                    onOpenGlobalModal={() => openInGlobalModal(originalError, endpoint, method)}
                   />
                 ))}
               </div>
@@ -654,20 +655,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                       {/* Show inline errors directly in the viewer tab when fetch failed */}
                       {inlineErrors.length > 0 && (
                         <div className="space-y-3">
-                          {inlineErrors.map((diag, idx) => (
+                          {inlineErrors.map(({ diagnostic, originalError, endpoint, method }, idx) => (
                             <InlineErrorDiagnostic
-                              key={`viewer-${diag.timestamp}-${idx}`}
-                              diagnostic={diag}
+                              key={`viewer-${diagnostic.timestamp}-${idx}`}
+                              diagnostic={diagnostic}
                               onDismiss={() => dismissInlineError(idx)}
-                              onOpenGlobalModal={() => {
-                                const { captureException, openErrorModal } = useErrorStore.getState();
-                                const captured = captureException(new Error(diag.message), {
-                                  source: "RemoteLogsPanel",
-                                  endpoint: diag.endpoint,
-                                  method: diag.method,
-                                });
-                                openErrorModal(captured);
-                              }}
+                              onOpenGlobalModal={() => openInGlobalModal(originalError, endpoint, method)}
                             />
                           ))}
                         </div>
