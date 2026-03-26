@@ -367,6 +367,15 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     }, 0);
   }, [availablePlugins]);
 
+  // Detect mismatch: status says files exist with content but retrieve returned all-empty
+  const statusHasContent = status?.files?.some(f => f.lineCount > 0) ?? false;
+  const retrieveHasContent = availablePlugins.some(p =>
+    (p.infoLog?.Exists && (p.infoLog?.Lines ?? 0) > 0) ||
+    (p.errorLog?.Exists && (p.errorLog?.Lines ?? 0) > 0) ||
+    (p.stacktrace?.Exists && (p.stacktrace?.Lines ?? 0) > 0)
+  );
+  const hasMismatch = retrieveData && statusHasContent && !retrieveHasContent;
+
   return (
     <Collapsible open={isOpen} onOpenChange={handleOpen}>
       <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
@@ -631,6 +640,24 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                           <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
                         </Button>
                       </div>
+
+                      {/* Mismatch Warning */}
+                      {hasMismatch && (
+                        <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-amber-400">Data mismatch detected</p>
+                            <p className="text-xs text-muted-foreground">
+                              The Overview shows log files with content ({status?.files?.filter(f => f.lineCount > 0).map(f => `${f.name}: ${f.lineCount} lines`).join(", ")}),
+                              but the retrieve endpoint returned no file data. This usually means the status and retrieve endpoints are hitting different plugin namespaces,
+                              or the remote plugin needs updating.
+                            </p>
+                            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs border-amber-500/30" onClick={fetchLogContent}>
+                              <RefreshCw className="mr-1.5 h-3 w-3" /> Retry Retrieval
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Log Type Summary Banner */}
                       {availablePlugins.length > 0 && (
