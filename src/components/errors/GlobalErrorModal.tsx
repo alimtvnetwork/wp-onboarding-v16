@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor, Globe } from "lucide-react";
+import { AlertCircle, ChevronRight, ChevronLeft, CopyPlus, Server, Monitor, Globe, GripHorizontal, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -16,6 +16,7 @@ import { BackendSection } from "./BackendSection";
 import { FrontendSection } from "./FrontendSection";
 import { DelegatedSection, hasDelegatedContent } from "./DelegatedSection";
 import { DownloadDropdown, CopyDropdown } from "./ErrorModalActions";
+import { useDraggable } from "@/hooks/useDraggable";
 
 /**
  * Parse PHP stack trace frames from a raw remoteResponseBody string.
@@ -70,6 +71,7 @@ function parsePhpStackFromRemoteBody(raw: string): PHPStackFrame[] {
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal, errorQueue, currentQueueIndex, navigateQueue, getQueuedErrorsMarkdown } = useErrorStore();
+  const { style: dragStyle, onMouseDown: onDragMouseDown, resetPosition, isDragged } = useDraggable();
   const { data: versionInfo } = useVersionInfo();
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
@@ -133,8 +135,9 @@ export function GlobalErrorModal() {
       setErrorLogFetched(false);
       setErrorLogError(null);
       setActiveSection("backend");
+      resetPosition();
     }
-  }, [isModalOpen, selectedError?.id]);
+  }, [isModalOpen, selectedError?.id, resetPosition]);
   
   if (!selectedError) return null;
 
@@ -197,6 +200,7 @@ export function GlobalErrorModal() {
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
       <DialogContent
         data-error-modal
+        style={dragStyle}
         className={cn(
           "flex flex-col p-0 gap-0 overflow-hidden",
           "w-full h-full max-w-full max-h-full rounded-none",
@@ -204,10 +208,14 @@ export function GlobalErrorModal() {
           "lg:max-w-6xl"
         )}
       >
-        {/* Header */}
-        <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0">
+        {/* Header — draggable */}
+        <DialogHeader
+          className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0 cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={onDragMouseDown}
+        >
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <GripHorizontal className="h-4 w-4 text-muted-foreground/50 shrink-0 hidden sm:block" />
               <AlertCircle className={cn(
                 "h-5 w-5 sm:h-6 sm:w-6 shrink-0",
                 selectedError.level === "error" ? "text-destructive"
@@ -235,26 +243,33 @@ export function GlobalErrorModal() {
               </div>
             </div>
             
-            {hasMultipleErrors && (
-              <div className="flex items-center gap-1 shrink-0">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('prev')} title="Previous error">
-                  <ChevronLeft className="h-4 w-4" />
+            <div className="flex items-center gap-1 shrink-0">
+              {isDragged && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={resetPosition} title="Reset position">
+                  <RotateCcw className="h-3 w-3" />
                 </Button>
-                <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
-                  {currentQueueIndex + 1}/{errorQueue.length}
-                </Badge>
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('next')} title="Next error">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden" onClick={copyAllErrors} title="Copy all errors">
-                  <CopyPlus className="h-3 w-3" />
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex" onClick={copyAllErrors} title="Copy all errors">
-                  <CopyPlus className="h-3 w-3 mr-1" />
-                  All
-                </Button>
-              </div>
-            )}
+              )}
+              {hasMultipleErrors && (
+                <>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('prev')} title="Previous error">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
+                    {currentQueueIndex + 1}/{errorQueue.length}
+                  </Badge>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('next')} title="Next error">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden" onClick={copyAllErrors} title="Copy all errors">
+                    <CopyPlus className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex" onClick={copyAllErrors} title="Copy all errors">
+                    <CopyPlus className="h-3 w-3 mr-1" />
+                    All
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
