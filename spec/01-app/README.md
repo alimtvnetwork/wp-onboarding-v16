@@ -1,9 +1,29 @@
 # Application Specifications
 
 > **Purpose:** Centralized home for all application-level specifications.
-> **Updated:** 2026-02-25
+> **Updated:** 2026-03-26
 
 All application specs, feature definitions, and behavioral requirements live here.
+
+---
+
+## Contents
+
+### Directories
+
+| Directory | Description |
+|-----------|-------------|
+| [error-manage/](./error-manage/README.md) | Error modal, delegated error logs, architecture diagrams |
+| [deploy/](./deploy/README.md) | Deploy pre-flight probing, deployment pipeline |
+
+### Standalone Specs
+
+| File | Description |
+|------|-------------|
+| [enum-consumer-checklist.md](./enum-consumer-checklist.md) | Mandatory checklist when adding or modifying any enum case |
+| [formatting-rules-reference.md](./formatting-rules-reference.md) | Canonical formatting rules for PHP, Go, TypeScript (R1–R13) |
+
+---
 
 ## Structure
 
