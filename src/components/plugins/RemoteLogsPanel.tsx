@@ -44,6 +44,7 @@ import {
   ScrollText,
   Zap,
   FlaskConical,
+  XCircle,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -715,6 +716,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                               ))}
                             </SelectContent>
                           </Select>
+                        {isDemoMode && (
+                          <Button size="sm" variant="destructive" onClick={deactivateDemo} className="text-xs">
+                            <XCircle className="mr-1 h-3 w-3" />
+                            Exit Demo
+                          </Button>
+                        )}
                         </div>
                         <Button
                           size="sm"
