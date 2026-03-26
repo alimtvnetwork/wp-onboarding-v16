@@ -3,29 +3,14 @@ package wordpress
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	ep "wp-plugin-publish/internal/enums/endpointtype"
 	httpmethod "wp-plugin-publish/internal/enums/httpmethodtype"
 	operationtype "wp-plugin-publish/internal/enums/operationtype"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pluginutil"
 )
-
-// normalizePluginSlug extracts the folder-level slug from a full WordPress plugin
-// identifier like "broken-link-checker/broken-link-checker.php".
-func normalizePluginSlug(slug string) string {
-	if strings.Contains(slug, "/") {
-		dir := filepath.Dir(slug)
-		isDirValid := dir != "." && dir != ""
-
-		if isDirValid {
-			return dir
-		}
-	}
-	slug = strings.TrimSuffix(slug, ".php")
-	return slug
-}
 
 // pluginLifecycleInput holds the parameters for a plugin lifecycle action.
 type pluginLifecycleInput struct {
