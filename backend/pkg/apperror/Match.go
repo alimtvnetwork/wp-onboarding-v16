@@ -1,3 +1,4 @@
+// Package apperror — error matching, extraction, and panic recovery utilities.
 package apperror
 
 // Is checks if the error matches a specific code.

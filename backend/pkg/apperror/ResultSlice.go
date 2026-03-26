@@ -1,3 +1,4 @@
+// Package apperror — ResultSlice wraps slice returns with structured error handling.
 package apperror
 
 // ResultSlice wraps a slice of items with an optional error.

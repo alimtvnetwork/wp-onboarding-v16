@@ -1,3 +1,4 @@
+// Package apperror — fluent key-value context attachments for AppError.
 package apperror
 
 // WithValue adds a single key-value pair to the error context.
