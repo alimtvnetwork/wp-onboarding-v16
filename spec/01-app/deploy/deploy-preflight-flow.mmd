@@ -1,0 +1,95 @@
+graph TB
+    subgraph UI["React Frontend - DeployDialog"]
+        TRIGGER["Deploy Dialog Opened<br/>Check module-level cache"]
+        CACHE{"Cache<br/>exists?"}
+        SHOW_CACHED["Show cached results<br/>immediately"]
+        REFRESH["Refresh button<br/>Force re-probe"]
+        CARDS["Diagnostic Cards per Site<br/>WP/PHP version, API namespace,<br/>DB status, server time"]
+        VERSION["Version Comparison<br/>Local vX to Remote vY<br/>Needs Publish badge"]
+        DEPLOY["Deploy Button<br/>Unblocked, independent<br/>of pre-flight completion"]
+        WS_RECV["WebSocket Listener<br/>Incremental result streaming"]
+
+        TRIGGER --> CACHE
+        CACHE -->|"Yes"| SHOW_CACHED
+        CACHE -->|"No"| WS_RECV
+        SHOW_CACHED --> REFRESH
+        REFRESH --> WS_RECV
+        WS_RECV --> CARDS
+        WS_RECV --> VERSION
+        CARDS --> DEPLOY
+    end
+
+    subgraph GO["Go Backend - Parallel Pre-flight Engine"]
+        HANDLER["Pre-flight Handler<br/>Receives site list"]
+        
+        subgraph SITES["Per-Site Goroutines"]
+            direction TB
+            subgraph S1["Site 1"]
+                direction LR
+                S1_RA["goroutine<br/>riseup-asia-api/v1<br/>/status"]
+                S1_QU["goroutine<br/>qupload-api/v1<br/>/status"]
+            end
+            subgraph S2["Site 2"]
+                direction LR
+                S2_RA["goroutine<br/>riseup-asia-api/v1<br/>/status"]
+                S2_QU["goroutine<br/>qupload-api/v1<br/>/status"]
+            end
+            subgraph S3["Site 3"]
+                direction LR
+                S3_RA["goroutine<br/>riseup-asia-api/v1<br/>/status"]
+                S3_QU["goroutine<br/>qupload-api/v1<br/>/status"]
+            end
+        end
+
+        WG["sync.WaitGroup<br/>6 concurrent goroutines<br/>3 sites x 2 plugins"]
+        WS_SEND["WebSocket Broadcast<br/>Stream each result<br/>as it completes"]
+        VALIDATE["Pre-upload Validation<br/>ZIP size vs PHP limits<br/>upload_max_filesize<br/>post_max_size"]
+
+        HANDLER --> WG
+        WG --> SITES
+        S1_RA --> WS_SEND
+        S1_QU --> WS_SEND
+        S2_RA --> WS_SEND
+        S2_QU --> WS_SEND
+        S3_RA --> WS_SEND
+        S3_QU --> WS_SEND
+        WS_SEND --> VALIDATE
+    end
+
+    subgraph WP["WordPress PHP Sites"]
+        direction TB
+        WP1["Site 1<br/>REST API /status"]
+        WP2["Site 2<br/>REST API /status"]
+        WP3["Site 3<br/>REST API /status"]
+        WP_RESP["Status Response<br/>plugin version, WP version,<br/>PHP version, DB status,<br/>upload limits, server time"]
+    end
+
+    S1_RA & S1_QU -->|"HTTP GET"| WP1
+    S2_RA & S2_QU -->|"HTTP GET"| WP2
+    S3_RA & S3_QU -->|"HTTP GET"| WP3
+    WP1 & WP2 & WP3 --> WP_RESP
+    WS_SEND -->|"WebSocket<br/>incremental results"| WS_RECV
+
+    subgraph DEPLOY_PIPELINE["Deploy Pipeline - Post Pre-flight"]
+        direction LR
+        ZIP["Phase 1<br/>ZIP Creation"]
+        UPLOAD["Phase 2<br/>Upload via<br/>cross-upload endpoint"]
+        VERIFY["Phase 3<br/>Verify Installation"]
+        ZIP --> UPLOAD --> VERIFY
+    end
+
+    DEPLOY --> DEPLOY_PIPELINE
+
+    classDef feNode fill:#2563eb,color:#ffffff,stroke:#1d4ed8
+    classDef goNode fill:#059669,color:#ffffff,stroke:#047857
+    classDef wpNode fill:#dc2626,color:#ffffff,stroke:#991b1b
+    classDef goroutineNode fill:#0d9488,color:#ffffff,stroke:#0f766e
+    classDef pipelineNode fill:#7c3aed,color:#ffffff,stroke:#6d28d9
+    classDef decisionNode fill:#d97706,color:#ffffff,stroke:#b45309
+
+    class TRIGGER,SHOW_CACHED,REFRESH,CARDS,VERSION,DEPLOY,WS_RECV feNode
+    class HANDLER,WG,WS_SEND,VALIDATE goNode
+    class S1_RA,S1_QU,S2_RA,S2_QU,S3_RA,S3_QU goroutineNode
+    class WP1,WP2,WP3,WP_RESP wpNode
+    class ZIP,UPLOAD,VERIFY pipelineNode
+    class CACHE decisionNode
