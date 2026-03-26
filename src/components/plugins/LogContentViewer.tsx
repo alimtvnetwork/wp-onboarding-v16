@@ -20,6 +20,7 @@ import {
   Filter,
   WrapText,
   ArrowDownToLine,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { LogRetrieveFileData } from "@/lib/api/types";
@@ -151,12 +152,6 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const fileExists = !!file?.Exists;
   const content = file?.Content || "";
 
-  const handleCopy = useCallback(() => {
-    if (!file) return;
-    navigator.clipboard.writeText(file.Content);
-    toast.success(`${label} copied to clipboard`);
-  }, [file, label]);
-
   // Parse lines with severity
   const allLines = useMemo(() => {
     const raw = content.split("\n");
@@ -172,6 +167,32 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
     if (severityFilter === "all") return allLines;
     return allLines.filter((l) => l.severity === severityFilter);
   }, [allLines, severityFilter]);
+
+  const getVisibleText = useCallback(() => {
+    return filteredLines.map((l) => l.text).join("\n");
+  }, [filteredLines]);
+
+  const handleCopy = useCallback(() => {
+    if (!file) return;
+    const isFiltered = severityFilter !== "all" || searchTerm;
+    navigator.clipboard.writeText(isFiltered ? getVisibleText() : file.Content);
+    toast.success(`${label}${isFiltered ? " (filtered)" : ""} copied to clipboard`);
+  }, [file, label, severityFilter, searchTerm, getVisibleText]);
+
+  const handleDownloadFiltered = useCallback(() => {
+    const text = getVisibleText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const suffix = severityFilter !== "all" ? `-${severityFilter}` : searchTerm ? `-search` : "";
+    a.download = `${label.toLowerCase().replace(/\s+/g, "-")}${suffix}-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`${filteredLines.length} lines downloaded`);
+  }, [getVisibleText, label, severityFilter, searchTerm, filteredLines.length]);
 
   // Find search matches (indices into filteredLines)
   const matchIndices = useMemo(() => {
@@ -294,8 +315,18 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
             <Search className="h-3 w-3 mr-1" /> Search
           </Button>
           <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleCopy}>
-            <Copy className="h-3 w-3 mr-1" /> Copy
+            <Copy className="h-3 w-3 mr-1" /> Copy{(severityFilter !== "all" || searchTerm) ? " visible" : ""}
           </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleDownloadFiltered}>
+                <Download className="h-3 w-3 mr-1" /> Export{(severityFilter !== "all" || searchTerm) ? ` (${filteredLines.length})` : ""}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              Download {severityFilter !== "all" || searchTerm ? "filtered" : "all"} lines as .txt
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
