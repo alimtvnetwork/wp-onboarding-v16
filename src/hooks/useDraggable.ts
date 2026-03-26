@@ -1,93 +1,80 @@
-import { useState, useCallback, useRef, type MouseEvent } from "react";
+import { useState, useCallback, useRef, useEffect, type MouseEvent } from "react";
 
-interface DragState {
+interface Position {
   x: number;
   y: number;
 }
 
-/** Minimum pixels of the modal that must remain visible on each edge. */
 const EDGE_MARGIN = 80;
 
-/**
- * Clamp offset so at least EDGE_MARGIN px of the dragged element stays visible.
- * Uses the element's bounding rect (before transform) to compute limits.
- */
-function clampOffset(rawX: number, rawY: number, el: HTMLElement | null): DragState {
-  if (!el) return { x: rawX, y: rawY };
-
-  const rect = el.getBoundingClientRect();
-  // Current transform is already baked into getBoundingClientRect,
-  // so subtract it to get the "natural" position.
-  const naturalLeft = rect.left - rawX;
-  const naturalTop = rect.top - rawY;
-  const naturalRight = naturalLeft + rect.width;
-  const naturalBottom = naturalTop + rect.height;
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  // Max offset right: viewport right edge minus EDGE_MARGIN from left side of element
-  const maxX = vw - EDGE_MARGIN - naturalLeft;
-  // Max offset left: EDGE_MARGIN from right side of element minus viewport left
-  const minX = EDGE_MARGIN - naturalRight;
-  // Max offset down: viewport bottom minus EDGE_MARGIN from top
-  const maxY = vh - EDGE_MARGIN - naturalTop;
-  // Max offset up: EDGE_MARGIN from bottom minus viewport top
-  const minY = EDGE_MARGIN - naturalBottom;
-
-  return {
-    x: Math.max(minX, Math.min(maxX, rawX)),
-    y: Math.max(minY, Math.min(maxY, rawY)),
-  };
+function clamp(val: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, val));
 }
 
 /**
- * Hook to make an element draggable by its header with boundary clamping.
- * At least 80px of the modal stays visible on every edge.
- * Returns style transform and mouse event handlers for the drag handle.
+ * Lightweight drag hook for repositioning a modal via its header.
+ * Transform-based (no layout reflow), with edge clamping.
  */
 export function useDraggable() {
-  const [offset, setOffset] = useState<DragState>({ x: 0, y: 0 });
-  const dragging = useRef(false);
-  const startPos = useRef({ x: 0, y: 0 });
-  const startOffset = useRef({ x: 0, y: 0 });
-  const elementRef = useRef<HTMLElement | null>(null);
+  const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
+  const dragRef = useRef<{
+    active: boolean;
+    startMouse: Position;
+    startOffset: Position;
+    el: HTMLElement | null;
+  }>({ active: false, startMouse: { x: 0, y: 0 }, startOffset: { x: 0, y: 0 }, el: null });
 
   const resetPosition = useCallback(() => setOffset({ x: 0, y: 0 }), []);
 
+  useEffect(() => {
+    const onMove = (e: globalThis.MouseEvent) => {
+      const d = dragRef.current;
+      if (!d.active) return;
+
+      const rawX = d.startOffset.x + (e.clientX - d.startMouse.x);
+      const rawY = d.startOffset.y + (e.clientY - d.startMouse.y);
+
+      if (!d.el) {
+        setOffset({ x: rawX, y: rawY });
+        return;
+      }
+
+      const rect = d.el.getBoundingClientRect();
+      const natL = rect.left - rawX;
+      const natT = rect.top - rawY;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      setOffset({
+        x: clamp(rawX, EDGE_MARGIN - natL - rect.width, vw - EDGE_MARGIN - natL),
+        y: clamp(rawY, EDGE_MARGIN - natT - rect.height, vh - EDGE_MARGIN - natT),
+      });
+    };
+
+    const onUp = () => { dragRef.current.active = false; };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
   const onMouseDown = useCallback((e: MouseEvent) => {
     if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest("button, a, input, [role='button']")) return;
+    if ((e.target as HTMLElement).closest("button, a, input, [role='button']")) return;
 
-    // Find the DialogContent element (closest ancestor with data-error-modal)
-    const modal = (e.currentTarget as HTMLElement).closest("[data-error-modal]") as HTMLElement | null;
-    elementRef.current = modal;
-
-    dragging.current = true;
-    startPos.current = { x: e.clientX, y: e.clientY };
-    startOffset.current = { x: offset.x, y: offset.y };
-
-    const onMouseMove = (ev: globalThis.MouseEvent) => {
-      if (!dragging.current) return;
-      const rawX = startOffset.current.x + (ev.clientX - startPos.current.x);
-      const rawY = startOffset.current.y + (ev.clientY - startPos.current.y);
-      setOffset(clampOffset(rawX, rawY, elementRef.current));
+    dragRef.current = {
+      active: true,
+      startMouse: { x: e.clientX, y: e.clientY },
+      startOffset: { x: offset.x, y: offset.y },
+      el: (e.currentTarget as HTMLElement).closest("[data-error-modal]") as HTMLElement | null,
     };
-
-    const onMouseUp = () => {
-      dragging.current = false;
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
   }, [offset.x, offset.y]);
 
-  const style = offset.x === 0 && offset.y === 0
-    ? undefined
-    : { transform: `translate(${offset.x}px, ${offset.y}px)` };
+  const isDragged = offset.x !== 0 || offset.y !== 0;
+  const style = isDragged ? { transform: `translate(${offset.x}px, ${offset.y}px)` } : undefined;
 
-  return { style, onMouseDown, resetPosition, isDragged: offset.x !== 0 || offset.y !== 0 };
+  return { style, onMouseDown, resetPosition, isDragged };
 }
