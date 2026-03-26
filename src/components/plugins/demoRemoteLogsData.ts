@@ -91,9 +91,9 @@ function makeDemoFile(content: string, fileName: string, path: string): LogRetri
 export function createDemoLogsStatus(): RemoteLogsStatusResponse {
   return {
     files: [
-      { name: "log.txt", sizeBytes: 1842, lineCount: 20, exists: true, modified: "2026-03-25T10:45:13Z" },
-      { name: "error.txt", sizeBytes: 1156, lineCount: 14, exists: true, modified: "2026-03-25T11:22:08Z" },
-      { name: "stacktrace.txt", sizeBytes: 1780, lineCount: 38, exists: true, modified: "2026-03-24T16:33:45Z" },
+      { name: "log.txt", sizeBytes: 1842, lineCount: 20 },
+      { name: "error.txt", sizeBytes: 1156, lineCount: 14 },
+      { name: "stacktrace.txt", sizeBytes: 1780, lineCount: 38 },
     ],
     totalSizeBytes: 4778,
     archiveCount: 3,
