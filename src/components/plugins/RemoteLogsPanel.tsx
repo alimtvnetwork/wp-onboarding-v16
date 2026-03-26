@@ -224,6 +224,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       }
     } catch (err) {
       captureInlineError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
+      setActiveTab("viewer");
     } finally {
       setIsRetrieving(false);
     }
@@ -561,14 +562,41 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                       </div>
                     </div>
                   ) : !retrieveData ? (
-                    <div className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-muted/10 py-12 text-muted-foreground">
-                      <Eye className="h-10 w-10 opacity-30" />
-                      <p className="text-sm">No logs loaded yet</p>
-                      <p className="max-w-md text-center text-xs text-muted-foreground">Load the latest remote logs to inspect info, error, and stacktrace output in a larger viewer.</p>
-                      <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        Load Logs
-                      </Button>
+                    <div className="space-y-4">
+                      {/* Show inline errors directly in the viewer tab when fetch failed */}
+                      {inlineErrors.length > 0 && (
+                        <div className="space-y-3">
+                          {inlineErrors.map((diag, idx) => (
+                            <InlineErrorDiagnostic
+                              key={`viewer-${diag.timestamp}-${idx}`}
+                              diagnostic={diag}
+                              onDismiss={() => dismissInlineError(idx)}
+                              onOpenGlobalModal={() => {
+                                const { captureException, openErrorModal } = useErrorStore.getState();
+                                const captured = captureException(new Error(diag.message), {
+                                  source: "RemoteLogsPanel",
+                                  endpoint: diag.endpoint,
+                                  method: diag.method,
+                                });
+                                openErrorModal(captured);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-muted/10 py-12 text-muted-foreground">
+                        <Eye className="h-10 w-10 opacity-30" />
+                        <p className="text-sm">{inlineErrors.length > 0 ? "Log retrieval failed" : "No logs loaded yet"}</p>
+                        <p className="max-w-md text-center text-xs text-muted-foreground">
+                          {inlineErrors.length > 0
+                            ? "The endpoint returned an error. Review the diagnostic above or retry."
+                            : "Load the latest remote logs to inspect info, error, and stacktrace output in a larger viewer."}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          {inlineErrors.length > 0 ? "Retry" : "Load Logs"}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <>
