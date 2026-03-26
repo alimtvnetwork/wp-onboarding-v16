@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/urlutil"
 
 	connectionstep "wp-plugin-publish/internal/enums/connectionsteptype"
 	stagestatus "wp-plugin-publish/internal/enums/stagestatustype"
@@ -13,7 +14,7 @@ import (
 
 // TestConnectionWithCredentials tests a connection without saving
 func (s *Service) TestConnectionWithCredentials(siteUrl, username, password string) (*ConnectionResult, *apperror.AppError) {
-	normalizedUrl := normalizeUrl(siteUrl)
+	normalizedUrl := urlutil.NormalizeWordPressUrl(siteUrl)
 
 	s.broadcastCredentialsStart(normalizedUrl, siteUrl)
 

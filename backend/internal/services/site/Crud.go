@@ -9,6 +9,7 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/dbutil"
+	"wp-plugin-publish/pkg/urlutil"
 )
 
 // List returns all registered sites.
@@ -44,7 +45,7 @@ func (s *Service) GetById(ctx context.Context, id int64) apperror.Result[models.
 
 // GetByUrl returns a site by its URL.
 func (s *Service) GetByUrl(ctx context.Context, siteUrl string) apperror.Result[models.Site] {
-	normalizedUrl := normalizeUrl(siteUrl)
+	normalizedUrl := urlutil.NormalizeWordPressUrl(siteUrl)
 	result := dbutil.QueryOne[models.Site](ctx, s.dbu, siteSelectByUrlQuery, scanSiteRow, normalizedUrl)
 
 	return result.ToAppResult()
@@ -57,7 +58,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) apperror.Result
 		return apperror.Fail[models.Site](appErr)
 	}
 
-	normalizedUrl := normalizeUrl(input.Url)
+	normalizedUrl := urlutil.NormalizeWordPressUrl(input.Url)
 	dupResult := s.checkDuplicateUrl(ctx, normalizedUrl)
 	if dupResult.HasError() {
 		return dupResult
@@ -177,7 +178,7 @@ func appendUrlUpdate(input urlUpdateInput) {
 		return
 	}
 
-	normalizedUrl := normalizeUrl(*input.UrlInput)
+	normalizedUrl := urlutil.NormalizeWordPressUrl(*input.UrlInput)
 	isUrlChanged := normalizedUrl != input.ExistingUrl
 
 	if isUrlChanged {

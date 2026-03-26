@@ -8,6 +8,7 @@ import (
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/urlutil"
 )
 
 // seedSetting is a typed key-value pair for seeding settings.
@@ -81,7 +82,7 @@ func collectSeedSiteIds(db *database.DB, cfg *Config, log *logger.Logger) []int6
 	var siteIds []int64
 
 	for _, site := range cfg.Seed.Sites {
-		normalizedUrl := normalizeUrl(site.URL)
+		normalizedUrl := urlutil.NormalizeWordPressUrl(site.URL)
 		id, err := db.GetSiteIdByUrl(normalizedUrl)
 		isFound := err == nil && id > 0
 
