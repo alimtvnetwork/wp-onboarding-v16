@@ -315,8 +315,18 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
             <Search className="h-3 w-3 mr-1" /> Search
           </Button>
           <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleCopy}>
-            <Copy className="h-3 w-3 mr-1" /> Copy
+            <Copy className="h-3 w-3 mr-1" /> Copy{(severityFilter !== "all" || searchTerm) ? " visible" : ""}
           </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-6 px-2" onClick={handleDownloadFiltered}>
+                <Download className="h-3 w-3 mr-1" /> Export{(severityFilter !== "all" || searchTerm) ? ` (${filteredLines.length})` : ""}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              Download {severityFilter !== "all" || searchTerm ? "filtered" : "all"} lines as .txt
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
