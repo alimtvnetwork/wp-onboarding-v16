@@ -173,6 +173,28 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     toast.info("Demo mode deactivated");
   }, []);
 
+  // Auto-load demo data from sessionStorage (set by Settings page)
+  useEffect(() => {
+    const shouldActivate = sessionStorage.getItem("remoteLogs:demoActivate");
+    if (shouldActivate === "true") {
+      try {
+        const storedStatus = sessionStorage.getItem("remoteLogs:demoStatus");
+        const storedRetrieve = sessionStorage.getItem("remoteLogs:demoRetrieve");
+        if (storedStatus && storedRetrieve) {
+          setStatus(JSON.parse(storedStatus));
+          setRetrieveData(JSON.parse(storedRetrieve));
+          setIsDemoMode(true);
+          setIsOpen(true);
+          setActiveTab("viewer");
+        }
+      } finally {
+        sessionStorage.removeItem("remoteLogs:demoActivate");
+        sessionStorage.removeItem("remoteLogs:demoStatus");
+        sessionStorage.removeItem("remoteLogs:demoRetrieve");
+      }
+    }
+  }, []);
+
   // Clear state
   const [clearToken, setClearToken] = useState<string | null>(null);
   const [clearExpiry, setClearExpiry] = useState<number>(0);
