@@ -4,6 +4,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/semver"
 )
 
 // SeedIfNeeded seeds the database from config if version is newer
