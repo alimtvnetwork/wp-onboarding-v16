@@ -5,6 +5,8 @@
 > **Status:** Active  
 > **Location:** `wp-plugins/scripts/`  
 > **Purpose:** WordPress plugin deployment via PowerShell scripts using Riseup Asia Uploader API
+>
+> **Diagrams:** [Cross-Upload Resilience](../../01-app/deploy/cross-upload-resilience.mmd) · [Deploy Pre-flight Flow](../../01-app/deploy/deploy-preflight-flow.mmd)
 
 ---
 

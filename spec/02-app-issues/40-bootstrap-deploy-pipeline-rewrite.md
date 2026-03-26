@@ -4,6 +4,8 @@
 > **Date:** 2026-03-22
 > **Category:** Deployment / Architecture
 > **Status:** Open
+>
+> **Diagram:** [Cross-Upload Resilience](../01-app/deploy/cross-upload-resilience.mmd)
 
 ---
 
