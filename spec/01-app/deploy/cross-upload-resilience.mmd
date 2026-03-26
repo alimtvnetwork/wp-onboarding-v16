@@ -1,0 +1,93 @@
+graph TB
+    subgraph ORCH["Deployment Orchestrator"]
+        direction TB
+        START["Deploy Triggered<br/>run.ps1 -uas / Go backend"]
+        PHASE0["Phase 0<br/>PHP Syntax Check"]
+        PHASE1["Phase 1<br/>ZIP Creation"]
+        PHASE2["Phase 2<br/>Upload Orchestration<br/>Plugin-sequential, Site-parallel"]
+
+        START --> PHASE0 & PHASE1
+        PHASE0 & PHASE1 --> PHASE2
+    end
+
+    subgraph STRATEGY["Cross-Upload Strategy per Plugin"]
+        direction TB
+        PLUGIN["Plugin to Deploy<br/>e.g. QUpload"]
+        RESOLVE["Resolve Upload Target<br/>Prefer PARTNER namespace"]
+
+        subgraph PROBE["Parallel Namespace Probing"]
+            direction LR
+            PROBE_PARTNER["Probe Partner API<br/>riseup-asia-api/v1/upload"]
+            PROBE_SELF["Probe Self API<br/>qupload-api/v1/upload"]
+        end
+
+        DECISION{"Partner<br/>available?"}
+        USE_PARTNER["Use Partner Endpoint<br/>riseup-asia-api/v1/upload<br/>PREFERRED - safe path"]
+        USE_SELF["Fallback to Self Endpoint<br/>qupload-api/v1/upload<br/>RISKY - self-update"]
+
+        PLUGIN --> RESOLVE
+        RESOLVE --> PROBE
+        PROBE_PARTNER --> DECISION
+        PROBE_SELF --> DECISION
+        DECISION -->|"Yes"| USE_PARTNER
+        DECISION -->|"No"| USE_SELF
+    end
+
+    subgraph SITES["Site-Parallel Upload"]
+        direction TB
+        subgraph SITE1["Site 1"]
+            S1_UP["Upload ZIP<br/>via chosen endpoint"]
+            S1_VERIFY["Verify Installation"]
+        end
+        subgraph SITE2["Site 2"]
+            S2_UP["Upload ZIP<br/>via chosen endpoint"]
+            S2_VERIFY["Verify Installation"]
+        end
+        subgraph SITE3["Site 3"]
+            S3_UP["Upload ZIP<br/>via chosen endpoint"]
+            S3_VERIFY["Verify Installation"]
+        end
+        S1_UP --> S1_VERIFY
+        S2_UP --> S2_VERIFY
+        S3_UP --> S3_VERIFY
+    end
+
+    subgraph WP["WordPress Sites"]
+        direction TB
+        WP_PARTNER["Partner Plugin<br/>RiseUp Asia API<br/>Receives ZIP, installs QUpload"]
+        WP_SELF["Self Plugin<br/>QUpload API<br/>Receives own ZIP<br/>Risk: mid-update failure"]
+        WP_FS["WordPress Filesystem<br/>wp-content/plugins/"]
+
+        WP_PARTNER -->|"Stable process<br/>Partner stays running"| WP_FS
+        WP_SELF -->|"Self-replacement<br/>May sever connection"| WP_FS
+    end
+
+    PHASE2 --> PLUGIN
+    USE_PARTNER --> SITES
+    USE_SELF --> SITES
+    S1_UP & S2_UP & S3_UP -->|"HTTP POST<br/>multipart/form-data"| WP_PARTNER
+    S1_UP & S2_UP & S3_UP -.->|"Fallback only"| WP_SELF
+
+    subgraph RISK["Why Cross-Upload?"]
+        direction LR
+        SAFE["Partner Upload<br/>Partner plugin handles install<br/>Never touches itself<br/>Connection stays alive"]
+        DANGER["Self Upload<br/>Plugin replaces its own files<br/>PHP process may crash mid-write<br/>REST endpoint disappears"]
+    end
+
+    classDef orchNode fill:#7c3aed,color:#ffffff,stroke:#6d28d9
+    classDef stratNode fill:#2563eb,color:#ffffff,stroke:#1d4ed8
+    classDef probeNode fill:#0d9488,color:#ffffff,stroke:#0f766e
+    classDef siteNode fill:#059669,color:#ffffff,stroke:#047857
+    classDef wpNode fill:#dc2626,color:#ffffff,stroke:#991b1b
+    classDef safeNode fill:#16a34a,color:#ffffff,stroke:#15803d
+    classDef dangerNode fill:#dc2626,color:#ffffff,stroke:#991b1b
+    classDef decisionNode fill:#d97706,color:#ffffff,stroke:#b45309
+
+    class START,PHASE0,PHASE1,PHASE2 orchNode
+    class PLUGIN,RESOLVE,USE_PARTNER,USE_SELF stratNode
+    class PROBE_PARTNER,PROBE_SELF probeNode
+    class S1_UP,S1_VERIFY,S2_UP,S2_VERIFY,S3_UP,S3_VERIFY siteNode
+    class WP_PARTNER,WP_SELF,WP_FS wpNode
+    class SAFE safeNode
+    class DANGER dangerNode
+    class DECISION decisionNode
