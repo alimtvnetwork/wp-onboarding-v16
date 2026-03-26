@@ -3,6 +3,8 @@
 > **Version:** 1.0.0  
 > **Status:** Complete  
 > **Last Updated:** 2026-02-01
+>
+> **Diagrams:** [Deploy Pre-flight Flow](../../01-app/deploy/deploy-preflight-flow.mmd) · [Cross-Upload Resilience](../../01-app/deploy/cross-upload-resilience.mmd)
 
 ---
 
