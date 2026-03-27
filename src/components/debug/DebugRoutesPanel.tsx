@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Route, Filter, Search } from "lucide-react";
+import { RefreshCw, Route, Filter, Search, ChevronDown } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { useRemoteDebugRoutes } from "@/hooks/useRemoteDebugRoutes";
 import { useQueryClient } from "@tanstack/react-query";
