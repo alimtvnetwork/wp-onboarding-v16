@@ -42,10 +42,8 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
               <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <ScrollArea className="h-[320px] bg-background/80">
-            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
-              {delegatedLogContent}
-            </pre>
+          <ScrollArea className="h-[320px] bg-muted">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">{delegatedLogContent}</pre>
           </ScrollArea>
         </div>
       )}
@@ -74,50 +72,50 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
       )}
 
       {phpStackFrames.length > 0 && (
-        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+        <div className="rounded-xl border border-border/60 overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-4 py-2 bg-muted">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               PHP Stack Trace ({phpStackFrames.length} frames)
             </h4>
-            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => {
+          </div>
+          <table className="w-full text-xs">
+            <thead className="bg-muted">
+              <tr>
+                <th className="text-left p-2 font-medium text-muted-foreground">#</th>
+                <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
+              </tr>
+            </thead>
+            <tbody>
+              {phpStackFrames.map((frame, index) => (
+                <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
+                  <td className="p-2 font-mono text-muted-foreground">{index + 1}</td>
+                  <td className="p-2 font-mono">
+                    <span className={cn(index === 0 ? "text-primary font-semibold" : "text-foreground")}>
+                      {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
+                    </span>
+                  </td>
+                  <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
+                    {frame.fileBase || frame.file || 'unknown'}
+                  </td>
+                  <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex justify-end p-2 bg-muted/50 border-t">
+            <Button variant="ghost" size="sm" onClick={() => {
               const text = phpStackFrames.map((f, i) => {
                 const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
                 return `#${i} ${fn}() at ${f.file || f.fileBase || 'unknown'}:${f.line || '?'}`;
               }).join('\n');
               copySection("PHP stack trace", text);
             }}>
-              <Copy className="h-4 w-4" />
-              <span className="ml-2">Copy</span>
+              <Copy className="h-4 w-4 mr-1" />
+              Copy
             </Button>
-          </div>
-          <div className="border border-border/60 rounded-xl overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-orange-500/10">
-                <tr>
-                  <th className="text-left p-2 font-medium text-muted-foreground">#</th>
-                  <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
-                  <th className="text-left p-2 font-medium text-muted-foreground">File</th>
-                  <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
-                </tr>
-              </thead>
-              <tbody>
-                {phpStackFrames.map((frame, index) => (
-                  <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-orange-500/5")}>
-                    <td className="p-2 font-mono text-muted-foreground">{index}</td>
-                    <td className="p-2 font-mono">
-                      <span className={cn(index === 0 && "text-orange-600 dark:text-orange-400 font-semibold")}>
-                        {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
-                      </span>
-                    </td>
-                    <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
-                      {frame.fileBase || frame.file || 'unknown'}
-                    </td>
-                    <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
