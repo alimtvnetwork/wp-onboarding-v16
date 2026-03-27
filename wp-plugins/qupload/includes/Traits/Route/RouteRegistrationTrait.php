@@ -46,6 +46,7 @@ trait RouteRegistrationTrait
             'core'              => fn() => $this->registerCoreRoutes($safeRegister),
             'machine_management' => fn() => $this->registerMachineManagementRoutes($safeRegister),
             'log_management'    => fn() => $this->registerLogManagementRoutes($safeRegister),
+            'debug'             => fn() => $this->registerDebugRoutes($safeRegister),
         ];
 
         $groupsFailed = [];
@@ -144,6 +145,14 @@ trait RouteRegistrationTrait
         $safeRegister(EndpointType::Plugins->route(), [
             'methods'             => HttpMethodType::Get->value,
             'callback'            => [$this, 'handlePlugins'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
+    }
+
+    private function registerDebugRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::DebugRoutes->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handleDebugRoutes'],
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);
     }

@@ -32,6 +32,7 @@ use QUpload\Traits\Log\LogClearingTrait;
 use QUpload\Traits\Log\LogEmailTrait;
 use QUpload\Traits\Log\LogRetrievalTrait;
 use QUpload\Traits\Machine\MachineApprovalTrait;
+use QUpload\Traits\Debug\DebugRoutesTrait;
 
 class Plugin {
     use AuthTrait;
@@ -49,6 +50,7 @@ class Plugin {
     use LogEmailTrait;
     use LogRetrievalTrait;
     use MachineApprovalTrait;
+    use DebugRoutesTrait;
 
     private FileLogger $fileLogger;
     private static ?self $instance = null;
