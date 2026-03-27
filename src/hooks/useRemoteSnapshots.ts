@@ -110,7 +110,9 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     meta: { suppressGlobalError: true },
   });
 
-  // Capture query errors for persistence
+  // Surface query errors with toast + error modal link
+  // Fix: spec/02-app-issues/41-snapshot-401-missing-auth-header.md
+  // Passive captureException alone is insufficient — users see empty states with no feedback
   useEffect(() => {
     const queries = [
       { q: snapshotsQuery, label: "snapshots", ep: `/sites/${siteId}/snapshots` },
@@ -119,11 +121,35 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     ];
     for (const { q, label, ep } of queries) {
       if (q.isError && q.error) {
-        captureException(q.error, {
+        const err = q.error;
+        const is401 = err instanceof SnapshotApiError &&
+          (err.apiResponse.error?.context?.responseStatus === 401 ||
+           err.message.toLowerCase().includes("401") ||
+           err.message.toLowerCase().includes("authorization"));
+
+        const captured = captureException(err, {
           source: `useRemoteSnapshots.${label}`,
           endpoint: ep,
           method: "GET",
           triggerComponent: "RemoteSnapshots",
+        });
+
+        const title = is401
+          ? `Authentication failed — ${label}`
+          : `Failed to load ${label}`;
+
+        const description = is401
+          ? "Check site credentials or regenerate the application password."
+          : err.message?.substring(0, 120);
+
+        toast.error(title, {
+          id: `snapshot-${label}-error`,
+          description,
+          action: {
+            label: "View Error",
+            onClick: () => openErrorModal(captured),
+          },
+          duration: is401 ? 15000 : 8000,
         });
       }
     }
@@ -131,7 +157,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     snapshotsQuery.isError, snapshotsQuery.error,
     settingsQuery.isError, settingsQuery.error,
     providersQuery.isError, providersQuery.error,
-    captureException, siteId,
+    captureException, openErrorModal, siteId,
   ]);
 
   const tablesQuery = useQuery({
