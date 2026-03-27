@@ -1160,3 +1160,22 @@ export interface SiteHealthSummaryResponse {
     prefix: string;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Debug Routes types
+// ---------------------------------------------------------------------------
+
+export interface DebugRouteEntry {
+  pattern: string;
+  path: string;
+  methods: string[];
+  category: string;
+}
+
+export interface DebugRoutesResponse {
+  namespace: string;
+  totalRoutes: number;
+  categories: Record<string, number>;
+  routes: DebugRouteEntry[];
+  version: string;
+}
