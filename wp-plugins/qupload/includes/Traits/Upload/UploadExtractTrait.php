@@ -29,6 +29,9 @@ trait UploadExtractTrait
     use UploadFileSystemTrait;
     use UploadActivationTrait;
 
+    /** Guard flag: true while an upload pipeline is running (prevents deactivation hook from deleting temp files). */
+    private static bool $isUploadInProgress = false;
+
     private const MAX_SYNTAX_CHECK_FILES = 500;
 
     // ── Trace Logging ───────────────────────────────────────────
@@ -293,8 +296,11 @@ trait UploadExtractTrait
         $backupHelper = new UploadBackupHelper($this->fileLogger);
         $backupDir = $isUpdate ? $backupHelper->createBackup($slug) : false;
 
+        // Guard: prevent deactivation hook from deleting temp files during self-update
+        self::$isUploadInProgress = true;
         $isPreviouslyActive = $this->deactivateIfUpdating($slug, $isUpdate, $targetDir);
         $extractResult = $this->extractToPluginsDir($tempFile, $slug, $targetDir);
+        self::$isUploadInProgress = false;
 
         if ($extractResult instanceof WP_REST_Response) {
             $this->logExternalPluginFailure($slug, 'extraction', 'ZIP extraction to plugins directory failed');

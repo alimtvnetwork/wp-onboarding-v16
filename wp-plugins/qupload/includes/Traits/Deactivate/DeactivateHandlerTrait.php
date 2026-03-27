@@ -22,6 +22,15 @@ trait DeactivateHandlerTrait
      * Handle plugin deactivation — remove temp directory and its contents.
      */
     public function handleDeactivate(): void {
+        // Skip temp cleanup if an upload is in progress (self-update scenario).
+        // The upload pipeline sets $isUploadInProgress = true before deactivating,
+        // and the temp dir contains the ZIP + backup needed for extraction/rollback.
+        if (self::$isUploadInProgress) {
+            $this->fileLogger->info('Deactivation during upload — skipping temp cleanup to preserve ZIP and backup');
+
+            return;
+        }
+
         $this->fileLogger->info('Plugin deactivation started — cleaning temp files');
 
         $tempDir = PathHelper::getTempDir();
