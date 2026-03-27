@@ -485,7 +485,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   }, [retrieveData]);
   const totalLoadedBytes = useMemo(() => {
     return availablePlugins.reduce((sum, plugin) => {
-      return sum + (plugin.infoLog?.TotalSize ?? 0) + (plugin.errorLog?.TotalSize ?? 0) + (plugin.stacktrace?.TotalSize ?? 0);
+      return sum + (plugin.infoLog?.totalSize ?? 0) + (plugin.errorLog?.totalSize ?? 0) + (plugin.stacktrace?.totalSize ?? 0);
     }, 0);
   }, [availablePlugins]);
 
