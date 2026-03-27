@@ -112,6 +112,34 @@ export function DownloadDropdown({ error, appName, appVersion, gitCommit, buildT
           <FileCode2 className="h-4 w-4 mr-2" />
           Report (.md)
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => {
+          const delegatedLog = buildDelegatedErrorLogSection(error);
+          const delegatedParsed = buildDelegatedLogsSection(error);
+          const sections: string[] = [];
+          if (delegatedLog) sections.push(delegatedLog);
+          else if (delegatedParsed) sections.push(`Delegated Logs:\n${delegatedParsed}`);
+          const ds = error.envelopeErrors?.DelegatedRequestServer;
+          if (ds?.Response) {
+            const resp = typeof ds.Response === "string" ? ds.Response : JSON.stringify(ds.Response, null, 2);
+            if (!sections.some(s => s.includes(resp.slice(0, 50)))) sections.push(`Response Body:\n${resp}`);
+          }
+          if (sections.length === 0) {
+            toast.info("No delegated diagnostics available for this error");
+            return;
+          }
+          const blob = new Blob([sections.join("\n\n---\n\n")], { type: "text/plain" });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `delegated-diagnostics-${new Date().toISOString().slice(0, 10)}.txt`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          toast.success("Downloaded delegated diagnostics");
+        }}>
+          <Globe className="h-4 w-4 mr-2 text-orange-500" />
+          Delegated Diagnostics (.txt)
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
