@@ -94,7 +94,7 @@ export function DebugRoutesPanel() {
             )}
             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
             <Select
               value={selectedSiteId ? String(selectedSiteId) : ""}
               onValueChange={(v) => setSelectedSiteId(Number(v))}
