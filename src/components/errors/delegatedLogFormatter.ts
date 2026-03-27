@@ -74,6 +74,9 @@ export function buildDelegatedLogsSection(error: CapturedError): string {
     const delegatedAt = (attrs?.RequestDelegatedAt ?? attrs?.requestDelegatedAt) as string | undefined;
     if (delegatedAt) lines.push(`Delegated To: ${delegatedAt}`);
 
+    const namespace = (attrs?.Namespace ?? parsed.Namespace) as string | undefined;
+    if (namespace) lines.push(`Namespace: ${namespace}`);
+
     const requestedAt = (attrs?.RequestedAt ?? attrs?.requestedAt) as string | undefined;
     if (requestedAt) lines.push(`Remote Endpoint: ${requestedAt}`);
 
