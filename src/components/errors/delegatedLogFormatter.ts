@@ -188,7 +188,8 @@ export function buildDelegatedErrorLogSection(
   if (delegatedServer?.Response != null) {
     const responseBody = stringifyValue(delegatedServer.Response);
     if (responseBody) {
-      sections.push(formatIndentedBlock("  Response Body", responseBody));
+      const truncated = responseBody.length > 2000 ? `${responseBody.slice(0, 2000)}\n… (truncated, ${responseBody.length} chars total)` : responseBody;
+      sections.push(formatIndentedBlock("  Response Body", truncated));
     }
   }
 
