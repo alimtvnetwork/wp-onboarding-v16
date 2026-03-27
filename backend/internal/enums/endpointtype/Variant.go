@@ -90,6 +90,7 @@ const (
 	CloudStorageRestore
 	SiteSettings
 	SiteHealthSummary
+	DebugRoutes
 )
 
 var variantLabels = [...]string{
@@ -268,4 +269,5 @@ var variantValues = [...]string{
 	CloudStorageRestore:             "/cloud-storage/restore",
 	SiteSettings:                    "/site-settings",
 	SiteHealthSummary:               "/site-health-summary",
+	DebugRoutes:                     "/debug/routes",
 }
