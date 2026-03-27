@@ -152,6 +152,20 @@ function riseup_asia_deactivate(): void {
             wp_unschedule_event($incrTimestamp, $incrCronHook);
         }
 
+        // Skip temp cleanup if an upload is in progress (self-update scenario).
+        // The upload pipeline sets $isUploadInProgress = true before deactivating,
+        // and the temp dir contains the ZIP + backup needed for extraction/rollback.
+        $uploadTraitClass = 'RiseupAsia\\Traits\\Upload\\UploadInstallExtractTrait';
+        $isUploadRunning = property_exists($uploadTraitClass, 'isUploadInProgress')
+            && (new \ReflectionProperty($uploadTraitClass, 'isUploadInProgress'))->isInitialized()
+            && \RiseupAsia\Core\Plugin::isUploadInProgress();
+
+        if ($isUploadRunning) {
+            error_log('RiseUp Uploader: Deactivation during upload — skipping temp cleanup');
+
+            return;
+        }
+
         // Clear any temp directories
         $uploadDir = wp_upload_dir();
         $tempDir = rtrim($uploadDir['basedir'], '/') . '/riseup-asia-uploader/temp';
