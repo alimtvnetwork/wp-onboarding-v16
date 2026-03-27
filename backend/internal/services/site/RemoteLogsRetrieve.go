@@ -2,6 +2,7 @@ package site
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
@@ -34,8 +35,9 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 	queryString := buildRetrieveQuery(params)
 
 	type nsResult struct {
-		ns   string
-		data *wordpress.PluginLogsData
+		ns     string
+		data   *wordpress.PluginLogsData
+		appErr *apperror.AppError
 	}
 
 	ch := make(chan nsResult, len(allNamespaces))
@@ -59,14 +61,8 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				Operation: operationtype.RetrieveLogs,
 			})
 
-			pluginData := &wordpress.PluginLogsData{
-				Namespace: namespace,
-				Label:     wordpress.NamespaceLabel(namespace),
-				Available: false,
-			}
-
 			if result.HasError() {
-				ch <- nsResult{ns: namespace, data: pluginData}
+				ch <- nsResult{ns: namespace, appErr: result.AppError()}
 				return
 			}
 
@@ -79,18 +75,32 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 					Endpoint:  endpoint,
 					Operation: operationtype.RetrieveLogs,
 				})
-				if !envelopeResult.HasError() {
-					unwrapped, unwrapErr := wordpress.UnwrapPhpResult(envelopeResult.Value())
-					if unwrapErr == nil {
-						php = unwrapped
-					}
+				if envelopeResult.HasError() {
+					ch <- nsResult{ns: namespace, appErr: envelopeResult.AppError()}
+					return
 				}
+
+				unwrapped, unwrapErr := wordpress.UnwrapPhpResult(envelopeResult.Value())
+				if unwrapErr != nil {
+					ch <- nsResult{ns: namespace, appErr: apperror.Wrap(unwrapErr, apperror.ErrWPConnection, "unwrap logs retrieve fallback failed")}
+					return
+				}
+				php = unwrapped
 			}
 
-			pluginData.Available = true
-			pluginData.InfoLog = php.InfoLog
-			pluginData.ErrorLog = php.ErrorLog
-			pluginData.Stacktrace = php.StacktraceLog
+			if php.InfoLog == nil && php.ErrorLog == nil && php.StacktraceLog == nil {
+				ch <- nsResult{ns: namespace, appErr: apperror.New(apperror.ErrWPConnection, "empty logs retrieve response")}
+				return
+			}
+
+			pluginData := &wordpress.PluginLogsData{
+				Namespace:  namespace,
+				Label:      wordpress.NamespaceLabel(namespace),
+				Available:  true,
+				InfoLog:    php.InfoLog,
+				ErrorLog:   php.ErrorLog,
+				Stacktrace: php.StacktraceLog,
+			}
 
 			ch <- nsResult{ns: namespace, data: pluginData}
 		}(ns)
@@ -100,10 +110,25 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 	close(ch)
 
 	pluginsByNamespace := make(map[string]wordpress.PluginLogsData, len(allNamespaces))
+	var lastErr *apperror.AppError
+	var lastErrNamespace string
+
 	for probe := range ch {
 		if probe.data != nil {
 			pluginsByNamespace[probe.ns] = *probe.data
+			continue
 		}
+		if probe.appErr != nil {
+			lastErr = probe.appErr
+			lastErrNamespace = probe.ns
+		}
+	}
+
+	if len(pluginsByNamespace) == 0 {
+		if lastErr != nil {
+			return nil, apperror.Wrap(lastErr, apperror.ErrWPConnection, fmt.Sprintf("retrieve logs failed on all namespaces (last namespace: %s)", lastErrNamespace))
+		}
+		return nil, apperror.New(apperror.ErrWPConnection, "retrieve logs failed on all namespaces")
 	}
 
 	plugins := make([]wordpress.PluginLogsData, 0, len(allNamespaces))
