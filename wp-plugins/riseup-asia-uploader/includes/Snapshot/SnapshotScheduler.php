@@ -54,7 +54,6 @@ class SnapshotScheduler {
     }
 
     public function init() {
-        $this->logger->info('[SCHEDULER] Initializing snapshot scheduler');
         add_filter(HookType::CronSchedules->value, array($this, 'registerCronSchedules'));
         add_action(HookType::CronSnapshotScheduled->value, array($this, 'executeScheduledSnapshot'));
         add_action(HookType::CronSnapshotImmediate->value, array($this, 'executeImmediateSnapshot'));
@@ -64,7 +63,6 @@ class SnapshotScheduler {
         add_action(HookType::CronSnapshotIncremental->value, array($this, 'executeCronIncremental'));
         $this->ensureCleanupScheduled();
         $this->syncScheduleWithSettings();
-        $this->logger->info('[SCHEDULER] Scheduler initialized');
     }
 
     public function executeWorkerBatch($args) {
