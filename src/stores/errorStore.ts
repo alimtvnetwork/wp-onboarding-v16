@@ -386,13 +386,17 @@ function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
   const requestedAt = typeof ctx?.requestedAt === 'string' ? ctx.requestedAt : undefined;
   const requestDelegatedAt = typeof ctx?.requestDelegatedAt === 'string' ? ctx.requestDelegatedAt : undefined;
   const delegatedServer = ctx?.delegatedRequestServer as import('@/lib/api').DelegatedRequestServer | undefined;
+  const remoteResponseBody = typeof ctx?.remoteResponseBody === 'string' ? ctx.remoteResponseBody : undefined;
+  const backendMessage = typeof ctx?.backendMessage === 'string' ? ctx.backendMessage : undefined;
+  const hasEnvelopeData = !!(ctx?.delegatedServiceErrorStack || ctx?.backendTrace || delegatedServer || remoteResponseBody);
   const envelopeErrors: EnvelopeErrors | undefined =
-    (ctx?.delegatedServiceErrorStack || ctx?.backendTrace || delegatedServer)
+    hasEnvelopeData
       ? {
-          BackendMessage: input.message,
+          BackendMessage: backendMessage || input.message,
           DelegatedServiceErrorStack: Array.isArray(ctx?.delegatedServiceErrorStack) ? ctx.delegatedServiceErrorStack as string[] : undefined,
           Backend: Array.isArray(ctx?.backendTrace) ? ctx.backendTrace as string[] : undefined,
           DelegatedRequestServer: delegatedServer || undefined,
+          RemoteResponseBody: remoteResponseBody,
         }
       : undefined;
   const envelopeMethodsStack = ctx?.methodsStack as EnvelopeMethodsStack | undefined;
