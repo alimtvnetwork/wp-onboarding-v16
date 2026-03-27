@@ -425,7 +425,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   };
 
   const hasFiles = status?.files && status.files.length > 0;
-  const availablePlugins = retrieveData?.plugins.filter(p => p.available) ?? [];
+  const availablePlugins = useMemo(() => {
+    const plugins = retrieveData?.plugins.filter((p) => p.available) ?? [];
+    const pluginScore = (plugin: PluginLogsData) =>
+      (plugin.infoLog?.Lines ?? 0) + (plugin.errorLog?.Lines ?? 0) + (plugin.stacktrace?.Lines ?? 0);
+
+    return [...plugins].sort((a, b) => pluginScore(b) - pluginScore(a));
+  }, [retrieveData]);
   const totalLoadedBytes = useMemo(() => {
     return availablePlugins.reduce((sum, plugin) => {
       return sum + (plugin.infoLog?.TotalSize ?? 0) + (plugin.errorLog?.TotalSize ?? 0) + (plugin.stacktrace?.TotalSize ?? 0);

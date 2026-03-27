@@ -85,14 +85,47 @@ func (s *Service) GetRemoteLogsStatus(ctx context.Context, siteId int64) (*wordp
 	wg.Wait()
 	close(ch)
 
+	var best *wordpress.LogsStatusData
 	for probe := range ch {
-		if probe.data != nil {
-			return probe.data, nil
+		if probe.data == nil {
+			continue
 		}
+		if best == nil || hasMoreLogContent(probe.data, best) {
+			best = probe.data
+		}
+	}
+
+	if best != nil {
+		return best, nil
 	}
 
 	return wordpress.BuildOutdatedLogsStatus(), nil
 }
+
+func hasMoreLogContent(candidate *wordpress.LogsStatusData, current *wordpress.LogsStatusData) bool {
+	candidateFiles := countExistingLogFiles(candidate)
+	currentFiles := countExistingLogFiles(current)
+
+	if candidateFiles != currentFiles {
+		return candidateFiles > currentFiles
+	}
+
+	return candidate.TotalSizeBytes > current.TotalSizeBytes
+}
+
+func countExistingLogFiles(data *wordpress.LogsStatusData) int {
+	if data == nil {
+		return 0
+	}
+
+	count := 0
+	for _, file := range data.Files {
+		if file.Exists {
+			count++
+		}
+	}
+
+	return count
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
 func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
