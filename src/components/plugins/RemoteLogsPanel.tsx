@@ -313,7 +313,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               StatusCode: 200,
               Namespace: data.plugins?.[0]?.namespace || "",
             },
-            statusFiles: status?.files?.map(f => `${f.name} (${f.lines} lines, ${f.sizeBytes}B)`) ?? [],
+            statusFiles: status?.files?.map(f => `${f.name} (${f.lineCount} lines, ${f.sizeBytes}B)`) ?? [],
             retrievePlugins: data.plugins?.map(p => ({
               namespace: p.namespace,
               label: p.label,
