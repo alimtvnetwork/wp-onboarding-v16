@@ -164,7 +164,7 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
 
       {delegatedServer?.Response && (
         <div className="rounded-xl border border-border/60 bg-muted/10 p-4 shadow-sm">
-          <details>
+          <details open>
             <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Response Body
