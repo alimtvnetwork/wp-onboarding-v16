@@ -23,7 +23,6 @@ trait RouteRegistrationTrait
     /** Register all REST API routes. */
     public function registerRoutes(): void {
         $namespace = PluginConfigType::apiFullNamespace();
-        $this->fileLogger->info('Registering REST API routes', ['namespace' => $namespace]);
 
         $registered = 0;
         $failed = 0;
@@ -42,7 +41,7 @@ trait RouteRegistrationTrait
         $this->registerMachineManagementRoutes($safeRegister);
         $this->registerLogManagementRoutes($safeRegister);
 
-        $this->fileLogger->info("Route registration complete: $registered registered, $failed failed");
+        $this->fileLogger->info("Routes registered: $registered OK, $failed failed", ['namespace' => $namespace]);
     }
 
     private function registerMachineManagementRoutes(callable $safeRegister): void {

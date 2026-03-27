@@ -123,7 +123,7 @@ class Plugin {
 
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
-        $this->fileLogger->info('Plugin constructor starting', array('version' => PluginConfigType::Version->value));
+        $startMs = microtime(true);
 
         SettingsMigrationHelper::migrateIfNeeded();
 
@@ -154,14 +154,30 @@ class Plugin {
             3,
         );
 
-        $this->fileLogger->info('REST routes and lifecycle hooks registered (pre-init)');
-
         $this->initComponents();
 
-        InitHelpers::logStartupSummary($this->fileLogger);
-        $this->fileLogger->info('Plugin constructor complete', array(
+        $total = count(InitHelpers::getStartupResults());
+        $failed = count(InitHelpers::getFailedStartups());
+        $componentMs = InitHelpers::getTotalStartupTime();
+        $elapsedMs = round((microtime(true) - $startMs) * 1000, 2);
+
+        $summary = array(
+            'version'      => PluginConfigType::Version->value,
             'db_available' => $this->db !== null,
-        ));
+            'components'   => $total,
+            'componentMs'  => $componentMs,
+            'totalMs'      => $elapsedMs,
+        );
+
+        if ($failed > 0) {
+            $summary['failed'] = $failed;
+            $summary['failures'] = array_map(function (array $r): string {
+                return $r['name'] . ': ' . ($r[\RiseupAsia\Enums\ResponseKeyType::Error->value] ?? 'unknown');
+            }, InitHelpers::getFailedStartups());
+            $this->fileLogger->warn('Plugin initialized with failures', $summary);
+        } else {
+            $this->fileLogger->info('Plugin initialized', $summary);
+        }
     }
 
     private function initComponents(): void {
