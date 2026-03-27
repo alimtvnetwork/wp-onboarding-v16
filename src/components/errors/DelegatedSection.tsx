@@ -29,34 +29,34 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
   return (
     <div className="space-y-4">
       {delegatedLogContent && (
-        <div className="rounded-lg border-2 border-orange-500/30 bg-orange-500/5">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-orange-500/20 bg-orange-500/10 rounded-t-lg">
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 shadow-sm overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-orange-500/20 bg-orange-500/10">
             <h4 className="text-sm font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-300">
               <FileText className="h-4 w-4" />
               Delegated Server Log
               <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-600 dark:text-orange-300">delegated.log</Badge>
               <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-600 dark:text-orange-300">Synthesized</Badge>
             </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated server log", delegatedLogContent)}>
+            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => copySection("Delegated server log", delegatedLogContent)}>
               <Copy className="h-4 w-4" />
+              <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <ScrollArea className="h-[260px]">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+          <ScrollArea className="h-[320px] bg-background/80">
+            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
               {delegatedLogContent}
             </pre>
           </ScrollArea>
         </div>
       )}
 
-      {/* Delegated Request Info */}
       {delegatedServer && (
-        <div className="rounded-md border border-orange-500/30 bg-orange-500/5 p-3 space-y-2">
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 space-y-2 shadow-sm">
           <h4 className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
             <Globe className="h-3 w-3" />
             Delegated Server Request
           </h4>
-          <div className="font-mono text-xs break-all">
+          <div className="font-mono text-sm break-all">
             <Badge variant={delegatedServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs mr-2">
               {delegatedServer.Method} {delegatedServer.StatusCode}
             </Badge>
@@ -68,15 +68,14 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
         </div>
       )}
 
-      {/* PHP Stack Trace (structured frames) */}
       {phpStackFrames.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               PHP Stack Trace ({phpStackFrames.length} frames)
             </h4>
-            <Button variant="ghost" size="sm" onClick={() => {
+            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => {
               const text = phpStackFrames.map((f, i) => {
                 const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
                 return `#${i} ${fn}() at ${f.file || f.fileBase || 'unknown'}:${f.line || '?'}`;
@@ -84,9 +83,10 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
               copySection("PHP stack trace", text);
             }}>
               <Copy className="h-4 w-4" />
+              <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <div className="border rounded-md overflow-hidden">
+          <div className="border border-border/60 rounded-xl overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-orange-500/10">
                 <tr>
@@ -117,56 +117,55 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
         </div>
       )}
 
-      {/* DelegatedRequestServer.StackTrace */}
       {delegatedStackTrace && delegatedStackTrace.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               Delegated Server Stack Trace ({delegatedStackTrace.length} frames)
             </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated stack", delegatedStackTrace.join('\n'))}>
+            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => copySection("Delegated stack", delegatedStackTrace.join('\n'))}>
               <Copy className="h-4 w-4" />
+              <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+          <ScrollArea className="h-[220px] rounded-xl border border-orange-500/20 bg-background/80">
+            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
               {delegatedStackTrace.join('\n')}
             </pre>
           </ScrollArea>
         </div>
       )}
 
-      {/* DelegatedServiceErrorStack */}
       {envelopeDelegatedStack && envelopeDelegatedStack.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               Delegated Error Stack ({envelopeDelegatedStack.length} lines)
             </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated error stack", envelopeDelegatedStack.join('\n'))}>
+            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => copySection("Delegated error stack", envelopeDelegatedStack.join('\n'))}>
               <Copy className="h-4 w-4" />
+              <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+          <ScrollArea className="h-[220px] rounded-xl border border-orange-500/20 bg-background/80">
+            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
               {envelopeDelegatedStack.join('\n')}
             </pre>
           </ScrollArea>
         </div>
       )}
 
-      {/* Response Body */}
       {delegatedServer?.Response && (
-        <div>
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 shadow-sm">
           <details>
             <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Response Body
             </summary>
             <div className="mt-2 relative">
-              <Button variant="ghost" size="sm" className="absolute top-1 right-1" onClick={() => {
+              <Button variant="outline" size="sm" className="absolute top-2 right-2 z-10 h-8 border-border/60 bg-background/70" onClick={() => {
                 const text = typeof delegatedServer.Response === 'string'
                   ? delegatedServer.Response
                   : JSON.stringify(delegatedServer.Response, null, 2);
@@ -174,8 +173,8 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
               }}>
                 <Copy className="h-4 w-4" />
               </Button>
-              <ScrollArea className="h-[200px] rounded-md border bg-muted">
-                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+              <ScrollArea className="h-[220px] rounded-xl border border-border/60 bg-background/80">
+                <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6">
                   {typeof delegatedServer.Response === 'string'
                     ? delegatedServer.Response
                     : JSON.stringify(delegatedServer.Response, null, 2)}
@@ -186,16 +185,15 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
         </div>
       )}
 
-      {/* Request Body sent to delegated server */}
       {delegatedServer?.RequestBody && (
-        <div>
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 shadow-sm">
           <details>
             <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
               <Network className="h-4 w-4" />
               Request Body (sent to delegated server)
             </summary>
             <div className="mt-2 relative">
-              <Button variant="ghost" size="sm" className="absolute top-1 right-1" onClick={() => {
+              <Button variant="outline" size="sm" className="absolute top-2 right-2 z-10 h-8 border-border/60 bg-background/70" onClick={() => {
                 const text = typeof delegatedServer.RequestBody === 'string'
                   ? delegatedServer.RequestBody
                   : JSON.stringify(delegatedServer.RequestBody, null, 2);
@@ -203,8 +201,8 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
               }}>
                 <Copy className="h-4 w-4" />
               </Button>
-              <ScrollArea className="h-[200px] rounded-md border bg-muted">
-                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+              <ScrollArea className="h-[220px] rounded-xl border border-border/60 bg-background/80">
+                <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6">
                   {typeof delegatedServer.RequestBody === 'string'
                     ? delegatedServer.RequestBody
                     : JSON.stringify(delegatedServer.RequestBody, null, 2)}
@@ -215,19 +213,18 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
         </div>
       )}
 
-      {/* Session PHP Stack */}
       {sessionPhpFrames && sessionPhpFrames.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               Delegated Stack (Session) ({sessionPhpFrames.length} frames)
             </h4>
           </div>
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <div className="p-3 space-y-1">
+          <ScrollArea className="h-[220px] rounded-xl border border-orange-500/20 bg-background/80">
+            <div className="p-4 space-y-1">
               {sessionPhpFrames.map((frame, i) => (
-                <div key={i} className="text-xs font-mono leading-relaxed">
+                <div key={i} className="text-sm font-mono leading-6">
                   <span className="text-muted-foreground mr-1">#{i}</span>
                   <span className="font-semibold text-orange-500 dark:text-orange-400">
                     {frame.class ? `${frame.class}::${frame.function}` : frame.function}()
@@ -244,40 +241,39 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
         </div>
       )}
 
-      {/* PHP Log (stacktrace.txt) */}
       {sessionDiag?.phpStackTraceLog && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               Delegated Log (stacktrace.txt)
             </h4>
-            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated stacktrace.txt", sessionDiag.phpStackTraceLog!)}>
+            <Button variant="outline" size="sm" className="h-9 border-orange-500/30 bg-background/70" onClick={() => copySection("Delegated stacktrace.txt", sessionDiag.phpStackTraceLog!)}>
               <Copy className="h-4 w-4" />
+              <span className="ml-2">Copy</span>
             </Button>
           </div>
-          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+          <ScrollArea className="h-[220px] rounded-xl border border-orange-500/20 bg-background/80">
+            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
               {sessionDiag.phpStackTraceLog}
             </pre>
           </ScrollArea>
         </div>
       )}
 
-      {/* Raw remoteResponseBody fallback */}
       {!delegatedServer?.Response && typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-orange-500/20 bg-muted/10 p-4 shadow-sm">
           <details open={phpStackFrames.length === 0}>
             <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
               <Globe className="h-4 w-4 text-orange-500" />
               Remote Response Body (raw)
             </summary>
             <div className="mt-2 relative">
-              <Button variant="ghost" size="sm" className="absolute top-1 right-1 z-10" onClick={() => copySection("Remote response body", error.context!.remoteResponseBody as string)}>
+              <Button variant="outline" size="sm" className="absolute top-2 right-2 z-10 h-8 border-orange-500/30 bg-background/70" onClick={() => copySection("Remote response body", error.context!.remoteResponseBody as string)}>
                 <Copy className="h-4 w-4" />
               </Button>
-              <ScrollArea className="h-[250px] rounded-md border bg-orange-500/5">
-                <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+              <ScrollArea className="h-[250px] rounded-xl border border-orange-500/20 bg-background/80">
+                <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6 text-orange-700 dark:text-orange-300">
                   {(() => {
                     try {
                       return JSON.stringify(JSON.parse(error.context!.remoteResponseBody as string), null, 2);
@@ -295,13 +291,12 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
       {sessionLoading && (
         <div className="text-center py-4 text-muted-foreground">
           <RefreshCw className="h-5 w-5 mx-auto mb-1 animate-spin" />
-          <p className="text-xs">Loading delegated session data...</p>
+          <p className="text-sm">Loading delegated session data...</p>
         </div>
       )}
 
-      {/* Empty state */}
       {!delegatedLogContent && !delegatedServer && phpStackFrames.length === 0 && !envelopeDelegatedStack?.length && !sessionPhpFrames?.length && !sessionDiag?.phpStackTraceLog && !(typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0) && !sessionLoading && (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="text-center py-8 text-muted-foreground rounded-xl border border-border/60 bg-muted/10">
           <Globe className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No delegated server data available</p>
           <p className="text-xs mt-1">Delegated logs appear when the backend proxies requests to downstream services</p>
