@@ -155,7 +155,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-warning text-warning-foreground px-4 py-2">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-warning text-black px-4 py-2">
       <div className="container mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
@@ -172,7 +172,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-warning-foreground hover:bg-warning-foreground/20"
+            className="h-7 text-black hover:bg-black/10"
             onClick={handleViewDetails}
           >
             <ExternalLink className="h-3 w-3" />
@@ -181,7 +181,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-warning-foreground hover:bg-warning-foreground/20"
+            className="h-7 text-black hover:bg-black/10"
             onClick={checkBackendConnection}
             disabled={isChecking}
           >
