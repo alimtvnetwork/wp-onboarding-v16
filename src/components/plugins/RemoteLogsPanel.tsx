@@ -45,6 +45,7 @@ import {
   Zap,
   FlaskConical,
   XCircle,
+  Code2,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -221,6 +222,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
   // Inline error diagnostics
   const [inlineErrors, setInlineErrors] = useState<CapturedInlineError[]>([]);
+  const [showPayloadInspector, setShowPayloadInspector] = useState(false);
 
   const captureInlineError = useCallback((err: unknown, endpoint: string, method: string) => {
     const diag = extractDiagnostic(err, endpoint, method);
@@ -805,6 +807,53 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+
+                      {/* Raw Payload Inspector */}
+                      {retrieveData && (
+                        <div className="flex items-center">
+                          <Button
+                            size="sm"
+                            variant={showPayloadInspector ? "secondary" : "ghost"}
+                            className="h-7 px-2 text-[11px] text-muted-foreground gap-1"
+                            onClick={() => setShowPayloadInspector((v) => !v)}
+                          >
+                            <Code2 className="h-3 w-3" />
+                            {showPayloadInspector ? "Hide" : "Inspect"} Payload
+                          </Button>
+                        </div>
+                      )}
+                      {showPayloadInspector && retrieveData && (
+                        <div className="rounded-xl border border-border/60 bg-muted/10 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">Raw Retrieve Payload</span>
+                              <Badge variant="outline" className="text-[10px] font-mono px-1.5 h-4">
+                                {JSON.stringify(retrieveData).length.toLocaleString()} chars
+                              </Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify(retrieveData, null, 2));
+                                toast.success("Raw payload copied to clipboard");
+                              }}
+                            >
+                              <Copy className="h-3 w-3 mr-1" /> Copy
+                            </Button>
+                          </div>
+                          <ScrollArea className="h-[300px] rounded-lg border border-border/40 bg-background/80">
+                            <pre className="p-3 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all leading-relaxed">
+                              {JSON.stringify(retrieveData, null, 2)}
+                            </pre>
+                          </ScrollArea>
+                          <p className="text-[10px] text-muted-foreground/60 italic">
+                            Transformed (camelCase) payload after the API boundary. Field names should match the TypeScript interface.
+                          </p>
                         </div>
                       )}
 
