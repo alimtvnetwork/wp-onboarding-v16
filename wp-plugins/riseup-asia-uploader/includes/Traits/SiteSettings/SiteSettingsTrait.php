@@ -83,6 +83,26 @@ trait SiteSettingsTrait
             }
         }
 
+        // RISEUP_DEBUG_BOOT
+        if (array_key_exists('riseupDebugBoot', $body)) {
+            $result = $this->updateWpConfigConstant('RISEUP_DEBUG_BOOT', (bool) $body['riseupDebugBoot']);
+            if ($result) {
+                $updated['riseupDebugBoot'] = (bool) $body['riseupDebugBoot'];
+            } else {
+                $errors[] = 'Failed to update RISEUP_DEBUG_BOOT';
+            }
+        }
+
+        // QUPLOAD_DEBUG_BOOT
+        if (array_key_exists('quploadDebugBoot', $body)) {
+            $result = $this->updateWpConfigConstant('QUPLOAD_DEBUG_BOOT', (bool) $body['quploadDebugBoot']);
+            if ($result) {
+                $updated['quploadDebugBoot'] = (bool) $body['quploadDebugBoot'];
+            } else {
+                $errors[] = 'Failed to update QUPLOAD_DEBUG_BOOT';
+            }
+        }
+
         // Upload max filesize (PHP ini — .htaccess or user.ini)
         if (array_key_exists('uploadMaxFilesize', $body)) {
             $val = $this->sanitizeSizeValue($body['uploadMaxFilesize']);
@@ -148,6 +168,8 @@ trait SiteSettingsTrait
             'wpDebug'            => defined('WP_DEBUG') && WP_DEBUG,
             'wpDebugLog'         => defined('WP_DEBUG_LOG') && WP_DEBUG_LOG,
             'wpDebugDisplay'     => defined('WP_DEBUG_DISPLAY') && WP_DEBUG_DISPLAY,
+            'riseupDebugBoot'    => defined('RISEUP_DEBUG_BOOT') && RISEUP_DEBUG_BOOT,
+            'quploadDebugBoot'   => defined('QUPLOAD_DEBUG_BOOT') && QUPLOAD_DEBUG_BOOT,
             'uploadMaxFilesize'  => ini_get('upload_max_filesize'),
             'postMaxSize'        => ini_get('post_max_size'),
             'memoryLimit'        => ini_get('memory_limit'),

@@ -106,6 +106,8 @@ type SiteSettingsData struct {
 	WpDebug             bool   `json:"wpDebug"`
 	WpDebugLog          bool   `json:"wpDebugLog"`
 	WpDebugDisplay      bool   `json:"wpDebugDisplay"`
+	RiseupDebugBoot     bool   `json:"riseupDebugBoot"`
+	QuploadDebugBoot    bool   `json:"quploadDebugBoot"`
 	UploadMaxFilesize   string `json:"uploadMaxFilesize"`
 	PostMaxSize         string `json:"postMaxSize"`
 	MemoryLimit         string `json:"memoryLimit"`
