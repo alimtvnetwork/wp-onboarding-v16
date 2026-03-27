@@ -56,10 +56,15 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
             <Globe className="h-3 w-3" />
             Delegated Server Request
           </h4>
-          <div className="font-mono text-sm break-all">
-            <Badge variant={delegatedServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs mr-2">
+          <div className="font-mono text-sm break-all flex flex-wrap items-center gap-2">
+            <Badge variant={delegatedServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs">
               {delegatedServer.Method} {delegatedServer.StatusCode}
             </Badge>
+            {delegatedServer.Namespace && (
+              <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-600 dark:text-orange-300 font-mono">
+                {delegatedServer.Namespace}
+              </Badge>
+            )}
             <span>{delegatedServer.DelegatedEndpoint}</span>
           </div>
           {delegatedServer.AdditionalMessages && (
@@ -159,7 +164,7 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
 
       {delegatedServer?.Response && (
         <div className="rounded-xl border border-border/60 bg-muted/10 p-4 shadow-sm">
-          <details>
+          <details open>
             <summary className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Response Body

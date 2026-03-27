@@ -98,6 +98,7 @@ func buildDelegatedRequestServer(apiErr *wordpress.ApiError) *envelope.Delegated
 		DelegatedEndpoint: apiErr.Endpoint,
 		Method:            strings.ToUpper(apiErr.Method),
 		StatusCode:        apiErr.StatusCode,
+		Namespace:         extractNamespaceFromEndpoint(apiErr.Endpoint),
 	}
 
 	hasStackTrace := apiErr.StackTrace != ""
@@ -116,6 +117,19 @@ func buildDelegatedRequestServer(apiErr *wordpress.ApiError) *envelope.Delegated
 	}
 
 	return drs
+}
+
+// extractNamespaceFromEndpoint parses the REST API namespace from a WordPress endpoint path.
+// e.g. "/riseup-asia-api/v1/snapshots/settings" → "riseup-asia-api/v1"
+// e.g. "/qupload/v1/logs/retrieve" → "qupload/v1"
+func extractNamespaceFromEndpoint(endpoint string) string {
+	endpoint = strings.TrimPrefix(endpoint, "/")
+	// Namespace pattern: "slug/vN" — find the first "/vN/" segment
+	parts := strings.SplitN(endpoint, "/", 4) // e.g. ["riseup-asia-api", "v1", "snapshots", "settings"]
+	if len(parts) >= 2 && len(parts[1]) >= 2 && parts[1][0] == 'v' && parts[1][1] >= '0' && parts[1][1] <= '9' {
+		return parts[0] + "/" + parts[1]
+	}
+	return ""
 }
 
 // respondBadRequest is a shorthand for respondError with HttpStatusBadRequest.

@@ -61,6 +61,7 @@ type DelegatedRequestServer struct {
 	DelegatedEndpoint  string   `json:",omitempty"`
 	Method             string   `json:",omitempty"`
 	StatusCode         int      `json:",omitempty"`
+	Namespace          string   `json:",omitempty"` // WordPress REST API namespace (e.g. "riseup-asia-api/v1")
 	StackTrace         []string `json:",omitempty"`
 	RequestBody        any      `json:",omitempty"`
 	Response           any      `json:",omitempty"`
