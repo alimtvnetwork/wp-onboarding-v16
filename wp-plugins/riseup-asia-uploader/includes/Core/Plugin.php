@@ -129,8 +129,20 @@ class Plugin {
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
         $startMs = microtime(true);
+        $isVerbose = InitHelpers::isBootVerbose();
+
+        if ($isVerbose) {
+            $this->fileLogger->debug('[BOOT] Constructor starting', array(
+                'version' => PluginConfigType::Version->value,
+                'constant' => 'RISEUP_DEBUG_BOOT',
+            ));
+        }
 
         SettingsMigrationHelper::migrateIfNeeded();
+
+        if ($isVerbose) {
+            $this->fileLogger->debug('[BOOT] Settings migration check complete');
+        }
 
         // Register REST routes and lifecycle hooks BEFORE component init
         add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
@@ -159,6 +171,10 @@ class Plugin {
             3,
         );
 
+        if ($isVerbose) {
+            $this->fileLogger->debug('[BOOT] WordPress hooks registered');
+        }
+
         $this->initComponents();
 
         $total = count(InitHelpers::getStartupResults());
@@ -173,6 +189,10 @@ class Plugin {
             'componentMs'  => $componentMs,
             'totalMs'      => $elapsedMs,
         );
+
+        if ($isVerbose) {
+            $summary['bootVerbose'] = true;
+        }
 
         if ($failed > 0) {
             $summary['failed'] = $failed;
