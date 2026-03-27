@@ -61,6 +61,7 @@ import type {
   SiteSettingsUpdate,
   SiteSettingsUpdateResponse,
   SiteHealthSummaryResponse,
+  DebugRoutesResponse,
 } from './types';
 
 // ---------------------------------------------------------------------------
