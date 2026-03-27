@@ -55,7 +55,7 @@ export function DebugRoutesPanel() {
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => localStorage.getItem("debug-routes-open") === "true");
   const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching } = useRemoteDebugRoutes(selectedSiteId);
@@ -79,7 +79,7 @@ export function DebugRoutesPanel() {
   }, [data?.routes, categoryFilter, searchQuery]);
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={(open) => { setIsOpen(open); localStorage.setItem("debug-routes-open", String(open)); }}>
     <Card>
       <CollapsibleTrigger asChild>
       <CardHeader className="pb-3 cursor-pointer select-none hover:bg-muted/30 transition-colors rounded-t-xl">
