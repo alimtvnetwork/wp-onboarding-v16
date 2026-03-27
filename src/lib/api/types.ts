@@ -39,6 +39,7 @@ export interface DelegatedRequestServer {
   DelegatedEndpoint: string;
   Method: string;
   StatusCode: number;
+  Namespace?: string;
   RequestBody?: unknown;
   Response?: unknown;
   StackTrace?: string[];
