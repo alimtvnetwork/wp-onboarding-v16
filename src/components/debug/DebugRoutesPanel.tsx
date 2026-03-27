@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Route, Filter } from "lucide-react";
+import { RefreshCw, Route, Filter, Search } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { useRemoteDebugRoutes } from "@/hooks/useRemoteDebugRoutes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -51,6 +52,7 @@ const categoryColors: Record<string, string> = {
 export function DebugRoutesPanel() {
   const { data: sites } = useSites();
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const queryClient = useQueryClient();
 
@@ -64,9 +66,15 @@ export function DebugRoutesPanel() {
   }, [sites, selectedSiteId]);
 
   const categories = data?.categories ? Object.keys(data.categories).sort() : [];
-  const filteredRoutes = data?.routes?.filter(
-    (r) => categoryFilter === "all" || r.category === categoryFilter
-  ) ?? [];
+  const filteredRoutes = useMemo(() => {
+    if (!data?.routes) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return data.routes.filter((r) => {
+      const matchesCategory = categoryFilter === "all" || r.category === categoryFilter;
+      const matchesSearch = !q || r.path.toLowerCase().includes(q) || r.methods.some((m) => m.toLowerCase().includes(q));
+      return matchesCategory && matchesSearch;
+    });
+  }, [data?.routes, categoryFilter, searchQuery]);
 
   return (
     <Card>
