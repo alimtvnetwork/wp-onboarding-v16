@@ -20,10 +20,27 @@ use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;
 
 trait InitStartupTrait {
+
+    /**
+     * Check if verbose boot logging is enabled via wp-config.php constant.
+     *
+     * Add `define('RISEUP_DEBUG_BOOT', true);` to wp-config.php to enable
+     * per-component init logging for troubleshooting startup issues.
+     */
+    public static function isBootVerbose(): bool {
+        return defined('RISEUP_DEBUG_BOOT') && RISEUP_DEBUG_BOOT === true;
+    }
+
     public static function initComponent(string $name, callable $initFn): mixed {
         $start = microtime(true);
         $result = null;
         $error = null;
+
+        $isVerbose = self::isBootVerbose();
+
+        if ($isVerbose) {
+            FileLogger::getInstance()->debug("[BOOT] Starting component: $name");
+        }
 
         try {
             $result = $initFn();
@@ -41,6 +58,11 @@ trait InitStartupTrait {
             ResponseKeyType::Error->value   => $error,
             'timeMs'                        => $elapsedMs,
         );
+
+        if ($isVerbose) {
+            $status = $error === null ? 'OK' : "FAILED: $error";
+            FileLogger::getInstance()->debug("[BOOT] Component $name: $status", array('timeMs' => $elapsedMs));
+        }
 
         return $result;
     }

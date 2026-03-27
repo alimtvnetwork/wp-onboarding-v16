@@ -71,15 +71,28 @@ trait DatabaseConnectionTrait {
      */
     private function initDatabase() {
         $initStart = microtime(true);
+        $isVerbose = InitHelpers::isBootVerbose();
 
         try {
+            if ($isVerbose) {
+                $this->fileLogger->debug('[BOOT] Initializing PDO connection', array('path' => $this->dbPath));
+            }
+
             $this->pdo = InitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
 
             if ($this->pdo === null) {
                 return false;
             }
 
+            if ($isVerbose) {
+                $this->fileLogger->debug('[BOOT] Configuring ORM');
+            }
+
             Orm::configure($this->pdo);
+
+            if ($isVerbose) {
+                $this->fileLogger->debug('[BOOT] Running database migrations');
+            }
 
             $this->createTables();
 
