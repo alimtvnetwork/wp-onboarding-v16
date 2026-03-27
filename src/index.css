@@ -399,6 +399,16 @@ All colors MUST be HSL.
   pointer-events: auto !important;
 }
 
+/* Site card hover: gradient background + text shadow on all children */
+.site-card-hover:hover {
+  background: var(--site-card-hover-gradient) !important;
+  border-color: hsl(var(--site-card-hover)) !important;
+}
+.site-card-hover:hover * {
+  text-shadow: var(--site-card-text-shadow) !important;
+  color: hsl(var(--site-card-hover-fg)) !important;
+}
+
 [data-sonner-toaster] [data-sonner-toast] {
   pointer-events: auto !important;
 }

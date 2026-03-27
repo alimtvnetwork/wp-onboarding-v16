@@ -219,7 +219,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   };
 
   return (
-    <Card className="group relative transition-all duration-500 ease-in-out hover:[background:var(--site-card-hover-gradient)] hover:border-[hsl(var(--site-card-hover))] hover:text-site-card-hover-foreground shadow-sm hover:shadow-[var(--site-card-hover-shadow)] [&:hover_*]:![text-shadow:var(--site-card-text-shadow)]">
+    <Card className="site-card-hover group relative transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div
