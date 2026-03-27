@@ -17,6 +17,7 @@ enum WpErrorCodeType: string
     /** WordPress core error codes — values must match WP conventions. */
     case RestForbidden = 'rest_forbidden';
     case RestDisabled  = 'rest_disabled';
+    case RestNoRoute   = 'rest_no_route';
 
     /** Custom plugin error codes — PascalCase values per enum standard. */
     case DatabaseError     = 'DbError';
@@ -42,6 +43,11 @@ enum WpErrorCodeType: string
     public function isAuthError(): bool
     {
         return $this->isAnyOf(self::RestForbidden, self::RestDisabled);
+    }
+
+    public function isRoutingError(): bool
+    {
+        return $this->isEqual(self::RestNoRoute);
     }
 
     public function isDatabaseError(): bool { return $this->isEqual(self::DatabaseError); }

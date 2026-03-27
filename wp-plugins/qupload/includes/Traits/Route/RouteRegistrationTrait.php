@@ -42,11 +42,32 @@ trait RouteRegistrationTrait
             }
         };
 
-        $this->registerCoreRoutes($safeRegister);
-        $this->registerMachineManagementRoutes($safeRegister);
-        $this->registerLogManagementRoutes($safeRegister);
+        $groups = [
+            'core'              => fn() => $this->registerCoreRoutes($safeRegister),
+            'machine_management' => fn() => $this->registerMachineManagementRoutes($safeRegister),
+            'log_management'    => fn() => $this->registerLogManagementRoutes($safeRegister),
+        ];
 
-        $this->fileLogger->info("Routes registered: $registered OK, $failed failed", ['namespace' => $namespace]);
+        $groupsFailed = [];
+
+        foreach ($groups as $groupName => $registrar) {
+            try {
+                $registrar();
+            } catch (Throwable $e) {
+                $groupsFailed[] = $groupName;
+                $this->fileLogger->logCriticalException($e, "Route group '$groupName' failed — remaining groups unaffected");
+            }
+        }
+
+        $hasGroupFailures = (count($groupsFailed) > 0);
+        $groupFailureSuffix = $hasGroupFailures
+            ? ', groups failed: ' . implode(', ', $groupsFailed)
+            : '';
+
+        $this->fileLogger->info(
+            "Routes registered: $registered OK, $failed failed" . $groupFailureSuffix,
+            ['namespace' => $namespace],
+        );
     }
 
     private function registerMachineManagementRoutes(callable $safeRegister): void {
