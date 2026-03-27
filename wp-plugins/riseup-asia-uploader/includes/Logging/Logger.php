@@ -48,6 +48,5 @@ class Logger {
 
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
-        $this->fileLogger->info('Transaction logger initialized');
     }
 }

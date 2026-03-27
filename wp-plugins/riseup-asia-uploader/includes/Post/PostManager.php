@@ -41,7 +41,6 @@ class PostManager {
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
         $this->logger = Logger::getInstance();
-        $this->fileLogger->info('Post manager initialized');
     }
 
     private function validatePostStatus(string $status): string {

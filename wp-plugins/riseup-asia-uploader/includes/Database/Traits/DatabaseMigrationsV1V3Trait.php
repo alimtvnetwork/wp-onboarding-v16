@@ -56,8 +56,6 @@ trait DatabaseMigrationsV1V3Trait {
         foreach ($indexes as $name => $column) {
             $this->pdo->exec("CREATE INDEX IF NOT EXISTS {$name} ON {$table} ({$column})");
         }
-
-        $this->fileLogger->info('Transaction indexes ensured');
     }
 
     private function migrateV2AgentTables(int $current): void {
