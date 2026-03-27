@@ -202,15 +202,14 @@ export function GlobalErrorModal() {
         data-error-modal
         style={dragStyle}
         className={cn(
-          "flex flex-col p-0 gap-0 overflow-hidden",
+          "flex flex-col p-0 gap-0 overflow-hidden border-border/70 bg-background shadow-2xl",
           "w-full h-full max-w-full max-h-full rounded-none",
-          "sm:max-w-[95vw] sm:w-[95vw] sm:max-h-[95vh] sm:h-[95vh] sm:rounded-lg",
+          "sm:max-w-[95vw] sm:w-[95vw] sm:max-h-[95vh] sm:h-[95vh] sm:rounded-xl",
           "lg:max-w-6xl"
         )}
       >
-        {/* Header — draggable */}
         <DialogHeader
-          className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0 cursor-grab active:cursor-grabbing select-none"
+          className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border/60 bg-muted/20 shrink-0 cursor-grab active:cursor-grabbing select-none"
           onMouseDown={onDragMouseDown}
           onTouchStart={onDragTouchStart}
         >
@@ -223,27 +222,23 @@ export function GlobalErrorModal() {
                   : selectedError.level === "warn" ? "text-warning" : "text-muted-foreground"
               )} />
               <div className="min-w-0 flex-1">
-                <DialogTitle className="flex items-center gap-2 flex-wrap text-base sm:text-lg">
+                <DialogTitle className="flex items-center gap-2 flex-wrap text-base sm:text-lg font-semibold">
                   <span className="hidden sm:inline">Error Details</span>
                   <span className="sm:hidden">Error</span>
-                  <Badge variant="secondary" className={cn("text-xs", levelColors[selectedError.level] || "")}>
-                    {selectedError.code}
-                  </Badge>
+                  <Badge variant="secondary" className={cn("text-xs", levelColors[selectedError.level] || "")}>{selectedError.code}</Badge>
                   <Badge variant="outline" className={cn("text-xs gap-1 font-medium", errorSource.className)}>
                     <errorSource.icon className="h-3 w-3" />
                     {errorSource.label}
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="truncate text-xs sm:text-sm">
+                <DialogDescription className="truncate text-xs sm:text-sm text-muted-foreground/90">
                   <span>{formatTs(selectedError.createdAt)}</span>
-                  <span className="hidden sm:inline">
-                    <span className="mx-2">•</span>
-                    <span className="font-mono">{appName} v{appVersion}</span>
-                  </span>
+                  <span className="mx-2">•</span>
+                  <span className="font-mono">{appName} v{appVersion}</span>
                 </DialogDescription>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-1 shrink-0">
               {isDragged && (
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={resetPosition} title="Reset position">
@@ -252,19 +247,19 @@ export function GlobalErrorModal() {
               )}
               {hasMultipleErrors && (
                 <>
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('prev')} title="Previous error">
+                  <Button variant="outline" size="icon" className="h-7 w-7 border-border/60 bg-background/60" onClick={() => navigateQueue('prev')} title="Previous error">
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
+                  <Badge variant="secondary" className="px-2 py-1 font-mono text-xs bg-muted/60 border border-border/60">
                     {currentQueueIndex + 1}/{errorQueue.length}
                   </Badge>
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigateQueue('next')} title="Next error">
+                  <Button variant="outline" size="icon" className="h-7 w-7 border-border/60 bg-background/60" onClick={() => navigateQueue('next')} title="Next error">
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden" onClick={copyAllErrors} title="Copy all errors">
+                  <Button variant="outline" size="icon" className="h-7 w-7 sm:hidden border-border/60 bg-background/60" onClick={copyAllErrors} title="Copy all errors">
                     <CopyPlus className="h-3 w-3" />
                   </Button>
-                  <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex" onClick={copyAllErrors} title="Copy all errors">
+                  <Button variant="outline" size="sm" className="h-7 ml-1 hidden sm:flex border-border/60 bg-background/60" onClick={copyAllErrors} title="Copy all errors">
                     <CopyPlus className="h-3 w-3 mr-1" />
                     All
                   </Button>
@@ -274,30 +269,29 @@ export function GlobalErrorModal() {
           </div>
         </DialogHeader>
 
-        {/* Main Content */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="px-4 pt-3 pb-2 sm:px-6 sm:pt-4 border-b bg-muted/30 shrink-0">
-            <div className="flex items-center gap-2">
-              <Button variant={activeSection === "backend" ? "default" : "outline"} size="sm"
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-background">
+          <div className="px-4 pt-3 pb-2 sm:px-6 sm:pt-4 border-b border-border/60 bg-muted/15 shrink-0">
+            <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-1">
+              <Button variant={activeSection === "backend" ? "default" : "ghost"} size="sm"
                 onClick={() => setActiveSection("backend")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none">
                 <Server className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Backend
               </Button>
-              <Button variant={activeSection === "frontend" ? "default" : "outline"} size="sm"
-                onClick={() => setActiveSection("frontend")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none">
+              <Button variant={activeSection === "frontend" ? "secondary" : "ghost"} size="sm"
+                onClick={() => setActiveSection("frontend")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-border/40">
                 <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Frontend
               </Button>
-              <Button variant={activeSection === "delegated" ? "default" : "outline"} size="sm"
-                onClick={() => setActiveSection("delegated")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border-orange-500/30">
-                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+              <Button variant={activeSection === "delegated" ? "secondary" : "ghost"} size="sm"
+                onClick={() => setActiveSection("delegated")} className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none border border-orange-500/30 text-orange-500 hover:text-orange-400">
+                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Delegated Logs</span>
                 <span className="sm:hidden">Delegated</span>
               </Button>
             </div>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 touch-pan-y">
+          <ScrollArea className="flex-1 min-h-0 touch-pan-y bg-background">
             <div className="p-4 sm:p-6">
               {activeSection === "backend" ? (
                 <BackendSection 
@@ -334,11 +328,10 @@ export function GlobalErrorModal() {
           </ScrollArea>
         </div>
 
-        {/* Footer */}
-        <div className="flex flex-wrap justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t shrink-0 bg-background">
+        <div className="flex flex-wrap justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t border-border/60 shrink-0 bg-muted/10">
           <div className="flex gap-2 w-full sm:w-auto justify-end">
             <DownloadDropdown error={selectedError} appName={appName} appVersion={appVersion} gitCommit={gitCommit} buildTime={buildTime} />
-            <Button variant="outline" onClick={closeErrorModal} className="text-xs sm:text-sm">Close</Button>
+            <Button variant="outline" onClick={closeErrorModal} className="text-xs sm:text-sm border-border/60 bg-background/60">Close</Button>
             <CopyDropdown error={selectedError} appName={appName} appVersion={appVersion} gitCommit={gitCommit} buildTime={buildTime} copyFullError={copyFullError} />
           </div>
         </div>

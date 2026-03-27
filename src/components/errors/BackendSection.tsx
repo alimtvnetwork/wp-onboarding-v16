@@ -59,38 +59,38 @@ export function BackendSection({
     || (envelopeMethodsBackend && envelopeMethodsBackend.length > 0);
 
   return (
-    <Tabs defaultValue="overview" className="w-full">
-      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
-        <TabsList className="mb-4 inline-flex h-auto gap-1 min-w-max sm:flex sm:flex-wrap">
-          <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+    <Tabs defaultValue="overview" className="w-full space-y-4">
+      <div className="overflow-x-auto pb-1">
+        <TabsList className="inline-flex h-11 min-w-full sm:min-w-max gap-1 rounded-xl border border-border/60 bg-muted/20 p-1">
+          <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <AlertCircle className="h-3 w-3" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+          <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Terminal className="h-3 w-3" />
             Log
           </TabsTrigger>
-          <TabsTrigger value="execution" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+          <TabsTrigger value="execution" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Activity className="h-3 w-3" />
             <span className="hidden sm:inline">Execution</span>
             <span className="sm:hidden">Exec</span>
           </TabsTrigger>
-          <TabsTrigger value="stack" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+          <TabsTrigger value="stack" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Code2 className="h-3 w-3" />
             Stack
           </TabsTrigger>
           {error.sessionId && (
-            <TabsTrigger value="session" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <TabsTrigger value="session" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <FileText className="h-3 w-3" />
               Session
             </TabsTrigger>
           )}
-          <TabsTrigger value="request" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+          <TabsTrigger value="request" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Network className="h-3 w-3" />
             Request
           </TabsTrigger>
           {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
-            <TabsTrigger value="traversal" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <TabsTrigger value="traversal" className="gap-1 text-xs sm:text-sm px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Route className="h-3 w-3" />
               Traversal
             </TabsTrigger>
@@ -98,12 +98,10 @@ export function BackendSection({
         </TabsList>
       </div>
 
-      {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-4 m-0">
         <OverviewContent error={error} formatTs={formatTs} hasStackContent={hasStackContent} hasExecutionContent={hasExecutionContent} hasDelegatedContent={false} />
       </TabsContent>
 
-      {/* Error Log Tab */}
       <TabsContent value="logs" className="space-y-4 m-0">
         <ErrorLogContent
           error={error}
@@ -116,7 +114,6 @@ export function BackendSection({
         />
       </TabsContent>
 
-      {/* Execution Logs Tab */}
       <TabsContent value="execution" className="space-y-4 m-0">
         <ExecutionContent
           error={error}
@@ -127,7 +124,6 @@ export function BackendSection({
         />
       </TabsContent>
 
-      {/* Stack Traces Tab (Go only) */}
       <TabsContent value="stack" className="space-y-4 m-0">
         <StackContent
           error={error}
@@ -139,19 +135,16 @@ export function BackendSection({
         />
       </TabsContent>
 
-      {/* Session Tab */}
       {error.sessionId && (
         <TabsContent value="session" className="m-0">
           <SessionLogsTab sessionId={error.sessionId} sessionType={error.sessionType} />
         </TabsContent>
       )}
 
-      {/* Request Tab */}
       <TabsContent value="request" className="space-y-4 m-0">
         <RequestDetails error={error} copySection={copySection} sessionDiagnostics={sessionDiag} />
       </TabsContent>
 
-      {/* Traversal Tab */}
       {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
         <TabsContent value="traversal" className="space-y-4 m-0">
           <TraversalDetails error={error} copySection={copySection} />
@@ -161,53 +154,51 @@ export function BackendSection({
   );
 }
 
-// --- Internal sub-components (not exported — only used within BackendSection) ---
-
 function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent, hasDelegatedContent }: {
   error: CapturedError; formatTs: (ts: string) => string;
   hasStackContent: boolean; hasExecutionContent: boolean; hasDelegatedContent: boolean;
 }) {
   return (
     <>
-      <div className="rounded-md border p-4 space-y-3">
+      <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-3 shadow-sm">
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-sm font-medium">{error.message}</p>
+            <p className="text-sm font-semibold">{error.message}</p>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary" className="text-xs">{error.code}</Badge>
               <span>{formatTs(error.createdAt)}</span>
               {error.responseStatus && (
-                <Badge variant="outline" className="text-xs">HTTP {error.responseStatus}</Badge>
+                <Badge variant="outline" className="text-xs border-border/60 bg-background/50">HTTP {error.responseStatus}</Badge>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {error.siteUrl && (
-        <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Target Site:</span>
-          <a href={error.siteUrl} target="_blank" rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline flex items-center gap-1">
-            {error.siteUrl}
-          </a>
-        </div>
-      )}
-
       {(error.endpoint || error.method) && (
-        <div className="rounded-md border p-3 space-y-2">
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-2 shadow-sm">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Request</h4>
-          <div className="font-mono text-xs break-all">
+          <div className="font-mono text-sm break-all">
             <span className="text-primary font-semibold">{error.method || 'GET'}</span>{' '}
             <span>{error.endpoint || 'unknown'}</span>
           </div>
         </div>
       )}
 
+      {error.siteUrl && (
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-3 flex items-center gap-2 shadow-sm">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Target Site:</span>
+          <a href={error.siteUrl} target="_blank" rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline flex items-center gap-1 min-w-0 truncate">
+            {error.siteUrl}
+          </a>
+        </div>
+      )}
+
       {error.envelopeErrors?.BackendMessage && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2 shadow-sm">
           <h4 className="text-xs font-medium text-destructive uppercase tracking-wider flex items-center gap-1.5">
             <Server className="h-3 w-3" />
             Backend Error
@@ -216,9 +207,8 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
         </div>
       )}
 
-      {/* Missing delegation warning: error message references a 3rd-party endpoint but envelope lacks delegation fields */}
       {error.envelopeErrors && !error.requestDelegatedAt && !error.envelopeErrors?.DelegatedRequestServer && error.message && /\((?:GET|POST|PUT|DELETE|PATCH) https?:\/\/[^\s)]+\/v\d+\//.test(error.message) && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-1 shadow-sm">
           <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3" />
             Missing Delegation Data
@@ -233,16 +223,16 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
       )}
 
       {(error.requestedAt || error.requestDelegatedAt) && (
-        <div className="rounded-md border p-3 space-y-1">
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-3 space-y-1 shadow-sm">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Timing</h4>
           {error.requestedAt && (
-            <div className="flex justify-between text-xs">
+            <div className="flex justify-between text-xs gap-3">
               <span className="text-muted-foreground">Requested At</span>
               <span className="font-mono">{formatTs(error.requestedAt)}</span>
             </div>
           )}
           {error.requestDelegatedAt && (
-            <div className="flex justify-between text-xs">
+            <div className="flex justify-between text-xs gap-3">
               <span className="text-muted-foreground">Delegated At</span>
               <span className="font-mono">{formatTs(error.requestDelegatedAt)}</span>
             </div>
@@ -252,25 +242,25 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
 
       <div className="flex flex-wrap gap-2">
         {error.sessionId && (
-          <Badge variant="outline" className="text-xs gap-1">
+          <Badge variant="outline" className="text-xs gap-1 border-border/60 bg-background/50">
             <FileText className="h-3 w-3" />
             Session: {error.sessionId.slice(0, 8)}…
           </Badge>
         )}
         {hasStackContent && (
-          <Badge variant="outline" className="text-xs gap-1">
+          <Badge variant="outline" className="text-xs gap-1 border-border/60 bg-background/50">
             <Code2 className="h-3 w-3" />
             Stack traces available
           </Badge>
         )}
         {hasDelegatedContent && (
-          <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 text-orange-600">
+          <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 text-orange-600 bg-orange-500/5">
             <Globe className="h-3 w-3" />
             Delegated logs available
           </Badge>
         )}
         {hasExecutionContent && (
-          <Badge variant="outline" className="text-xs gap-1">
+          <Badge variant="outline" className="text-xs gap-1 border-border/60 bg-background/50">
             <Activity className="h-3 w-3" />
             Execution logs available
           </Badge>
@@ -292,34 +282,36 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
   return (
     <>
       {error.siteUrl && (
-        <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-3 flex items-center gap-2 shadow-sm">
           <Globe className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Target Site:</span>
           <a href={error.siteUrl} target="_blank" rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline flex items-center gap-1">
+            className="text-sm text-primary hover:underline flex items-center gap-1 min-w-0 truncate">
             {error.siteUrl}
           </a>
         </div>
       )}
 
-      <div className="rounded-lg border-2 border-amber-500/30 bg-amber-500/5">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/20 bg-amber-500/10 rounded-t-lg">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 shadow-sm overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-amber-500/20 bg-amber-500/10">
           <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
             <Terminal className="h-4 w-4" />
             Go Backend Error Log
             <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">error.log.txt</Badge>
             <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">Session-scoped</Badge>
           </h4>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={onRefreshLog} disabled={errorLogLoading}>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-9 border-amber-500/30 bg-background/70" onClick={onRefreshLog} disabled={errorLogLoading}>
               {errorLogLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              <span className="ml-2">Refresh</span>
             </Button>
             {errorLogContent && (
               <>
-                <Button variant="ghost" size="sm" onClick={() => copySection("Backend error log", errorLogContent)}>
+                <Button variant="outline" size="sm" className="h-9 border-amber-500/30 bg-background/70" onClick={() => copySection("Backend error log", errorLogContent)}>
                   <Copy className="h-4 w-4" />
+                  <span className="ml-2">Copy</span>
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => {
+                <Button variant="outline" size="sm" className="h-9 border-amber-500/30 bg-background/70" onClick={() => {
                   const blob = new Blob([errorLogContent], { type: "text/plain" });
                   const url = window.URL.createObjectURL(blob);
                   const link = document.createElement("a");
@@ -330,6 +322,7 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
                   toast.success("Downloaded error.log.txt");
                 }}>
                   <Download className="h-4 w-4" />
+                  <span className="ml-2">Download</span>
                 </Button>
               </>
             )}
@@ -350,8 +343,8 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
           </div>
         )}
         {errorLogContent && (
-          <ScrollArea className="h-[400px] rounded-b-lg border-t border-amber-500/20 bg-muted">
-            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{errorLogContent}</pre>
+          <ScrollArea className="h-[440px] bg-background/80">
+            <pre className="text-sm p-4 font-mono whitespace-pre-wrap break-all leading-6">{errorLogContent}</pre>
           </ScrollArea>
         )}
         {!errorLogLoading && !errorLogError && !errorLogContent && errorLogFetched && (

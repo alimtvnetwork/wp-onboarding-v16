@@ -20,13 +20,13 @@ export function DownloadDropdown({ error, appName, appVersion, gitCommit, buildT
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="border-border/60 bg-background/60">
           <Download className="h-4 w-4 mr-2" />
           Download
           <ChevronDown className="h-4 w-4 ml-1" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-popover">
+      <DropdownMenuContent align="end" className="bg-popover border-border/60">
         <DropdownMenuItem onClick={async () => {
           try {
             const report = generateErrorReport(error, { appName, appVersion, gitCommit, buildTime });
@@ -150,10 +150,6 @@ interface CopyDropdownProps extends AppInfo {
   copyFullError: () => void;
 }
 
-/**
- * Split Copy Button — main click copies compact report instantly,
- * chevron arrow opens dropdown with all copy options.
- */
 export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime, copyFullError }: CopyDropdownProps) {
   const copyCompact = () => {
     const text = generateCompactReport(error, { appName, appVersion, gitCommit, buildTime });
@@ -163,7 +159,6 @@ export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime,
 
   return (
     <div className="inline-flex rounded-md shadow-sm">
-      {/* Main button — copies compact report instantly */}
       <Button
         onClick={copyCompact}
         className="rounded-r-none border-r-0"
@@ -172,7 +167,6 @@ export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime,
         Copy
       </Button>
 
-      {/* Arrow button — opens dropdown with all copy options */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -182,7 +176,7 @@ export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime,
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-popover">
+        <DropdownMenuContent align="end" className="bg-popover border-border/60">
           <DropdownMenuItem onClick={copyCompact}>
             <Copy className="h-4 w-4 mr-2" />
             Copy Compact Report
