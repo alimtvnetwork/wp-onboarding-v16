@@ -23,14 +23,19 @@ trait RouteRegistrationTrait
     /** Register all REST API routes. */
     public function registerRoutes(): void {
         $namespace = PluginConfigType::apiFullNamespace();
+        $isVerbose = \QUpload\Core\Plugin::isBootVerbose();
 
         $registered = 0;
         $failed = 0;
 
-        $safeRegister = function (string $route, array $args) use ($namespace, &$registered, &$failed): void {
+        $safeRegister = function (string $route, array $args) use ($namespace, &$registered, &$failed, $isVerbose): void {
             try {
                 register_rest_route($namespace, $route, $args);
                 $registered++;
+
+                if ($isVerbose) {
+                    $this->fileLogger->debug("[BOOT] Route registered: $route");
+                }
             } catch (Throwable $e) {
                 $failed++;
                 $this->fileLogger->logCriticalException($e, 'Failed to register route: ' . $route);

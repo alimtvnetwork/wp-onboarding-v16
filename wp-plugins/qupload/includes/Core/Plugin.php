@@ -61,16 +61,44 @@ class Plugin {
         return self::$instance;
     }
 
+    /**
+     * Check if verbose boot logging is enabled via wp-config.php constant.
+     *
+     * Add `define('QUPLOAD_DEBUG_BOOT', true);` to wp-config.php to enable
+     * per-component init logging for troubleshooting startup issues.
+     */
+    public static function isBootVerbose(): bool {
+        return defined('QUPLOAD_DEBUG_BOOT') && QUPLOAD_DEBUG_BOOT === true;
+    }
+
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
         $startMs = microtime(true);
+        $isVerbose = self::isBootVerbose();
+
+        if ($isVerbose) {
+            $this->fileLogger->debug('[BOOT] Constructor starting', [
+                'version' => PluginConfigType::Version->value,
+                'constant' => 'QUPLOAD_DEBUG_BOOT',
+            ]);
+        }
 
         add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
 
+        if ($isVerbose) {
+            $this->fileLogger->debug('[BOOT] WordPress hooks registered');
+        }
+
         $elapsedMs = round((microtime(true) - $startMs) * 1000, 2);
-        $this->fileLogger->info('Plugin initialized', [
+        $summary = [
             'version' => PluginConfigType::Version->value,
             'timeMs'  => $elapsedMs,
-        ]);
+        ];
+
+        if ($isVerbose) {
+            $summary['bootVerbose'] = true;
+        }
+
+        $this->fileLogger->info('Plugin initialized', $summary);
     }
 }
