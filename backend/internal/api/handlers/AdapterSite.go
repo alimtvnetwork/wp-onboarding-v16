@@ -347,6 +347,10 @@ func (a *SiteServiceAdapter) GetRemoteSiteHealthSummary(ctx context.Context, sit
 	return a.Service.GetRemoteSiteHealthSummary(ctx, siteId)
 }
 
+func (a *SiteServiceAdapter) GetRemoteDebugRoutes(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+	return a.Service.GetRemoteDebugRoutes(ctx, siteId)
+}
+
 // --- User management typed adapter methods ---
 
 func (a *SiteServiceAdapter) ListRemoteUsers(ctx context.Context, siteId int64, query string) (*wordpress.UserListResponse, *apperror.AppError) {

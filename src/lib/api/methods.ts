@@ -834,4 +834,6 @@ export const api = {
     ),
   getRemoteSiteHealthSummary: (siteId: number) =>
     request<SiteHealthSummaryResponse>(`/sites/${siteId}/site-health-summary`),
+  getRemoteDebugRoutes: (siteId: number) =>
+    request<DebugRoutesResponse>(`/sites/${siteId}/debug-routes`),
 };
