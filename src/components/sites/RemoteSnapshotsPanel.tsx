@@ -496,13 +496,21 @@ function SnapshotSettingsTab({
     settings,
     settingsDataUpdatedAt,
     isLoadingSettings,
+    isSettingsError,
+    settingsError,
+    refetchSettings,
     providers,
     isLoadingProviders,
+    isProvidersError,
+    providersError,
+    refetchProviders,
     updateSettings,
     isUpdatingSettings,
     cleanupSnapshots,
     isCleaningUp,
   } = useRemoteSnapshots(siteId);
+
+  const { captureException, openErrorModal } = useErrorStore();
 
   const [localSettings, setLocalSettings] = useState<Partial<SnapshotSettings> | null>(null);
 
@@ -520,6 +528,39 @@ function SnapshotSettingsTab({
     }
   };
 
+  // Build inline diagnostics from query errors
+  const settingsDiag = useMemo(() => {
+    if (!isSettingsError || !settingsError) return null;
+    return extractDiagnostic(settingsError, `/sites/${siteId}/snapshots/settings`, "GET");
+  }, [isSettingsError, settingsError, siteId]);
+
+  const providersDiag = useMemo(() => {
+    if (!isProvidersError || !providersError) return null;
+    return extractDiagnostic(providersError, `/sites/${siteId}/snapshots/providers`, "GET");
+  }, [isProvidersError, providersError, siteId]);
+
+  const openSettingsErrorInModal = useCallback(() => {
+    if (settingsError) {
+      const captured = captureException(settingsError, {
+        source: "SnapshotSettingsTab.settings",
+        endpoint: `/sites/${siteId}/snapshots/settings`,
+        method: "GET",
+      });
+      openErrorModal(captured);
+    }
+  }, [settingsError, captureException, openErrorModal, siteId]);
+
+  const openProvidersErrorInModal = useCallback(() => {
+    if (providersError) {
+      const captured = captureException(providersError, {
+        source: "SnapshotSettingsTab.providers",
+        endpoint: `/sites/${siteId}/snapshots/providers`,
+        method: "GET",
+      });
+      openErrorModal(captured);
+    }
+  }, [providersError, captureException, openErrorModal, siteId]);
+
   if (isLoadingSettings || isLoadingProviders) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -528,7 +569,10 @@ function SnapshotSettingsTab({
     );
   }
 
-  if (!current) {
+  // Show inline diagnostics when settings/providers failed
+  const hasQueryErrors = settingsDiag || providersDiag;
+
+  if (!current && !hasQueryErrors) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
         <AlertCircle className="h-8 w-8" />
