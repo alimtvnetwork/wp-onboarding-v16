@@ -74,6 +74,9 @@ export function buildDelegatedLogsSection(error: CapturedError): string {
     const delegatedAt = (attrs?.RequestDelegatedAt ?? attrs?.requestDelegatedAt) as string | undefined;
     if (delegatedAt) lines.push(`Delegated To: ${delegatedAt}`);
 
+    const namespace = (attrs?.Namespace ?? parsed.Namespace) as string | undefined;
+    if (namespace) lines.push(`Namespace: ${namespace}`);
+
     const requestedAt = (attrs?.RequestedAt ?? attrs?.requestedAt) as string | undefined;
     if (requestedAt) lines.push(`Remote Endpoint: ${requestedAt}`);
 
@@ -136,6 +139,10 @@ export function buildDelegatedErrorLogSection(
     header.push(`  Delegated To: ${delegatedServer?.DelegatedEndpoint || error.requestDelegatedAt}`);
   }
 
+  if (delegatedServer?.Namespace) {
+    header.push(`  Namespace: ${delegatedServer.Namespace}`);
+  }
+
   header.push(`  Error Message: ${error.message}`);
 
   if (delegatedServer) {
@@ -144,6 +151,7 @@ export function buildDelegatedErrorLogSection(
       `    Endpoint: \"${delegatedServer.DelegatedEndpoint}\"`,
       `    Method: \"${delegatedServer.Method}\"`,
       `    Status: ${delegatedServer.StatusCode}`,
+      ...(delegatedServer.Namespace ? [`    Namespace: ${delegatedServer.Namespace}`] : []),
       ...(delegatedServer.AdditionalMessages ? ["    Additional Message:", `        ${delegatedServer.AdditionalMessages}`] : []),
     ].join("\n"));
   }
