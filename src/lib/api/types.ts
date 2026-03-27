@@ -1068,6 +1068,8 @@ export interface SiteSettingsResponse {
   wpDebug: boolean;
   wpDebugLog: boolean;
   wpDebugDisplay: boolean;
+  riseupDebugBoot: boolean;
+  quploadDebugBoot: boolean;
   uploadMaxFilesize: string;
   postMaxSize: string;
   memoryLimit: string;
@@ -1090,6 +1092,8 @@ export interface SiteSettingsUpdate {
   wpDebug?: boolean;
   wpDebugLog?: boolean;
   wpDebugDisplay?: boolean;
+  riseupDebugBoot?: boolean;
+  quploadDebugBoot?: boolean;
   uploadMaxFilesize?: string;
   postMaxSize?: string;
   memoryLimit?: string;

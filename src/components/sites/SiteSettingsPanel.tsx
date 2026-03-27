@@ -222,6 +222,30 @@ export function SiteSettingsPanel({ site, open }: SiteSettingsPanelProps) {
                 disabled={!settings.wpConfigWritable}
               />
             </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">RISEUP_DEBUG_BOOT</Label>
+                <p className="text-xs text-muted-foreground">Verbose plugin init logs (Riseup Asia)</p>
+              </div>
+              <Switch
+                checked={getEffectiveValue("riseupDebugBoot") as boolean}
+                onCheckedChange={(v) => handleToggle("riseupDebugBoot", v)}
+                disabled={!settings.wpConfigWritable}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">QUPLOAD_DEBUG_BOOT</Label>
+                <p className="text-xs text-muted-foreground">Verbose plugin init logs (QUpload)</p>
+              </div>
+              <Switch
+                checked={getEffectiveValue("quploadDebugBoot") as boolean}
+                onCheckedChange={(v) => handleToggle("quploadDebugBoot", v)}
+                disabled={!settings.wpConfigWritable}
+              />
+            </div>
           </CardContent>
         </Card>
 
