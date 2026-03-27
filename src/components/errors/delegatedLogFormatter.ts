@@ -186,6 +186,6 @@ export function buildDelegatedErrorLogSection(
     sections.push(formatIndentedBlock("  stacktrace.txt", unescapeEmbeddedNewlines(sessionDiag.phpStackTraceLog)));
   }
 
-  if (sections.length === 0) return "";
+  if (sections.length === 0 && !delegatedServer && !error.requestDelegatedAt) return "";
   return [...header, ...sections].join("\n");
 }
