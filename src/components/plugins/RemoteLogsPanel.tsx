@@ -115,9 +115,9 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
     );
   }
 
-  const infoLines = plugin.infoLog?.Lines ?? 0;
-  const errorLines = plugin.errorLog?.Lines ?? 0;
-  const stackLines = plugin.stacktrace?.Lines ?? 0;
+  const infoLines = plugin.infoLog?.lines ?? 0;
+  const errorLines = plugin.errorLog?.lines ?? 0;
+  const stackLines = plugin.stacktrace?.lines ?? 0;
 
   // Auto-select the first non-empty log tab
   const defaultLogTab = infoLines > 0 ? "info" : errorLines > 0 ? "error" : stackLines > 0 ? "stacktrace" : "info";
@@ -287,7 +287,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
       const hasAvailablePlugin = data.plugins?.some((p) => p.available) ?? false;
       const hasReadableLogContent =
-        data.plugins?.some((p) => p.infoLog?.Exists || p.errorLog?.Exists || p.stacktrace?.Exists) ?? false;
+        data.plugins?.some((p) => p.infoLog?.exists || p.errorLog?.exists || p.stacktrace?.exists) ?? false;
 
       if (!hasAvailablePlugin) {
         toast.warning("No log retrieval endpoints available — the remote plugin may be outdated.");
@@ -318,9 +318,9 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               namespace: p.namespace,
               label: p.label,
               available: p.available,
-              infoExists: p.infoLog?.Exists,
-              errorExists: p.errorLog?.Exists,
-              stacktraceExists: p.stacktrace?.Exists,
+               infoExists: p.infoLog?.exists,
+               errorExists: p.errorLog?.exists,
+               stacktraceExists: p.stacktrace?.exists,
             })) ?? [],
           },
           timestamp: new Date().toISOString(),
@@ -375,8 +375,8 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
         { label: "STACKTRACE", data: plugin.stacktrace },
       ];
       for (const f of files) {
-        if (f.data?.Exists && f.data.Content) {
-          parts.push(`========== ${plugin.label} — ${f.label} ==========\n${f.data.Content}\n`);
+        if (f.data?.exists && f.data.content) {
+          parts.push(`========== ${plugin.label} — ${f.label} ==========\n${f.data.content}\n`);
         }
       }
     }
@@ -479,13 +479,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const availablePlugins = useMemo(() => {
     const plugins = retrieveData?.plugins.filter((p) => p.available) ?? [];
     const pluginScore = (plugin: PluginLogsData) =>
-      (plugin.infoLog?.Lines ?? 0) + (plugin.errorLog?.Lines ?? 0) + (plugin.stacktrace?.Lines ?? 0);
+      (plugin.infoLog?.lines ?? 0) + (plugin.errorLog?.lines ?? 0) + (plugin.stacktrace?.lines ?? 0);
 
     return [...plugins].sort((a, b) => pluginScore(b) - pluginScore(a));
   }, [retrieveData]);
   const totalLoadedBytes = useMemo(() => {
     return availablePlugins.reduce((sum, plugin) => {
-      return sum + (plugin.infoLog?.TotalSize ?? 0) + (plugin.errorLog?.TotalSize ?? 0) + (plugin.stacktrace?.TotalSize ?? 0);
+      return sum + (plugin.infoLog?.totalSize ?? 0) + (plugin.errorLog?.totalSize ?? 0) + (plugin.stacktrace?.totalSize ?? 0);
     }, 0);
   }, [availablePlugins]);
 
@@ -782,9 +782,9 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
                           <ScrollText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           {availablePlugins.map((p) => {
-                            const info = p.infoLog?.Lines ?? 0;
-                            const err = p.errorLog?.Lines ?? 0;
-                            const stack = p.stacktrace?.Lines ?? 0;
+                            const info = p.infoLog?.lines ?? 0;
+                            const err = p.errorLog?.lines ?? 0;
+                            const stack = p.stacktrace?.lines ?? 0;
                             return (
                               <div key={p.namespace} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                 {availablePlugins.length > 1 && (

@@ -1036,14 +1036,14 @@ export interface RemoteLogsEmailOptions {
 
 // Log Retrieval Types (content viewer)
 export interface LogRetrieveFileData {
-  Exists: boolean;
-  File: string;
-  Path: string;
-  Content: string;
-  Lines: number;
-  TotalLines: number;
-  TotalSize: number;
-  Truncated: boolean;
+  exists: boolean;
+  file: string;
+  path: string;
+  content: string;
+  lines: number;
+  totalLines: number;
+  totalSize: number;
+  truncated: boolean;
 }
 
 export interface PluginLogsData {

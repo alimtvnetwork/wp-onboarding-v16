@@ -149,8 +149,8 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const [wordWrap, setWordWrap] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(false);
 
-  const fileExists = !!file?.Exists;
-  const content = file?.Content || "";
+  const fileExists = !!file?.exists;
+  const content = file?.content || "";
 
   // Parse lines with severity
   const allLines = useMemo(() => {
@@ -175,7 +175,7 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   const handleCopy = useCallback(() => {
     if (!file) return;
     const isFiltered = severityFilter !== "all" || searchTerm;
-    navigator.clipboard.writeText(isFiltered ? getVisibleText() : file.Content);
+    navigator.clipboard.writeText(isFiltered ? getVisibleText() : file.content);
     toast.success(`${label}${isFiltered ? " (filtered)" : ""} copied to clipboard`);
   }, [file, label, severityFilter, searchTerm, getVisibleText]);
 
@@ -270,7 +270,7 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
   }, []);
 
   if (!file) return <p className="text-sm text-muted-foreground py-4 text-center">Not requested</p>;
-  if (!file.Exists) return (
+  if (!file.exists) return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 py-6 text-center">
       <AlertTriangle className="h-5 w-5 text-amber-500" />
       <p className="text-sm text-amber-400 font-medium">No {label} file found</p>
@@ -285,12 +285,12 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
       {/* Metadata row */}
       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
         <Badge variant="outline" className="text-xs font-mono border-primary/30 bg-primary/10 text-primary">
-          {file.Lines} / {file.TotalLines} lines
+          {file.lines} / {file.totalLines} lines
         </Badge>
         <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/50">
-          {formatBytes(file.TotalSize)}
+          {formatBytes(file.totalSize)}
         </Badge>
-        {file.Truncated && <Badge variant="destructive" className="text-xs">Truncated</Badge>}
+        {file.truncated && <Badge variant="destructive" className="text-xs">Truncated</Badge>}
 
         {/* Severity counts */}
         {counts.error > 0 && (
@@ -389,10 +389,10 @@ export function LogContentViewer({ file, label }: LogContentViewerProps) {
         </div>
       )}
 
-      {file.Truncated && (
+      {file.truncated && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-muted-foreground">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-          Showing last {file.Lines} of {file.TotalLines} lines. Increase max lines to see more.
+          Showing last {file.lines} of {file.totalLines} lines. Increase max lines to see more.
         </div>
       )}
 
