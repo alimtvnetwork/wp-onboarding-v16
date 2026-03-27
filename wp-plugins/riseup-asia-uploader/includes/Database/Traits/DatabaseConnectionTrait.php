@@ -35,11 +35,9 @@ trait DatabaseConnectionTrait {
         }
 
         $this->isInitAttempted = true;
-        $this->fileLogger->info('Starting database initialization');
 
         try {
             $this->dbPath = $this->getDatabasePath();
-            $this->fileLogger->info('Database path resolved', array('path' => $this->dbPath));
 
             return $this->initDatabase();
         } catch (Throwable $e) {
@@ -53,9 +51,7 @@ trait DatabaseConnectionTrait {
      * Get the database file path.
      */
     private function getDatabasePath() {
-        $this->fileLogger->debug('Resolving database path');
         $baseDir = $this->fileLogger->getBaseDir();
-        $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
         $isDirCreationFailed = (PathHelper::makeDirectory($baseDir, true) === false);
 
@@ -66,7 +62,6 @@ trait DatabaseConnectionTrait {
         }
 
         $dbPath = PathHelper::getDbPath();
-        $this->fileLogger->info('Database path set', array('path' => $dbPath));
 
         return $dbPath;
     }
@@ -75,7 +70,7 @@ trait DatabaseConnectionTrait {
      * Initialize the database connection and create tables.
      */
     private function initDatabase() {
-        $this->fileLogger->info('Initializing PDO connection');
+        $initStart = microtime(true);
 
         try {
             $this->pdo = InitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
@@ -84,12 +79,15 @@ trait DatabaseConnectionTrait {
                 return false;
             }
 
-            $this->fileLogger->debug('Configuring ORM');
             Orm::configure($this->pdo);
-            $this->fileLogger->info('ORM configured');
 
             $this->createTables();
-            $this->fileLogger->info('Database initialization complete');
+
+            $initMs = round((microtime(true) - $initStart) * 1000, 2);
+            $this->fileLogger->info('Database ready', array(
+                'path'   => $this->dbPath,
+                'timeMs' => $initMs,
+            ));
 
             return true;
         } catch (Throwable $e) {
@@ -104,16 +102,17 @@ trait DatabaseConnectionTrait {
      * Create database tables (migration orchestrator).
      */
     private function createTables() {
-        $this->fileLogger->info('Running database migration - creating/updating tables');
 
         try {
             $this->ensureSchemaVersionTable();
             $current = $this->getCurrentSchemaVersion();
-            $this->fileLogger->info('Current schema version', array('version' => $current));
 
             $this->runAllMigrations($current);
 
-            $this->fileLogger->info('Database migration complete');
+            $newVersion = $this->getCurrentSchemaVersion();
+            if ($newVersion > $current) {
+                $this->fileLogger->info('Database migrated', array('from' => $current, 'to' => $newVersion));
+            }
         } catch (PDOException $e) {
             $this->fileLogger->logCriticalException($e, 'Database migration failed');
         }

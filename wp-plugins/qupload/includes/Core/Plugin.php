@@ -63,10 +63,14 @@ class Plugin {
 
     private function __construct() {
         $this->fileLogger = FileLogger::getInstance();
-        $this->fileLogger->info('Plugin constructor starting', ['version' => PluginConfigType::Version->value]);
+        $startMs = microtime(true);
 
         add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
 
-        $this->fileLogger->info('Plugin constructor complete');
+        $elapsedMs = round((microtime(true) - $startMs) * 1000, 2);
+        $this->fileLogger->info('Plugin initialized', [
+            'version' => PluginConfigType::Version->value,
+            'timeMs'  => $elapsedMs,
+        ]);
     }
 }
