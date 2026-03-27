@@ -21,7 +21,6 @@ use WP_REST_Response;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\ResponseKeyType;
-use QUpload\Helpers\EnvelopeBuilder;
 use QUpload\Helpers\PathHelper;
 
 trait LogRetrievalTrait
@@ -68,10 +67,8 @@ trait LogRetrievalTrait
             );
         }
 
-        return EnvelopeBuilder::success('Log files retrieved', HttpStatusType::Ok->value)
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/logs/retrieve')
-            ->setSingleResult($result)
-            ->toResponse();
+        // Flat response — NOT envelope-wrapped (Go backend unmarshals directly)
+        return new WP_REST_Response($result, HttpStatusType::Ok->value);
     }
 
     /** Resolve retrieval settings from query params with defaults. */

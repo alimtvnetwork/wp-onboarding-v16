@@ -21,7 +21,6 @@ use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
-use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait LogRetrievalTrait
 {
@@ -67,11 +66,8 @@ trait LogRetrievalTrait
             );
         }
 
-        return EnvelopeBuilder::success('Log files retrieved', HttpStatusType::Ok->value)
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/logs/retrieve')
-            ->setSingleResult($result)
-            ->setDelegatedAt(home_url())
-            ->toResponse();
+        // Flat response — NOT envelope-wrapped (Go backend unmarshals directly)
+        return new WP_REST_Response($result, HttpStatusType::Ok->value);
     }
 
     /** Resolve retrieval settings from query params with defaults. */
