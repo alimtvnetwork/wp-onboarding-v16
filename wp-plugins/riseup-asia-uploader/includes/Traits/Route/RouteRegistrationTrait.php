@@ -57,6 +57,7 @@ trait RouteRegistrationTrait
             'user'           => fn() => $this->registerUserRoutes($safeRegister),
             'cloud_storage'  => fn() => $this->registerCloudStorageRoutes($safeRegister),
             'site_settings'  => fn() => $this->registerSiteSettingsRoutes($safeRegister),
+            'debug'          => fn() => $this->registerDebugRoutes($safeRegister),
             'catch_all'      => fn() => $this->registerCatchAllRoute($safeRegister),
         );
 
@@ -479,6 +480,19 @@ trait RouteRegistrationTrait
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleSiteHealthSummary'),
             'permission_callback' => $this->buildPermissionCallback('site_health_summary', $settingsPerm),
+        ));
+    }
+
+    /**
+     * Register debug/diagnostic routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerDebugRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::DebugRoutes->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleDebugRoutes'),
+            'permission_callback' => $this->buildPermissionCallback('debug_routes', array($this, 'checkPluginPermission')),
         ));
     }
 

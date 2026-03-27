@@ -106,6 +106,9 @@ enum EndpointType: string
     case SiteSettings        = 'site-settings';
     case SiteHealthSummary   = 'site-health-summary';
 
+    // ── Debug / Diagnostics ─────────────────────────────────────────
+    case DebugRoutes         = 'debug/routes';
+
     // ── Cloud Storage ───────────────────────────────────────────────
     case CloudStorageAccounts        = 'cloud-storage/accounts';
     case CloudStorageAccountId       = 'cloud-storage/accounts/(?P<id>\d+)';

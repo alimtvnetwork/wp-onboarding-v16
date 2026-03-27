@@ -61,6 +61,7 @@ use RiseupAsia\Traits\User\UserCrudTrait;
 use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
 use RiseupAsia\Traits\SiteSettings\SiteSettingsTrait;
 use RiseupAsia\Traits\SiteSettings\SiteHealthSummaryTrait;
+use RiseupAsia\Traits\Debug\DebugRoutesTrait;
 
 class Plugin {
     // Wave 1 traits
@@ -106,6 +107,7 @@ class Plugin {
     // Wave 6 traits
     use SiteSettingsTrait;
     use SiteHealthSummaryTrait;
+    use DebugRoutesTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
