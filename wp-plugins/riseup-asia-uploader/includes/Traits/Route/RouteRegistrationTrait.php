@@ -46,19 +46,40 @@ trait RouteRegistrationTrait
             }
         };
 
-        $this->registerUtilityRoutes($safeRegister);
-        $this->registerPluginRoutes($safeRegister);
-        $this->registerPostRoutes($safeRegister);
-        $this->registerLogRoutes($safeRegister);
-        $this->registerLogManagementRoutes($safeRegister);
-        $this->registerAgentRoutes($safeRegister, $failed);
-        $this->registerSnapshotRoutes($safeRegister);
-        $this->registerUserRoutes($safeRegister);
-        $this->registerCloudStorageRoutes($safeRegister);
-        $this->registerSiteSettingsRoutes($safeRegister);
-        $this->registerCatchAllRoute($safeRegister);
+        $groups = array(
+            'utility'        => fn() => $this->registerUtilityRoutes($safeRegister),
+            'plugin'         => fn() => $this->registerPluginRoutes($safeRegister),
+            'post'           => fn() => $this->registerPostRoutes($safeRegister),
+            'log'            => fn() => $this->registerLogRoutes($safeRegister),
+            'log_management' => fn() => $this->registerLogManagementRoutes($safeRegister),
+            'agent'          => fn() => $this->registerAgentRoutes($safeRegister, $failed),
+            'snapshot'       => fn() => $this->registerSnapshotRoutes($safeRegister),
+            'user'           => fn() => $this->registerUserRoutes($safeRegister),
+            'cloud_storage'  => fn() => $this->registerCloudStorageRoutes($safeRegister),
+            'site_settings'  => fn() => $this->registerSiteSettingsRoutes($safeRegister),
+            'catch_all'      => fn() => $this->registerCatchAllRoute($safeRegister),
+        );
 
-        $this->fileLogger->info("Routes registered: $registered OK, $failed failed", array('namespace' => $namespace));
+        $groupsFailed = array();
+
+        foreach ($groups as $groupName => $registrar) {
+            try {
+                $registrar();
+            } catch (Throwable $e) {
+                $groupsFailed[] = $groupName;
+                $this->fileLogger->logException($e, "Route group '$groupName' failed — remaining groups unaffected");
+            }
+        }
+
+        $hasGroupFailures = (count($groupsFailed) > 0);
+        $groupFailureSuffix = $hasGroupFailures
+            ? ', groups failed: ' . implode(', ', $groupsFailed)
+            : '';
+
+        $this->fileLogger->info(
+            "Routes registered: $registered OK, $failed failed" . $groupFailureSuffix,
+            array('namespace' => $namespace),
+        );
     }
 
     /**

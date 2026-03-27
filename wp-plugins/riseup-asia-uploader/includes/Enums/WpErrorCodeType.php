@@ -17,6 +17,7 @@ enum WpErrorCodeType: string
     /** WordPress core error codes — values must match WP conventions. */
     case RestForbidden = 'rest_forbidden';
     case RestDisabled  = 'rest_disabled';
+    case RestNoRoute   = 'rest_no_route';
 
     /** Custom plugin error codes — PascalCase values per enum standard. */
     case DatabaseError     = 'DbError';
