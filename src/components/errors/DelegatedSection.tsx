@@ -79,32 +79,34 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
               PHP Stack Trace ({phpStackFrames.length} frames)
             </h4>
           </div>
-          <table className="w-full text-xs">
-            <thead className="bg-muted">
-              <tr>
-                <th className="text-left p-2 font-medium text-muted-foreground">#</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">File</th>
-                <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
-              </tr>
-            </thead>
-            <tbody>
-              {phpStackFrames.map((frame, index) => (
-                <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
-                  <td className="p-2 font-mono text-muted-foreground">{index + 1}</td>
-                  <td className="p-2 font-mono">
-                    <span className={cn(index === 0 ? "text-primary font-semibold" : "text-foreground")}>
-                      {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
-                    </span>
-                  </td>
-                  <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
-                    {frame.fileBase || frame.file || 'unknown'}
-                  </td>
-                  <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs min-w-[480px]">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="text-left p-2 font-medium text-muted-foreground w-8">#</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                  <th className="text-right p-2 font-medium text-muted-foreground w-12">Line</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {phpStackFrames.map((frame, index) => (
+                  <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
+                    <td className="p-2 font-mono text-muted-foreground">{index + 1}</td>
+                    <td className="p-2 font-mono">
+                      <span className={cn(index === 0 ? "text-primary font-semibold" : "text-foreground")}>
+                        {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
+                      </span>
+                    </td>
+                    <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
+                      {frame.fileBase || frame.file || 'unknown'}
+                    </td>
+                    <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="flex justify-end p-2 bg-muted/50 border-t">
             <Button variant="ghost" size="sm" onClick={() => {
               const text = phpStackFrames.map((f, i) => {
