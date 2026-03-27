@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Copy, Globe, Network, AlertTriangle, RefreshCw
+  Copy, Globe, Network, AlertTriangle, RefreshCw, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSessionDiagnostics } from "@/hooks/useSessionDiagnostics";
 import type { PHPStackFrame } from "./ErrorModalTypes";
+import { buildDelegatedErrorLogSection } from "./delegatedLogFormatter";
 
 interface DelegatedSectionProps {
   error: CapturedError;
@@ -23,9 +24,31 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
   const delegatedServer = error.envelopeErrors?.DelegatedRequestServer;
   const delegatedStackTrace = delegatedServer?.StackTrace;
   const sessionPhpFrames = sessionDiag?.stackTrace?.php;
+  const delegatedLogContent = buildDelegatedErrorLogSection(error, sessionDiag);
 
   return (
     <div className="space-y-4">
+      {delegatedLogContent && (
+        <div className="rounded-lg border-2 border-orange-500/30 bg-orange-500/5">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-orange-500/20 bg-orange-500/10 rounded-t-lg">
+            <h4 className="text-sm font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-300">
+              <FileText className="h-4 w-4" />
+              Delegated Server Log
+              <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-600 dark:text-orange-300">delegated.log</Badge>
+              <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-600 dark:text-orange-300">Synthesized</Badge>
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated server log", delegatedLogContent)}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[260px]">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+              {delegatedLogContent}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
+
       {/* Delegated Request Info */}
       {delegatedServer && (
         <div className="rounded-md border border-orange-500/30 bg-orange-500/5 p-3 space-y-2">
@@ -277,7 +300,7 @@ export function DelegatedSection({ error, phpStackFrames, copySection }: Delegat
       )}
 
       {/* Empty state */}
-      {!delegatedServer && phpStackFrames.length === 0 && !envelopeDelegatedStack?.length && !sessionPhpFrames?.length && !sessionDiag?.phpStackTraceLog && !(typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0) && !sessionLoading && (
+      {!delegatedLogContent && !delegatedServer && phpStackFrames.length === 0 && !envelopeDelegatedStack?.length && !sessionPhpFrames?.length && !sessionDiag?.phpStackTraceLog && !(typeof error.context?.remoteResponseBody === 'string' && error.context.remoteResponseBody.length > 0) && !sessionLoading && (
         <div className="text-center py-8 text-muted-foreground">
           <Globe className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No delegated server data available</p>
