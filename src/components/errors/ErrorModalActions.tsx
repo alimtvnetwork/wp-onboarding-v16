@@ -4,11 +4,12 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, Download, FileCode2, FileDown, FileText, Server, Terminal, ChevronDown } from "lucide-react";
+import { Copy, Download, FileCode2, FileDown, FileText, Globe, Server, Terminal, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { toClipboardText } from "@/lib/logText";
 import { api } from "@/lib/api";
 import { generateErrorReport, generateCompactReport } from "./errorReportGenerator";
+import { buildDelegatedErrorLogSection, buildDelegatedLogsSection } from "./delegatedLogFormatter";
 import type { AppInfo } from "./ErrorModalTypes";
 
 interface DownloadDropdownProps extends AppInfo {
@@ -213,6 +214,36 @@ export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime,
           }}>
             <FileText className="h-4 w-4 mr-2" />
             Copy log.txt
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => {
+            const delegatedLog = buildDelegatedErrorLogSection(error);
+            const delegatedParsed = buildDelegatedLogsSection(error);
+            const sections: string[] = [];
+
+            if (delegatedLog) sections.push(delegatedLog);
+            else if (delegatedParsed) sections.push(`Delegated Logs:\n${delegatedParsed}`);
+
+            const delegatedServer = error.envelopeErrors?.DelegatedRequestServer;
+            if (delegatedServer?.Response) {
+              const resp = typeof delegatedServer.Response === "string"
+                ? delegatedServer.Response
+                : JSON.stringify(delegatedServer.Response, null, 2);
+              if (!sections.some(s => s.includes(resp.slice(0, 50)))) {
+                sections.push(`Response Body:\n${resp}`);
+              }
+            }
+
+            if (sections.length === 0) {
+              toast.info("No delegated diagnostics available for this error");
+              return;
+            }
+
+            navigator.clipboard.writeText(toClipboardText(sections.join("\n\n---\n\n")));
+            toast.success("Copied delegated diagnostics to clipboard");
+          }}>
+            <Globe className="h-4 w-4 mr-2 text-orange-500" />
+            Copy Delegated Diagnostics
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
