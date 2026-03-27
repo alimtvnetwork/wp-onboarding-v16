@@ -113,6 +113,7 @@ trait InvalidRouteTrait
         $data = $this->injectErrorMetadata($data);
         $errorCode = $this->resolveErrorCode($data);
         $data = $this->injectErrorCategory($data, $errorCode);
+        $data = $this->injectRouteDiagnostics($data, $errorCode, $route);
         $this->logRestApiError($route, $status, $data, $errorCode);
         $response->set_data($data);
 
@@ -141,6 +142,10 @@ trait InvalidRouteTrait
     }
 
     private function classifyErrorCode(WpErrorCodeType $errorCode): string {
+        if ($errorCode->isRoutingError()) {
+
+            return 'routing';
+        }
         if ($errorCode->isAuthError()) {
 
             return 'authentication';
@@ -159,6 +164,51 @@ trait InvalidRouteTrait
         }
 
         return 'general';
+    }
+
+    /**
+     * Inject route diagnostics when a rest_no_route 404 is detected.
+     * Lists all registered routes for the plugin namespace to help diagnose
+     * missing route registration (e.g., a sub-registrar group that threw).
+     */
+    private function injectRouteDiagnostics(array $data, ?WpErrorCodeType $errorCode, string $route): array {
+        $isRoutingError = ($errorCode !== null && $errorCode->isRoutingError());
+
+        if ($isRoutingError === false) {
+
+            return $data;
+        }
+
+        $namespace = PluginConfigType::apiFullNamespace();
+        $prefix = '/' . $namespace;
+
+        $server = rest_get_server();
+        $allRoutes = array_keys($server->get_routes($namespace));
+
+        $pluginRoutes = array();
+
+        foreach ($allRoutes as $routePattern) {
+            $isPluginRoute = (strpos($routePattern, $prefix) === 0);
+
+            if ($isPluginRoute) {
+                $pluginRoutes[] = $routePattern;
+            }
+        }
+
+        $data['_routeDiagnostics'] = array(
+            'requestedRoute'   => $route,
+            'namespace'        => $namespace,
+            'registeredCount'  => count($pluginRoutes),
+            'registeredRoutes' => $pluginRoutes,
+            'hint'             => 'If expected routes are missing, check the plugin error log for "Route group ... failed" messages.',
+        );
+
+        $this->fileLogger->warn('Route not found — diagnostics attached', array(
+            'route'           => $route,
+            'registeredCount' => count($pluginRoutes),
+        ));
+
+        return $data;
     }
 
     private function injectErrorMetadata(array $data): array {
