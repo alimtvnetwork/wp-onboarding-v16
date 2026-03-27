@@ -899,6 +899,7 @@ function SnapshotSettingsTab({
           Run Cleanup Now
         </Button>
       </div>
+      </>}
     </div>
   );
 }
