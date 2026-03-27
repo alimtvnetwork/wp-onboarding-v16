@@ -66,6 +66,7 @@ import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
 import { SnapshotConfigPanel } from "@/components/settings/SnapshotConfigPanel";
 import { useErrorStore } from "@/stores/errorStore";
+import { InlineErrorDiagnostic, extractDiagnostic } from "@/components/plugins/InlineErrorDiagnostic";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 
 interface RemoteSnapshotsPanelProps {
@@ -585,6 +586,37 @@ function SnapshotSettingsTab({
 
   return (
     <div className="space-y-4 py-2">
+      {/* Inline Error Diagnostics */}
+      {settingsDiag && (
+        <InlineErrorDiagnostic
+          diagnostic={settingsDiag}
+          onOpenGlobalModal={openSettingsErrorInModal}
+          onDismiss={() => refetchSettings()}
+        />
+      )}
+      {providersDiag && (
+        <InlineErrorDiagnostic
+          diagnostic={providersDiag}
+          onOpenGlobalModal={openProvidersErrorInModal}
+          onDismiss={() => refetchProviders()}
+        />
+      )}
+
+      {/* If both failed and no settings, show retry */}
+      {!current && hasQueryErrors && (
+        <div className="flex flex-col items-center justify-center py-8 gap-3 text-muted-foreground">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <p className="text-sm font-medium text-destructive">Settings failed to load</p>
+          <p className="text-xs text-center max-w-md">
+            Review the error diagnostics above or open them in the full error modal for details.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => { refetchSettings(); refetchProviders(); }}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+          </Button>
+        </div>
+      )}
+
+      {current && <>
       {/* Sync Indicator */}
       {settingsDataUpdatedAt > 0 && (
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-accent/40 border border-border/50">
