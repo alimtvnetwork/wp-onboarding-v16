@@ -52,7 +52,7 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 				endpoint = basePath + "?" + queryString
 			}
 
-			// Flat response — NOT envelope-wrapped (matches /logs/status pattern)
+			// Try flat response first (v2.31.0+), fall back to envelope (v2.30.0)
 			result := wordpress.DoApiCall[wordpress.LogsRetrievePhpResponse](client, wordpress.ApiCallInput{
 				Method:    httpmethod.Get,
 				Endpoint:  endpoint,
@@ -71,6 +71,22 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 			}
 
 			php := result.Value()
+
+			// Backward compat: if flat unmarshal yielded no log data, try envelope unwrap (v2.30.0)
+			if php.InfoLog == nil && php.ErrorLog == nil && php.StacktraceLog == nil {
+				envelopeResult := wordpress.DoApiCall[wordpress.PhpEnvelope[wordpress.LogsRetrievePhpResponse]](client, wordpress.ApiCallInput{
+					Method:    httpmethod.Get,
+					Endpoint:  endpoint,
+					Operation: operationtype.RetrieveLogs,
+				})
+				if !envelopeResult.HasError() {
+					unwrapped, unwrapErr := wordpress.UnwrapPhpResult(envelopeResult.Value())
+					if unwrapErr == nil {
+						php = unwrapped
+					}
+				}
+			}
+
 			pluginData.Available = true
 			pluginData.InfoLog = php.InfoLog
 			pluginData.ErrorLog = php.ErrorLog
