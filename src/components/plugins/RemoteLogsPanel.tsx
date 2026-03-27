@@ -295,11 +295,46 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       }
 
       if ((status?.files?.length ?? 0) > 0 && !hasReadableLogContent) {
-        const mismatchError = new Error(
-          "Remote logs status reported files, but retrieve returned no readable log content."
-        );
+        // Build a synthetic ApiError with response context so the Delegated Logs tab
+        // shows the actual response body and endpoint info (see issue 018).
+        const delegatedAt = response.envelope?.attributes?.RequestDelegatedAt;
+        const responseBodyStr = JSON.stringify(data, null, 2);
+        const mismatchApiError: import("@/lib/api/types").ApiError = {
+          code: "E9003",
+          message: "Remote logs status reported files, but retrieve returned no readable log content.",
+          details: `Retrieve returned ${data.plugins?.length ?? 0} plugin(s) but none had readable log content. Status reported ${status?.files?.length ?? 0} file(s).`,
+          context: {
+            source: "RemoteLogsPanel",
+            remoteResponseBody: responseBodyStr,
+            ...(delegatedAt ? { requestDelegatedAt: delegatedAt } : {}),
+            delegatedRequestServer: {
+              DelegatedEndpoint: endpoint,
+              Method: "GET",
+              StatusCode: 200,
+              Namespace: data.plugins?.[0]?.namespace || "",
+            },
+            statusFiles: status?.files?.map(f => `${f.name} (${f.lineCount} lines, ${f.sizeBytes}B)`) ?? [],
+            retrievePlugins: data.plugins?.map(p => ({
+              namespace: p.namespace,
+              label: p.label,
+              available: p.available,
+              infoExists: p.infoLog?.Exists,
+              errorExists: p.errorLog?.Exists,
+              stacktraceExists: p.stacktrace?.Exists,
+            })) ?? [],
+          },
+          timestamp: new Date().toISOString(),
+        };
+        const { captureError, openErrorModal } = useErrorStore.getState();
+        const mismatchError = new Error(mismatchApiError.message);
         captureInlineError(mismatchError, endpoint, "GET");
-        surfaceError(mismatchError, endpoint, "GET");
+        const captured = captureError(mismatchApiError, {
+          endpoint,
+          method: "GET",
+          responseStatus: 200,
+          context: { source: "RemoteLogsPanel" },
+        });
+        openErrorModal(captured);
       }
     } catch (err) {
       setRetrieveData(null);
