@@ -79,6 +79,7 @@ const (
 	GetSiteSettings
 	UpdateSiteSettings
 	GetSiteHealthSummary
+	GetDebugRoutes
 )
 
 var variantLabels = [...]string{
@@ -151,6 +152,7 @@ var variantLabels = [...]string{
 	GetSiteSettings:           "GetSiteSettings",
 	UpdateSiteSettings:        "UpdateSiteSettings",
 	GetSiteHealthSummary:      "GetSiteHealthSummary",
+	GetDebugRoutes:            "GetDebugRoutes",
 }
 
 var variantValues = [...]string{
@@ -223,6 +225,7 @@ var variantValues = [...]string{
 	GetSiteSettings:           "get site settings",
 	UpdateSiteSettings:        "update site settings",
 	GetSiteHealthSummary:      "get site health summary",
+	GetDebugRoutes:            "get debug routes",
 }
 
 func (v Variant) String() string  { return v.Value() }

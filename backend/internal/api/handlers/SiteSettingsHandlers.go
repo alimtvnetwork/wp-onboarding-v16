@@ -53,3 +53,11 @@ var GetRemoteSiteHealthSummary = handleSiteActionById(
 		return Services.SiteService.GetRemoteSiteHealthSummary(ctx, siteId)
 	},
 )
+
+// GetRemoteDebugRoutes returns registered REST API routes from a remote WordPress site
+var GetRemoteDebugRoutes = handleSiteActionById(
+	apperror.ErrWPConnection,
+	func(ctx context.Context, siteId int64) (any, *apperror.AppError) {
+		return Services.SiteService.GetRemoteDebugRoutes(ctx, siteId)
+	},
+)
