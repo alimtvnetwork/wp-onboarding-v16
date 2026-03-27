@@ -42,6 +42,30 @@ The retrieve call **succeeded** — the backend returned 200 OK with plugin data
 1. **Response data not preserved**: `requireSuccess` discards the envelope metadata on success.
 2. **Mismatch error lacks context**: The plain `Error` carries no API response data for the error modal.
 
+## Additional Root Cause Found
+
+### API Key Casing Mismatch (Frontend boundary)
+
+The `/sites/:id/remote-logs/retrieve` response is a **non-envelope JSON** payload, so `fetchRequest()` passes it through `transformKeys()`. That converts nested file objects from PascalCase to camelCase:
+
+```json
+{
+  "infoLog": {
+    "exists": true,
+    "content": "...",
+    "lines": 200
+  }
+}
+```
+
+But `RemoteLogsPanel` and `LogContentViewer` were still reading `Exists`, `Content`, `Lines`, etc. As a result:
+
+- the viewer treated real files as missing
+- the content score stayed zero
+- the mismatch detector incorrectly raised **E9003** even though the response body already contained logs
+
+This is why the error modal showed a populated delegated response body while the UI still claimed no readable log content.
+
 ## Solution
 
 ### Fix: Attach response data to the mismatch error
@@ -60,4 +84,6 @@ This ensures the Delegated Logs tab shows:
 
 | File | Change |
 |------|--------|
-| `src/components/plugins/RemoteLogsPanel.tsx` | Replace `new Error()` + `surfaceError()` with `captureError()` carrying response context |
+| `src/components/plugins/RemoteLogsPanel.tsx` | Capture mismatch with delegated response context and read camelCase retrieve fields |
+| `src/components/plugins/LogContentViewer.tsx` | Read camelCase file fields from transformed API payload |
+| `src/lib/api/types.ts` | Update log retrieve types to camelCase to match API boundary |
