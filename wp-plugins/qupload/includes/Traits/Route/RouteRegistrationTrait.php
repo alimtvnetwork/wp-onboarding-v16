@@ -46,6 +46,7 @@ trait RouteRegistrationTrait
             'core'              => fn() => $this->registerCoreRoutes($safeRegister),
             'machine_management' => fn() => $this->registerMachineManagementRoutes($safeRegister),
             'log_management'    => fn() => $this->registerLogManagementRoutes($safeRegister),
+            'debug'             => fn() => $this->registerDebugRoutes($safeRegister),
         ];
 
         $groupsFailed = [];
