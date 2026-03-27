@@ -136,6 +136,10 @@ export function buildDelegatedErrorLogSection(
     header.push(`  Delegated To: ${delegatedServer?.DelegatedEndpoint || error.requestDelegatedAt}`);
   }
 
+  if (delegatedServer?.Namespace) {
+    header.push(`  Namespace: ${delegatedServer.Namespace}`);
+  }
+
   header.push(`  Error Message: ${error.message}`);
 
   if (delegatedServer) {
@@ -144,6 +148,7 @@ export function buildDelegatedErrorLogSection(
       `    Endpoint: \"${delegatedServer.DelegatedEndpoint}\"`,
       `    Method: \"${delegatedServer.Method}\"`,
       `    Status: ${delegatedServer.StatusCode}`,
+      ...(delegatedServer.Namespace ? [`    Namespace: ${delegatedServer.Namespace}`] : []),
       ...(delegatedServer.AdditionalMessages ? ["    Additional Message:", `        ${delegatedServer.AdditionalMessages}`] : []),
     ].join("\n"));
   }
