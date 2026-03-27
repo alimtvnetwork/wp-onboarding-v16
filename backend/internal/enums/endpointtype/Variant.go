@@ -180,6 +180,7 @@ var variantLabels = [...]string{
 	CloudStorageRestore:             "CloudStorageRestore",
 	SiteSettings:                    "SiteSettings",
 	SiteHealthSummary:               "SiteHealthSummary",
+	DebugRoutes:                     "DebugRoutes",
 }
 
 var variantValues = [...]string{
