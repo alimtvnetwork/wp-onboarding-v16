@@ -66,6 +66,7 @@ import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
 import { SnapshotConfigPanel } from "@/components/settings/SnapshotConfigPanel";
 import { useErrorStore } from "@/stores/errorStore";
+import { InlineErrorDiagnostic, extractDiagnostic } from "@/components/plugins/InlineErrorDiagnostic";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 
 interface RemoteSnapshotsPanelProps {
@@ -496,13 +497,21 @@ function SnapshotSettingsTab({
     settings,
     settingsDataUpdatedAt,
     isLoadingSettings,
+    isSettingsError,
+    settingsError,
+    refetchSettings,
     providers,
     isLoadingProviders,
+    isProvidersError,
+    providersError,
+    refetchProviders,
     updateSettings,
     isUpdatingSettings,
     cleanupSnapshots,
     isCleaningUp,
   } = useRemoteSnapshots(siteId);
+
+  const { captureException, openErrorModal } = useErrorStore();
 
   const [localSettings, setLocalSettings] = useState<Partial<SnapshotSettings> | null>(null);
 
@@ -520,6 +529,39 @@ function SnapshotSettingsTab({
     }
   };
 
+  // Build inline diagnostics from query errors
+  const settingsDiag = useMemo(() => {
+    if (!isSettingsError || !settingsError) return null;
+    return extractDiagnostic(settingsError, `/sites/${siteId}/snapshots/settings`, "GET");
+  }, [isSettingsError, settingsError, siteId]);
+
+  const providersDiag = useMemo(() => {
+    if (!isProvidersError || !providersError) return null;
+    return extractDiagnostic(providersError, `/sites/${siteId}/snapshots/providers`, "GET");
+  }, [isProvidersError, providersError, siteId]);
+
+  const openSettingsErrorInModal = useCallback(() => {
+    if (settingsError) {
+      const captured = captureException(settingsError, {
+        source: "SnapshotSettingsTab.settings",
+        endpoint: `/sites/${siteId}/snapshots/settings`,
+        method: "GET",
+      });
+      openErrorModal(captured);
+    }
+  }, [settingsError, captureException, openErrorModal, siteId]);
+
+  const openProvidersErrorInModal = useCallback(() => {
+    if (providersError) {
+      const captured = captureException(providersError, {
+        source: "SnapshotSettingsTab.providers",
+        endpoint: `/sites/${siteId}/snapshots/providers`,
+        method: "GET",
+      });
+      openErrorModal(captured);
+    }
+  }, [providersError, captureException, openErrorModal, siteId]);
+
   if (isLoadingSettings || isLoadingProviders) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -528,7 +570,10 @@ function SnapshotSettingsTab({
     );
   }
 
-  if (!current) {
+  // Show inline diagnostics when settings/providers failed
+  const hasQueryErrors = settingsDiag || providersDiag;
+
+  if (!current && !hasQueryErrors) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
         <AlertCircle className="h-8 w-8" />
@@ -541,6 +586,37 @@ function SnapshotSettingsTab({
 
   return (
     <div className="space-y-4 py-2">
+      {/* Inline Error Diagnostics */}
+      {settingsDiag && (
+        <InlineErrorDiagnostic
+          diagnostic={settingsDiag}
+          onOpenGlobalModal={openSettingsErrorInModal}
+          onDismiss={() => refetchSettings()}
+        />
+      )}
+      {providersDiag && (
+        <InlineErrorDiagnostic
+          diagnostic={providersDiag}
+          onOpenGlobalModal={openProvidersErrorInModal}
+          onDismiss={() => refetchProviders()}
+        />
+      )}
+
+      {/* If both failed and no settings, show retry */}
+      {!current && hasQueryErrors && (
+        <div className="flex flex-col items-center justify-center py-8 gap-3 text-muted-foreground">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <p className="text-sm font-medium text-destructive">Settings failed to load</p>
+          <p className="text-xs text-center max-w-md">
+            Review the error diagnostics above or open them in the full error modal for details.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => { refetchSettings(); refetchProviders(); }}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+          </Button>
+        </div>
+      )}
+
+      {current && <>
       {/* Sync Indicator */}
       {settingsDataUpdatedAt > 0 && (
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-accent/40 border border-border/50">
@@ -823,6 +899,7 @@ function SnapshotSettingsTab({
           Run Cleanup Now
         </Button>
       </div>
+      </>}
     </div>
   );
 }
@@ -1403,33 +1480,29 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : isError && !initialLoadRef.current ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-                    <AlertCircle className="h-8 w-8 text-destructive/60" />
-                    <p className="text-sm font-medium">Failed to load snapshots</p>
-                    {snapshotError?.message && (
-                      <p className="text-xs text-destructive/80 max-w-[300px] text-center break-all">{snapshotError.message}</p>
-                    )}
-                    <div className="flex gap-2 mt-1">
-                      <Button variant="outline" size="sm" onClick={() => refetch()}>
-                        Retry
-                      </Button>
-                      {snapshotError && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const captured = captureException(snapshotError, {
-                              source: 'RemoteSnapshotsPanel.fetchSnapshots',
-                              endpoint: `/sites/${site.id}/snapshots`,
-                              method: 'GET',
-                            });
-                            openErrorModal(captured);
-                          }}
-                        >
-                          View Error
+                  <div className="space-y-3 py-4">
+                    {snapshotError ? (
+                      <InlineErrorDiagnostic
+                        diagnostic={extractDiagnostic(snapshotError, `/sites/${site.id}/snapshots`, "GET")}
+                        onDismiss={() => refetch()}
+                        onOpenGlobalModal={() => {
+                          const captured = captureException(snapshotError, {
+                            source: 'RemoteSnapshotsPanel.fetchSnapshots',
+                            endpoint: `/sites/${site.id}/snapshots`,
+                            method: 'GET',
+                          });
+                          openErrorModal(captured);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
+                        <AlertCircle className="h-8 w-8 text-destructive/60" />
+                        <p className="text-sm font-medium">Failed to load snapshots</p>
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                          Retry
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ) : snapshots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground animate-fade-in">
