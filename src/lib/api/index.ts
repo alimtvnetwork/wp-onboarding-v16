@@ -97,6 +97,8 @@ export type {
   SiteSettingsUpdate,
   SiteSettingsUpdateResponse,
   SiteHealthSummaryResponse,
+  DebugRoutesResponse,
+  DebugRouteEntry,
 } from './types';
 
 // Envelope utilities

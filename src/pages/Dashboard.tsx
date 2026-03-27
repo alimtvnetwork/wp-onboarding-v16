@@ -6,6 +6,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { RecentPublishes } from "@/components/dashboard/RecentPublishes";
+import { DebugRoutesPanel } from "@/components/debug/DebugRoutesPanel";
 import { Globe, Package, RefreshCw, AlertCircle, Rocket } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -90,6 +91,9 @@ export default function Dashboard() {
           stats={stats?.publish ?? null}
         />
       </div>
+
+      {/* Debug Routes */}
+      <DebugRoutesPanel />
 
       {/* Add Site Dialog */}
       <AddSiteDialog

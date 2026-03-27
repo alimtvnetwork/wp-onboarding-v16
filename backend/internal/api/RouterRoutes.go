@@ -111,6 +111,7 @@ func registerSiteSettingsRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/site-settings", handlers.GetRemoteSiteSettings).Methods("GET")
 	api.HandleFunc("/sites/{id}/site-settings", handlers.UpdateRemoteSiteSettings).Methods("PUT")
 	api.HandleFunc("/sites/{id}/site-health-summary", handlers.GetRemoteSiteHealthSummary).Methods("GET")
+	api.HandleFunc("/sites/{id}/debug-routes", handlers.GetRemoteDebugRoutes).Methods("GET")
 }
 
 func registerSnapshotRoutes(api *mux.Router) {
