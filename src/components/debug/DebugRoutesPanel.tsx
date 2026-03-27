@@ -79,7 +79,7 @@ export function DebugRoutesPanel() {
   }, [data?.routes, categoryFilter, searchQuery]);
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={(open) => { setIsOpen(open); localStorage.setItem("debug-routes-open", String(open)); }}>
     <Card>
       <CollapsibleTrigger asChild>
       <CardHeader className="pb-3 cursor-pointer select-none hover:bg-muted/30 transition-colors rounded-t-xl">
