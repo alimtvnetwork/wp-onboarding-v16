@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Route, Filter, Search } from "lucide-react";
+import { RefreshCw, Route, Filter, Search, ChevronDown } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { useRemoteDebugRoutes } from "@/hooks/useRemoteDebugRoutes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,6 +55,7 @@ export function DebugRoutesPanel() {
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching } = useRemoteDebugRoutes(selectedSiteId);
@@ -77,8 +79,10 @@ export function DebugRoutesPanel() {
   }, [data?.routes, categoryFilter, searchQuery]);
 
   return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
     <Card>
-      <CardHeader className="pb-3">
+      <CollapsibleTrigger asChild>
+      <CardHeader className="pb-3 cursor-pointer select-none hover:bg-muted/30 transition-colors rounded-t-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Route className="h-5 w-5 text-primary" />
@@ -88,8 +92,9 @@ export function DebugRoutesPanel() {
                 {data.totalRoutes} routes
               </Badge>
             )}
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
             <Select
               value={selectedSiteId ? String(selectedSiteId) : ""}
               onValueChange={(v) => setSelectedSiteId(Number(v))}
@@ -141,6 +146,8 @@ export function DebugRoutesPanel() {
           </div>
         </div>
       </CardHeader>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
       <CardContent>
         {!selectedSiteId ? (
           <p className="text-sm text-muted-foreground text-center py-8">
@@ -256,6 +263,8 @@ export function DebugRoutesPanel() {
           </>
         )}
       </CardContent>
+      </CollapsibleContent>
     </Card>
+    </Collapsible>
   );
 }
