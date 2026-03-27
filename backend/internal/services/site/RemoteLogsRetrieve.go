@@ -99,9 +99,18 @@ func (s *Service) RetrieveRemoteLogs(ctx context.Context, siteId int64, params L
 	wg.Wait()
 	close(ch)
 
-	plugins := make([]wordpress.PluginLogsData, 0, len(allNamespaces))
+	pluginsByNamespace := make(map[string]wordpress.PluginLogsData, len(allNamespaces))
 	for probe := range ch {
-		plugins = append(plugins, *probe.data)
+		if probe.data != nil {
+			pluginsByNamespace[probe.ns] = *probe.data
+		}
+	}
+
+	plugins := make([]wordpress.PluginLogsData, 0, len(allNamespaces))
+	for _, namespace := range allNamespaces {
+		if plugin, ok := pluginsByNamespace[namespace]; ok {
+			plugins = append(plugins, plugin)
+		}
 	}
 
 	return &wordpress.LogsRetrieveResult{Plugins: plugins}, nil
