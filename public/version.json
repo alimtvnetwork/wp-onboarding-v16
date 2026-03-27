@@ -1,13 +1,22 @@
 {
   "appName": "WP Publish",
-  "version": "2.30.0",
-  "releaseDate": "2026-03-21",
+  "version": "2.31.0",
+  "releaseDate": "2026-03-27",
   "gitCommit": "dev",
-  "buildTime": "2026-03-21T00:00:00Z",
-  "scriptVersion": "2.30.0",
-  "wpPluginVersion": "2.30.0",
-  "quploadVersion": "2.30.0",
+  "buildTime": "2026-03-27T00:00:00Z",
+  "scriptVersion": "2.31.0",
+  "wpPluginVersion": "2.31.0",
+  "quploadVersion": "2.31.0",
   "changelog": [
+    {
+      "version": "2.31.0",
+      "date": "2026-03-27",
+      "title": "Log Retrieval Response Fix & Version Bump",
+      "changes": [
+        "🐛 Fixed /logs/retrieve PHP endpoints returning envelope-wrapped responses instead of flat JSON — caused empty data in Go backend",
+        "🔢 Version bump across all components to 2.31.0"
+      ]
+    },
     {
       "version": "2.30.0",
       "date": "2026-03-21",
