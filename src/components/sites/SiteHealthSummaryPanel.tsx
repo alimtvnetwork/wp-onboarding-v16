@@ -307,7 +307,10 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
                   ) : p.isMissing ? (
                     <span className="text-xs text-destructive">Not installed</span>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Unknown</span>
+                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning/50 text-warning bg-warning/10 gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Unknown version
+                    </Badge>
                   )}
                 </div>
               </div>
