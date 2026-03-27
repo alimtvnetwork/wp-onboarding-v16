@@ -276,24 +276,40 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       toast.info("Demo mode — using sample data (no backend call)");
       return;
     }
+
+    const endpoint = `/sites/${siteId}/remote-logs/retrieve`;
     setIsRetrieving(true);
     try {
       const response = await api.retrieveRemoteLogs(siteId, { max_lines: maxLines });
-      const data = requireSuccess(response, { endpoint: `/sites/${siteId}/remote-logs/retrieve`, method: "GET" });
+      const data = requireSuccess(response, { endpoint, method: "GET" });
       setRetrieveData(data);
       setActiveTab("viewer");
 
-      const hasAnyContent = data.plugins?.some(p => p.available);
-      if (!hasAnyContent) {
+      const hasAvailablePlugin = data.plugins?.some((p) => p.available) ?? false;
+      const hasReadableLogContent =
+        data.plugins?.some((p) => p.infoLog?.Exists || p.errorLog?.Exists || p.stacktrace?.Exists) ?? false;
+
+      if (!hasAvailablePlugin) {
         toast.warning("No log retrieval endpoints available — the remote plugin may be outdated.");
+        return;
+      }
+
+      if ((status?.files?.length ?? 0) > 0 && !hasReadableLogContent) {
+        const mismatchError = new Error(
+          "Remote logs status reported files, but retrieve returned no readable log content."
+        );
+        captureInlineError(mismatchError, endpoint, "GET");
+        surfaceError(mismatchError, endpoint, "GET");
       }
     } catch (err) {
-      captureInlineError(err, `/sites/${siteId}/remote-logs/retrieve`, "GET");
+      setRetrieveData(null);
+      captureInlineError(err, endpoint, "GET");
+      surfaceError(err, endpoint, "GET");
       setActiveTab("viewer");
     } finally {
       setIsRetrieving(false);
     }
-  }, [siteId, maxLines, isDemoMode]);
+  }, [siteId, maxLines, isDemoMode, status, captureInlineError]);
 
   useEffect(() => {
     if (autoOpen && !status) {
