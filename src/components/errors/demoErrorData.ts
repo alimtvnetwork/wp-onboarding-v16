@@ -154,6 +154,162 @@ export function createDemoError(): CapturedError {
 }
 
 /**
+ * Creates a demo error focused exclusively on delegated/remote diagnostics.
+ * Has rich DelegatedRequestServer, RemoteResponseBody, PHP stack traces,
+ * and envelope-level WordPress response body so the Delegated Logs section
+ * is fully populated.
+ */
+export function createDemoDelegatedError(): CapturedError {
+  const now = new Date().toISOString();
+
+  const wpResponseBody = {
+    Status: { IsSuccess: false, IsFailed: true, Code: 500, Message: "Internal Server Error", Timestamp: now },
+    Attributes: {
+      RequestedAt: "/wp-json/riseup-asia-api/v1/snapshots/providers",
+      RequestDelegatedAt: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers",
+      SessionId: "wp-session-abc123",
+      HasAnyErrors: true,
+      IsSingle: true,
+      IsMultiple: false,
+    },
+    Errors: {
+      BackendMessage: "[E3001] failed to fetch snapshots/providers: remote PHP handler threw an exception",
+      Backend: [
+        "RiseupAsia\\Api\\SnapshotsController->getProviders()",
+        "  SnapshotsController.php:87",
+        "RiseupAsia\\Database\\ProviderRepository->findAll()",
+        "  ProviderRepository.php:34",
+      ],
+      DelegatedServiceErrorStack: [
+        "PHP Fatal error: Uncaught PDOException: SQLSTATE[HY000] [2002] Connection refused",
+        "#0 /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Database/ProviderRepository.php(34): PDO->__construct()",
+        "#1 /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Api/SnapshotsController.php(87): RiseupAsia\\Database\\ProviderRepository->findAll()",
+        "#2 /var/www/html/wp-includes/rest-api/class-wp-rest-server.php(1225): RiseupAsia\\Api\\SnapshotsController->getProviders()",
+        "#3 /var/www/html/wp-includes/rest-api/class-wp-rest-server.php(1063): WP_REST_Server->respond_to_request()",
+        "#4 /var/www/html/wp-includes/rest-api.php(784): WP_REST_Server->dispatch()",
+        "#5 {main}",
+      ],
+    },
+    Results: [],
+    PluginVersion: "2.14.0",
+    LogHint: "Check the database connection settings in wp-config.php — the MySQL/MariaDB server may be unreachable.",
+  };
+
+  return {
+    id: `demo-delegated-${Date.now()}`,
+    code: "E3001",
+    level: "error",
+    message: "[E3001] failed to fetch snapshots/providers: remote PHP handler threw an exception (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers): status 500",
+    details: "Delegated request to WordPress PHP plugin returned HTTP 500 with a PDOException. The remote database may be offline.",
+    createdAt: now,
+    endpoint: "/api/v1/sites/1/snapshots/providers",
+    method: "GET",
+    responseStatus: 502,
+    siteUrl: "https://demoat.attoproperty.com.au",
+    sessionId: "demo-delegated-session-001",
+    sessionType: "snapshot-providers",
+    route: "/sites",
+    routeComponent: "Sites",
+
+    requestedAt: "/api/v1/sites/1/snapshots/providers",
+    requestDelegatedAt: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers",
+
+    // Go backend stack trace
+    backendStackTrace: [
+      "goroutine 55 [running]:",
+      "wp-plugin-publish/internal/services/site.(*Service).fetchFromDelegatedServer(0xc0001a2000, {0x1a3f5e0, 0xc000234060}, 0x1, {0xc0003b6120, 0x2e})",
+      "  /app/backend/internal/services/site/ServiceSnapshots.go:112 +0x2a4",
+      "wp-plugin-publish/internal/api/handlers.GetSnapshotProviders.func1({0x1a40860, 0xc000290000}, 0xc0002d8300)",
+      "  /app/backend/internal/api/handlers/SnapshotHandlers.go:28 +0x198",
+    ].join("\n"),
+
+    // PHP stack frames (structured)
+    phpStackFrames: [
+      { file: "/var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Database/ProviderRepository.php", fileBase: "ProviderRepository.php", line: 34, function: "findAll", class: "RiseupAsia\\Database\\ProviderRepository" },
+      { file: "/var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Api/SnapshotsController.php", fileBase: "SnapshotsController.php", line: 87, function: "getProviders", class: "RiseupAsia\\Api\\SnapshotsController" },
+      { file: "/var/www/html/wp-includes/rest-api/class-wp-rest-server.php", fileBase: "class-wp-rest-server.php", line: 1225, function: "respond_to_request", class: "WP_REST_Server" },
+      { file: "/var/www/html/wp-includes/rest-api/class-wp-rest-server.php", fileBase: "class-wp-rest-server.php", line: 1063, function: "dispatch", class: "WP_REST_Server" },
+      { file: "/var/www/html/wp-includes/rest-api.php", fileBase: "rest-api.php", line: 784, function: "rest_do_request" },
+    ],
+
+    envelopeErrors: {
+      BackendMessage: "[E3001] failed to fetch snapshots/providers: remote PHP handler threw an exception",
+      Backend: [
+        "wp-plugin-publish/internal/services/site.(*Service).fetchFromDelegatedServer",
+        "  ServiceSnapshots.go:112",
+        "wp-plugin-publish/internal/wordpress.(*Client).DoApiCall",
+        "  Client.go:142",
+      ],
+      DelegatedServiceErrorStack: wpResponseBody.Errors.DelegatedServiceErrorStack,
+      DelegatedRequestServer: {
+        DelegatedEndpoint: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers",
+        Method: "GET",
+        StatusCode: 500,
+        RequestBody: null,
+        Response: wpResponseBody,
+        StackTrace: [
+          "#0 /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Database/ProviderRepository.php(34): PDO->__construct()",
+          "#1 /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/Api/SnapshotsController.php(87): RiseupAsia\\Database\\ProviderRepository->findAll()",
+          "#2 /var/www/html/wp-includes/rest-api/class-wp-rest-server.php(1225): WP_REST_Server->respond_to_request()",
+          "#3 /var/www/html/wp-includes/rest-api/class-wp-rest-server.php(1063): WP_REST_Server->dispatch()",
+        ],
+        AdditionalMessages: "Check the database connection settings in wp-config.php — the MySQL/MariaDB server may be unreachable.",
+      },
+      RemoteResponseBody: JSON.stringify(wpResponseBody),
+    },
+    envelopeMethodsStack: {
+      Backend: [
+        { Method: "fetchFromDelegatedServer", File: "ServiceSnapshots.go", LineNumber: 112 },
+        { Method: "DoApiCall", File: "Client.go", LineNumber: 142 },
+        { Method: "respondErrorWithDelegated", File: "Response.go", LineNumber: 52 },
+      ],
+      Frontend: [],
+    },
+
+    // Frontend stack
+    stackTrace: [
+      "    at showGlobalError (src/App.tsx:61:26)",
+      "    at requireSuccess (src/lib/api/methods.ts:45:11)",
+      "    at fetchProviders (src/hooks/useSnapshotProviders.ts:18:10)",
+    ].join("\n"),
+    parsedFrames: [
+      { function: "showGlobalError", file: "src/App.tsx", line: 61, column: 26, isInternal: false },
+      { function: "requireSuccess", file: "src/lib/api/methods.ts", line: 45, column: 11, isInternal: false },
+      { function: "fetchProviders", file: "src/hooks/useSnapshotProviders.ts", line: 18, column: 10, isInternal: false },
+    ],
+    invocationChain: ["useSnapshotProviders.fetchProviders", "requireSuccess", "App.showGlobalError"],
+    triggerComponent: "Sites",
+    triggerAction: "load_providers",
+
+    uiClickPath: [
+      { id: "demo-d1", timestamp: new Date(Date.now() - 2000).toISOString(), element: "Link", text: "Sites", path: "nav a", action: "click", route: "/dashboard" },
+      { id: "demo-d2", timestamp: new Date(Date.now() - 500).toISOString(), element: "Button", text: "Load Providers", path: "button.load-providers", action: "click", route: "/sites" },
+    ],
+    uiClickPathString: "Sites → Load Providers",
+    uiClickPathArrow: "nav > Sites → btn > Load Providers",
+
+    context: {
+      source: "App.showGlobalError",
+      triggerComponent: "Sites",
+      triggerAction: "load_providers",
+      remoteResponseBody: JSON.stringify(wpResponseBody),
+      requestDelegatedAt: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers",
+      delegatedRequestServer: {
+        DelegatedEndpoint: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-api/v1/snapshots/providers",
+        Method: "GET",
+        StatusCode: 500,
+        Response: wpResponseBody,
+        StackTrace: [
+          "#0 ProviderRepository.php(34): PDO->__construct()",
+          "#1 SnapshotsController.php(87): ProviderRepository->findAll()",
+        ],
+        AdditionalMessages: "Check wp-config.php database settings.",
+      },
+    } as CapturedError["context"],
+  };
+}
+
+/**
  * Creates a second demo error (backend-only, no delegated) for queue testing.
  */
 export function createDemoBackendError(): CapturedError {

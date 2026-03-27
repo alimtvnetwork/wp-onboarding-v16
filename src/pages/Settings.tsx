@@ -942,6 +942,25 @@ export default function Settings() {
                 >
                   Open Demo Modal
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    import("@/components/errors/demoErrorData").then(({ createDemoDelegatedError }) => {
+                      useErrorStore.getState().openErrorModal(createDemoDelegatedError());
+                      toast.success("Demo delegated error opened — check the Delegated Logs section", {
+                        style: {
+                          background: "linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(25 95% 40%) 100%)",
+                          color: "white",
+                          border: "none",
+                        },
+                      });
+                    });
+                  }}
+                  className="w-full sm:w-auto text-xs border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                >
+                  Open Delegated Demo
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 Keyboard shortcut: <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px] font-mono">Ctrl+Shift+E</kbd>
