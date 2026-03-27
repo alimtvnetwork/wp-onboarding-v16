@@ -52,9 +52,9 @@ All colors MUST be HSL.
     /* Site card hover tokens — light theme */
     --site-card-hover: 0 0% 92%;
     --site-card-hover-fg: 0 0% 8%;
-    --site-card-hover-gradient: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 82%) 100%);
-    --site-card-hover-shadow: 2px 2px 0px hsla(0, 0%, 0%, 0.12);
-    --site-card-text-shadow: 1px 1px 0px hsla(0, 0%, 0%, 0.15);
+    --site-card-hover-gradient: linear-gradient(135deg, hsl(0deg 0% 100%) 0%, hsl(0deg 0% 48.32%) 100%);
+    --site-card-hover-shadow: 2px 2px 0px hsl(30deg 6.41% 76.78% / 25%);
+    --site-card-text-shadow: 1px 1px 0px hsl(0deg 13.53% 83.51% / 30%);
 
     /* Toast semantic tokens — light theme */
     --toast-bg: 220 13% 18%;
@@ -130,9 +130,9 @@ All colors MUST be HSL.
     /* Site card hover tokens — dark theme */
     --site-card-hover: 0 0% 28%;
     --site-card-hover-fg: 0 0% 8%;
-    --site-card-hover-gradient: linear-gradient(135deg, hsl(0 0% 38%) 0%, hsl(0 0% 18%) 100%);
-    --site-card-hover-shadow: 2px 2px 0px hsla(0, 0%, 0%, 0.25);
-    --site-card-text-shadow: 1px 1px 0px hsla(0, 0%, 0%, 0.3);
+    --site-card-hover-gradient: linear-gradient(135deg, hsl(0deg 0% 100%) 0%, hsl(0deg 0% 48.32%) 100%);
+    --site-card-hover-shadow: 2px 2px 0px hsl(30deg 6.41% 76.78% / 25%);
+    --site-card-text-shadow: 1px 1px 0px hsl(0deg 13.53% 83.51% / 30%);
 
     /* Toast semantic tokens — dark theme */
     --toast-bg: 220 13% 14%;
