@@ -59,6 +59,16 @@ export function buildDelegatedLogsSection(error: CapturedError): string {
 
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+    // Skip successful log-retrieve responses — they contain embedded log content, not error data
+    if (Array.isArray(parsed.plugins)) {
+      const pluginCount = parsed.plugins.length;
+      const pluginNames = (parsed.plugins as Array<Record<string, unknown>>)
+        .map((p) => p.label || p.namespace || "unknown")
+        .join(", ");
+      return `Log retrieve response (${pluginCount} plugin${pluginCount !== 1 ? "s" : ""}): ${pluginNames}\n(Use Remote Logs panel to inspect full content)`;
+    }
+
     const status = parsed.Status as Record<string, unknown> | undefined;
     const errors = parsed.Errors as Record<string, unknown> | undefined;
     const attrs = parsed.Attributes as Record<string, unknown> | undefined;
@@ -178,7 +188,8 @@ export function buildDelegatedErrorLogSection(
   if (delegatedServer?.Response != null) {
     const responseBody = stringifyValue(delegatedServer.Response);
     if (responseBody) {
-      sections.push(formatIndentedBlock("  Response Body", responseBody));
+      const truncated = responseBody.length > 2000 ? `${responseBody.slice(0, 2000)}\n… (truncated, ${responseBody.length} chars total)` : responseBody;
+      sections.push(formatIndentedBlock("  Response Body", truncated));
     }
   }
 

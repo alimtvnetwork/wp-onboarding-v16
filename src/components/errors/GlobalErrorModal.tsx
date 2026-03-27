@@ -29,8 +29,14 @@ function parsePhpStackFromRemoteBody(raw: string): PHPStackFrame[] {
     let traceText = raw;
     try {
       const parsed = JSON.parse(raw);
+      // Skip successful log-retrieve responses — they contain embedded log text with #N patterns
+      if (parsed?.plugins || parsed?.Status?.IsSuccess === true) return [];
       const errMsg = parsed?.data?.error?.message;
       if (typeof errMsg === 'string') traceText = errMsg;
+      else if (parsed?.Errors?.Backend && Array.isArray(parsed.Errors.Backend)) {
+        // Use the Backend array directly instead of regex-matching the full body
+        return [];
+      }
     } catch { /* use raw */ }
 
     // Match PHP stack trace lines: #N /path/to/file.php(line): Class->method() or function()
