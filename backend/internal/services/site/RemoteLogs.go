@@ -126,6 +126,7 @@ func countExistingLogFiles(data *wordpress.LogsStatusData) int {
 	}
 
 	return count
+}
 
 // GetRemoteLogsRotationStatus fetches log rotation config from a remote WordPress site.
 func (s *Service) GetRemoteLogsRotationStatus(ctx context.Context, siteId int64) (*wordpress.LogsRotationStatusData, *apperror.AppError) {
