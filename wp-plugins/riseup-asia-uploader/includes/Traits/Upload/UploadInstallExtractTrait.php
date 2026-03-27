@@ -26,6 +26,8 @@ use RiseupAsia\Update\SelfUpdateValidator;
 
 trait UploadInstallExtractTrait
 {
+    /** Guard flag: true while an upload pipeline is running (prevents deactivation hook from deleting temp files). */
+    private static bool $isUploadInProgress = false;
     /**
      * Deactivate plugin and remove old directory if this is an update.
      */
@@ -102,6 +104,8 @@ trait UploadInstallExtractTrait
             }
         }
 
+        // Guard: prevent deactivation hook from deleting temp files during self-update
+        self::$isUploadInProgress = true;
         $isPreviouslyActive = $this->deactivateIfUpdating(
             $context[ResponseKeyType::Slug->value],
             $context[ResponseKeyType::IsUpdate->value],
@@ -109,6 +113,7 @@ trait UploadInstallExtractTrait
         );
 
         $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input, $backupDir);
+        self::$isUploadInProgress = false;
 
         if ($stepResult instanceof WP_REST_Response) {
             // Log external plugin failure for non-self updates

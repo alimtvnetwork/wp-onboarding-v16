@@ -113,6 +113,11 @@ class Plugin {
     private ?PostManager $postManager = null;
     private static ?self $instance = null;
 
+    /** Public accessor for the upload-in-progress guard (used by deactivation hook). */
+    public static function isUploadInProgress(): bool {
+        return self::$isUploadInProgress ?? false;
+    }
+
     public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
