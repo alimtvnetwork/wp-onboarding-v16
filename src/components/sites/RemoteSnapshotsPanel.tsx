@@ -1480,33 +1480,29 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : isError && !initialLoadRef.current ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-                    <AlertCircle className="h-8 w-8 text-destructive/60" />
-                    <p className="text-sm font-medium">Failed to load snapshots</p>
-                    {snapshotError?.message && (
-                      <p className="text-xs text-destructive/80 max-w-[300px] text-center break-all">{snapshotError.message}</p>
-                    )}
-                    <div className="flex gap-2 mt-1">
-                      <Button variant="outline" size="sm" onClick={() => refetch()}>
-                        Retry
-                      </Button>
-                      {snapshotError && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const captured = captureException(snapshotError, {
-                              source: 'RemoteSnapshotsPanel.fetchSnapshots',
-                              endpoint: `/sites/${site.id}/snapshots`,
-                              method: 'GET',
-                            });
-                            openErrorModal(captured);
-                          }}
-                        >
-                          View Error
+                  <div className="space-y-3 py-4">
+                    {snapshotError ? (
+                      <InlineErrorDiagnostic
+                        diagnostic={extractDiagnostic(snapshotError, `/sites/${site.id}/snapshots`, "GET")}
+                        onDismiss={() => refetch()}
+                        onOpenGlobalModal={() => {
+                          const captured = captureException(snapshotError, {
+                            source: 'RemoteSnapshotsPanel.fetchSnapshots',
+                            endpoint: `/sites/${site.id}/snapshots`,
+                            method: 'GET',
+                          });
+                          openErrorModal(captured);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
+                        <AlertCircle className="h-8 w-8 text-destructive/60" />
+                        <p className="text-sm font-medium">Failed to load snapshots</p>
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                          Retry
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ) : snapshots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground animate-fade-in">
