@@ -484,6 +484,19 @@ trait RouteRegistrationTrait
     }
 
     /**
+     * Register debug/diagnostic routes.
+     *
+     * @param callable $safeRegister Route registration closure.
+     */
+    private function registerDebugRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::DebugRoutes->route(), array(
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => array($this, 'handleDebugRoutes'),
+            'permission_callback' => $this->buildPermissionCallback('debug_routes', array($this, 'checkPluginPermission')),
+        ));
+    }
+
+    /**
      * Register catch-all route for invalid paths.
      *
      * @param callable $safeRegister Route registration closure.
