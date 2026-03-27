@@ -45,6 +45,11 @@ enum WpErrorCodeType: string
         return $this->isAnyOf(self::RestForbidden, self::RestDisabled);
     }
 
+    public function isRoutingError(): bool
+    {
+        return $this->isEqual(self::RestNoRoute);
+    }
+
     public function isDatabaseError(): bool { return $this->isEqual(self::DatabaseError); }
 
     public function isValidationError(): bool
