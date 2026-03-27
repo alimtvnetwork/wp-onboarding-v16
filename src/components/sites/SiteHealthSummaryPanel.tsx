@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Loader2,
   RefreshCw,
@@ -307,10 +308,20 @@ export function SiteHealthSummaryPanel({ site, open }: SiteHealthSummaryPanelPro
                   ) : p.isMissing ? (
                     <span className="text-xs text-destructive">Not installed</span>
                   ) : (
-                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning/50 text-warning bg-warning/10 gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      Unknown version
-                    </Badge>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning/50 text-warning bg-warning/10 gap-1 cursor-help">
+                            <AlertTriangle className="h-3 w-3" />
+                            Unknown version
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-[240px] text-xs">
+                          <p>The plugin responded but didn't report a version. This usually means an outdated build is deployed.</p>
+                          <p className="mt-1 font-medium">Re-deploy the plugin to fix this.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </div>
               </div>
