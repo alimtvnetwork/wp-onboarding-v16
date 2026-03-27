@@ -55,7 +55,7 @@ export function DebugRoutesPanel() {
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => localStorage.getItem("debug-routes-open") === "true");
   const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching } = useRemoteDebugRoutes(selectedSiteId);
