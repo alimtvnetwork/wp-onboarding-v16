@@ -57,6 +57,7 @@ trait RouteRegistrationTrait
             'user'           => fn() => $this->registerUserRoutes($safeRegister),
             'cloud_storage'  => fn() => $this->registerCloudStorageRoutes($safeRegister),
             'site_settings'  => fn() => $this->registerSiteSettingsRoutes($safeRegister),
+            'debug'          => fn() => $this->registerDebugRoutes($safeRegister),
             'catch_all'      => fn() => $this->registerCatchAllRoute($safeRegister),
         );
 
