@@ -16,6 +16,8 @@
 | [02-php-implementation.md](./02-php-implementation.md) | PHP trait, enum changes, route registration |
 | [03-react-integration.md](./03-react-integration.md) | React frontend — site detail log viewer tab |
 | [04-go-backend-proxy.md](./04-go-backend-proxy.md) | Go backend proxy endpoint for React→WordPress |
+| [05-enhanced-log-viewer.md](./05-enhanced-log-viewer.md) | Enhanced log viewer UI — 3-tab layout, dual-plugin support |
+| [06-panel-redesign.md](./06-panel-redesign.md) | **Panel redesign** — unified single-screen modal (replaces parts of 05) ✓ |
 
 ---
 
