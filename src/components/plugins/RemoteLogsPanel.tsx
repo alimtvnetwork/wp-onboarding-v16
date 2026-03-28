@@ -116,7 +116,7 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   if (!plugin.available) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        <AlertTriangle className="h-5 w-5 text-warning" />
         <p>Plugin not available on this site</p>
       </div>
     );
