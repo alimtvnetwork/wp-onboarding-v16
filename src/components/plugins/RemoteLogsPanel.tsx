@@ -498,44 +498,55 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
 
   return (
-    <Collapsible open={isOpen} onOpenChange={handleOpen}>
-      <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isOpen ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
-                {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                {isDemoMode && (
-                  <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
-                    <FlaskConical className="h-3 w-3 mr-1" /> Demo
-                  </Badge>
-                )}
-                {status && (
-                  <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                    {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                    {status.archiveCount > 0 && (
-                      <span className="ml-1 text-muted-foreground">
-                        · {status.archiveCount} archived
-                      </span>
-                    )}
-                  </Badge>
-                )}
-              </div>
+    <>
+      <Card
+        data-error-modal
+        style={dragStyle}
+        className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
+      >
+        {/* Draggable header */}
+        <CardHeader
+          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-3 px-4"
+          onMouseDown={onDragMouseDown}
+          onTouchStart={onDragTouchStart}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
+              {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
             </div>
-          </CardHeader>
-        </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              {isDemoMode && (
+                <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
+                  <FlaskConical className="h-3 w-3 mr-1" /> Demo
+                </Badge>
+              )}
+              {status && (
+                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
+                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
+                  {status.archiveCount > 0 && (
+                    <span className="ml-1 text-muted-foreground">
+                      · {status.archiveCount} archived
+                    </span>
+                  )}
+                </Badge>
+              )}
+              {isDragged && (
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={resetPosition} title="Reset position">
+                  <Move className="h-3 w-3" />
+                </Button>
+              )}
+              {onClose && (
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
 
-        <CollapsibleContent>
-          <CardContent className="pt-5">
+        <CardContent className="pt-5">
             {/* Clear confirmation bar (shows when clear token is active) */}
             {clearToken && (
               <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 mb-4 text-xs">
