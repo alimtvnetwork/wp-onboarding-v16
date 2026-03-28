@@ -103,16 +103,20 @@ This eliminates the Actions tab entirely.
 ## 5. Tasks (in order)
 
 1. **Write spec** — This document ✓
-2. **Merge Overview + Viewer** — Remove 3-tab layout, show content directly
-3. **Consolidate toolbar** — Single row, actions dropdown
-4. **Remove duplicate headers** — One title line
-5. **Add draggable modal** — Reuse `useDraggable` hook
-6. **Clean up tabs** — Polish plugin/log-type sub-tabs
+2. **Merge Overview + Viewer** — Remove 3-tab layout, show content directly ✓
+3. **Consolidate toolbar** — Single row, actions dropdown ✓
+4. **Remove duplicate headers** — One title line ✓
+5. **Add draggable modal** — Fixed-position overlay with `useDraggable` hook ✓
+6. **Replace file list with summary line** — Compact totals instead of per-file cards ✓
+7. **Fix drag conflicts** — Removed Dialog wrapper that fought useDraggable transforms ✓
+8. **Clean up tabs** — Polish plugin/log-type sub-tabs
 
 ---
 
 ## 6. Files Affected
 
-- `src/components/plugins/RemoteLogsPanel.tsx` — Major rewrite
+- `src/components/plugins/RemoteLogsPanel.tsx` — Major rewrite (now self-contained fixed overlay)
 - `src/components/plugins/LogContentViewer.tsx` — Minor tweaks if any
 - `src/hooks/useDraggable.ts` — Reuse as-is
+- `src/components/sites/SiteCard.tsx` — Removed Dialog wrapper for logs panel
+- `src/components/sites/RemotePluginsPanel.tsx` — Removed Dialog wrapper for debug logs
