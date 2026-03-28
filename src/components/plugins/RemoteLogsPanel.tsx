@@ -156,7 +156,6 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
 }
 
 export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }: RemoteLogsPanelProps) {
-  const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -349,21 +348,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
     }
   }, [siteId, maxLines, isDemoMode, status, captureInlineError]);
 
+  // Auto-fetch status on mount
   useEffect(() => {
-    if (autoOpen && !status) {
+    if (!status) {
       fetchStatus();
     }
-  }, [autoOpen, fetchStatus, status]);
-
-  const handleOpen = useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      if (open && !status) {
-        fetchStatus();
-      }
-    },
-    [status, fetchStatus]
-  );
+  }, [fetchStatus, status]);
 
   // ── Download All ──────────────────────────────────────────────
   const handleDownloadAll = () => {
