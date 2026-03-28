@@ -160,8 +160,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isRetrieving, setIsRetrieving] = useState(false);
   const [maxLines, setMaxLines] = useState(200);
 
-  // Active top-level tab
-  const [activeTab, setActiveTab] = useState("overview");
 
   // Demo mode toggle
   const activateDemo = useCallback(async () => {
@@ -285,7 +283,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       const response = await api.retrieveRemoteLogs(siteId, { max_lines: maxLines });
       const data = requireSuccess(response, { endpoint, method: "GET" });
       setRetrieveData(data);
-      setActiveTab("viewer");
 
       const hasAvailablePlugin = data.plugins?.some((p) => p.available) ?? false;
       const hasReadableLogContent =
