@@ -27,6 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   FileText,
   Trash2,
   Mail,
@@ -44,6 +51,7 @@ import {
   FlaskConical,
   XCircle,
   Code2,
+  MoreVertical,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -503,22 +511,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
               <div className="flex items-center gap-2">
                 {isDemoMode && (
-                  <Badge variant="outline" className="text-[10px] border-amber-500/40 bg-amber-500/15 text-amber-400">
+                  <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
                     <FlaskConical className="h-3 w-3 mr-1" /> Demo
                   </Badge>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    isDemoMode ? deactivateDemo() : activateDemo();
-                  }}
-                >
-                  <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                  {isDemoMode ? "Exit Demo" : "Demo"}
-                </Button>
                 {status && (
                   <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
                     {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
@@ -536,15 +532,16 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
         <CollapsibleContent>
           <CardContent className="pt-5">
-            {/* Demo Mode Banner */}
-            {isDemoMode && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 mb-4 text-xs text-amber-400">
-                <FlaskConical className="h-3.5 w-3.5 shrink-0" />
-                <span className="font-medium">Demo Mode</span>
-                <span className="text-muted-foreground">— Showing sample data. No backend connection required.</span>
-                <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-xs text-amber-400 hover:text-amber-300" onClick={deactivateDemo}>
-                  Exit Demo
+            {/* Clear confirmation bar (shows when clear token is active) */}
+            {clearToken && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 mb-4 text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                <span className="text-destructive font-medium">Confirm log deletion?</span>
+                <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming} className="h-6 px-2 text-xs ml-auto">
+                  {isConfirming ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                  Confirm ({clearExpiry}s)
                 </Button>
+                <Button size="sm" variant="ghost" onClick={handleClearCancel} className="h-6 px-2 text-xs">Cancel</Button>
               </div>
             )}
 
@@ -586,13 +583,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
             {!isLoading && status && !status.pluginOutdated && (
               <div className="space-y-4">
                 {/* Single Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant={retrieveData ? "outline" : "default"}
-                      onClick={retrieveData ? fetchLogContent : fetchLogContent}
+                      onClick={fetchLogContent}
                       disabled={isRetrieving || (!retrieveData && !hasFiles)}
+                      className="h-8"
                     >
                       {isRetrieving ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -613,24 +611,47 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         ))}
                       </SelectContent>
                     </Select>
-                    {isDemoMode && (
-                      <Button size="sm" variant="destructive" onClick={deactivateDemo} className="text-xs">
-                        <XCircle className="mr-1 h-3 w-3" />
-                        Exit Demo
-                      </Button>
-                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {retrieveData && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleDownloadAll}
-                        disabled={availablePlugins.length === 0}
-                      >
-                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
+                      <Button size="sm" variant="outline" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-8 text-xs">
+                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download
                       </Button>
                     )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={fetchStatus} disabled={isLoading}>
+                          <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh Status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowPayloadInspector(v => !v)} disabled={!retrieveData}>
+                          <Code2 className="mr-2 h-3.5 w-3.5" /> {showPayloadInspector ? "Hide" : "Inspect"} Payload
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowEmailDialog(true)} disabled={!hasFiles}>
+                          <Mail className="mr-2 h-3.5 w-3.5" /> Email Logs
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleClearStep1} disabled={isClearing || !hasFiles} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Clear Logs
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleClearAllPlugins} disabled={isClearingAll} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Clear All Plugins
+                        </DropdownMenuItem>
+                        {isDemoMode && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={deactivateDemo}>
+                              <XCircle className="mr-2 h-3.5 w-3.5" /> Exit Demo
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
@@ -724,16 +745,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                           );
                         })}
 
-                        {/* Inspect Payload toggle (inline) */}
-                        <Button
-                          size="sm"
-                          variant={showPayloadInspector ? "secondary" : "ghost"}
-                          className="ml-auto h-6 px-2 text-[10px] text-muted-foreground gap-1"
-                          onClick={() => setShowPayloadInspector((v) => !v)}
-                        >
-                          <Code2 className="h-3 w-3" />
-                          {showPayloadInspector ? "Hide" : "Inspect"}
-                        </Button>
                       </div>
                     )}
 
@@ -795,32 +806,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   </>
                 )}
 
-                {/* Actions section (compact) */}
-                {hasFiles && (
-                  <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
-                    {!clearToken ? (
-                      <Button size="sm" variant="outline" onClick={handleClearStep1} disabled={isClearing} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-                        {isClearing ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
-                        Clear Logs
-                      </Button>
-                    ) : (
-                      <>
-                        <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming} className="text-xs">
-                          {isConfirming ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <AlertTriangle className="mr-1.5 h-3 w-3" />}
-                          Confirm ({clearExpiry}s)
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleClearCancel} className="text-xs">Cancel</Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="outline" onClick={handleClearAllPlugins} disabled={isClearingAll} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-                      {isClearingAll ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
-                      Clear All
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowEmailDialog(true)} className="text-xs">
-                      <Mail className="mr-1.5 h-3 w-3" /> Email
-                    </Button>
-                  </div>
-                )}
+
               </div>
             )}
           </CardContent>
