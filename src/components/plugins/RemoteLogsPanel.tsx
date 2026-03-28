@@ -511,22 +511,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
               <div className="flex items-center gap-2">
                 {isDemoMode && (
-                  <Badge variant="outline" className="text-[10px] border-amber-500/40 bg-amber-500/15 text-amber-400">
+                  <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
                     <FlaskConical className="h-3 w-3 mr-1" /> Demo
                   </Badge>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    isDemoMode ? deactivateDemo() : activateDemo();
-                  }}
-                >
-                  <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                  {isDemoMode ? "Exit Demo" : "Demo"}
-                </Button>
                 {status && (
                   <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
                     {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
