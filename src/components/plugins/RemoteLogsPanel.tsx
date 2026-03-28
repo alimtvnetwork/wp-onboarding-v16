@@ -176,7 +176,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setStatus(null);
     setRetrieveData(null);
     setIsDemoMode(false);
-    setActiveTab("overview");
+    
     toast.info("Demo mode deactivated");
   }, []);
 
