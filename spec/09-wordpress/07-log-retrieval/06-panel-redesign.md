@@ -1,6 +1,6 @@
 # Remote Logs Panel — UI Redesign
 
-> **Status:** In Progress
+> **Status:** Complete
 > **Created:** 2026-03-28
 > **Replaces:** 05-enhanced-log-viewer.md (partially)
 
@@ -8,12 +8,12 @@
 
 ## 1. Problem Statement
 
-The current Remote Logs Panel has accumulated UI debt:
+The previous Remote Logs Panel had accumulated UI debt:
 
-1. **Redundant text** — "Remote Logs" appears in both the collapsible header and inside the card
-2. **3-tab fragmentation** — Overview / Viewer / Actions splits a single workflow into 3 clicks
-3. **Scattered controls** — Reload, Max Lines, Download buttons appear in both Overview and Viewer tabs
-4. **Not draggable** — Unlike Remote Plugins, Remote Snapshots, and the Error Modal, this panel isn't a windowed modal
+1. **Redundant text** — "Remote Logs" appeared in both the collapsible header and inside the card
+2. **3-tab fragmentation** — Overview / Viewer / Actions split a single workflow into 3 clicks
+3. **Scattered controls** — Reload, Max Lines, Download buttons appeared in both Overview and Viewer tabs
+4. **Not draggable** — Unlike Remote Plugins, Remote Snapshots, and the Error Modal, the panel wasn't a windowed modal
 5. **Visual clutter** — Too many badges, banners, and nested containers
 
 ---
@@ -22,12 +22,12 @@ The current Remote Logs Panel has accumulated UI debt:
 
 - **Single-screen** — Everything visible without switching tabs
 - **Toolbar consolidation** — One control bar, no duplicates
-- **Draggable windowed modal** — Consistent with other site panels (reuse `useDraggable`)
-- **Dense but readable** — Match the diagnostic UI style (text-xs, dark, monospace)
+- **Draggable windowed modal** — Consistent with other site panels (reuses `useDraggable`)
+- **Dense but readable** — Matches the diagnostic UI style (text-xs, dark, monospace)
 
 ---
 
-## 3. New Layout
+## 3. Layout
 
 ### Modal Structure
 
@@ -35,12 +35,14 @@ The current Remote Logs Panel has accumulated UI debt:
 ┌─────────────────────────────────────────────────────┐
 │ 📄 Remote Logs — {siteName}     [55.3 KB] [Demo] ✕ │  ← draggable header
 ├─────────────────────────────────────────────────────┤
-│ [↻ Reload] [200 lines ▾]  [⬇ Download] [⚡ More ▾] │  ← single toolbar
+│ [⊙ Load Logs] [200 lines ▾]  [⬇ Download]  [⋮]    │  ← single toolbar
 ├─────────────────────────────────────────────────────┤
-│ RA: Info 200 · Error — · Trace 1 │ QU: Info 82     │  ← summary line
+│ 3 files · 55.3 KB · 2 archived                     │  ← summary line (pre-load)
 ├─────────────────────────────────────────────────────┤
-│ [Riseup Asia]  [QUpload]                            │  ← plugin tabs (if 2+)
-│   [Info 200]  [Error —]  [Trace 1]                  │  ← log type tabs
+│ RA: Info 200 · Error — · Trace 1 │ QU: Info 82     │  ← summary banner (post-load)
+├─────────────────────────────────────────────────────┤
+│ [Riseup Asia 201]  [QUpload 82]                     │  ← plugin tabs (if 2+) with totals
+│   [Info 200]  [Error —]  [Trace 1]                  │  ← log type tabs with counts
 │   ┌─ metadata: 200/352 lines · 59.5 KB · Truncated │
 │   │  ⚠ Showing last 200 of 352 lines...            │
 │   ├─────────────────────────────────────────────────┤
@@ -51,25 +53,40 @@ The current Remote Logs Panel has accumulated UI debt:
 └─────────────────────────────────────────────────────┘
 ```
 
-### Toolbar "More" Dropdown
+### Pre-Load State
 
-The `⚡ More` dropdown consolidates destructive/utility actions:
-- Clear Logs (two-step)
-- Clear All Plugins
+Before logs are loaded, the area below the toolbar shows either:
+- **Summary line** — `3 files · 55.3 KB · 2 archived` (compact, no per-file cards)
+- **No files** — Green bordered message: "No log files found"
+
+### Toolbar ⋮ Dropdown
+
+The vertical dots menu consolidates secondary/destructive actions:
+- Refresh Status
+- Inspect Payload (toggle)
 - Email Logs
-- Inspect Payload
+- ─── separator ───
+- Clear Logs (two-step token confirmation)
+- Clear All Plugins
+- ─── separator ─── (demo mode only)
+- Exit Demo
 
-This eliminates the Actions tab entirely.
+### Single-Plugin View
 
-### What's Removed
+When only one plugin is available, plugin tabs are omitted. Instead, a subtle
+uppercase label (`📄 QUPLOAD`) appears above the log-type tabs.
+
+### What Was Removed
 
 | Before | After |
 |--------|-------|
 | 3 top-level tabs (Overview / Viewer / Actions) | Single unified view |
 | Duplicate "Reload" and "Max Lines" in Overview + Viewer | One toolbar |
-| Overview stats cards (Total Size, Log Files, Archives) | Inline badges in header |
+| Per-file cards with line counts and size badges | Compact summary line |
+| Overview stats cards (Total Size, Log Files, Archives) | Inline badge in header |
 | Separate Actions tab with 3 cards | Dropdown menu |
-| Collapsible card wrapper | Draggable modal |
+| Dialog wrapper (caused drag conflicts) | Self-contained fixed overlay |
+| Collapsible card wrapper | Draggable modal with backdrop |
 | Redundant "Remote Logs" text repetitions | Single header |
 
 ---
@@ -78,29 +95,30 @@ This eliminates the Actions tab entirely.
 
 ### RemoteLogsPanel.tsx
 
-- Convert from `Collapsible > Card` to a draggable windowed modal
-- Remove top-level `Tabs` (Overview/Viewer/Actions)
-- Merge all state into single view
-- Add `useDraggable()` hook
-- Add `data-error-modal` attribute for drag boundary
-- Consolidate toolbar into one row
-- Move Clear/Email/Inspect into a `DropdownMenu`
+- Self-contained fixed overlay with backdrop (`fixed inset-0 z-50`)
+- No longer wrapped in a `<Dialog>` — renders directly when `showLogs` is true
+- Single toolbar row with Load/Reload, Max Lines, Download, and ⋮ dropdown
+- `useDraggable()` hook with `data-error-modal` attribute for drag boundary
+- Pre-load summary: `{n} files · {size} · {archived}` (single line, no cards)
+- Post-load summary banner: per-plugin line counts (Info/Error/Trace)
+- Plugin tabs show total line count badges
+- Single-plugin mode: uppercase label header via `showLabel` prop
+- Log-type tabs: show formatted counts or `—` dash for empty categories
 
 ### LogContentViewer.tsx
 
 - No structural changes (already clean)
-- Keep search, severity filter, copy, export as-is
+- Keeps search, severity filter, copy, export as-is
 
-### New: RemoteLogsToolbar.tsx (optional extraction)
+### SiteCard.tsx / RemotePluginsPanel.tsx
 
-- Reload button
-- Max lines selector
-- Download All button
-- More dropdown (Clear, Clear All, Email, Inspect Payload)
+- Removed `<Dialog>` wrapper around `<RemoteLogsPanel>`
+- Conditional render: `{showLogs && <RemoteLogsPanel ... />}`
+- Removed unused `VisuallyHidden` imports
 
 ---
 
-## 5. Tasks (in order)
+## 5. Tasks (all complete)
 
 1. **Write spec** — This document ✓
 2. **Merge Overview + Viewer** — Remove 3-tab layout, show content directly ✓
@@ -115,8 +133,8 @@ This eliminates the Actions tab entirely.
 
 ## 6. Files Affected
 
-- `src/components/plugins/RemoteLogsPanel.tsx` — Major rewrite (now self-contained fixed overlay)
-- `src/components/plugins/LogContentViewer.tsx` — Minor tweaks if any
-- `src/hooks/useDraggable.ts` — Reuse as-is
+- `src/components/plugins/RemoteLogsPanel.tsx` — Major rewrite (self-contained fixed overlay)
+- `src/components/plugins/LogContentViewer.tsx` — Unchanged
+- `src/hooks/useDraggable.ts` — Reused as-is
 - `src/components/sites/SiteCard.tsx` — Removed Dialog wrapper for logs panel
 - `src/components/sites/RemotePluginsPanel.tsx` — Removed Dialog wrapper for debug logs
