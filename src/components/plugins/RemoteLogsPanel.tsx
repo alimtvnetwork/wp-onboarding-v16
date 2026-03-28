@@ -544,15 +544,16 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
         <CollapsibleContent>
           <CardContent className="pt-5">
-            {/* Demo Mode Banner */}
-            {isDemoMode && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 mb-4 text-xs text-amber-400">
-                <FlaskConical className="h-3.5 w-3.5 shrink-0" />
-                <span className="font-medium">Demo Mode</span>
-                <span className="text-muted-foreground">— Showing sample data. No backend connection required.</span>
-                <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-xs text-amber-400 hover:text-amber-300" onClick={deactivateDemo}>
-                  Exit Demo
+            {/* Clear confirmation bar (shows when clear token is active) */}
+            {clearToken && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 mb-4 text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                <span className="text-destructive font-medium">Confirm log deletion?</span>
+                <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming} className="h-6 px-2 text-xs ml-auto">
+                  {isConfirming ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                  Confirm ({clearExpiry}s)
                 </Button>
+                <Button size="sm" variant="ghost" onClick={handleClearCancel} className="h-6 px-2 text-xs">Cancel</Button>
               </div>
             )}
 
