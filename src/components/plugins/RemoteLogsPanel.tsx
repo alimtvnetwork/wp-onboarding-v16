@@ -823,7 +823,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                     </Button>
                   </div>
                 )}
-              </Tabs>
+              </div>
             )}
           </CardContent>
         </CollapsibleContent>
