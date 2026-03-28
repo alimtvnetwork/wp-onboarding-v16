@@ -594,13 +594,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
             {!isLoading && status && !status.pluginOutdated && (
               <div className="space-y-4">
                 {/* Single Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant={retrieveData ? "outline" : "default"}
-                      onClick={retrieveData ? fetchLogContent : fetchLogContent}
+                      onClick={fetchLogContent}
                       disabled={isRetrieving || (!retrieveData && !hasFiles)}
+                      className="h-8"
                     >
                       {isRetrieving ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -621,24 +622,47 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         ))}
                       </SelectContent>
                     </Select>
-                    {isDemoMode && (
-                      <Button size="sm" variant="destructive" onClick={deactivateDemo} className="text-xs">
-                        <XCircle className="mr-1 h-3 w-3" />
-                        Exit Demo
-                      </Button>
-                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {retrieveData && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleDownloadAll}
-                        disabled={availablePlugins.length === 0}
-                      >
-                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
+                      <Button size="sm" variant="outline" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-8 text-xs">
+                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download
                       </Button>
                     )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={fetchStatus} disabled={isLoading}>
+                          <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh Status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowPayloadInspector(v => !v)} disabled={!retrieveData}>
+                          <Code2 className="mr-2 h-3.5 w-3.5" /> {showPayloadInspector ? "Hide" : "Inspect"} Payload
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowEmailDialog(true)} disabled={!hasFiles}>
+                          <Mail className="mr-2 h-3.5 w-3.5" /> Email Logs
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleClearStep1} disabled={isClearing || !hasFiles} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Clear Logs
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleClearAllPlugins} disabled={isClearingAll} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Clear All Plugins
+                        </DropdownMenuItem>
+                        {isDemoMode && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={deactivateDemo}>
+                              <XCircle className="mr-2 h-3.5 w-3.5" /> Exit Demo
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
