@@ -112,7 +112,7 @@ function surfaceError(err: unknown, fallbackEndpoint: string, fallbackMethod: st
 }
 
 // ── Plugin Logs Tab Content ────────────────────────────────────
-function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
+function PluginLogsTabs({ plugin, showLabel }: { plugin: PluginLogsData; showLabel?: boolean }) {
   if (!plugin.available) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
@@ -130,37 +130,54 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   const defaultLogTab = infoLines > 0 ? "info" : errorLines > 0 ? "error" : stackLines > 0 ? "stacktrace" : "info";
 
   return (
-    <Tabs defaultValue={defaultLogTab} className="w-full">
-      <TabsList className="w-full grid grid-cols-3 h-8 rounded-lg bg-muted/40 border border-border/50 p-0.5 gap-0.5">
-        <TabsTrigger
-          value="info"
-          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-        >
-          Info {infoLines > 0 && <span className="text-[10px] tabular-nums text-muted-foreground">{infoLines}</span>}
-        </TabsTrigger>
-        <TabsTrigger
-          value="error"
-          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-destructive transition-all"
-        >
-          Error {errorLines > 0 && <span className="text-[10px] tabular-nums text-destructive/70">{errorLines}</span>}
-        </TabsTrigger>
-        <TabsTrigger
-          value="stacktrace"
-          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-        >
-          Trace {stackLines > 0 && <span className="text-[10px] tabular-nums text-muted-foreground">{stackLines}</span>}
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="info" className="mt-3">
-        <LogContentViewer file={plugin.infoLog} label="info log" />
-      </TabsContent>
-      <TabsContent value="error" className="mt-3">
-        <LogContentViewer file={plugin.errorLog} label="error log" />
-      </TabsContent>
-      <TabsContent value="stacktrace" className="mt-3">
-        <LogContentViewer file={plugin.stacktrace} label="stacktrace" />
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-2">
+      {showLabel && (
+        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground px-1">
+          <ScrollText className="h-3 w-3" />
+          {plugin.label}
+        </div>
+      )}
+      <Tabs defaultValue={defaultLogTab} className="w-full">
+        <TabsList className="w-full grid grid-cols-3 h-8 rounded-lg bg-muted/30 border border-border/40 p-0.5 gap-0.5">
+          <TabsTrigger
+            value="info"
+            className="text-xs rounded-md gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Info
+            <span className={`text-[10px] tabular-nums ${infoLines > 0 ? "text-muted-foreground" : "opacity-40"}`}>
+              {infoLines > 0 ? infoLines.toLocaleString() : "—"}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="error"
+            className="text-xs rounded-md gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-destructive transition-all"
+          >
+            Error
+            <span className={`text-[10px] tabular-nums ${errorLines > 0 ? "text-destructive/70" : "opacity-40"}`}>
+              {errorLines > 0 ? errorLines.toLocaleString() : "—"}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="stacktrace"
+            className="text-xs rounded-md gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            Trace
+            <span className={`text-[10px] tabular-nums ${stackLines > 0 ? "text-muted-foreground" : "opacity-40"}`}>
+              {stackLines > 0 ? stackLines.toLocaleString() : "—"}
+            </span>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="info" className="mt-3">
+          <LogContentViewer file={plugin.infoLog} label="info log" />
+        </TabsContent>
+        <TabsContent value="error" className="mt-3">
+          <LogContentViewer file={plugin.errorLog} label="error log" />
+        </TabsContent>
+        <TabsContent value="stacktrace" className="mt-3">
+          <LogContentViewer file={plugin.stacktrace} label="stacktrace" />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
