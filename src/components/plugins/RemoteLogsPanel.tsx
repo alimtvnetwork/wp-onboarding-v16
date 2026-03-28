@@ -65,7 +65,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
 import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
 import { useDraggable } from "@/hooks/useDraggable";
-import { X, Move } from "lucide-react";
+
 
 interface RemoteLogsPanelProps {
   siteId: number;
