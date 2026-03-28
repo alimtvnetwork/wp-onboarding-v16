@@ -158,11 +158,12 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   );
 }
 
-export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLogsPanelProps) {
+export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }: RemoteLogsPanelProps) {
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const { style: dragStyle, onMouseDown: onDragMouseDown, onTouchStart: onDragTouchStart, resetPosition, isDragged } = useDraggable();
 
   // Retrieve state
   const [retrieveData, setRetrieveData] = useState<LogsRetrieveResult | null>(null);
