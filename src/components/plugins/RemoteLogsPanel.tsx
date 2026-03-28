@@ -173,7 +173,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
     setStatus(createDemoLogsStatus());
     setRetrieveData(createDemoRetrieveResult());
     setIsDemoMode(true);
-    setIsOpen(true);
     toast.info("Demo mode activated — showing sample log data");
   }, []);
 
@@ -196,7 +195,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
           setStatus(JSON.parse(storedStatus));
           setRetrieveData(JSON.parse(storedRetrieve));
           setIsDemoMode(true);
-          setIsOpen(true);
           toast.success("Demo mode auto-activated from Settings", {
             description: "Showing sample log data — no backend required.",
           });
