@@ -168,7 +168,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setRetrieveData(createDemoRetrieveResult());
     setIsDemoMode(true);
     setIsOpen(true);
-    setActiveTab("viewer");
     toast.info("Demo mode activated — showing sample log data");
   }, []);
 
@@ -192,7 +191,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
           setRetrieveData(JSON.parse(storedRetrieve));
           setIsDemoMode(true);
           setIsOpen(true);
-          setActiveTab("viewer");
           toast.success("Demo mode auto-activated from Settings", {
             description: "Showing sample log data — no backend required.",
           });
@@ -339,7 +337,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setRetrieveData(null);
       captureInlineError(err, endpoint, "GET");
       surfaceError(err, endpoint, "GET");
-      setActiveTab("viewer");
     } finally {
       setIsRetrieving(false);
     }
