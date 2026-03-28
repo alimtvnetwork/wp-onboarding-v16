@@ -805,16 +805,22 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                     {/* Plugin tabs + log content */}
                     {availablePlugins.length > 1 ? (
                       <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                        <TabsList className="w-full grid grid-cols-2 h-8 rounded-lg bg-muted/40 border border-border/50 p-0.5 gap-0.5">
-                          {availablePlugins.map((p) => (
-                            <TabsTrigger
-                              key={p.namespace}
-                              value={p.namespace}
-                              className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                            >
-                              {p.label}
-                            </TabsTrigger>
-                          ))}
+                        <TabsList className="w-full grid grid-cols-2 h-8 rounded-lg bg-muted/30 border border-border/40 p-0.5 gap-0.5">
+                          {availablePlugins.map((p) => {
+                            const total = (p.infoLog?.lines ?? 0) + (p.errorLog?.lines ?? 0) + (p.stacktrace?.lines ?? 0);
+                            return (
+                              <TabsTrigger
+                                key={p.namespace}
+                                value={p.namespace}
+                                className="text-xs rounded-md gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                              >
+                                {p.label}
+                                {total > 0 && (
+                                  <span className="text-[10px] tabular-nums text-muted-foreground">{total.toLocaleString()}</span>
+                                )}
+                              </TabsTrigger>
+                            );
+                          })}
                         </TabsList>
                         {availablePlugins.map((p) => (
                           <TabsContent key={p.namespace} value={p.namespace} className="mt-3">
@@ -823,7 +829,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                         ))}
                       </Tabs>
                     ) : availablePlugins.length === 1 ? (
-                      <PluginLogsTabs plugin={availablePlugins[0]} />
+                      <PluginLogsTabs plugin={availablePlugins[0]} showLabel />
                     ) : (
                       <div className="flex flex-col items-center gap-2 rounded-xl border border-warning/30 bg-warning/10 py-8 text-muted-foreground">
                         <AlertTriangle className="h-5 w-5 text-warning" />
