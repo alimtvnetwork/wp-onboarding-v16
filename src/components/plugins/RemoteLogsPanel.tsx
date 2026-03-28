@@ -757,16 +757,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                           );
                         })}
 
-                        {/* Inspect Payload toggle (inline) */}
-                        <Button
-                          size="sm"
-                          variant={showPayloadInspector ? "secondary" : "ghost"}
-                          className="ml-auto h-6 px-2 text-[10px] text-muted-foreground gap-1"
-                          onClick={() => setShowPayloadInspector((v) => !v)}
-                        >
-                          <Code2 className="h-3 w-3" />
-                          {showPayloadInspector ? "Hide" : "Inspect"}
-                        </Button>
                       </div>
                     )}
 
