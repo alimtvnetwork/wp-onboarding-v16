@@ -27,6 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   FileText,
   Trash2,
   Mail,
@@ -44,6 +51,7 @@ import {
   FlaskConical,
   XCircle,
   Code2,
+  MoreVertical,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
