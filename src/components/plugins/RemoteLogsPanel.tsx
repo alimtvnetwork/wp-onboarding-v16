@@ -67,11 +67,14 @@ import { isApiClientError } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
 import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
+import { useDraggable } from "@/hooks/useDraggable";
+import { X, Move } from "lucide-react";
 
 interface RemoteLogsPanelProps {
   siteId: number;
   siteName?: string;
   autoOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface CapturedInlineError {
