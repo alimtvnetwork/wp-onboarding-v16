@@ -40,9 +40,7 @@ import {
   Copy,
   Download,
   Eye,
-  Settings,
   ScrollText,
-  Zap,
   FlaskConical,
   XCircle,
   Code2,
@@ -160,8 +158,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
   const [isRetrieving, setIsRetrieving] = useState(false);
   const [maxLines, setMaxLines] = useState(200);
 
-  // Active top-level tab
-  const [activeTab, setActiveTab] = useState("overview");
 
   // Demo mode toggle
   const activateDemo = useCallback(async () => {
@@ -170,7 +166,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setRetrieveData(createDemoRetrieveResult());
     setIsDemoMode(true);
     setIsOpen(true);
-    setActiveTab("viewer");
     toast.info("Demo mode activated — showing sample log data");
   }, []);
 
@@ -178,7 +173,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setStatus(null);
     setRetrieveData(null);
     setIsDemoMode(false);
-    setActiveTab("overview");
+    
     toast.info("Demo mode deactivated");
   }, []);
 
@@ -194,7 +189,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
           setRetrieveData(JSON.parse(storedRetrieve));
           setIsDemoMode(true);
           setIsOpen(true);
-          setActiveTab("viewer");
           toast.success("Demo mode auto-activated from Settings", {
             description: "Showing sample log data — no backend required.",
           });
@@ -285,7 +279,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       const response = await api.retrieveRemoteLogs(siteId, { max_lines: maxLines });
       const data = requireSuccess(response, { endpoint, method: "GET" });
       setRetrieveData(data);
-      setActiveTab("viewer");
 
       const hasAvailablePlugin = data.plugins?.some((p) => p.available) ?? false;
       const hasReadableLogContent =
@@ -342,7 +335,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
       setRetrieveData(null);
       captureInlineError(err, endpoint, "GET");
       surfaceError(err, endpoint, "GET");
-      setActiveTab("viewer");
     } finally {
       setIsRetrieving(false);
     }
@@ -590,88 +582,26 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
             )}
 
-            {/* Main Tabbed Interface */}
+            {/* Unified View — Toolbar + Content */}
             {!isLoading && status && !status.pluginOutdated && (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-5">
-                <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl border border-border/60 bg-muted/30 p-1">
-                  <TabsTrigger value="overview" className="text-xs gap-1.5">
-                    <ScrollText className="h-3.5 w-3.5" />
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="viewer" className="text-xs gap-1.5">
-                    <Eye className="h-3.5 w-3.5" />
-                    Viewer
-                    {retrieveData && <Badge variant="secondary" className="text-[10px] px-1 h-4 ml-1">✓</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="actions" className="text-xs gap-1.5">
-                    <Zap className="h-3.5 w-3.5" />
-                    Actions
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* ── OVERVIEW TAB ──────────────────────────────── */}
-                <TabsContent value="overview" className="mt-0 space-y-5">
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total Size</p>
-                      <p className="mt-2 text-2xl font-semibold text-foreground">{formatBytes(status.totalSizeBytes)}</p>
-                    </div>
-                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Log Files</p>
-                      <p className="mt-2 text-2xl font-semibold text-foreground">{status.files.length}</p>
-                    </div>
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Archives</p>
-                      <p className="mt-2 text-2xl font-semibold text-foreground">{status.archiveCount}</p>
-                    </div>
-                  </div>
-
-                  {hasFiles ? (
-                    <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-3">
-                      {status.files.map((file) => (
-                        <div
-                          key={file.name}
-                          className="flex items-center justify-between rounded-xl border border-border/50 bg-background/70 px-4 py-3 text-sm shadow-sm"
-                        >
-                          <span className="font-mono text-xs text-foreground">{file.name}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{file.lineCount.toLocaleString()} lines</span>
-                            <Badge variant="outline" className="text-xs font-mono">{formatBytes(file.sizeBytes)}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-8 text-sm text-muted-foreground">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      No log files found
-                    </div>
-                  )}
-
-                  {status.archiveCount > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Archive className="h-3.5 w-3.5" />
-                      {status.archiveCount} archived rotation{status.archiveCount !== 1 ? "s" : ""}
-                    </div>
-                  )}
-
-                  {/* Quick actions in overview */}
-                  <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
-                    <Button size="sm" variant="outline" onClick={fetchStatus} disabled={isLoading}>
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Refresh
-                    </Button>
+              <div className="space-y-4">
+                {/* Single Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+                  <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      variant="default"
-                      onClick={fetchLogContent}
-                      disabled={isRetrieving || !hasFiles}
+                      variant={retrieveData ? "outline" : "default"}
+                      onClick={retrieveData ? fetchLogContent : fetchLogContent}
+                      disabled={isRetrieving || (!retrieveData && !hasFiles)}
                     >
                       {isRetrieving ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : retrieveData ? (
+                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                       ) : (
                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                       )}
-                      View Logs
+                      {retrieveData ? "Reload" : "Load Logs"}
                     </Button>
                     <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
                       <SelectTrigger className="h-8 w-[110px] text-xs">
@@ -683,294 +613,215 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                         ))}
                       </SelectContent>
                     </Select>
+                    {isDemoMode && (
+                      <Button size="sm" variant="destructive" onClick={deactivateDemo} className="text-xs">
+                        <XCircle className="mr-1 h-3 w-3" />
+                        Exit Demo
+                      </Button>
+                    )}
                   </div>
-                </TabsContent>
-
-                {/* ── VIEWER TAB ────────────────────────────────── */}
-                <TabsContent value="viewer" className="mt-0 space-y-4">
-                  {isRetrieving && !retrieveData ? (
-                    <div className="space-y-4 animate-pulse rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-muted/20 to-background p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-9 w-24 rounded-lg bg-muted" />
-                          <div className="h-9 w-[120px] rounded-lg bg-muted" />
-                        </div>
-                        <div className="h-9 w-32 rounded-lg bg-muted" />
-                      </div>
-                      <div className="h-11 w-full rounded-xl bg-muted" />
-                      <div className="h-10 w-full rounded-xl bg-muted/70" />
-                      <div className="flex items-center gap-2">
-                        <div className="h-5 w-24 rounded-full bg-muted" />
-                        <div className="h-5 w-16 rounded-full bg-muted" />
-                      </div>
-                      <div className="h-[460px] rounded-xl border border-border/50 bg-background/70 p-4 space-y-2">
-                        {Array.from({ length: 12 }).map((_, i) => (
-                          <div key={i} className="h-3 rounded bg-muted" style={{ width: `${60 + Math.random() * 40}%` }} />
-                        ))}
-                      </div>
-                    </div>
-                  ) : !retrieveData ? (
-                    <div className="space-y-4">
-                      {/* Show inline errors directly in the viewer tab when fetch failed */}
-                      {inlineErrors.length > 0 && (
-                        <div className="space-y-3">
-                          {inlineErrors.map(({ diagnostic, originalError, endpoint, method }, idx) => (
-                            <InlineErrorDiagnostic
-                              key={`viewer-${diagnostic.timestamp}-${idx}`}
-                              diagnostic={diagnostic}
-                              onDismiss={() => dismissInlineError(idx)}
-                              onOpenGlobalModal={() => openInGlobalModal(originalError, endpoint, method)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-muted/10 py-12 text-muted-foreground">
-                        <Eye className="h-10 w-10 opacity-30" />
-                        <p className="text-sm">{inlineErrors.length > 0 ? "Log retrieval failed" : "No logs loaded yet"}</p>
-                        <p className="max-w-md text-center text-xs text-muted-foreground">
-                          {inlineErrors.length > 0
-                            ? "The endpoint returned an error. Review the diagnostic above or retry."
-                            : "Load the latest remote logs to inspect info, error, and stacktrace output in a larger viewer."}
-                        </p>
-                        <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving || !hasFiles}>
-                          <Eye className="mr-1.5 h-3.5 w-3.5" />
-                          {inlineErrors.length > 0 ? "Retry" : "Load Logs"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Toolbar */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline" onClick={fetchLogContent} disabled={isRetrieving}>
-                            {isRetrieving ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                            )}
-                            Reload
-                          </Button>
-                          <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
-                            <SelectTrigger className="h-8 w-[110px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[50, 100, 200, 500, 1000, 2000].map((n) => (
-                                <SelectItem key={n} value={String(n)} className="text-xs">{n} lines</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        {isDemoMode && (
-                          <Button size="sm" variant="destructive" onClick={deactivateDemo} className="text-xs">
-                            <XCircle className="mr-1 h-3 w-3" />
-                            Exit Demo
-                          </Button>
-                        )}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleDownloadAll}
-                          disabled={availablePlugins.length === 0}
-                        >
-                          <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
-                        </Button>
-                      </div>
-
-
-                      {/* Log Type Summary Banner */}
-                      {availablePlugins.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
-                          <ScrollText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          {availablePlugins.map((p) => {
-                            const info = p.infoLog?.lines ?? 0;
-                            const err = p.errorLog?.lines ?? 0;
-                            const stack = p.stacktrace?.lines ?? 0;
-                            return (
-                              <div key={p.namespace} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                {availablePlugins.length > 1 && (
-                                  <span className="font-medium text-foreground/70">{p.label}:</span>
-                                )}
-                                <span className={info > 0 ? "text-foreground" : "opacity-50"}>
-                                  Info {info > 0 ? `${info}` : "—"}
-                                </span>
-                                <span className="opacity-30">·</span>
-                                <span className={err > 0 ? "text-destructive" : "opacity-50"}>
-                                  Error {err > 0 ? `${err}` : "—"}
-                                </span>
-                                <span className="opacity-30">·</span>
-                                <span className={stack > 0 ? "text-foreground" : "opacity-50"}>
-                                  Trace {stack > 0 ? `${stack}` : "—"}
-                                </span>
-                                {availablePlugins.length > 1 && <span className="opacity-20 mx-1">|</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Raw Payload Inspector */}
-                      {retrieveData && (
-                        <div className="flex items-center">
-                          <Button
-                            size="sm"
-                            variant={showPayloadInspector ? "secondary" : "ghost"}
-                            className="h-7 px-2 text-[11px] text-muted-foreground gap-1"
-                            onClick={() => setShowPayloadInspector((v) => !v)}
-                          >
-                            <Code2 className="h-3 w-3" />
-                            {showPayloadInspector ? "Hide" : "Inspect"} Payload
-                          </Button>
-                        </div>
-                      )}
-                      {showPayloadInspector && retrieveData && (
-                        <div className="rounded-xl border border-border/60 bg-muted/10 p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">Raw Retrieve Payload</span>
-                              <Badge variant="outline" className="text-[10px] font-mono px-1.5 h-4">
-                                {JSON.stringify(retrieveData).length.toLocaleString()} chars
-                              </Badge>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-[11px]"
-                              onClick={() => {
-                                navigator.clipboard.writeText(JSON.stringify(retrieveData, null, 2));
-                                toast.success("Raw payload copied to clipboard");
-                              }}
-                            >
-                              <Copy className="h-3 w-3 mr-1" /> Copy
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-[300px] rounded-lg border border-border/40 bg-background/80">
-                            <pre className="p-3 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all leading-relaxed">
-                              {JSON.stringify(retrieveData, null, 2)}
-                            </pre>
-                          </ScrollArea>
-                          <p className="text-[10px] text-muted-foreground/60 italic">
-                            Transformed (camelCase) payload after the API boundary. Field names should match the TypeScript interface.
-                          </p>
-                        </div>
-                      )}
-
-                      {availablePlugins.length > 1 ? (
-                           <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                           <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/60 bg-muted/25 p-1">
-                            {availablePlugins.map((p) => (
-                              <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
-                                {p.label}
-                              </TabsTrigger>
-                            ))}
-                          </TabsList>
-                          {availablePlugins.map((p) => (
-                            <TabsContent key={p.namespace} value={p.namespace} className="mt-3">
-                              <PluginLogsTabs plugin={p} />
-                            </TabsContent>
-                          ))}
-                        </Tabs>
-                      ) : availablePlugins.length === 1 ? (
-                         <div className="rounded-xl border border-border/60 bg-muted/10 p-3">
-                           <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{availablePlugins[0].label}</p>
-                          <PluginLogsTabs plugin={availablePlugins[0]} />
-                        </div>
-                      ) : (
-                         <div className="flex flex-col items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 py-8 text-muted-foreground">
-                           <AlertTriangle className="h-5 w-5 text-amber-600" />
-                          <p className="text-sm">No plugin log endpoints available on this site.</p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </TabsContent>
-
-                {/* ── ACTIONS TAB ───────────────────────────────── */}
-                <TabsContent value="actions" className="mt-0 space-y-4">
-                  {/* Clear Logs — Two-step */}
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-3">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                      Clear Logs
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Remove log files from the active plugin on this site. Requires two-step confirmation.
-                    </p>
-                    {!clearToken ? (
+                  <div className="flex items-center gap-2">
+                    {retrieveData && (
                       <Button
                         size="sm"
-                        variant="destructive"
-                        onClick={handleClearStep1}
-                        disabled={isClearing || !hasFiles}
+                        variant="outline"
+                        onClick={handleDownloadAll}
+                        disabled={availablePlugins.length === 0}
                       >
-                        {isClearing ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        )}
-                        Clear Logs
+                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download All
                       </Button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming}>
-                          {isConfirming ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
-                          )}
-                          Confirm ({clearExpiry}s)
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleClearCancel}>Cancel</Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* File overview (compact, before logs are loaded) */}
+                {!retrieveData && !isRetrieving && hasFiles && (
+                  <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/10 p-3">
+                    {status.files.map((file) => (
+                      <div key={file.name} className="flex items-center justify-between rounded-lg border border-border/50 bg-background/70 px-3 py-2 text-xs">
+                        <span className="font-mono text-foreground">{file.name}</span>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{file.lineCount.toLocaleString()} lines</span>
+                          <Badge variant="outline" className="text-[10px] font-mono">{formatBytes(file.sizeBytes)}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {status.archiveCount > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                        <Archive className="h-3.5 w-3.5" />
+                        {status.archiveCount} archived rotation{status.archiveCount !== 1 ? "s" : ""}
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* Clear All Plugins */}
-                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
-                    <h4 className="text-sm font-medium flex items-center gap-2 text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                      Clear All Plugins
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Clear logs for <strong>both</strong> Riseup Asia and QUpload plugins simultaneously.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleClearAllPlugins}
-                      disabled={isClearingAll}
-                    >
-                      {isClearingAll ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      )}
-                      Clear All Plugins
+                {!retrieveData && !isRetrieving && !hasFiles && (
+                  <div className="flex flex-col items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-6 text-sm text-muted-foreground">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    No log files found
+                  </div>
+                )}
+
+                {/* Loading skeleton */}
+                {isRetrieving && !retrieveData && (
+                  <div className="space-y-4 animate-pulse rounded-xl border border-border/40 bg-muted/10 p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-24 rounded-full bg-muted" />
+                      <div className="h-5 w-16 rounded-full bg-muted" />
+                    </div>
+                    <div className="h-10 w-full rounded-xl bg-muted/70" />
+                    <div className="h-[400px] rounded-xl border border-border/50 bg-background/70 p-4 space-y-2">
+                      {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="h-3 rounded bg-muted" style={{ width: `${60 + Math.random() * 40}%` }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Inline errors */}
+                {!retrieveData && !isRetrieving && inlineErrors.length > 0 && (
+                  <div className="space-y-3">
+                    {inlineErrors.map(({ diagnostic, originalError, endpoint, method }, idx) => (
+                      <InlineErrorDiagnostic
+                        key={`viewer-${diagnostic.timestamp}-${idx}`}
+                        diagnostic={diagnostic}
+                        onDismiss={() => dismissInlineError(idx)}
+                        onOpenGlobalModal={() => openInGlobalModal(originalError, endpoint, method)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Loaded log content */}
+                {retrieveData && (
+                  <>
+                    {/* Summary banner */}
+                    {availablePlugins.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
+                        <ScrollText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        {availablePlugins.map((p) => {
+                          const info = p.infoLog?.lines ?? 0;
+                          const err = p.errorLog?.lines ?? 0;
+                          const stack = p.stacktrace?.lines ?? 0;
+                          return (
+                            <div key={p.namespace} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                              {availablePlugins.length > 1 && (
+                                <span className="font-medium text-foreground/70">{p.label}:</span>
+                              )}
+                              <span className={info > 0 ? "text-foreground" : "opacity-50"}>
+                                Info {info > 0 ? `${info}` : "—"}
+                              </span>
+                              <span className="opacity-30">·</span>
+                              <span className={err > 0 ? "text-destructive" : "opacity-50"}>
+                                Error {err > 0 ? `${err}` : "—"}
+                              </span>
+                              <span className="opacity-30">·</span>
+                              <span className={stack > 0 ? "text-foreground" : "opacity-50"}>
+                                Trace {stack > 0 ? `${stack}` : "—"}
+                              </span>
+                              {availablePlugins.length > 1 && <span className="opacity-20 mx-1">|</span>}
+                            </div>
+                          );
+                        })}
+
+                        {/* Inspect Payload toggle (inline) */}
+                        <Button
+                          size="sm"
+                          variant={showPayloadInspector ? "secondary" : "ghost"}
+                          className="ml-auto h-6 px-2 text-[10px] text-muted-foreground gap-1"
+                          onClick={() => setShowPayloadInspector((v) => !v)}
+                        >
+                          <Code2 className="h-3 w-3" />
+                          {showPayloadInspector ? "Hide" : "Inspect"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Raw Payload Inspector */}
+                    {showPayloadInspector && (
+                      <div className="rounded-xl border border-border/60 bg-muted/10 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">Raw Payload</span>
+                            <Badge variant="outline" className="text-[10px] font-mono px-1.5 h-4">
+                              {JSON.stringify(retrieveData).length.toLocaleString()} chars
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[11px]"
+                            onClick={() => {
+                              navigator.clipboard.writeText(JSON.stringify(retrieveData, null, 2));
+                              toast.success("Raw payload copied to clipboard");
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-1" /> Copy
+                          </Button>
+                        </div>
+                        <ScrollArea className="h-[300px] rounded-lg border border-border/40 bg-background/80">
+                          <pre className="p-3 text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-all leading-relaxed">
+                            {JSON.stringify(retrieveData, null, 2)}
+                          </pre>
+                        </ScrollArea>
+                      </div>
+                    )}
+
+                    {/* Plugin tabs + log content */}
+                    {availablePlugins.length > 1 ? (
+                      <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/60 bg-muted/25 p-1">
+                          {availablePlugins.map((p) => (
+                            <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
+                              {p.label}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                        {availablePlugins.map((p) => (
+                          <TabsContent key={p.namespace} value={p.namespace} className="mt-3">
+                            <PluginLogsTabs plugin={p} />
+                          </TabsContent>
+                        ))}
+                      </Tabs>
+                    ) : availablePlugins.length === 1 ? (
+                      <PluginLogsTabs plugin={availablePlugins[0]} />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 rounded-xl border border-warning/30 bg-warning/10 py-8 text-muted-foreground">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
+                        <p className="text-sm">No plugin log endpoints available on this site.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Actions section (compact) */}
+                {hasFiles && (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
+                    {!clearToken ? (
+                      <Button size="sm" variant="outline" onClick={handleClearStep1} disabled={isClearing} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+                        {isClearing ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
+                        Clear Logs
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming} className="text-xs">
+                          {isConfirming ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <AlertTriangle className="mr-1.5 h-3 w-3" />}
+                          Confirm ({clearExpiry}s)
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleClearCancel} className="text-xs">Cancel</Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="outline" onClick={handleClearAllPlugins} disabled={isClearingAll} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+                      {isClearingAll ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
+                      Clear All
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowEmailDialog(true)} className="text-xs">
+                      <Mail className="mr-1.5 h-3 w-3" /> Email
                     </Button>
                   </div>
-
-                  {/* Email Logs */}
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-3">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      Email Logs
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Send log files as email attachments for external review.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowEmailDialog(true)}
-                      disabled={!hasFiles}
-                    >
-                      <Mail className="mr-1.5 h-3.5 w-3.5" /> Send Email
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
             )}
           </CardContent>
         </CollapsibleContent>
