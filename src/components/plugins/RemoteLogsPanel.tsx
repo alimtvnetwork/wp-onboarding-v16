@@ -35,8 +35,6 @@ import {
   Trash2,
   Mail,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
@@ -49,6 +47,8 @@ import {
   XCircle,
   Code2,
   MoreVertical,
+  X,
+  Move,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
