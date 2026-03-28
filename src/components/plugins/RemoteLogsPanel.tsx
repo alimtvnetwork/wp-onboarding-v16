@@ -5,11 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+
+
 import {
   Dialog,
   DialogContent,
@@ -38,8 +35,6 @@ import {
   Trash2,
   Mail,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
@@ -52,6 +47,8 @@ import {
   XCircle,
   Code2,
   MoreVertical,
+  X,
+  Move,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
 import type {
@@ -67,11 +64,14 @@ import { isApiClientError } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
 import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
+import { useDraggable } from "@/hooks/useDraggable";
+
 
 interface RemoteLogsPanelProps {
   siteId: number;
   siteName?: string;
   autoOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface CapturedInlineError {
@@ -155,11 +155,11 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
   );
 }
 
-export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLogsPanelProps) {
-  const [isOpen, setIsOpen] = useState(autoOpen);
+export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }: RemoteLogsPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<RemoteLogsStatusResponse | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const { style: dragStyle, onMouseDown: onDragMouseDown, onTouchStart: onDragTouchStart, resetPosition, isDragged } = useDraggable();
 
   // Retrieve state
   const [retrieveData, setRetrieveData] = useState<LogsRetrieveResult | null>(null);
@@ -173,7 +173,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     setStatus(createDemoLogsStatus());
     setRetrieveData(createDemoRetrieveResult());
     setIsDemoMode(true);
-    setIsOpen(true);
     toast.info("Demo mode activated — showing sample log data");
   }, []);
 
@@ -196,7 +195,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
           setStatus(JSON.parse(storedStatus));
           setRetrieveData(JSON.parse(storedRetrieve));
           setIsDemoMode(true);
-          setIsOpen(true);
           toast.success("Demo mode auto-activated from Settings", {
             description: "Showing sample log data — no backend required.",
           });
@@ -348,21 +346,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
     }
   }, [siteId, maxLines, isDemoMode, status, captureInlineError]);
 
+  // Auto-fetch status on mount
   useEffect(() => {
-    if (autoOpen && !status) {
+    if (!status) {
       fetchStatus();
     }
-  }, [autoOpen, fetchStatus, status]);
-
-  const handleOpen = useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      if (open && !status) {
-        fetchStatus();
-      }
-    },
-    [status, fetchStatus]
-  );
+  }, [fetchStatus, status]);
 
   // ── Download All ──────────────────────────────────────────────
   const handleDownloadAll = () => {
@@ -494,44 +483,55 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
 
 
   return (
-    <Collapsible open={isOpen} onOpenChange={handleOpen}>
-      <Card className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isOpen ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
-                {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                {isDemoMode && (
-                  <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
-                    <FlaskConical className="h-3 w-3 mr-1" /> Demo
-                  </Badge>
-                )}
-                {status && (
-                  <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                    {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                    {status.archiveCount > 0 && (
-                      <span className="ml-1 text-muted-foreground">
-                        · {status.archiveCount} archived
-                      </span>
-                    )}
-                  </Badge>
-                )}
-              </div>
+    <>
+      <Card
+        data-error-modal
+        style={dragStyle}
+        className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
+      >
+        {/* Draggable header */}
+        <CardHeader
+          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-3 px-4"
+          onMouseDown={onDragMouseDown}
+          onTouchStart={onDragTouchStart}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
+              {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
             </div>
-          </CardHeader>
-        </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              {isDemoMode && (
+                <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
+                  <FlaskConical className="h-3 w-3 mr-1" /> Demo
+                </Badge>
+              )}
+              {status && (
+                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
+                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
+                  {status.archiveCount > 0 && (
+                    <span className="ml-1 text-muted-foreground">
+                      · {status.archiveCount} archived
+                    </span>
+                  )}
+                </Badge>
+              )}
+              {isDragged && (
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={resetPosition} title="Reset position">
+                  <Move className="h-3 w-3" />
+                </Button>
+              )}
+              {onClose && (
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
 
-        <CollapsibleContent>
-          <CardContent className="pt-5">
+        <CardContent className="pt-5">
             {/* Clear confirmation bar (shows when clear token is active) */}
             {clearToken && (
               <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 mb-4 text-xs">
@@ -810,7 +810,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
               </div>
             )}
           </CardContent>
-        </CollapsibleContent>
       </Card>
 
       {/* Email Dialog */}
@@ -857,6 +856,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Collapsible>
+    </>
   );
 }
