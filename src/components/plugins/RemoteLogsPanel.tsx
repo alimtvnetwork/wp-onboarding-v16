@@ -818,32 +818,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false }: RemoteLo
                   </>
                 )}
 
-                {/* Actions section (compact) */}
-                {hasFiles && (
-                  <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
-                    {!clearToken ? (
-                      <Button size="sm" variant="outline" onClick={handleClearStep1} disabled={isClearing} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-                        {isClearing ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
-                        Clear Logs
-                      </Button>
-                    ) : (
-                      <>
-                        <Button size="sm" variant="destructive" onClick={handleClearConfirm} disabled={isConfirming} className="text-xs">
-                          {isConfirming ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <AlertTriangle className="mr-1.5 h-3 w-3" />}
-                          Confirm ({clearExpiry}s)
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleClearCancel} className="text-xs">Cancel</Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="outline" onClick={handleClearAllPlugins} disabled={isClearingAll} className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-                      {isClearingAll ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1.5 h-3 w-3" />}
-                      Clear All
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setShowEmailDialog(true)} className="text-xs">
-                      <Mail className="mr-1.5 h-3 w-3" /> Email
-                    </Button>
-                  </div>
-                )}
+
               </div>
             )}
           </CardContent>
