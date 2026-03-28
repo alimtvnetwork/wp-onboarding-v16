@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1370,12 +1370,9 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       )}
 
       {/* Debug Logs Sub-Dialog */}
-      <Dialog open={showDebugLogs} onOpenChange={setShowDebugLogs}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none">
-          <VisuallyHidden><DialogTitle>Remote Logs</DialogTitle></VisuallyHidden>
-          <RemoteLogsPanel siteId={site.id} siteName={site.name} onClose={() => setShowDebugLogs(false)} />
-        </DialogContent>
-      </Dialog>
+      {showDebugLogs && (
+        <RemoteLogsPanel siteId={site.id} siteName={site.name} onClose={() => setShowDebugLogs(false)} />
+      )}
     </>
   );
 }

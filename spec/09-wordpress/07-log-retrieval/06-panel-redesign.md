@@ -1,6 +1,6 @@
 # Remote Logs Panel — UI Redesign
 
-> **Status:** Planned
+> **Status:** In Progress
 > **Created:** 2026-03-28
 > **Replaces:** 05-enhanced-log-viewer.md (partially)
 

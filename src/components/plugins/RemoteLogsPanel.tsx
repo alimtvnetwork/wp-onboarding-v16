@@ -38,7 +38,7 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
-  Archive,
+  
   Copy,
   Download,
   Eye,
@@ -493,10 +493,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
   return (
     <>
+      {/* Fixed overlay backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} />
       <Card
         data-error-modal
         style={dragStyle}
-        className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
       >
         {/* Draggable header */}
         <CardHeader
@@ -666,21 +668,16 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
                 {/* File overview (compact, before logs are loaded) */}
                 {!retrieveData && !isRetrieving && hasFiles && (
-                  <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/10 p-3">
-                    {status.files.map((file) => (
-                      <div key={file.name} className="flex items-center justify-between rounded-lg border border-border/50 bg-background/70 px-3 py-2 text-xs">
-                        <span className="font-mono text-foreground">{file.name}</span>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <span>{file.lineCount.toLocaleString()} lines</span>
-                          <Badge variant="outline" className="text-[10px] font-mono">{formatBytes(file.sizeBytes)}</Badge>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/10 px-3 py-2.5 text-xs text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span>{status.files.length} file{status.files.length !== 1 ? "s" : ""}</span>
+                    <span className="opacity-30">·</span>
+                    <span>{formatBytes(status.totalSizeBytes)}</span>
                     {status.archiveCount > 0 && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                        <Archive className="h-3.5 w-3.5" />
-                        {status.archiveCount} archived rotation{status.archiveCount !== 1 ? "s" : ""}
-                      </div>
+                      <>
+                        <span className="opacity-30">·</span>
+                        <span>{status.archiveCount} archived</span>
+                      </>
                     )}
                   </div>
                 )}
