@@ -436,11 +436,9 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         onOpenChange={setShowCredentials}
       />
       <Dialog open={showLogs} onOpenChange={setShowLogs}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-background/95 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle>Remote Logs — {site.name}</DialogTitle>
-          </DialogHeader>
-          <RemoteLogsPanel siteId={site.id} siteName={site.name} autoOpen />
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none">
+          <VisuallyHidden><DialogTitle>Remote Logs</DialogTitle></VisuallyHidden>
+          <RemoteLogsPanel siteId={site.id} siteName={site.name} autoOpen onClose={() => setShowLogs(false)} />
         </DialogContent>
       </Dialog>
       <Dialog open={showSiteSettings} onOpenChange={setShowSiteSettings}>
