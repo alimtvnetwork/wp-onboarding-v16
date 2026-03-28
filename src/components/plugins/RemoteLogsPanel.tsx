@@ -493,10 +493,12 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
   return (
     <>
+      {/* Fixed overlay backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} />
       <Card
         data-error-modal
         style={dragStyle}
-        className="border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
       >
         {/* Draggable header */}
         <CardHeader
