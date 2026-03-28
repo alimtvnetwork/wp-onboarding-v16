@@ -38,7 +38,7 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
-  Archive,
+  // Archive removed — summary uses text instead
   Copy,
   Download,
   Eye,
