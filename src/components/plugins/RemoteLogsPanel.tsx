@@ -825,7 +825,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
               </div>
             )}
           </CardContent>
-        </CollapsibleContent>
       </Card>
 
       {/* Email Dialog */}
@@ -872,6 +871,6 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Collapsible>
+    </>
   );
 }
