@@ -131,15 +131,24 @@ function PluginLogsTabs({ plugin }: { plugin: PluginLogsData }) {
 
   return (
     <Tabs defaultValue={defaultLogTab} className="w-full">
-      <TabsList className="w-full grid grid-cols-3 h-9">
-        <TabsTrigger value="info" className="text-xs gap-1.5">
-          Info {infoLines > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{infoLines}</Badge>}
+      <TabsList className="w-full grid grid-cols-3 h-8 rounded-lg bg-muted/40 border border-border/50 p-0.5 gap-0.5">
+        <TabsTrigger
+          value="info"
+          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+        >
+          Info {infoLines > 0 && <span className="text-[10px] tabular-nums text-muted-foreground">{infoLines}</span>}
         </TabsTrigger>
-        <TabsTrigger value="error" className="text-xs gap-1.5">
-          Error {errorLines > 0 && <Badge variant="destructive" className="text-[10px] px-1 h-4">{errorLines}</Badge>}
+        <TabsTrigger
+          value="error"
+          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-destructive transition-all"
+        >
+          Error {errorLines > 0 && <span className="text-[10px] tabular-nums text-destructive/70">{errorLines}</span>}
         </TabsTrigger>
-        <TabsTrigger value="stacktrace" className="text-xs gap-1.5">
-          Trace {stackLines > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{stackLines}</Badge>}
+        <TabsTrigger
+          value="stacktrace"
+          className="text-xs rounded-md gap-1 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+        >
+          Trace {stackLines > 0 && <span className="text-[10px] tabular-nums text-muted-foreground">{stackLines}</span>}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="info" className="mt-3">
@@ -782,9 +791,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                     {/* Plugin tabs + log content */}
                     {availablePlugins.length > 1 ? (
                       <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/60 bg-muted/25 p-1">
+                        <TabsList className="w-full grid grid-cols-2 h-8 rounded-lg bg-muted/40 border border-border/50 p-0.5 gap-0.5">
                           {availablePlugins.map((p) => (
-                            <TabsTrigger key={p.namespace} value={p.namespace} className="text-xs flex-1">
+                            <TabsTrigger
+                              key={p.namespace}
+                              value={p.namespace}
+                              className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                            >
                               {p.label}
                             </TabsTrigger>
                           ))}
