@@ -109,7 +109,7 @@ This eliminates the Actions tab entirely.
 5. **Add draggable modal** — Fixed-position overlay with `useDraggable` hook ✓
 6. **Replace file list with summary line** — Compact totals instead of per-file cards ✓
 7. **Fix drag conflicts** — Removed Dialog wrapper that fought useDraggable transforms ✓
-8. **Clean up tabs** — Polish plugin/log-type sub-tabs
+8. **Clean up tabs** — Polish plugin/log-type sub-tabs ✓
 
 ---
 
