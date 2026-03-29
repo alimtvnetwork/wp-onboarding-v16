@@ -1,6 +1,6 @@
 {
-  "version": "2.30.0",
-  "lastCommitSha": "e63747a9c9d16e989d266f82aa17df1fb880a329",
   "pluginSlug": "riseup-asia-uploader",
-  "deployedAt": "2026-03-23T09:54:43Z"
+  "version": "2.31.0",
+  "deployedAt": "2026-03-27T18:00:59Z",
+  "lastCommitSha": "60798e084f66a72b2b39ce39aaea9f2323afc72d"
 }
