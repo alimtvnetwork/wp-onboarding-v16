@@ -517,34 +517,24 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
         style={dragStyle}
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
       >
-        {/* Draggable header */}
+        {/* Draggable header — slim, matches Error Modal */}
         <CardHeader
-          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-3 px-4"
+          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-2.5 px-4"
           onMouseDown={onDragMouseDown}
           onTouchStart={onDragTouchStart}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
-              {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm font-semibold truncate">Remote Logs</span>
+              {siteName && <span className="text-xs text-muted-foreground truncate">— {siteName}</span>}
               {isDemoMode && (
-                <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
-                  <FlaskConical className="h-3 w-3 mr-1" /> Demo
-                </Badge>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-warning/40 bg-warning/15 text-warning font-medium inline-flex items-center gap-1">
+                  <FlaskConical className="h-2.5 w-2.5" /> Demo
+                </span>
               )}
-              {status && (
-                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                  {status.archiveCount > 0 && (
-                    <span className="ml-1 text-muted-foreground">
-                      · {status.archiveCount} archived
-                    </span>
-                  )}
-                </Badge>
-              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {isDragged && (
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={resetPosition} title="Reset position">
                   <Move className="h-3 w-3" />
@@ -552,7 +542,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
               )}
               {onClose && (
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}>
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
