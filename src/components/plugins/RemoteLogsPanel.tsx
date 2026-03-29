@@ -138,31 +138,31 @@ function PluginLogsTabs({ plugin, showLabel }: { plugin: PluginLogsData; showLab
         </div>
       )}
       <Tabs defaultValue={defaultLogTab} className="w-full">
-        <TabsList className="inline-flex h-7 gap-1 bg-transparent p-0">
+        <TabsList className="inline-flex h-8 gap-1.5 bg-muted/15 rounded-full p-1 border border-border/30">
           <TabsTrigger
             value="info"
-            className="rounded-full px-3 h-7 text-xs gap-1.5 bg-muted/30 text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none transition-colors"
+            className="rounded-full px-3.5 h-6 text-xs font-medium gap-1.5 text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all duration-200"
           >
             Info
-            <span className="text-[10px] tabular-nums opacity-70">
+            <span className="text-[10px] tabular-nums opacity-80">
               {infoLines > 0 ? infoLines.toLocaleString() : "—"}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="error"
-            className="rounded-full px-3 h-7 text-xs gap-1.5 bg-muted/30 text-muted-foreground data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground data-[state=active]:shadow-none transition-colors"
+            className="rounded-full px-3.5 h-6 text-xs font-medium gap-1.5 text-muted-foreground data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground data-[state=active]:shadow-sm transition-all duration-200"
           >
             Error
-            <span className="text-[10px] tabular-nums opacity-70">
+            <span className="text-[10px] tabular-nums opacity-80">
               {errorLines > 0 ? errorLines.toLocaleString() : "—"}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="stacktrace"
-            className="rounded-full px-3 h-7 text-xs gap-1.5 bg-muted/30 text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none transition-colors"
+            className="rounded-full px-3.5 h-6 text-xs font-medium gap-1.5 text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all duration-200"
           >
             Trace
-            <span className="text-[10px] tabular-nums opacity-70">
+            <span className="text-[10px] tabular-nums opacity-80">
               {stackLines > 0 ? stackLines.toLocaleString() : "—"}
             </span>
           </TabsTrigger>
@@ -534,7 +534,13 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              {status && (status.totalSizeBytes > 0 || status.archiveCount > 0) && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary font-medium tabular-nums">
+                  {formatBytes(status.totalSizeBytes)}
+                  {status.archiveCount > 0 && ` · ${status.archiveCount} archived`}
+                </span>
+              )}
               {isDragged && (
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={resetPosition} title="Reset position">
                   <Move className="h-3 w-3" />
@@ -765,18 +771,18 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                     {/* Plugin tabs + log content */}
                     {availablePlugins.length > 1 ? (
                       <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                        <TabsList className="inline-flex h-8 gap-4 bg-transparent p-0 border-b border-border/40 rounded-none w-full">
+                        <TabsList className="inline-flex h-9 gap-0 bg-transparent p-0 border-b border-border/30 rounded-none w-full">
                           {availablePlugins.map((p) => {
                             const total = (p.infoLog?.lines ?? 0) + (p.errorLog?.lines ?? 0) + (p.stacktrace?.lines ?? 0);
                             return (
                               <TabsTrigger
                                 key={p.namespace}
                                 value={p.namespace}
-                                className="text-xs rounded-none border-b-2 border-transparent px-1 pb-2 gap-1.5 text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
+                                className="text-xs font-medium rounded-none border-b-2 border-transparent px-3 pb-2.5 pt-1 gap-2 text-muted-foreground hover:text-foreground/70 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
                               >
                                 {p.label}
                                 {total > 0 && (
-                                  <span className="text-[10px] tabular-nums opacity-60">{total.toLocaleString()}</span>
+                                  <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-muted/40 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">{total.toLocaleString()}</span>
                                 )}
                               </TabsTrigger>
                             );
