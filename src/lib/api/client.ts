@@ -124,6 +124,30 @@ async function fetchRequest<T>(
       return transformKeys<ApiResponse<T>>(parsed);
     }
 
+    // Server error (5xx) with non-JSON body — backend crash / unhandled panic
+    if (response.status >= 500 && !looksLikeJson(raw)) {
+      return {
+        success: false,
+        error: {
+          code: "E9007",
+          message: `Server error (${response.status}) — the backend encountered an internal failure`,
+          details:
+            "The server returned an error instead of a JSON response. This typically means an unhandled exception or panic in the backend.\n\n" +
+            "Troubleshooting:\n" +
+            "• Check the backend terminal/logs for stack traces\n" +
+            "• If this is a WordPress operation, check the remote site's PHP error log or wp-content/debug.log\n" +
+            `• Endpoint: ${requestUrl}\n` +
+            `• HTTP ${response.status} (${contentType || "no content-type"})`,
+          context: buildDiagnosticContext({
+            responseStatus: response.status,
+            contentType: contentType || null,
+            responsePreview: preview,
+          }),
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+
     // HTML / SPA fallback detection
     const rawTrim = raw.trim();
     const looksLikeHtml = rawTrim.startsWith("<!") || rawTrim.startsWith("<html") || /<html[\s>]/i.test(raw);
