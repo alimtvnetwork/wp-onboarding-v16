@@ -446,7 +446,14 @@ export default function Plugins() {
             siteId
           }
         });
-        openErrorModal(captured);
+        const isServerCrash = response.error.code === "E9007";
+        toast.error(isServerCrash ? "Server error — check backend logs" : "Publish failed", {
+          description: isServerCrash
+            ? "The backend encountered an internal error. Check terminal logs or the remote site's debug.log."
+            : undefined,
+          action: { label: "Details", onClick: () => openErrorModal(captured) },
+          duration: isServerCrash ? 15000 : 5000,
+        });
       }
     } catch (error: unknown) {
       const { captureException, openErrorModal: showModal } = useErrorStore.getState();

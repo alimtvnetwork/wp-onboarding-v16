@@ -398,6 +398,12 @@ export function getSuggestedFixes(code: string): string[] {
       "Verify VITE_API_URL points to the correct backend URL",
       "Look at the browser network tab for the actual response",
     ],
+    E9007: [
+      "The backend server crashed or panicked while processing the request",
+      "Check the backend terminal/logs for stack traces or panic messages",
+      "If this is a WordPress operation, check wp-content/debug.log on the remote site",
+      "The issue is server-side — retry after investigating backend logs",
+    ],
   };
 
   return fixes[code] || [
