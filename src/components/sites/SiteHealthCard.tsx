@@ -39,8 +39,8 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium truncate">{site.siteName}</span>
-                <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
+                <span className="font-medium truncate group-hover:text-site-card-hover-foreground">{site.siteName}</span>
+                <Badge variant={cfg.variant} className="text-xs group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">{cfg.label}</Badge>
                 {site.uploaderVersion && (
                   <Badge variant="outline" className="text-xs gap-1">
                     <Upload className="h-2.5 w-2.5" />
@@ -54,8 +54,8 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
                 )}
               </div>
 
-              <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1 flex-wrap">
-                <span className="truncate max-w-[200px]">{site.siteUrl}</span>
+              <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1 flex-wrap group-hover:text-site-card-hover-foreground/70">
+                <span className="truncate max-w-[200px] group-hover:text-site-card-hover-foreground/80">{site.siteUrl}</span>
                 {site.avgResponseMs > 0 && (
                   <span className={site.avgResponseMs > 2000 ? "text-warning" : ""}>
                     {Math.round(site.avgResponseMs)}ms avg
@@ -84,7 +84,7 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
             variant="outline"
             onClick={() => onCheck(site.siteId)}
             disabled={isChecking}
-            className="shrink-0"
+            className="shrink-0 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30"
           >
             <RefreshCw className={`h-3 w-3 mr-1 ${isChecking ? "animate-spin" : ""}`} />
             Check
