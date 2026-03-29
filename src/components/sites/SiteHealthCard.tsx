@@ -25,7 +25,7 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
   const consecutiveWarning = site.consecutiveDown >= 3;
 
   return (
-    <Card className={consecutiveWarning ? "border-destructive/50" : undefined}>
+    <Card className={`site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)] ${consecutiveWarning ? "border-destructive/50" : ""}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
