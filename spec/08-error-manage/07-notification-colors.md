@@ -73,21 +73,53 @@ Used for: `toast.info("message")` — status updates, informational messages, de
 
 The error management system maps error codes to specific toast types and messages:
 
+### 3.1 Client-Side Error Codes
+
 | Error Code | Toast Type | Message Pattern | Duration | Action |
 |------------|-----------|-----------------|----------|--------|
-| `E9003` | `toast.error` | "Network error" | default | View Details → Error Modal |
-| `E9005` | `toast.error` | "API returned HTML instead of JSON" | default | View Details → Error Modal |
-| `E9006` | `toast.error` | "Unexpected API response format" | default | View Details → Error Modal |
+| `E9003` | `toast.error` | "Network error" | 10s | View Details → Error Modal |
+| `E9005` | `toast.error` | "API returned HTML instead of JSON" | — | **Auto-opens Error Modal** (no toast) |
+| `E9006` | `toast.error` | "Unexpected API response format" | 10s | View Details → Error Modal |
 | `E9007` | `toast.error` | "Server error (5xx) — backend internal failure" | **15s** | Details → Error Modal |
-| Publish success | `toast.success` | (handled via WebSocket) | default | — |
+
+### 3.2 Global Error Handlers (App.tsx)
+
+These are the **catch-all** handlers that fire when no component-level handler catches the error:
+
+| Handler | Toast Type | Message Pattern | Duration | Action |
+|---------|-----------|-----------------|----------|--------|
+| `ApiClientError` (global) | `toast.error` | `{apiError.message}` + endpoint description | **10s** | View Details → Error Modal |
+| Generic exception (global) | `toast.error` | `"Request failed: {endpoint}"` | **10s** | View Details → Error Modal |
+| Unhandled async error | `toast.error` | `"Async error in {source}"` | **10s** | View Details → Error Modal |
+
+### 3.3 Feature-Specific Notifications
+
+| Feature | Toast Type | Message Pattern | Duration | Action |
+|---------|-----------|-----------------|----------|--------|
+| Publish success | `toast.success` | (handled via WebSocket PUBLISH_COMPLETE) | default | — |
 | Publish fail | `toast.error` | "Publish failed" / "Server error — check backend logs" | 5s / 15s | Details → Error Modal |
 | Connection OK | `toast.success` | "Connection successful! WP {version}" | default | — |
 | Connection fail | `toast.error` | Error message from API | **10s** | View Details → Error Modal |
+| Deploy uploader fail | `toast.error` | Error message from API | **10s** | View Details → Error Modal |
+| Plugin lifecycle fail (WS) | `toast.error` | "Failed to {action} {slug}" | **10s** | View Details → Error Modal |
 | Plugin outdated | `toast.warning` | "Remote plugin is outdated..." | default | — |
+| Snapshot fail | `toast.error` | Error description | **10s** | View Snapshot → link |
 | Clear logs | `toast.success` | "Remote logs cleared successfully" | default | — |
 | Clear partial | `toast.warning` | "Partial clear: {details}" | default | — |
 | Demo mode | `toast.info` | "Demo mode activated..." | default | — |
-| Remote 500 | `toast.error` | "{error message}" | **15s** | View Details → Error Modal |
+| Credential CRUD | `toast.success/error` | "Credential added/updated/deleted" | default | — |
+| Category CRUD | `toast.success/error` | "Category added/removed" | default | — |
+| Clipboard copy | `toast.success` | "Copied to clipboard" | default | — |
+| File download | `toast.success` | "Logs downloaded" | default | — |
+| Validation fail | `toast.error` | "All fields are required" | default | — |
+
+### 3.4 Duration Rules
+
+| Duration | When to use |
+|----------|-------------|
+| **default** (~4s) | Success confirmations, info messages, simple errors |
+| **10s** (`10000`) | Any error with "View Details" → Error Modal action |
+| **15s** (`15000`) | Server crashes (E9007), remote 500s requiring log investigation |
 
 ---
 
