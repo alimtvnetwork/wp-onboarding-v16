@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 
 
@@ -517,34 +517,24 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
         style={dragStyle}
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
       >
-        {/* Draggable header */}
+        {/* Draggable header — slim, matches Error Modal */}
         <CardHeader
-          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-3 px-4"
+          className="cursor-grab active:cursor-grabbing select-none rounded-t-xl border-b border-border/60 bg-muted/20 transition-colors hover:bg-muted/30 py-2.5 px-4"
           onMouseDown={onDragMouseDown}
           onTouchStart={onDragTouchStart}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base font-semibold">Remote Logs</CardTitle>
-              {siteName && <span className="text-sm text-muted-foreground">— {siteName}</span>}
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm font-semibold truncate">Remote Logs</span>
+              {siteName && <span className="text-xs text-muted-foreground truncate">— {siteName}</span>}
               {isDemoMode && (
-                <Badge variant="outline" className="text-[10px] border-warning/40 bg-warning/15 text-warning">
-                  <FlaskConical className="h-3 w-3 mr-1" /> Demo
-                </Badge>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-warning/40 bg-warning/15 text-warning font-medium inline-flex items-center gap-1">
+                  <FlaskConical className="h-2.5 w-2.5" /> Demo
+                </span>
               )}
-              {status && (
-                <Badge variant="secondary" className="text-xs border-primary/20 bg-primary/10 text-primary">
-                  {formatBytes(status.totalSizeBytes || totalLoadedBytes)}
-                  {status.archiveCount > 0 && (
-                    <span className="ml-1 text-muted-foreground">
-                      · {status.archiveCount} archived
-                    </span>
-                  )}
-                </Badge>
-              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {isDragged && (
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={resetPosition} title="Reset position">
                   <Move className="h-3 w-3" />
@@ -552,14 +542,14 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
               )}
               {onClose && (
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}>
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="pt-5">
+        <CardContent className="pt-3 pb-4 px-4">
             {/* Clear confirmation bar (shows when clear token is active) */}
             {clearToken && (
               <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 mb-4 text-xs">
@@ -610,27 +600,27 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
             {/* Unified View — Toolbar + Content */}
             {!isLoading && status && !status.pluginOutdated && (
               <div className="space-y-4">
-                {/* Single Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
-                  <div className="flex items-center gap-2">
+                {/* Compact Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
+                  <div className="flex items-center gap-1.5">
                     <Button
                       size="sm"
                       variant={retrieveData ? "outline" : "default"}
                       onClick={fetchLogContent}
                       disabled={isRetrieving || (!retrieveData && !hasFiles)}
-                      className="h-8"
+                      className="h-7 text-xs"
                     >
                       {isRetrieving ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                       ) : retrieveData ? (
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                        <RefreshCw className="mr-1 h-3 w-3" />
                       ) : (
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                        <Eye className="mr-1 h-3 w-3" />
                       )}
                       {retrieveData ? "Reload" : "Load Logs"}
                     </Button>
                     <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
-                      <SelectTrigger className="h-8 w-[110px] text-xs">
+                      <SelectTrigger className="h-7 w-[90px] text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -640,16 +630,16 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     {retrieveData && (
-                      <Button size="sm" variant="outline" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-8 text-xs">
-                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+                      <Button size="sm" variant="ghost" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-7 text-xs">
+                        <Download className="mr-1 h-3 w-3" /> Download
                       </Button>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
@@ -685,8 +675,8 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
                 {/* File overview (compact, before logs are loaded) */}
                 {!retrieveData && !isRetrieving && hasFiles && (
-                  <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/10 px-3 py-2.5 text-xs text-muted-foreground">
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                    <FileText className="h-3 w-3 shrink-0" />
                     <span>{status.files.length} file{status.files.length !== 1 ? "s" : ""}</span>
                     <span className="opacity-30">·</span>
                     <span>{formatBytes(status.totalSizeBytes)}</span>
@@ -739,37 +729,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                 {/* Loaded log content */}
                 {retrieveData && (
                   <>
-                    {/* Summary banner */}
-                    {availablePlugins.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-muted/15 px-3 py-2">
-                        <ScrollText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        {availablePlugins.map((p) => {
-                          const info = p.infoLog?.lines ?? 0;
-                          const err = p.errorLog?.lines ?? 0;
-                          const stack = p.stacktrace?.lines ?? 0;
-                          return (
-                            <div key={p.namespace} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                              {availablePlugins.length > 1 && (
-                                <span className="font-medium text-foreground/70">{p.label}:</span>
-                              )}
-                              <span className={info > 0 ? "text-foreground" : "opacity-50"}>
-                                Info {info > 0 ? `${info}` : "—"}
-                              </span>
-                              <span className="opacity-30">·</span>
-                              <span className={err > 0 ? "text-destructive" : "opacity-50"}>
-                                Error {err > 0 ? `${err}` : "—"}
-                              </span>
-                              <span className="opacity-30">·</span>
-                              <span className={stack > 0 ? "text-foreground" : "opacity-50"}>
-                                Trace {stack > 0 ? `${stack}` : "—"}
-                              </span>
-                              {availablePlugins.length > 1 && <span className="opacity-20 mx-1">|</span>}
-                            </div>
-                          );
-                        })}
-
-                      </div>
-                    )}
+                    {/* Summary info moved to file overview and tab counts — no banner needed */}
 
                     {/* Raw Payload Inspector */}
                     {showPayloadInspector && (
