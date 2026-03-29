@@ -765,18 +765,18 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                     {/* Plugin tabs + log content */}
                     {availablePlugins.length > 1 ? (
                       <Tabs defaultValue={availablePlugins[0]?.namespace} className="w-full">
-                        <TabsList className="w-full grid grid-cols-2 h-8 rounded-lg bg-muted/30 border border-border/40 p-0.5 gap-0.5">
+                        <TabsList className="inline-flex h-8 gap-4 bg-transparent p-0 border-b border-border/40 rounded-none w-full">
                           {availablePlugins.map((p) => {
                             const total = (p.infoLog?.lines ?? 0) + (p.errorLog?.lines ?? 0) + (p.stacktrace?.lines ?? 0);
                             return (
                               <TabsTrigger
                                 key={p.namespace}
                                 value={p.namespace}
-                                className="text-xs rounded-md gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+                                className="text-xs rounded-none border-b-2 border-transparent px-1 pb-2 gap-1.5 text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-colors"
                               >
                                 {p.label}
                                 {total > 0 && (
-                                  <span className="text-[10px] tabular-nums text-muted-foreground">{total.toLocaleString()}</span>
+                                  <span className="text-[10px] tabular-nums opacity-60">{total.toLocaleString()}</span>
                                 )}
                               </TabsTrigger>
                             );
