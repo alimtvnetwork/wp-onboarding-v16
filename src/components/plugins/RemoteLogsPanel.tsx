@@ -515,7 +515,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
       <Card
         data-error-modal
         style={dragStyle}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border-2 border-border/70 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto border border-border/60 bg-gradient-to-br from-background via-background to-muted/20 shadow-2xl rounded-xl"
       >
         {/* Draggable header — slim, matches Error Modal */}
         <CardHeader
@@ -690,7 +690,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                 )}
 
                 {!retrieveData && !isRetrieving && !hasFiles && (
-                  <div className="flex flex-col items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 py-6 text-sm text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-border/40 bg-primary/5 py-6 text-sm text-muted-foreground">
                     <CheckCircle className="h-5 w-5 text-primary" />
                     No log files found
                   </div>
@@ -698,7 +698,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
 
                 {/* Loading skeleton */}
                 {isRetrieving && !retrieveData && (
-                  <div className="space-y-4 animate-pulse rounded-xl border border-border/40 bg-muted/10 p-4">
+                  <div className="space-y-4 animate-pulse rounded-lg border border-border/40 bg-muted/10 p-4">
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-24 rounded-full bg-muted" />
                       <div className="h-5 w-16 rounded-full bg-muted" />
@@ -791,7 +791,7 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                     ) : availablePlugins.length === 1 ? (
                       <PluginLogsTabs plugin={availablePlugins[0]} showLabel />
                     ) : (
-                      <div className="flex flex-col items-center gap-2 rounded-xl border border-warning/30 bg-warning/10 py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2 rounded-lg border border-border/40 bg-warning/5 py-8 text-muted-foreground">
                         <AlertTriangle className="h-5 w-5 text-warning" />
                         <p className="text-sm">No plugin log endpoints available on this site.</p>
                       </div>

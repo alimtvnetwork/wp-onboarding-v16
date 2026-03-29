@@ -39,7 +39,7 @@ draggable). But the result still feels **cluttered and heavy**:
 | 4 | **Restyle log-type tabs** — pill-style tabs with subtle background, clear active highlight using primary color, smaller text | ✅ done |
 | 5 | **Restyle plugin tabs** — underline-style instead of boxed tabs to differentiate from log-type tabs | ✅ done |
 | 6 | **Reduce container nesting** — remove inner rounded borders on toolbar and summary, use separator lines instead | ✅ done |
-| 7 | **Final visual QA** — screenshot review, spacing consistency, dark mode contrast check | todo |
+| 7 | **Final visual QA** — screenshot review, spacing consistency, dark mode contrast check | ✅ done |
 
 ---
 
