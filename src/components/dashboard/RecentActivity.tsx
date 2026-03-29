@@ -14,7 +14,7 @@ interface RecentActivityProps {
 
 export function RecentActivity({ items }: RecentActivityProps) {
   return (
-    <Card>
+    <Card className="site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
       <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
           <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
