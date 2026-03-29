@@ -600,27 +600,27 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
             {/* Unified View — Toolbar + Content */}
             {!isLoading && status && !status.pluginOutdated && (
               <div className="space-y-4">
-                {/* Single Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
-                  <div className="flex items-center gap-2">
+                {/* Compact Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
+                  <div className="flex items-center gap-1.5">
                     <Button
                       size="sm"
                       variant={retrieveData ? "outline" : "default"}
                       onClick={fetchLogContent}
                       disabled={isRetrieving || (!retrieveData && !hasFiles)}
-                      className="h-8"
+                      className="h-7 text-xs"
                     >
                       {isRetrieving ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                       ) : retrieveData ? (
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                        <RefreshCw className="mr-1 h-3 w-3" />
                       ) : (
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                        <Eye className="mr-1 h-3 w-3" />
                       )}
                       {retrieveData ? "Reload" : "Load Logs"}
                     </Button>
                     <Select value={String(maxLines)} onValueChange={(v) => setMaxLines(Number(v))}>
-                      <SelectTrigger className="h-8 w-[110px] text-xs">
+                      <SelectTrigger className="h-7 w-[90px] text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -630,16 +630,16 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     {retrieveData && (
-                      <Button size="sm" variant="outline" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-8 text-xs">
-                        <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+                      <Button size="sm" variant="ghost" onClick={handleDownloadAll} disabled={availablePlugins.length === 0} className="h-7 text-xs">
+                        <Download className="mr-1 h-3 w-3" /> Download
                       </Button>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
