@@ -33,12 +33,12 @@ draggable). But the result still feels **cluttered and heavy**:
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | **Slim down header** — remove size badge from header (redundant with summary), tighten spacing, match Error Modal header style | todo |
-| 2 | **Compact toolbar** — merge Load + Max Lines into a single group, reduce button heights to h-7, tighter gap | todo |
-| 3 | **Kill summary banner** — remove the per-plugin Info/Error/Trace summary line (redundant with tab counts), keep only pre-load file summary | todo |
+| 1 | **Slim down header** — remove size badge from header (redundant with summary), tighten spacing, match Error Modal header style | ✅ done |
+| 2 | **Compact toolbar** — merge Load + Max Lines into a single group, reduce button heights to h-7, tighter gap | ✅ done |
+| 3 | **Kill summary banner** — remove the per-plugin Info/Error/Trace summary line (redundant with tab counts), keep only pre-load file summary | ✅ done |
 | 4 | **Restyle log-type tabs** — pill-style tabs with subtle background, clear active highlight using primary color, smaller text | todo |
 | 5 | **Restyle plugin tabs** — underline-style instead of boxed tabs to differentiate from log-type tabs | todo |
-| 6 | **Reduce container nesting** — remove inner rounded borders on toolbar and summary, use separator lines instead | todo |
+| 6 | **Reduce container nesting** — remove inner rounded borders on toolbar and summary, use separator lines instead | ✅ done |
 | 7 | **Final visual QA** — screenshot review, spacing consistency, dark mode contrast check | todo |
 
 ---
