@@ -24,7 +24,7 @@ export function RecentPublishes({ entries, stats }: RecentPublishesProps) {
     : null;
 
   return (
-    <Card>
+    <Card className="site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
       <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
