@@ -14,6 +14,7 @@
 | [04-logging-and-diagnostics/](./04-logging-and-diagnostics/) | React execution logger and session-based logging |
 | [05-response-envelope/](./05-response-envelope/) | Universal response envelope — ADR, schema, JSON examples, configurability |
 | [06-apperror-package/](./06-apperror-package/) | AppError package specification |
+| [07-notification-colors.md](./07-notification-colors.md) | Toast/notification color tokens, error code → toast mapping, code examples |
 
 ---
 
