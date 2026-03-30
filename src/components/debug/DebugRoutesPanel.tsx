@@ -159,6 +159,10 @@ export function DebugRoutesPanel() {
               <Skeleton key={i} className="h-8 w-full" />
             ))}
           </div>
+        ) : error ? (
+          <p className="text-sm text-destructive text-center py-8">
+            Failed to load routes — {error.message}
+          </p>
         ) : !data ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             No route data available — the plugin may not support /debug/routes
