@@ -12,3 +12,4 @@
 | [02-interactive-card-hover.md](./02-interactive-card-hover.md) | Interactive card hover states — green border accent, background tint, code examples |
 | [03-notification-toast-theme.md](./03-notification-toast-theme.md) | Toast notification colors, duration rules, z-index, and behavioral patterns |
 | [04-global-error-modal-theme.md](./04-global-error-modal-theme.md) | Global Error Modal — layout, tab structure, color accents, responsive behavior |
+| [05-inline-error-diagnostic-theme.md](./05-inline-error-diagnostic-theme.md) | Inline Error Diagnostic — collapsible error panels with red/orange/neutral accents |
