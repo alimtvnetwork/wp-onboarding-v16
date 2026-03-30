@@ -38,7 +38,7 @@ const actions = [
 
 export function QuickActions({ onAddSite }: QuickActionsProps) {
   return (
-    <Card className="site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
+    <Card className="shadow-sm border-border/40">
       <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
           <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -48,18 +48,19 @@ export function QuickActions({ onAddSite }: QuickActionsProps) {
       <CardContent className="grid gap-2 p-4 sm:p-6 pt-0">
         {actions.map((action) => {
           const inner = (
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-2.5 sm:py-3 border-border/50 bg-secondary/30 hover:bg-secondary/50 group-hover:bg-muted/50 group-hover:border-border"
+            <div
+              className="group/item flex items-center w-full rounded-md border border-border/50 bg-card px-3 sm:px-4 py-2.5 sm:py-3 cursor-pointer transition-all duration-300 hover:border-primary hover:bg-primary/5"
               onClick={action.actionKey === "addSite" ? onAddSite : undefined}
+              role="button"
+              tabIndex={0}
             >
-              <action.icon className="h-4 w-4 mr-2 sm:mr-3 text-primary shrink-0 group-hover:text-foreground" />
+              <action.icon className="h-4 w-4 mr-2 sm:mr-3 text-primary shrink-0" />
               <div className="text-left min-w-0 flex-1">
-                <p className="font-medium text-sm group-hover:text-foreground">{action.title}</p>
-                <p className="text-xs text-muted-foreground truncate group-hover:text-foreground/70">{action.description}</p>
+                <p className="font-medium text-sm text-foreground">{action.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{action.description}</p>
               </div>
-              <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground shrink-0 hidden sm:block group-hover:text-foreground" />
-            </Button>
+              <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground shrink-0 hidden sm:block group-hover/item:text-foreground transition-colors" />
+            </div>
           );
 
           return action.href ? (
