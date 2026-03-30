@@ -347,7 +347,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Backup Running</span>
               </span>
