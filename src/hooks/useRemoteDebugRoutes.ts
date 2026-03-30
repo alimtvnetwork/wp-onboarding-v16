@@ -13,5 +13,7 @@ export function useRemoteDebugRoutes(siteId: number | null) {
       return response.data as DebugRoutesResponse;
     },
     enabled: siteId !== null,
+    retry: false,
+    meta: { suppressGlobalError: true },
   });
 }
