@@ -317,9 +317,9 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {/* Status Badge */}
         <div className="flex items-center justify-between">
           <div
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)} group-hover:bg-muted group-hover:text-foreground group-hover:border-border`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)}`}
           >
-            <span className="group-hover:text-foreground">{getStatusIcon(site.connectionStatus)}</span>
+            <span>{getStatusIcon(site.connectionStatus)}</span>
             <span>{getStatusText(site.connectionStatus)}</span>
           </div>
           
