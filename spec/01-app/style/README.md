@@ -10,3 +10,4 @@
 |------|-------------|
 | [01-dark-theme-tokens.md](./01-dark-theme-tokens.md) | Master dark theme color tokens, semantic usage, and anti-patterns |
 | [02-interactive-card-hover.md](./02-interactive-card-hover.md) | Interactive card hover states — green border accent, background tint, code examples |
+| [03-notification-toast-theme.md](./03-notification-toast-theme.md) | Toast notification colors, duration rules, z-index, and behavioral patterns |
