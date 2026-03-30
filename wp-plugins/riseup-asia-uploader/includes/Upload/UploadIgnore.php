@@ -16,9 +16,10 @@ use Throwable;
 use RiseupAsia\Upload\Traits\UploadIgnorePatternTrait;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Database\Traits\RiseupUploadIgnore;
 use RiseupAsia\Logging\FileLogger;
 
-class UploadIgnore {
+class UploadIgnore implements RiseupUploadIgnore {
 
     use UploadIgnorePatternTrait;
 
