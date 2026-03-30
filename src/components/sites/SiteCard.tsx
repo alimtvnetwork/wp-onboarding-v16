@@ -297,7 +297,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             {mappings.length > 2 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
+                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">
                     +{mappings.length - 2} more
                   </button>
                 </DropdownMenuTrigger>
