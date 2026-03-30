@@ -123,68 +123,125 @@ These are the **catch-all** handlers that fire when no component-level handler c
 
 ---
 
-## 4. Code Examples
+## 4. Code Examples — Color-Coded by Toast Type
 
-### 4.1 Standard error with modal escalation
+Each example below shows the toast call **and** the design tokens it maps to, so every team member knows exactly which colors render.
+
+---
+
+### 4.1 `toast.error()` — Red tokens
+
+**Tokens applied:** `--toast-error-bg` · `--toast-error-border` · `--toast-error-fg`
+
+| Mode | Background | Border | Text |
+|------|-----------|--------|------|
+| Light | `hsl(0 72% 96%)` | `hsl(0 72% 60%)` | `hsl(0 72% 38%)` |
+| Dark | `hsl(0 72% 15%)` | `hsl(0 72% 30%)` | `hsl(0 72% 82%)` |
 
 ```tsx
-import { toast } from "sonner";
-import { useErrorStore } from "@/stores/errorStore";
-
-// Capture and show with "View Details" action
+// Standard API error with modal escalation
 const captured = captureError(response.error, {
   endpoint: "/plugins/3/sites/2/publish",
   method: "POST",
 });
 toast.error("Publish failed", {
   action: { label: "Details", onClick: () => openErrorModal(captured) },
+  duration: 10000, // 10s for any error with View Details
 });
-```
 
-### 4.2 Server crash (E9007) — extended duration
-
-```tsx
+// Server crash (E9007) — extended 15s duration
 const isServerCrash = response.error.code === "E9007";
 toast.error(
   isServerCrash ? "Server error — check backend logs" : "Publish failed",
   {
     description: isServerCrash
-      ? "The backend encountered an internal error. Check terminal logs or the remote site's debug.log."
+      ? "The backend encountered an internal error. Check terminal logs."
       : undefined,
     action: { label: "Details", onClick: () => openErrorModal(captured) },
     duration: isServerCrash ? 15000 : 5000,
   }
 );
-```
 
-### 4.3 Remote site 500 — WordPress troubleshooting
-
-```tsx
+// Remote site 500 — WordPress troubleshooting
 toast.error("Remote plugin action failed", {
   description: "Check the site's PHP error log or wp-content/debug.log",
   duration: 15000,
 });
+
+// Validation error — default duration
+toast.error("All fields are required");
 ```
 
-### 4.4 Success confirmation
+---
+
+### 4.2 `toast.success()` — Green tokens
+
+**Tokens applied:** `--toast-success-bg` · `--toast-success-border` · `--toast-success-fg`
+
+| Mode | Background | Border | Text |
+|------|-----------|--------|------|
+| Light | `hsl(142 76% 95%)` | `hsl(142 76% 80%)` | `hsl(142 76% 25%)` |
+| Dark | `hsl(120 45% 12%)` | `hsl(120 45% 26%)` | `hsl(120 45% 75%)` |
 
 ```tsx
+// Simple confirmations — default 4s duration
 toast.success("Logs downloaded");
 toast.success(`Connection successful! WP ${response.data.wpVersion}`);
+toast.success("Remote logs cleared successfully");
+toast.success("Credential added");
+toast.success("Copied to clipboard");
 ```
 
-### 4.5 Warning — partial result
+---
+
+### 4.3 `toast.warning()` — Amber tokens
+
+**Tokens applied:** `--toast-warning-bg` · `--toast-warning-border` · `--toast-warning-fg`
+
+| Mode | Background | Border | Text |
+|------|-----------|--------|------|
+| Light | `hsl(38 92% 95%)` | `hsl(38 92% 75%)` | `hsl(38 92% 28%)` |
+| Dark | `hsl(38 92% 13%)` | `hsl(38 92% 26%)` | `hsl(38 92% 78%)` |
 
 ```tsx
+// Partial results — default 4s duration
 toast.warning(`Partial clear: ${failures.join("; ")}`);
 toast.warning("No log retrieval endpoints available — the remote plugin may be outdated.");
+toast.warning("Remote plugin is outdated — consider updating");
 ```
 
-### 4.6 Info — status update
+---
+
+### 4.4 `toast.info()` — Blue tokens
+
+**Tokens applied:** `--toast-info-bg` · `--toast-info-border` · `--toast-info-fg`
+
+| Mode | Background | Border | Text |
+|------|-----------|--------|------|
+| Light | `hsl(217 91% 96%)` | `hsl(217 91% 78%)` | `hsl(217 91% 32%)` |
+| Dark | `hsl(217 91% 13%)` | `hsl(217 91% 26%)` | `hsl(217 91% 80%)` |
 
 ```tsx
+// Status updates — default 4s duration
 toast.info("Demo mode activated — showing sample log data");
 toast.info("Clear token issued — confirm within " + data.expiresIn + "s");
+```
+
+---
+
+### 4.5 `toast()` — Base neutral tokens (avoid for semantic messages)
+
+**Tokens applied:** `--toast-bg` · `--toast-border` · `--toast-fg`
+
+| Mode | Background | Border | Text |
+|------|-----------|--------|------|
+| Light | `hsl(220 13% 18%)` | `hsl(220 13% 25%)` | `hsl(0 0% 98%)` |
+| Dark | `hsl(220 13% 14%)` | `hsl(220 13% 22%)` | `hsl(0 0% 98%)` |
+
+```tsx
+// ⚠️ Only for truly neutral messages with no semantic meaning
+// Prefer toast.info() / toast.success() / toast.error() / toast.warning() instead
+toast("Processing...");
 ```
 
 ---
