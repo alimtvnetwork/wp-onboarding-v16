@@ -14,3 +14,4 @@
 | [04-global-error-modal-theme.md](./04-global-error-modal-theme.md) | Global Error Modal — layout, tab structure, color accents, responsive behavior |
 | [05-inline-error-diagnostic-theme.md](./05-inline-error-diagnostic-theme.md) | Inline Error Diagnostic — collapsible error panels with red/orange/neutral accents |
 | [06-remote-log-viewer-theme.md](./06-remote-log-viewer-theme.md) | Remote Log Viewer — draggable panel, dual-tab navigation, severity colors, search highlighting |
+| [07-sidebar-navigation-layout-theme.md](./07-sidebar-navigation-layout-theme.md) | Sidebar Navigation & Page Layout — fixed sidebar, route highlighting, responsive collapse, header bar |
