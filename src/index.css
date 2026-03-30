@@ -50,11 +50,10 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     /* Site card hover tokens — light theme */
-    --site-card-hover: 0 0% 92%;
-    --site-card-hover-fg: 0 0% 8%;
-    --site-card-hover-gradient: linear-gradient(135deg, hsl(0deg 0% 100%) 0%, hsl(0deg 0% 48.32%) 100%);
-    --site-card-hover-shadow: 2px 2px 0px hsl(30deg 6.41% 76.78% / 25%);
-    --site-card-text-shadow: 1px 1px 0px hsl(0deg 13.53% 83.51% / 30%);
+    --site-card-hover: 0 0% 96%;
+    --site-card-hover-fg: 0 0% 15%;
+    --site-card-hover-accent: 120 45% 39%;
+    --site-card-hover-shadow: 2px 2px 1px rgba(0, 0, 0, 0.2);
 
     /* Toast semantic tokens — light theme */
     --toast-bg: 220 13% 18%;
