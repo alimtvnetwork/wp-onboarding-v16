@@ -289,8 +289,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {mappings && mappings.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {mappings.slice(0, 2).map((mapping: PluginMapping) => (
-              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50 group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
-                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50">
+                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
                 <span className="truncate max-w-[100px]">{mapping.remoteSlug}</span>
               </Badge>
             ))}
