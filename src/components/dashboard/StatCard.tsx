@@ -17,18 +17,18 @@ interface StatCardProps {
 export function StatCard({ title, value, total, icon: Icon, colorClass, href, sparkline, sparklineColor }: StatCardProps) {
   return (
     <Link to={href}>
-      <Card className="site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)] cursor-pointer h-full">
+      <Card className="transition-all duration-300 shadow-sm border border-border/50 hover:border-primary hover:bg-primary/5 cursor-pointer h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-4">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2 group-hover:text-foreground/70">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2">
             {title}
           </CardTitle>
-          <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${colorClass} shrink-0 group-hover:text-foreground`} />
+          <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${colorClass} shrink-0`} />
         </CardHeader>
         <CardContent className="p-3 sm:p-4 pt-0 space-y-1">
-          <div className="text-xl sm:text-2xl font-bold group-hover:text-foreground">
+          <div className="text-xl sm:text-2xl font-bold">
             {value}
             {total !== undefined && (
-              <span className="text-xs sm:text-sm font-normal text-muted-foreground group-hover:text-foreground/70">
+              <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                 /{total}
               </span>
             )}
