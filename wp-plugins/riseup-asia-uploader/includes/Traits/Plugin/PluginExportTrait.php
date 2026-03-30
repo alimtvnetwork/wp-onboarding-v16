@@ -71,7 +71,7 @@ trait PluginExportTrait
     private function createPluginZip(
         string $pluginDir,
         string $slug,
-        \RiseupUploadIgnore $ignore,
+        \RiseupAsia\Database\Traits\RiseupUploadIgnore $ignore,
     ): ?string {
         $tempDir = $this->getTempDir();
         $zipFile = $tempDir . '/' . $slug . '.zip';
