@@ -144,6 +144,7 @@ All queries and mutations with `suppressGlobalError: true`:
 | `src/pages/RequestSessions.tsx` | deleteMutation, clearMutation |
 | `src/pages/Tests.tsx` | startRun, rerunCase |
 | `src/hooks/useSettings.ts` | `useSaveSettings` mutation (called with inline `onError` toasts throughout Settings.tsx) |
+| `src/hooks/useRemoteDebugRoutes.ts` | debug-routes query (inline error UI with retry in DebugRoutesPanel) |
 
 ### Intentionally NOT Suppressed
 

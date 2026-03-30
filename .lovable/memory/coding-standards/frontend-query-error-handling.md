@@ -28,6 +28,7 @@ Both are in `src/hooks/useCaptureQueryError.ts`.
 | `src/pages/Sessions.tsx` | deleteMutation (useCaptureOnError) |
 | `src/pages/RequestSessions.tsx` | deleteMutation, clearMutation (useCaptureOnError) |
 | `src/pages/Tests.tsx` | startRun, rerunCase (useCaptureOnError) |
+| `src/hooks/useRemoteDebugRoutes.ts` | debug-routes query (inline error UI with retry in DebugRoutesPanel) |
 
 ### Rule
 
