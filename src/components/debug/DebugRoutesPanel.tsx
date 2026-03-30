@@ -160,9 +160,23 @@ export function DebugRoutesPanel() {
             ))}
           </div>
         ) : error ? (
-          <p className="text-sm text-destructive text-center py-8">
-            Failed to load routes — {error.message}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-destructive">
+              Failed to load routes — {error.message}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                queryClient.invalidateQueries({
+                  queryKey: ["debug-routes", selectedSiteId],
+                })
+              }
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Try again
+            </Button>
+          </div>
         ) : !data ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             No route data available — the plugin may not support /debug/routes
