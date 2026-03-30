@@ -189,11 +189,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle className="h-4 w-4 text-primary group-hover:text-site-card-hover-foreground" />;
+        return <CheckCircle className="h-4 w-4 text-primary group-hover:text-foreground" />;
       case "disconnected":
-        return <XCircle className="h-4 w-4 text-destructive group-hover:text-site-card-hover-foreground" />;
+        return <XCircle className="h-4 w-4 text-destructive group-hover:text-foreground" />;
       default:
-        return <HelpCircle className="h-4 w-4 text-muted-foreground group-hover:text-site-card-hover-foreground" />;
+        return <HelpCircle className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />;
     }
   };
 
@@ -228,8 +228,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             onClick={() => onEdit(site)}
             title="Click to edit"
           >
-            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-300 ease-in-out group-hover:bg-site-card-hover-foreground/15">
-              <Globe className="h-5 w-5 text-primary transition-colors duration-300 ease-in-out group-hover:text-site-card-hover-foreground" />
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0 transition-all duration-300 ease-in-out group-hover:bg-muted">
+              <Globe className="h-5 w-5 text-primary transition-colors duration-300 ease-in-out group-hover:text-foreground" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base truncate flex items-center gap-2">
@@ -240,7 +240,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate group-hover:text-site-card-hover-foreground/80"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 truncate hover:text-primary"
                 onClick={(e) => e.stopPropagation()}
               >
                 {site.url.replace(/^https?:\/\//, "")}
@@ -250,12 +250,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
           {/* Header actions: Edit + Overflow */}
           <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground" onClick={() => onEdit(site)} title="Edit site">
+            <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-foreground" onClick={() => onEdit(site)} title="Edit site">
               <Edit className="h-3.5 w-3.5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-site-card-hover-foreground">
+                <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-foreground">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -289,15 +289,15 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {mappings && mappings.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {mappings.slice(0, 2).map((mapping: PluginMapping) => (
-              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50 group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
-                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground group-hover:text-site-card-hover-foreground" />
+              <Badge key={mapping.id} variant="outline" className="text-[10px] h-5 px-1.5 flex items-center gap-1 bg-secondary/50 border-border/50 group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
+                <Package className="h-2.5 w-2.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
                 <span className="truncate max-w-[100px]">{mapping.remoteSlug}</span>
               </Badge>
             ))}
             {mappings.length > 2 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
+                  <button className="text-[10px] h-5 px-1.5 rounded-md border border-border/50 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
                     +{mappings.length - 2} more
                   </button>
                 </DropdownMenuTrigger>
@@ -317,19 +317,19 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {/* Status Badge */}
         <div className="flex items-center justify-between">
           <div
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)} group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(site.connectionStatus)} group-hover:bg-muted group-hover:text-foreground group-hover:border-border`}
           >
-            <span className="group-hover:text-site-card-hover-foreground">{getStatusIcon(site.connectionStatus)}</span>
+            <span className="group-hover:text-foreground">{getStatusIcon(site.connectionStatus)}</span>
             <span>{getStatusText(site.connectionStatus)}</span>
           </div>
           
           {site.connectionStatus === ConnectionStatus.Connected ? (
-            <Button variant="ghost" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs group-hover:text-foreground" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Retest
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-7 text-xs group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="outline" size="sm" className="h-7 text-xs group-hover:text-foreground group-hover:border-border" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Test
             </Button>
@@ -338,7 +338,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
         {/* Last tested info */}
         {site.lastTestedAt && (
-          <p className="text-xs text-muted-foreground group-hover:text-site-card-hover-foreground/70">
+          <p className="text-xs text-muted-foreground group-hover:text-foreground/70">
             Last tested: {new Date(site.lastTestedAt).toLocaleDateString()}
           </p>
         )}
@@ -347,13 +347,13 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium group-hover:bg-site-card-hover-foreground/15 group-hover:text-site-card-hover-foreground group-hover:border-site-card-hover-foreground/30">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/20 font-medium group-hover:bg-muted group-hover:text-foreground group-hover:border-border">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Backup Running</span>
               </span>
             )}
             {lastBackup && (
-              <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-site-card-hover-foreground/80">
+              <span className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary">
                 <Clock className="h-3 w-3" />
                 <span>Last backup {formatDistanceToNow(parseISO(lastBackup.createdAt), { addSuffix: true })}</span>
               </span>
@@ -362,11 +362,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: 3 visible + overflow menu */}
-        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-300 ease-in-out group-hover:border-site-card-hover-foreground/20">
+        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-300 ease-in-out group-hover:border-border/20">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-site-card-hover-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Plugins"
@@ -377,7 +377,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-site-card-hover-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
             onClick={() => setShowHealthSummary(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Health"
@@ -388,7 +388,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-site-card-hover-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
             onClick={() => setShowLogs(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Logs"
@@ -398,7 +398,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0 group-hover:text-site-card-hover-foreground" title="More actions">
+              <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0 group-hover:text-foreground" title="More actions">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
