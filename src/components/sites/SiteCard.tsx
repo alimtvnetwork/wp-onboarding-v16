@@ -220,7 +220,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   };
 
   return (
-    <Card className="site-card-hover group relative transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)]">
+    <Card className="relative transition-all duration-300 shadow-sm border border-border/50 hover:border-primary hover:bg-primary/5">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div
