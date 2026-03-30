@@ -6,8 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import type { SiteHealthSummary } from "@/types/siteHealth";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof Heart; dotClass: string }> = {
-  healthy: { label: "Healthy", variant: "default", icon: Heart, dotClass: "bg-emerald-500" },
-  degraded: { label: "Degraded", variant: "secondary", icon: AlertTriangle, dotClass: "bg-yellow-500" },
+  healthy: { label: "Healthy", variant: "default", icon: Heart, dotClass: "bg-primary" },
+  degraded: { label: "Degraded", variant: "secondary", icon: AlertTriangle, dotClass: "bg-warning" },
   down: { label: "Down", variant: "destructive", icon: XCircle, dotClass: "bg-destructive" },
   unknown: { label: "Unknown", variant: "outline", icon: HelpCircle, dotClass: "bg-muted-foreground" },
 };
@@ -25,7 +25,7 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
   const consecutiveWarning = site.consecutiveDown >= 3;
 
   return (
-    <Card className={`site-card-hover group transition-all duration-500 ease-in-out shadow-sm hover:shadow-[var(--site-card-hover-shadow)] ${consecutiveWarning ? "border-destructive/50" : ""}`}>
+    <Card className={`transition-all duration-300 shadow-sm border border-border/50 hover:border-primary hover:bg-primary/5 ${consecutiveWarning ? "border-destructive/50" : ""}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -39,8 +39,8 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium truncate group-hover:text-foreground">{site.siteName}</span>
-                <Badge variant={cfg.variant} className="text-xs group-hover:bg-muted group-hover:text-foreground group-hover:border-border">{cfg.label}</Badge>
+                <span className="font-medium truncate">{site.siteName}</span>
+                <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
                 {site.uploaderVersion && (
                   <Badge variant="outline" className="text-xs gap-1">
                     <Upload className="h-2.5 w-2.5" />
@@ -54,7 +54,7 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
                 )}
               </div>
 
-              <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1 flex-wrap group-hover:text-foreground/70">
+              <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1 flex-wrap">
                 <span className="truncate max-w-[200px] hover:text-primary">{site.siteUrl}</span>
                 {site.avgResponseMs > 0 && (
                   <span className={site.avgResponseMs > 2000 ? "text-warning" : ""}>
@@ -84,7 +84,7 @@ export function SiteHealthCard({ site, onCheck, isChecking }: SiteHealthCardProp
             variant="outline"
             onClick={() => onCheck(site.siteId)}
             disabled={isChecking}
-            className="shrink-0 group-hover:text-foreground group-hover:border-border"
+            className="shrink-0"
           >
             <RefreshCw className={`h-3 w-3 mr-1 ${isChecking ? "animate-spin" : ""}`} />
             Check

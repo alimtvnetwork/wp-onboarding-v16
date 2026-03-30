@@ -362,11 +362,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Bottom bar: 3 visible + overflow menu */}
-        <div className="flex items-center gap-0.5 pt-2 border-t transition-colors duration-300 ease-in-out group-hover:border-border/20">
+        <div className="flex items-center gap-0.5 pt-2 border-t border-border/30">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Plugins"
@@ -377,7 +377,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowHealthSummary(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Health"
@@ -388,7 +388,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0 group-hover:text-foreground"
+            className="flex-1 h-8 text-xs gap-1.5 px-2 min-w-0"
             onClick={() => setShowLogs(true)}
             disabled={site.connectionStatus !== ConnectionStatus.Connected}
             title="Logs"
@@ -398,7 +398,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0 group-hover:text-foreground" title="More actions">
+              <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0" title="More actions">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
