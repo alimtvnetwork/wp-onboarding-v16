@@ -58,7 +58,7 @@ export function DebugRoutesPanel() {
   const [isOpen, setIsOpen] = useState(() => localStorage.getItem("debug-routes-open") === "true");
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isFetching } = useRemoteDebugRoutes(selectedSiteId);
+  const { data, isLoading, isFetching, error } = useRemoteDebugRoutes(selectedSiteId);
 
   // Auto-select first site
   useEffect(() => {
