@@ -15,6 +15,7 @@ All application specs, feature definitions, and behavioral requirements live her
 |-----------|-------------|
 | [error-manage/](./error-manage/README.md) | Error modal, delegated error logs, architecture diagrams |
 | [deploy/](./deploy/README.md) | Deploy pre-flight probing, deployment pipeline |
+| [style/](./style/README.md) | Dark theme tokens, interactive card hover states, color anti-patterns |
 
 ### Standalone Specs
 

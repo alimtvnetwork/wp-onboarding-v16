@@ -1,0 +1,12 @@
+# Style & Theming — Index
+
+> **Updated:** 2026-03-30
+
+---
+
+## Specifications
+
+| File | Description |
+|------|-------------|
+| [01-dark-theme-tokens.md](./01-dark-theme-tokens.md) | Master dark theme color tokens, semantic usage, and anti-patterns |
+| [02-interactive-card-hover.md](./02-interactive-card-hover.md) | Interactive card hover states — green border accent, background tint, code examples |
