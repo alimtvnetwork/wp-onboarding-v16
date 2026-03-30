@@ -324,12 +324,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
           
           {site.connectionStatus === ConnectionStatus.Connected ? (
-            <Button variant="ghost" size="sm" className="h-7 text-xs group-hover:text-foreground" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Retest
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="h-7 text-xs group-hover:text-foreground group-hover:border-border" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleTestConnection} disabled={testingSiteId === site.id}>
               {testingSiteId === site.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Test
             </Button>
