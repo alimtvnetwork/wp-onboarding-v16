@@ -255,7 +255,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 group-hover:text-foreground">
+                <Button variant="ghost" size="icon" className="h-7 w-7">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
