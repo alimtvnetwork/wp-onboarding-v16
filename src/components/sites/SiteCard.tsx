@@ -338,7 +338,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
         {/* Last tested info */}
         {site.lastTestedAt && (
-          <p className="text-xs text-muted-foreground group-hover:text-foreground/70">
+          <p className="text-xs text-muted-foreground">
             Last tested: {new Date(site.lastTestedAt).toLocaleDateString()}
           </p>
         )}
