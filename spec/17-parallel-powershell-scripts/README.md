@@ -18,3 +18,4 @@
 | [05-flags-and-config.md](./05-flags-and-config.md) | CLI flags and configuration |
 | [06-plugin-status.md](./06-plugin-status.md) | Plugin status checking |
 | [07-php-check-skip-folders.md](./07-php-check-skip-folders.md) | PHP syntax check folder exclusions |
+| [08-tc-phase-summary.md](./08-tc-phase-summary.md) | `-tc` phase summary output format and column alignment |
