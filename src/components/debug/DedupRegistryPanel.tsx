@@ -127,7 +127,7 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
           </div>
         )}
 
-        {data?.plugins && data.plugins.length === 0 && !isLoading && (
+        {data?.data?.plugins && data.data.plugins.length === 0 && !isLoading && (
           <div className="text-muted-foreground text-sm">No plugin namespaces responded.</div>
         )}
       </CardContent>
