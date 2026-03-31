@@ -57,12 +57,12 @@ All writes use `LOCK_EX` to prevent corruption from concurrent PHP requests.
 **Location:** `wp-plugins/riseup-asia-uploader/includes/Logging/Traits/LoggerPersistentDedupTrait.php`
 
 **Methods:**
-- `isPersistentDuplicate(string $message, string $file, int $line): bool` — main check
+- `isPersistentDuplicate(string $message, string $file, int $line, string $level = 'info'): bool` — main check
 - `loadPersistentDedupRegistry(): void` — lazy-load JSON, validate version
 - `savePersistentDedupRegistry(): void` — write JSON with LOCK_EX
 - `clearPersistentDedupRegistry(): void` — delete the JSON file (for log clear operations)
 
-**Integration:** The `info()` method in `LoggerLevelMethodsTrait` calls `isPersistentDuplicate()` before the existing in-memory `isDuplicate()` check.
+**Integration:** Both the `info()` and `debug()` methods in `LoggerLevelMethodsTrait` call `isPersistentDuplicate()` before the existing in-memory `isDuplicate()` check.
 
 ### FileLogger Changes
 
