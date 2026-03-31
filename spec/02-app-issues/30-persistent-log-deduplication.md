@@ -40,11 +40,11 @@ Add **persistent deduplication** for **Info and Debug** level log entries using 
 
 ## Dedup Flow
 
-1. **On first Info log call**: load `dedup-registry.json` (lazy, once per request)
+1. **On first Info or Debug log call**: load `dedup-registry.json` (lazy, once per request)
 2. **Version check**: if stored version ≠ current plugin version → discard all hashes (fresh start)
-3. **Hash check**: compute MD5 of `message|basename(file)|line` (no level prefix since only info)
+3. **Hash check**: compute MD5 of `message|basename(file)|line`
 4. **If hash exists** → skip logging, return `true`
-5. **If hash is new** → log normally, add hash to in-memory map, persist to JSON file
+5. **If hash is new** → log normally, add hash to in-memory map with its level, persist to JSON file
 
 ## File Locking
 
