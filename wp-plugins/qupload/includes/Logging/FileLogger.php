@@ -46,7 +46,7 @@ class FileLogger {
     private const DEDUP_REGISTRY_FILENAME = 'dedup-registry.json';
     private const DEDUP_MAX_ENTRIES = 500;
 
-    /** @var array<string, bool> */
+    /** @var array<string, string> Hash => log level ('info'|'debug'). */
     private array $persistentDedupHashes = [];
     private bool $persistentDedupLoaded = false;
 
@@ -269,7 +269,7 @@ class FileLogger {
         $file = $caller['file'] ?? __FILE__;
         $line = $caller['line'] ?? __LINE__;
 
-        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line)) {
+        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line, $level->value)) {
             return true;
         }
 
@@ -616,8 +616,8 @@ class FileLogger {
 
     // ── Persistent Dedup Methods ──────────────────────────────────────
 
-    /** Check if an Info-level message was already logged in a previous request. */
-    private function isPersistentDuplicate(string $message, string $file, int $line): bool {
+    /** Check if an Info/Debug-level message was already logged in a previous request. */
+    private function isPersistentDuplicate(string $message, string $file, int $line, string $level = 'info'): bool {
         $this->loadPersistentDedupRegistry();
 
         $hash = md5($message . '|' . basename($file) . '|' . $line);
@@ -627,7 +627,7 @@ class FileLogger {
             return true;
         }
 
-        $this->persistentDedupHashes[$hash] = true;
+        $this->persistentDedupHashes[$hash] = $level;
         $this->savePersistentDedupRegistry();
 
         return false;

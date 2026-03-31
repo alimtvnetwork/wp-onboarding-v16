@@ -27,7 +27,9 @@ Returns the current dedup registry contents and metadata.
     "Version": "2.31.0",
     "EntryCount": 42,
     "FileSizeBytes": 1284,
-    "Entries": ["a1b2c3d4...", "e5f6a7b8..."]
+    "Entries": ["a1b2c3d4...", "e5f6a7b8..."],
+    "InfoCount": 30,
+    "DebugCount": 12
   }
 }
 ```
@@ -42,7 +44,9 @@ When the file doesn't exist:
     "Version": null,
     "EntryCount": 0,
     "FileSizeBytes": 0,
-    "Entries": []
+    "Entries": [],
+    "InfoCount": 0,
+    "DebugCount": 0
   }
 }
 ```

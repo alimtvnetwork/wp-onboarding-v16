@@ -53,6 +53,8 @@ trait LogDedupRegistryTrait
                         'EntryCount'    => 0,
                         'FileSizeBytes' => 0,
                         'Entries'       => [],
+                        'InfoCount'     => 0,
+                        'DebugCount'    => 0,
                     ],
                 ],
                 HttpStatusType::Ok->value,
@@ -68,6 +70,17 @@ trait LogDedupRegistryTrait
         $entryCount = count($hashes);
         $fileSize = @filesize($registryPath);
 
+        $infoCount = 0;
+        $debugCount = 0;
+
+        foreach ($hashes as $level) {
+            if ($level === 'info') {
+                $infoCount++;
+            } elseif ($level === 'debug') {
+                $debugCount++;
+            }
+        }
+
         return new WP_REST_Response(
             [
                 ResponseKeyType::Success->value => true,
@@ -77,6 +90,8 @@ trait LogDedupRegistryTrait
                     'EntryCount'    => $entryCount,
                     'FileSizeBytes' => ($fileSize !== false) ? $fileSize : 0,
                     'Entries'       => array_keys($hashes),
+                    'InfoCount'     => $infoCount,
+                    'DebugCount'    => $debugCount,
                 ],
             ],
             HttpStatusType::Ok->value,
