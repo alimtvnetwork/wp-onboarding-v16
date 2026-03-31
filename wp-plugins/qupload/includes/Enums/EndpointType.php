@@ -25,6 +25,7 @@ enum EndpointType: string
     case LogsConfirm        = 'logs/clear/confirm';
     case LogsEmail          = 'logs/email';
     case LogsRetrieve       = 'logs/retrieve';
+    case LogsDedupRegistry  = 'logs/dedup-registry';
     case MachinesApprove = 'machines/approve';
     case DebugRoutes     = 'debug/routes';
 
