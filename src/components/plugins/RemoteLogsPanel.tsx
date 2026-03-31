@@ -48,6 +48,7 @@ import {
   Code2,
   MoreVertical,
   X,
+  FileJson,
   Move,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
@@ -65,6 +66,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
 import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
 import { useDraggable } from "@/hooks/useDraggable";
+import { DedupRegistryPanel } from "@/components/debug/DedupRegistryPanel";
 
 
 interface RemoteLogsPanelProps {
@@ -805,6 +807,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                   </>
                 )}
 
+                {/* Dedup Registry */}
+                <div className="mt-4">
+                  <DedupRegistryPanel siteId={siteId} />
+                </div>
 
               </div>
             )}
