@@ -107,7 +107,7 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
                 </div>
 
                 {plugin.available && plugin.dedupRegistry?.Exists && (
-                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                  <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
                     <div>
                       <span className="block font-medium text-foreground">Version</span>
                       {plugin.dedupRegistry.Version || "—"}
@@ -115,6 +115,10 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
                     <div>
                       <span className="block font-medium text-foreground">Entries</span>
                       {plugin.dedupRegistry.EntryCount}
+                    </div>
+                    <div>
+                      <span className="block font-medium text-foreground">Info / Debug</span>
+                      {plugin.dedupRegistry.InfoCount ?? 0} / {plugin.dedupRegistry.DebugCount ?? 0}
                     </div>
                     <div>
                       <span className="block font-medium text-foreground">Size</span>

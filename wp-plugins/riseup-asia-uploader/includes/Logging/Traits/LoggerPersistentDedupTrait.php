@@ -21,7 +21,7 @@ trait LoggerPersistentDedupTrait {
     private const DEDUP_REGISTRY_FILENAME = 'dedup-registry.json';
     private const DEDUP_MAX_ENTRIES = 500;
 
-    /** @var array<string, bool> */
+    /** @var array<string, string> Hash => log level ('info'|'debug'). */
     private array $persistentDedupHashes = array();
     private bool $persistentDedupLoaded = false;
 

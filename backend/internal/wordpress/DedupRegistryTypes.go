@@ -15,6 +15,8 @@ type DedupRegistryData struct {
 	EntryCount    int      `json:"EntryCount"`
 	FileSizeBytes int64    `json:"FileSizeBytes"`
 	Entries       []string `json:"Entries"`
+	InfoCount     int      `json:"InfoCount"`
+	DebugCount    int      `json:"DebugCount"`
 }
 
 // DedupRegistryClearPhpResponse is the raw response from DELETE /logs/dedup-registry.

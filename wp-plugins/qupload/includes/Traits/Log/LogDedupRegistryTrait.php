@@ -53,6 +53,8 @@ trait LogDedupRegistryTrait
                         'EntryCount'    => 0,
                         'FileSizeBytes' => 0,
                         'Entries'       => [],
+                        'InfoCount'     => 0,
+                        'DebugCount'    => 0,
                     ],
                 ],
                 HttpStatusType::Ok->value,
