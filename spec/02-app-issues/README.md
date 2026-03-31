@@ -60,4 +60,5 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 21 | wrong-qupload-api-namespace-in-script | PowerShell / REST API | Upload script used `qupload/v1` instead of `qupload-api/v1` — every upload 404'd |
 | 22 | auth-return-type-fatal-error | WordPress/PHP — Auth/REST | `checkAuthenticatedOnly()` returned `WP_User` instead of `true\|WP_Error` — fatal TypeError |
 | 23 | catch-exception-to-throwable-migration | PHP / Exception Handling | Migrated 20+ `catch(Exception)` to `catch(Throwable)` and fixed `\Throwable` backslash violations |
+| 30 | persistent-log-deduplication | Logging / Deduplication | Persistent cross-request dedup for Info+Debug logs via JSON registry file |
 | 31 | cla-failure-endpoint-gating-and-machine-approval | PowerShell / WordPress REST | `-cla` failed due endpoint migration gating (`rest_disabled`) plus fail-closed machine approval (`machine_not_approved`) |
