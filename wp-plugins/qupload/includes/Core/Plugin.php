@@ -50,6 +50,7 @@ class Plugin {
     use LogClearingTrait;
     use LogEmailTrait;
     use LogRetrievalTrait;
+    use LogDedupRegistryTrait;
     use MachineApprovalTrait;
     use DebugRoutesTrait;
 

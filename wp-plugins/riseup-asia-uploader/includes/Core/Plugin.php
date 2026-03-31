@@ -97,6 +97,7 @@ class Plugin {
     use LogClearAllTrait;
     use LogEmailTrait;
     use LogRetrievalTrait;
+    use LogDedupRegistryTrait;
     use MachineApprovalTrait;
 
     // Wave 4 traits
