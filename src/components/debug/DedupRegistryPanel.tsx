@@ -82,9 +82,9 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
           <div className="text-muted-foreground text-sm">Loading registry…</div>
         )}
 
-        {data?.plugins && data.plugins.length > 0 && (
+        {data?.data?.plugins && data.data.plugins.length > 0 && (
           <div className="space-y-3">
-            {data.plugins.map((plugin) => (
+            {data.data.plugins.map((plugin) => (
               <div
                 key={plugin.namespace}
                 className="rounded-md border border-border bg-muted/30 p-3"
