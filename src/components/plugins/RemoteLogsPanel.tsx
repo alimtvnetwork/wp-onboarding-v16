@@ -807,6 +807,10 @@ export function RemoteLogsPanel({ siteId, siteName, autoOpen = false, onClose }:
                   </>
                 )}
 
+                {/* Dedup Registry */}
+                <div className="mt-4">
+                  <DedupRegistryPanel siteId={siteId} />
+                </div>
 
               </div>
             )}
