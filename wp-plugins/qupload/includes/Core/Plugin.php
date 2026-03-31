@@ -31,6 +31,7 @@ use QUpload\Traits\Log\LogRotationStatusTrait;
 use QUpload\Traits\Log\LogClearingTrait;
 use QUpload\Traits\Log\LogEmailTrait;
 use QUpload\Traits\Log\LogRetrievalTrait;
+use QUpload\Traits\Log\LogDedupRegistryTrait;
 use QUpload\Traits\Machine\MachineApprovalTrait;
 use QUpload\Traits\Debug\DebugRoutesTrait;
 
