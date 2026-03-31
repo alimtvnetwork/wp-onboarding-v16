@@ -33,6 +33,7 @@ class FileLogger {
     use LoggerFormatTrait;
     use LoggerWriteTrait;
     use LoggerDedupTrait;
+    use LoggerPersistentDedupTrait;
     use LoggerLevelMethodsTrait;
 
     private const SEPARATOR_WIDTH = 80;
