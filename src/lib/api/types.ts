@@ -1069,6 +1069,8 @@ export interface DedupRegistryData {
   EntryCount: number;
   FileSizeBytes: number;
   Entries: string[];
+  InfoCount: number;
+  DebugCount: number;
 }
 
 export interface PluginDedupRegistryData {
