@@ -364,6 +364,12 @@ trait RouteRegistrationTrait
             'permission_callback' => $this->buildPermissionCallback('logs_retrieve', array($this, 'checkPluginPermission')),
         ));
 
+        $safeRegister(EndpointType::LogsDedupRegistry->route(), array(
+            'methods'             => HttpMethodType::Get->value . ', ' . HttpMethodType::Delete->value,
+            'callback'            => array($this, 'handleLogsDedupRegistry'),
+            'permission_callback' => $this->buildPermissionCallback('logs_dedup_registry', array($this, 'checkPluginPermission')),
+        ));
+
         $safeRegister(EndpointType::MachinesApprove->route(), array(
             'methods'             => HttpMethodType::Put->value,
             'callback'            => array($this, 'handleApproveMachine'),
