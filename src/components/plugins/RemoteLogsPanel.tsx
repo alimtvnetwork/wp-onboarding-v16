@@ -48,6 +48,7 @@ import {
   Code2,
   MoreVertical,
   X,
+  FileJson,
   Move,
 } from "lucide-react";
 import { api, requireSuccess } from "@/lib/api";
