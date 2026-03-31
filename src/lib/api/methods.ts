@@ -768,6 +768,10 @@ export const api = {
     const qs = q.toString();
     return request<import("./types").LogsRetrieveResult>(`/sites/${siteId}/remote-logs/retrieve${qs ? `?${qs}` : ""}`);
   },
+  getDedupRegistry: (siteId: number) =>
+    request<import("./types").DedupRegistryResult>(`/sites/${siteId}/remote-logs/dedup-registry`),
+  clearDedupRegistry: (siteId: number) =>
+    request<import("./types").DedupRegistryClearResult>(`/sites/${siteId}/remote-logs/dedup-registry`, { method: "DELETE" }),
 
   // Cloud Storage
   getCloudStorageAccounts: () =>
