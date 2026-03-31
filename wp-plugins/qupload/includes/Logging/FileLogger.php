@@ -260,11 +260,16 @@ class FileLogger {
         string $message,
         array $context,
         bool $includeStacktrace = false,
+        bool $usePersistentDedup = false,
     ): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $trace[1] ?? $trace[0];
         $file = $caller['file'] ?? __FILE__;
         $line = $caller['line'] ?? __LINE__;
+
+        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line)) {
+            return true;
+        }
 
         $isDuplicate = $this->isDuplicate($level->value, $message, $file, $line);
 
