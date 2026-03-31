@@ -3,7 +3,6 @@ package handlers
 
 import (
 	"context"
-	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -24,6 +23,3 @@ var ClearRemoteDedupRegistry = handleSiteActionById(
 		return Services.SiteService.ClearRemoteDedupRegistry(ctx, siteId)
 	},
 )
-
-// Ensure net/http is used (ClearRemoteDedupRegistry uses handleSiteActionById which needs it)
-var _ http.Handler
