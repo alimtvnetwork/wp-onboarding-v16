@@ -55,6 +55,20 @@ When the file doesn't exist:
 }
 ```
 
+#### `DedupRegistry` Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Exists` | `boolean` | Whether the `dedup-registry.json` file exists on disk. |
+| `Version` | `string \| null` | Plugin version that created the registry. `null` when file doesn't exist. |
+| `EntryCount` | `int` | Total number of deduplicated entries (info + debug). |
+| `FileSizeBytes` | `int` | Size of the registry JSON file in bytes. |
+| `Entries` | `string[]` | All stored MD5 hashes regardless of level. |
+| `InfoCount` | `int` | Number of entries from info-level messages. |
+| `DebugCount` | `int` | Number of entries from debug-level messages. |
+| `InfoEntries` | `string[]` | MD5 hashes of deduplicated info-level messages. |
+| `DebugEntries` | `string[]` | MD5 hashes of deduplicated debug-level messages. |
+
 ### `DELETE /logs/dedup-registry`
 
 Clears the dedup registry, allowing all info messages to be logged again.
