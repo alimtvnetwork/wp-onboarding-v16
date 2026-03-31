@@ -12,7 +12,7 @@ Boot-time info messages (e.g., "Routes registered: 88 OK, 0 failed") are logged 
 
 ## Solution
 
-Add **persistent deduplication** for **Info-level** log entries using a JSON registry file stored in the plugin's logs directory. The file tracks MD5 hashes of previously logged info messages. If a hash is found in the registry, the log call is silently skipped.
+Add **persistent deduplication** for **Info and Debug** level log entries using a JSON registry file stored in the plugin's logs directory. The file tracks MD5 hashes of previously logged messages, keyed by hash with the log level as the value. If a hash is found in the registry, the log call is silently skipped.
 
 ## Scope
 
@@ -27,24 +27,24 @@ Add **persistent deduplication** for **Info-level** log entries using a JSON reg
 
 ```json
 {
-  "version": "2.31.0",
+  "version": "2.32.0",
   "hashes": {
-    "a1b2c3d4e5f6...": true,
-    "f6e5d4c3b2a1...": true
+    "a1b2c3d4e5f6...": "info",
+    "f6e5d4c3b2a1...": "debug"
   }
 }
 ```
 
 - `version` — current plugin version at time of write
-- `hashes` — map of MD5 hashes → `true`
+- `hashes` — map of MD5 hashes → log level string (`"info"` or `"debug"`)
 
 ## Dedup Flow
 
-1. **On first Info log call**: load `dedup-registry.json` (lazy, once per request)
+1. **On first Info or Debug log call**: load `dedup-registry.json` (lazy, once per request)
 2. **Version check**: if stored version ≠ current plugin version → discard all hashes (fresh start)
-3. **Hash check**: compute MD5 of `message|basename(file)|line` (no level prefix since only info)
+3. **Hash check**: compute MD5 of `message|basename(file)|line`
 4. **If hash exists** → skip logging, return `true`
-5. **If hash is new** → log normally, add hash to in-memory map, persist to JSON file
+5. **If hash is new** → log normally, add hash to in-memory map with its level, persist to JSON file
 
 ## File Locking
 
@@ -57,12 +57,12 @@ All writes use `LOCK_EX` to prevent corruption from concurrent PHP requests.
 **Location:** `wp-plugins/riseup-asia-uploader/includes/Logging/Traits/LoggerPersistentDedupTrait.php`
 
 **Methods:**
-- `isPersistentDuplicate(string $message, string $file, int $line): bool` — main check
+- `isPersistentDuplicate(string $message, string $file, int $line, string $level = 'info'): bool` — main check
 - `loadPersistentDedupRegistry(): void` — lazy-load JSON, validate version
 - `savePersistentDedupRegistry(): void` — write JSON with LOCK_EX
 - `clearPersistentDedupRegistry(): void` — delete the JSON file (for log clear operations)
 
-**Integration:** The `info()` method in `LoggerLevelMethodsTrait` calls `isPersistentDuplicate()` before the existing in-memory `isDuplicate()` check.
+**Integration:** Both the `info()` and `debug()` methods in `LoggerLevelMethodsTrait` call `isPersistentDuplicate()` before the existing in-memory `isDuplicate()` check.
 
 ### FileLogger Changes
 
@@ -75,7 +75,7 @@ All writes use `LOCK_EX` to prevent corruption from concurrent PHP requests.
 Same logic added directly to QUpload's monolithic `FileLogger.php`:
 - Add equivalent private methods
 - Add same properties
-- Wire into `info()` and `clearAllLogFiles()`
+- Wire into `info()`, `debug()`, and `clearAllLogFiles()`
 
 ## Cleanup Integration
 
