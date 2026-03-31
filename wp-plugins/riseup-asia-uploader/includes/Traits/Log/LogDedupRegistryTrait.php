@@ -55,6 +55,8 @@ trait LogDedupRegistryTrait
                         ResponseKeyType::Entries->value       => array(),
                         'InfoCount'                           => 0,
                         'DebugCount'                          => 0,
+                        'InfoEntries'                         => array(),
+                        'DebugEntries'                        => array(),
                     ),
                 ),
                 HttpStatusType::Ok->value,
