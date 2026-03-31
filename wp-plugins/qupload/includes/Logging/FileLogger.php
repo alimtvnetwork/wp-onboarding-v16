@@ -42,6 +42,14 @@ class FileLogger {
     /** @var array<string, bool> */
     private array $dedupHashes = [];
 
+    // ── Persistent Dedup ────────────────────────────────────────────
+    private const DEDUP_REGISTRY_FILENAME = 'dedup-registry.json';
+    private const DEDUP_MAX_ENTRIES = 500;
+
+    /** @var array<string, bool> */
+    private array $persistentDedupHashes = [];
+    private bool $persistentDedupLoaded = false;
+
     public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -167,6 +175,7 @@ class FileLogger {
         }
 
         $this->dedupHashes = [];
+        $this->clearPersistentDedupRegistry();
     }
 
     /**
@@ -203,7 +212,7 @@ class FileLogger {
     }
 
     public function info(string $message, array $context = []): bool {
-        return $this->logAtLevel(LogLevelType::Info, $message, $context);
+        return $this->logAtLevel(LogLevelType::Info, $message, $context, false, true);
     }
 
     public function warn(string $message, array $context = []): bool {
@@ -252,11 +261,16 @@ class FileLogger {
         string $message,
         array $context,
         bool $includeStacktrace = false,
+        bool $usePersistentDedup = false,
     ): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         $caller = $trace[1] ?? $trace[0];
         $file = $caller['file'] ?? __FILE__;
         $line = $caller['line'] ?? __LINE__;
+
+        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line)) {
+            return true;
+        }
 
         $isDuplicate = $this->isDuplicate($level->value, $message, $file, $line);
 
@@ -597,5 +611,136 @@ class FileLogger {
         $this->dedupHashes[$hash] = true;
 
         return false;
+    }
+
+    // ── Persistent Dedup Methods ──────────────────────────────────────
+
+    /** Check if an Info-level message was already logged in a previous request. */
+    private function isPersistentDuplicate(string $message, string $file, int $line): bool {
+        $this->loadPersistentDedupRegistry();
+
+        $hash = md5($message . '|' . basename($file) . '|' . $line);
+        $isAlreadyLogged = isset($this->persistentDedupHashes[$hash]);
+
+        if ($isAlreadyLogged) {
+            return true;
+        }
+
+        $this->persistentDedupHashes[$hash] = true;
+        $this->savePersistentDedupRegistry();
+
+        return false;
+    }
+
+    /** Lazy-load the persistent dedup registry from disk. */
+    private function loadPersistentDedupRegistry(): void {
+        if ($this->persistentDedupLoaded) {
+            return;
+        }
+
+        $this->persistentDedupLoaded = true;
+        $registryPath = $this->getPersistentDedupPath();
+        $isPathMissing = ($registryPath === null);
+
+        if ($isPathMissing) {
+            return;
+        }
+
+        $isFileExists = file_exists($registryPath);
+
+        if ($isFileExists === false) {
+            return;
+        }
+
+        $contents = @file_get_contents($registryPath);
+        $isReadFailed = ($contents === false);
+
+        if ($isReadFailed) {
+            return;
+        }
+
+        $data = json_decode($contents, true);
+        $isDecodeFailed = (!is_array($data));
+
+        if ($isDecodeFailed) {
+            return;
+        }
+
+        $currentVersion = PluginConfigType::Version->value;
+        $storedVersion = $data['version'] ?? '';
+        $isVersionMismatch = ($storedVersion !== $currentVersion);
+
+        if ($isVersionMismatch) {
+            $this->persistentDedupHashes = [];
+            @unlink($registryPath);
+
+            return;
+        }
+
+        $hasHashes = isset($data['hashes']) && is_array($data['hashes']);
+        $this->persistentDedupHashes = $hasHashes ? $data['hashes'] : [];
+    }
+
+    /** Save the persistent dedup registry to disk with LOCK_EX. */
+    private function savePersistentDedupRegistry(): void {
+        $registryPath = $this->getPersistentDedupPath();
+        $isPathMissing = ($registryPath === null);
+
+        if ($isPathMissing) {
+            return;
+        }
+
+        $this->pruneRegistryIfNeeded();
+
+        $data = [
+            'version' => PluginConfigType::Version->value,
+            'hashes'  => $this->persistentDedupHashes,
+        ];
+
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        @file_put_contents($registryPath, $json, LOCK_EX);
+    }
+
+    /** Prune the registry if it exceeds the max entries cap. */
+    private function pruneRegistryIfNeeded(): void {
+        $entryCount = count($this->persistentDedupHashes);
+        $isWithinLimit = ($entryCount <= self::DEDUP_MAX_ENTRIES);
+
+        if ($isWithinLimit) {
+            return;
+        }
+
+        $keepCount = (int) (self::DEDUP_MAX_ENTRIES / 2);
+        $this->persistentDedupHashes = array_slice($this->persistentDedupHashes, -$keepCount, null, true);
+    }
+
+    /** Delete the persistent dedup registry file. */
+    public function clearPersistentDedupRegistry(): void {
+        $this->persistentDedupHashes = [];
+        $this->persistentDedupLoaded = false;
+
+        $registryPath = $this->getPersistentDedupPath();
+        $isPathMissing = ($registryPath === null);
+
+        if ($isPathMissing) {
+            return;
+        }
+
+        $isFileExists = file_exists($registryPath);
+
+        if ($isFileExists) {
+            @unlink($registryPath);
+        }
+    }
+
+    /** Resolve the full path to the dedup registry JSON file. */
+    private function getPersistentDedupPath(): ?string {
+        $isInitFailed = ($this->isInitialized === false) && ($this->initializePaths() === false);
+
+        if ($isInitFailed) {
+            return null;
+        }
+
+        return $this->logsDir . '/' . self::DEDUP_REGISTRY_FILENAME;
     }
 }

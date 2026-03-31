@@ -19,6 +19,7 @@ use RiseupAsia\Logging\Traits\LoggerPathTrait;
 use RiseupAsia\Logging\Traits\LoggerFormatTrait;
 use RiseupAsia\Logging\Traits\LoggerWriteTrait;
 use RiseupAsia\Logging\Traits\LoggerDedupTrait;
+use RiseupAsia\Logging\Traits\LoggerPersistentDedupTrait;
 use RiseupAsia\Logging\Traits\LoggerLevelMethodsTrait;
 use RiseupAsia\Helpers\DateHelper;
 
@@ -32,6 +33,7 @@ class FileLogger {
     use LoggerFormatTrait;
     use LoggerWriteTrait;
     use LoggerDedupTrait;
+    use LoggerPersistentDedupTrait;
     use LoggerLevelMethodsTrait;
 
     private const SEPARATOR_WIDTH = 80;

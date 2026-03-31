@@ -225,6 +225,7 @@ trait LoggerPathTrait {
         }
 
         $this->dedupHashes = array();
+        $this->clearPersistentDedupRegistry();
 
         return array('deleted' => $deletedFiles, 'failed' => $failedFiles);
     }
