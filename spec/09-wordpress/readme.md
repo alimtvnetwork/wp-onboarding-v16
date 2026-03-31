@@ -1,6 +1,6 @@
 # WordPress Plugin Specifications
 
-> **Updated:** 2026-03-18  
+> **Updated:** 2026-03-31  
 > **Purpose:** Central index for all WordPress plugin-related specifications.
 
 ---
@@ -17,6 +17,12 @@
 | [06-cloud-storage-providers/](./06-cloud-storage-providers/) | Cloud storage integration (GitHub, GitLab, Google Drive) |
 | [07-log-retrieval/](./07-log-retrieval/) | Log retrieval endpoints and React frontend integration |
 
+## Standalone Specs
+
+| File | Description |
+|------|-------------|
+| [08-dedup-registry-endpoint.md](./08-dedup-registry-endpoint.md) | REST endpoints for remote viewing and clearing of the persistent log dedup registry |
+
 ---
 
-*Maintain this index when adding or removing spec folders.*
+*Maintain this index when adding or removing spec folders or standalone specs.*
