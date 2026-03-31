@@ -12,7 +12,7 @@ Boot-time info messages (e.g., "Routes registered: 88 OK, 0 failed") are logged 
 
 ## Solution
 
-Add **persistent deduplication** for **Info-level** log entries using a JSON registry file stored in the plugin's logs directory. The file tracks MD5 hashes of previously logged info messages. If a hash is found in the registry, the log call is silently skipped.
+Add **persistent deduplication** for **Info and Debug** level log entries using a JSON registry file stored in the plugin's logs directory. The file tracks MD5 hashes of previously logged messages, keyed by hash with the log level as the value. If a hash is found in the registry, the log call is silently skipped.
 
 ## Scope
 
