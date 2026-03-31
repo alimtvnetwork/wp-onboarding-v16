@@ -175,6 +175,7 @@ class FileLogger {
         }
 
         $this->dedupHashes = [];
+        $this->clearPersistentDedupRegistry();
     }
 
     /**
