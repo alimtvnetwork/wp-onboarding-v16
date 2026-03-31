@@ -75,7 +75,7 @@ All writes use `LOCK_EX` to prevent corruption from concurrent PHP requests.
 Same logic added directly to QUpload's monolithic `FileLogger.php`:
 - Add equivalent private methods
 - Add same properties
-- Wire into `info()` and `clearAllLogFiles()`
+- Wire into `info()`, `debug()`, and `clearAllLogFiles()`
 
 ## Cleanup Integration
 
