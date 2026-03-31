@@ -211,7 +211,7 @@ class FileLogger {
     }
 
     public function info(string $message, array $context = []): bool {
-        return $this->logAtLevel(LogLevelType::Info, $message, $context);
+        return $this->logAtLevel(LogLevelType::Info, $message, $context, false, true);
     }
 
     public function warn(string $message, array $context = []): bool {
