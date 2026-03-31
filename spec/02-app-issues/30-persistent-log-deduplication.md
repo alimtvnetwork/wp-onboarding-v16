@@ -18,7 +18,7 @@ Add **persistent deduplication** for **Info-level** log entries using a JSON reg
 
 | Aspect | Decision |
 |--------|----------|
-| **Log levels affected** | Info only — errors, warnings, and debug always log |
+| **Log levels affected** | Info + Debug — errors and warnings always log |
 | **Reset strategy** | Reset on every deployment (version change clears the registry) |
 | **Storage format** | JSON file: `logs/dedup-registry.json` |
 | **Plugins** | Both QUpload and RiseUp Asia Uploader |
