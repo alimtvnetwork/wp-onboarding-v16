@@ -42,6 +42,14 @@ class FileLogger {
     /** @var array<string, bool> */
     private array $dedupHashes = [];
 
+    // ── Persistent Dedup ────────────────────────────────────────────
+    private const DEDUP_REGISTRY_FILENAME = 'dedup-registry.json';
+    private const DEDUP_MAX_ENTRIES = 500;
+
+    /** @var array<string, bool> */
+    private array $persistentDedupHashes = [];
+    private bool $persistentDedupLoaded = false;
+
     public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
