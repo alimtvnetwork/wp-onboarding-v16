@@ -269,7 +269,7 @@ class FileLogger {
         $file = $caller['file'] ?? __FILE__;
         $line = $caller['line'] ?? __LINE__;
 
-        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line)) {
+        if ($usePersistentDedup && $this->isPersistentDuplicate($message, $file, $line, $level->value)) {
             return true;
         }
 
