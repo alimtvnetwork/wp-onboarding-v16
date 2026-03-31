@@ -38,6 +38,7 @@ const (
 	LogsConfirm
 	LogsEmail
 	LogsRetrieve
+	LogsDedupRegistry
 	Openapi
 	OpcacheReset
 	SnapshotsList
