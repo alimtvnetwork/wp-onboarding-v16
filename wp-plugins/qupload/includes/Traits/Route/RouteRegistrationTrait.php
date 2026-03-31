@@ -115,6 +115,12 @@ trait RouteRegistrationTrait
             'callback'            => [$this, 'handleLogsRetrieve'],
             'permission_callback' => [$this, 'checkPluginPermission'],
         ]);
+
+        $safeRegister(EndpointType::LogsDedupRegistry->route(), [
+            'methods'             => HttpMethodType::Get->value . ', ' . HttpMethodType::Delete->value,
+            'callback'            => [$this, 'handleLogsDedupRegistry'],
+            'permission_callback' => [$this, 'checkPluginPermission'],
+        ]);
     }
 
     private function registerCoreRoutes(callable $safeRegister): void {

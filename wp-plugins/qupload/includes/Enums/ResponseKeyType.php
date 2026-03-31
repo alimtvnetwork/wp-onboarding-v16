@@ -48,6 +48,12 @@ enum ResponseKeyType: string
     case Settings      = 'Settings';
     case RequestedAt   = 'RequestedAt';
 
+    /** Dedup registry keys. */
+    case DedupRegistry = 'DedupRegistry';
+    case EntryCount    = 'EntryCount';
+    case Entries       = 'Entries';
+    case FileSizeBytes = 'FileSizeBytes';
+
     /** Server/environment keys. */
     case UploadMaxFilesize = 'UploadMaxFilesize';
     case PostMaxSize       = 'PostMaxSize';

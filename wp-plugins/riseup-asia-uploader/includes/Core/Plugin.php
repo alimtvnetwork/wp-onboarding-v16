@@ -56,6 +56,7 @@ use RiseupAsia\Traits\Log\LogClearingTrait;
 use RiseupAsia\Traits\Log\LogClearAllTrait;
 use RiseupAsia\Traits\Log\LogEmailTrait;
 use RiseupAsia\Traits\Log\LogRetrievalTrait;
+use RiseupAsia\Traits\Log\LogDedupRegistryTrait;
 use RiseupAsia\Traits\Machine\MachineApprovalTrait;
 use RiseupAsia\Traits\User\UserCrudTrait;
 use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
@@ -96,6 +97,7 @@ class Plugin {
     use LogClearAllTrait;
     use LogEmailTrait;
     use LogRetrievalTrait;
+    use LogDedupRegistryTrait;
     use MachineApprovalTrait;
 
     // Wave 4 traits

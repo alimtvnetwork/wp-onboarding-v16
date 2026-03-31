@@ -62,6 +62,8 @@ const (
 	ConfirmLogsClear
 	EmailLogs
 	RetrieveLogs
+	GetDedupRegistry
+	ClearDedupRegistry
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
@@ -135,6 +137,8 @@ var variantLabels = [...]string{
 	ConfirmLogsClear:       "ConfirmLogsClear",
 	EmailLogs:              "EmailLogs",
 	RetrieveLogs:           "RetrieveLogs",
+	GetDedupRegistry:       "GetDedupRegistry",
+	ClearDedupRegistry:     "ClearDedupRegistry",
 	CloudStorageUpload:         "CloudStorageUpload",
 	CloudStorageRestore:       "CloudStorageRestore",
 	CloudStorageBackupHistory: "CloudStorageBackupHistory",
@@ -208,6 +212,8 @@ var variantValues = [...]string{
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",
 	RetrieveLogs:           "retrieve logs",
+	GetDedupRegistry:       "get dedup registry",
+	ClearDedupRegistry:     "clear dedup registry",
 	CloudStorageUpload:         "cloud storage upload",
 	CloudStorageRestore:       "cloud storage restore",
 	CloudStorageBackupHistory: "cloud storage backup history",

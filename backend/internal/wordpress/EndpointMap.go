@@ -53,6 +53,7 @@ const (
 	EPLogsConfirm         WPEndpointName = "LogsConfirm"
 	EPLogsEmail           WPEndpointName = "LogsEmail"
 	EPLogsRetrieve        WPEndpointName = "LogsRetrieve"
+	EPLogsDedupRegistry   WPEndpointName = "LogsDedupRegistry"
 
 	// Snapshot endpoints
 	EPSnapshotList           WPEndpointName = "SnapshotList"
@@ -147,6 +148,7 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPLogsConfirm:         {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/confirm"},
 	EPLogsEmail:           {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/remote-logs/email"},
 	EPLogsRetrieve:        {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs/retrieve"},
+	EPLogsDedupRegistry:   {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/remote-logs/dedup-registry"},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/snapshots"},
@@ -229,6 +231,7 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPLogsConfirm:         {Method: httpmethod.Post, Endpoint: ep.LogsConfirm},
 	EPLogsEmail:           {Method: httpmethod.Post, Endpoint: ep.LogsEmail},
 	EPLogsRetrieve:        {Method: httpmethod.Get, Endpoint: ep.LogsRetrieve},
+	EPLogsDedupRegistry:   {Method: httpmethod.Get, Endpoint: ep.LogsDedupRegistry},
 
 	// Snapshot operations
 	EPSnapshotList:           {Method: httpmethod.Get, Endpoint: ep.SnapshotsList},

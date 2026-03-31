@@ -1060,8 +1060,39 @@ export interface LogsRetrieveResult {
 }
 
 // ---------------------------------------------------------------------------
-// Site Settings types
+// Dedup Registry types
 // ---------------------------------------------------------------------------
+
+export interface DedupRegistryData {
+  Exists: boolean;
+  Version: string | null;
+  EntryCount: number;
+  FileSizeBytes: number;
+  Entries: string[];
+}
+
+export interface PluginDedupRegistryData {
+  namespace: string;
+  label: string;
+  available: boolean;
+  dedupRegistry?: DedupRegistryData;
+}
+
+export interface DedupRegistryResult {
+  plugins: PluginDedupRegistryData[];
+}
+
+export interface PluginDedupClearData {
+  namespace: string;
+  label: string;
+  cleared: boolean;
+  previousEntryCount: number;
+}
+
+export interface DedupRegistryClearResult {
+  plugins: PluginDedupClearData[];
+}
+
 
 export interface SiteSettingsResponse {
   searchEngineVisible: boolean;

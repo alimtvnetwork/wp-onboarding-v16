@@ -90,6 +90,8 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs/confirm", handlers.ConfirmClearRemoteLogs).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-logs/email", handlers.EmailRemoteLogs).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-logs/retrieve", handlers.RetrieveRemoteLogs).Methods("GET")
+	api.HandleFunc("/sites/{id}/remote-logs/dedup-registry", handlers.GetRemoteDedupRegistry).Methods("GET")
+	api.HandleFunc("/sites/{id}/remote-logs/dedup-registry", handlers.ClearRemoteDedupRegistry).Methods("DELETE")
 	registerSnapshotRoutes(api)
 	registerUserRoutes(api)
 	registerSiteSettingsRoutes(api)

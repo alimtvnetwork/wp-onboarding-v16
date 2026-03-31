@@ -147,6 +147,12 @@ enum ResponseKeyType: string
     case TotalLines    = 'TotalLines';
     case RequestedAt   = 'RequestedAt';
 
+    /** Dedup registry keys. */
+    case DedupRegistry = 'DedupRegistry';
+    case EntryCount    = 'EntryCount';
+    case Entries       = 'Entries';
+    case FileSizeBytes = 'FileSizeBytes';
+
     /** Internal/domain-specific keys. */
     case Ids            = 'Ids';
     case TotalSnapshots = 'TotalSnapshots';
