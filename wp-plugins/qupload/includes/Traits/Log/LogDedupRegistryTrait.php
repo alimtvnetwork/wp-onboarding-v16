@@ -72,12 +72,16 @@ trait LogDedupRegistryTrait
 
         $infoCount = 0;
         $debugCount = 0;
+        $infoEntries = [];
+        $debugEntries = [];
 
-        foreach ($hashes as $level) {
+        foreach ($hashes as $hash => $level) {
             if ($level === 'info') {
                 $infoCount++;
+                $infoEntries[] = $hash;
             } elseif ($level === 'debug') {
                 $debugCount++;
+                $debugEntries[] = $hash;
             }
         }
 
@@ -92,6 +96,8 @@ trait LogDedupRegistryTrait
                     'Entries'       => array_keys($hashes),
                     'InfoCount'     => $infoCount,
                     'DebugCount'    => $debugCount,
+                    'InfoEntries'   => $infoEntries,
+                    'DebugEntries'  => $debugEntries,
                 ],
             ],
             HttpStatusType::Ok->value,
