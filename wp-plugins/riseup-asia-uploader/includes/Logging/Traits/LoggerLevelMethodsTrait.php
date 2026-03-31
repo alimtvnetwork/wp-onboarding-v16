@@ -31,7 +31,7 @@ trait LoggerLevelMethodsTrait {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         [$file, $line] = $this->resolveCaller($trace);
 
-        if ($this->isPersistentDuplicate($message, $file, $line)) {
+        if ($this->isPersistentDuplicate($message, $file, $line, LogLevelType::Debug->value)) {
             return true;
         }
 
