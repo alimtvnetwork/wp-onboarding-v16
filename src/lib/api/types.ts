@@ -1071,6 +1071,8 @@ export interface DedupRegistryData {
   Entries: string[];
   InfoCount: number;
   DebugCount: number;
+  InfoEntries: string[];
+  DebugEntries: string[];
 }
 
 export interface PluginDedupRegistryData {

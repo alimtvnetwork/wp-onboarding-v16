@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useDedupRegistry } from "@/hooks/useDedupRegistry";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Trash2, FileJson, AlertCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RefreshCw, Trash2, FileJson, AlertCircle, ChevronRight, Info, Bug } from "lucide-react";
 
 interface DedupRegistryPanelProps {
   siteId: number | null;
@@ -107,23 +109,38 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
                 </div>
 
                 {plugin.available && plugin.dedupRegistry?.Exists && (
-                  <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                    <div>
-                      <span className="block font-medium text-foreground">Version</span>
-                      {plugin.dedupRegistry.Version || "—"}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span className="block font-medium text-foreground">Version</span>
+                        {plugin.dedupRegistry.Version || "—"}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">Entries</span>
+                        {plugin.dedupRegistry.EntryCount}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">Info / Debug</span>
+                        {plugin.dedupRegistry.InfoCount ?? 0} / {plugin.dedupRegistry.DebugCount ?? 0}
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">Size</span>
+                        {formatBytes(plugin.dedupRegistry.FileSizeBytes)}
+                      </div>
                     </div>
-                    <div>
-                      <span className="block font-medium text-foreground">Entries</span>
-                      {plugin.dedupRegistry.EntryCount}
-                    </div>
-                    <div>
-                      <span className="block font-medium text-foreground">Info / Debug</span>
-                      {plugin.dedupRegistry.InfoCount ?? 0} / {plugin.dedupRegistry.DebugCount ?? 0}
-                    </div>
-                    <div>
-                      <span className="block font-medium text-foreground">Size</span>
-                      {formatBytes(plugin.dedupRegistry.FileSizeBytes)}
-                    </div>
+
+                    <EntryGroup
+                      label="Info"
+                      icon={<Info className="h-3 w-3" />}
+                      entries={plugin.dedupRegistry.InfoEntries ?? []}
+                      count={plugin.dedupRegistry.InfoCount ?? 0}
+                    />
+                    <EntryGroup
+                      label="Debug"
+                      icon={<Bug className="h-3 w-3" />}
+                      entries={plugin.dedupRegistry.DebugEntries ?? []}
+                      count={plugin.dedupRegistry.DebugCount ?? 0}
+                    />
                   </div>
                 )}
               </div>
@@ -136,6 +153,46 @@ export function DedupRegistryPanel({ siteId }: DedupRegistryPanelProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function EntryGroup({
+  label,
+  icon,
+  entries,
+  count,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  entries: string[];
+  count: number;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (count === 0) return null;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+        <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+        {icon}
+        <span className="font-medium">{label}</span>
+        <Badge variant="outline" className="text-[10px] h-4 px-1.5 ml-auto">
+          {count}
+        </Badge>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-1.5 ml-5 max-h-40 overflow-y-auto rounded border border-border bg-background p-2">
+          <div className="space-y-0.5">
+            {entries.map((hash) => (
+              <code key={hash} className="block text-[10px] text-muted-foreground font-mono truncate">
+                {hash}
+              </code>
+            ))}
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
