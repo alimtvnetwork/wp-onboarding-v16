@@ -2,7 +2,8 @@
 
 > **Applies to:** QUpload, RiseUp Asia Uploader  
 > **Status:** Implementation  
-> **Date:** 2026-03-31
+> **Date:** 2026-03-31  
+> **Related:** `spec/09-wordpress/08-dedup-registry-endpoint.md`
 
 ---
 
