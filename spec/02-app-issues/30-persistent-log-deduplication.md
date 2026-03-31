@@ -1,4 +1,4 @@
-# Persistent Log Deduplication
+# Persistent Log Deduplication (Info + Debug)
 
 > **Applies to:** QUpload, RiseUp Asia Uploader  
 > **Status:** Implementation  
