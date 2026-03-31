@@ -62,6 +62,8 @@ const (
 	ConfirmLogsClear
 	EmailLogs
 	RetrieveLogs
+	GetDedupRegistry
+	ClearDedupRegistry
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
