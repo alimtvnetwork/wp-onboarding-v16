@@ -66,6 +66,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogContentViewer } from "./LogContentViewer";
 import { InlineErrorDiagnostic, extractDiagnostic, type InlineDiagnostic } from "./InlineErrorDiagnostic";
 import { useDraggable } from "@/hooks/useDraggable";
+import { DedupRegistryPanel } from "@/components/debug/DedupRegistryPanel";
 
 
 interface RemoteLogsPanelProps {
