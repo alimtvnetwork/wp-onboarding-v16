@@ -212,6 +212,8 @@ var variantValues = [...]string{
 	ConfirmLogsClear:       "confirm logs clear",
 	EmailLogs:              "email logs",
 	RetrieveLogs:           "retrieve logs",
+	GetDedupRegistry:       "get dedup registry",
+	ClearDedupRegistry:     "clear dedup registry",
 	CloudStorageUpload:         "cloud storage upload",
 	CloudStorageRestore:       "cloud storage restore",
 	CloudStorageBackupHistory: "cloud storage backup history",
