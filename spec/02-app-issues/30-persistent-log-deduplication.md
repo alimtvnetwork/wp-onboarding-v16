@@ -27,16 +27,16 @@ Add **persistent deduplication** for **Info and Debug** level log entries using 
 
 ```json
 {
-  "version": "2.31.0",
+  "version": "2.32.0",
   "hashes": {
-    "a1b2c3d4e5f6...": true,
-    "f6e5d4c3b2a1...": true
+    "a1b2c3d4e5f6...": "info",
+    "f6e5d4c3b2a1...": "debug"
   }
 }
 ```
 
 - `version` — current plugin version at time of write
-- `hashes` — map of MD5 hashes → `true`
+- `hashes` — map of MD5 hashes → log level string (`"info"` or `"debug"`)
 
 ## Dedup Flow
 
