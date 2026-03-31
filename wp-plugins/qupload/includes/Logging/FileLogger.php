@@ -616,8 +616,8 @@ class FileLogger {
 
     // ── Persistent Dedup Methods ──────────────────────────────────────
 
-    /** Check if an Info-level message was already logged in a previous request. */
-    private function isPersistentDuplicate(string $message, string $file, int $line): bool {
+    /** Check if an Info/Debug-level message was already logged in a previous request. */
+    private function isPersistentDuplicate(string $message, string $file, int $line, string $level = 'info'): bool {
         $this->loadPersistentDedupRegistry();
 
         $hash = md5($message . '|' . basename($file) . '|' . $line);
@@ -627,7 +627,7 @@ class FileLogger {
             return true;
         }
 
-        $this->persistentDedupHashes[$hash] = true;
+        $this->persistentDedupHashes[$hash] = $level;
         $this->savePersistentDedupRegistry();
 
         return false;

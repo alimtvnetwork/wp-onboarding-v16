@@ -26,11 +26,11 @@ trait LoggerPersistentDedupTrait {
     private bool $persistentDedupLoaded = false;
 
     /**
-     * Check if an Info-level log message was already logged in a previous request.
+     * Check if an Info/Debug-level log message was already logged in a previous request.
      *
-     * Only call this for Info-level messages.
+     * @param string $level The log level ('info' or 'debug').
      */
-    private function isPersistentDuplicate(string $message, string $file, int $line): bool {
+    private function isPersistentDuplicate(string $message, string $file, int $line, string $level = 'info'): bool {
         $this->loadPersistentDedupRegistry();
 
         $hash = md5($message . '|' . basename($file) . '|' . $line);
@@ -40,7 +40,7 @@ trait LoggerPersistentDedupTrait {
             return true;
         }
 
-        $this->persistentDedupHashes[$hash] = true;
+        $this->persistentDedupHashes[$hash] = $level;
         $this->savePersistentDedupRegistry();
 
         return false;
