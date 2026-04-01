@@ -62,3 +62,4 @@ Every time a mistake is made and fixed, a write-up **must** be created here. Thi
 | 23 | catch-exception-to-throwable-migration | PHP / Exception Handling | Migrated 20+ `catch(Exception)` to `catch(Throwable)` and fixed `\Throwable` backslash violations |
 | 30 | persistent-log-deduplication | Logging / Deduplication | Persistent cross-request dedup for Info+Debug logs via JSON registry file |
 | 31 | cla-failure-endpoint-gating-and-machine-approval | PowerShell / WordPress REST | `-cla` failed due endpoint migration gating (`rest_disabled`) plus fail-closed machine approval (`machine_not_approved`) |
+| 43 | qupload-php-compatibility-refactoring | PHP / Syntax Validator | Systematic fix of all `is_array()`, `array()`, magic string patterns across 3 plugins — 1,800+ replacements |
