@@ -113,6 +113,38 @@ trait ExporterHelpersTrait {
         $stmt->execute([$exportId]);
     }
 
+    /**
+     * Compute a content hash for all files in a snapshot directory.
+     *
+     * Uses file sizes and modification times for fast comparison
+     * without reading file contents. Returns an SHA-256 hex digest.
+     */
+    private function computeContentHash(string $snapshotDir): string {
+        $entries = [];
+
+        if (!is_dir($snapshotDir)) {
+            return '';
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($snapshotDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $isFile = $item->isFile();
+
+            if ($isFile) {
+                $relative = str_replace('\\', '/', substr($item->getPathname(), strlen($snapshotDir) + 1));
+                $entries[] = $relative . ':' . $item->getSize() . ':' . $item->getMTime();
+            }
+        }
+
+        sort($entries);
+
+        return hash('sha256', implode("\n", $entries));
+    }
+
     /** Log helper. */
     private function log(string $level, string $message, array $context = []): void {
         $context['class'] = 'RiseupSnapshotExporter';
