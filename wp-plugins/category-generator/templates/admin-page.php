@@ -364,7 +364,7 @@ $auto_snapshot_enabled = $settings->get('auto_snapshot_before_generate', false);
                         <select id="cg-taxonomy">
                             <option value="category"><?php _e('Categories (Posts)', 'category-generator'); ?></option>
                             <?php
-                            $taxonomies = get_taxonomies(array('public' => true, 'show_ui' => true), 'objects');
+                            $taxonomies = get_taxonomies(['public' => true, 'show_ui' => true], 'objects');
                             foreach ($taxonomies as $tax) {
                                 if ($tax->name !== 'category' && $tax->name !== 'post_tag') {
                                     echo '<option value="' . esc_attr($tax->name) . '">' . esc_html($tax->label) . '</option>';
