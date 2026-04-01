@@ -48,7 +48,7 @@
 | 2 | **ORM PDO Fix — Redeploy** | 🔴 High | Blocked (deployment) | — |
 | 3 | Go `interface{}` → `any` migration | 🟡 Medium | ✅ Done — 7 instances across 4 files | — |
 | 4 | Cloud Storage Go pipeline `cloud_upload` stage | 🟡 Medium | Open | S-044 |
-| 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | ✅ Wired into account cards | S-047 |
+| 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | ✅ Done — CloudStorageBackupTimeline component wired into account cards | S-047 |
 | 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | ✅ Done — all types, components, hooks, methods fixed | — |
 | 6 | Go Backend UserClient | 🟡 Medium | Open | — |
 | 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
