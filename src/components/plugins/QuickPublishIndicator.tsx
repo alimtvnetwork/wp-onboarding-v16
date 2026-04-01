@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePublishStore, PublishOperation } from "@/stores/publishStore";
 import { PublishOperationStatus, PublishStageStatus } from "@/lib/constants";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "zustand/shallow";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";

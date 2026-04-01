@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { usePublishStore, initializePublishWebSocketListeners } from "@/stores/publishStore";
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from "zustand/shallow";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
