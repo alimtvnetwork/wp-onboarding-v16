@@ -51,7 +51,7 @@ type performUploadInput struct {
 // performUpload handles the upload retry and result logging.
 func (s *Service) performUpload(input performUploadInput) (bool, *apperror.AppError) {
 	zipSize := getFileSize(input.ZipPath)
-	s.broadcastProgress(input.Pctx.progress(publishstep.Uploading, 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
+	s.broadcastProgress(input.Pctx.progress(publishstep.Uploading, progressUpload.Start, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize))))
 
 	uploadOutcome, retryResult := s.attemptUploadWithRetry(input.Ctx, input.Pctx, input.ZipPath)
 
