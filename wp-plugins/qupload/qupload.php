@@ -69,7 +69,7 @@ function qupload_boot_trace(string $stage, array $context = []): void {
 function qupload_register_boot_fatal_handler(): void {
     register_shutdown_function(static function (): void {
         $error = error_get_last();
-        $isFatal = is_array($error) && in_array($error['type'] ?? 0, [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true);
+        $isFatal = gettype($error) === 'array' && in_array($error['type'] ?? 0, [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true);
 
         if ($isFatal === false) {
             return;

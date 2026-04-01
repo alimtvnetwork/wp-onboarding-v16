@@ -392,9 +392,30 @@ The GitHub Actions workflow runs `lint-php-syntax.sh` on every push and PR as an
 
 ## Summary
 
-On April 1, 2026, two PHP files were refactored to comply with QUpload's `token_get_all()` validator:
+### Phase 1 — April 1, 2026 (initial)
+
+Two PHP files were refactored:
 
 1. **`FileLogger.php`** — Replaced 2× `is_array()` calls with `gettype() === PhpNativeType::PhpArray->value` and 1× `array()` with `[]`
 2. **`SnapshotDetector.php`** — Replaced 1× `array()` with `[]`
 
-These changes prevent the QUpload validator from blocking plugin activation due to false-positive syntax errors involving the `array` token. The same rules must be applied to all future PHP code in this plugin.
+### Phase 2 — April 1, 2026 (full sweep)
+
+A second AI performed a full codebase sweep fixing ~1,800+ violations across all three plugins:
+- **Riseup Asia Uploader:** ~100+ files refactored (all includes/, templates/)
+- **QUpload:** ~15+ files refactored
+- **Category Generator:** ~10 files refactored
+
+### Phase 3 — April 1, 2026 (final mop-up)
+
+Remaining violations caught and fixed:
+- **category-generator.php:** 181 `array()` → `[]` conversions, 3 `is_array()` → `gettype() === 'array'`
+- **riseup-asia-uploader.php:** 3 `array()` → `[]`, 1 `is_array()`, 2 `is_string()` → `gettype()` checks
+- **riseup-asia-uploader templates:** 8 `array()` → `[]` across admin-errors.php, admin-logs.php, admin-license.php, pagination.php
+- **qupload.php:** 1 `is_array()` → `gettype()` check
+- **category-generator templates:** 2 `array()` → `[]` (admin-page.php, templates-page.php)
+- Created `.ai-instructions` for category-generator plugin
+
+**Final status: 0 violations remaining** across all non-vendor, non-ignored plugin files.
+
+These changes prevent the QUpload validator from blocking plugin activation due to false-positive syntax errors involving the `array` token. The same rules must be applied to all future PHP code in these plugins.

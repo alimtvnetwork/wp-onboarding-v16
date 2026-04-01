@@ -15,7 +15,7 @@ $template_categories = $this->db->get_template_categories();
 
 // Build hierarchical category list
 function cg_build_category_tree($categories, $parent_id = 0, $prefix = '') {
-    $tree = array();
+    $tree = [];
     foreach ($categories as $cat) {
         if ($cat['parent_id'] == $parent_id) {
             $cat['display_name'] = $prefix . $cat['name'];

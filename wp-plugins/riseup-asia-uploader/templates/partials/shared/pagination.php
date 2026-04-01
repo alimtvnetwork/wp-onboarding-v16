@@ -27,14 +27,14 @@ if (!isset($totalPages) || $totalPages <= 1) {
 <div class="tablenav bottom">
     <div class="tablenav-pages">
         <?php
-        $defaultArgs = array(
+        $defaultArgs = [
             'base'      => isset($paginationBase) ? $paginationBase : add_query_arg('paged', '%#%'),
             'format'    => '',
             'prev_text' => '&laquo;',
             'next_text' => '&raquo;',
             'total'     => $totalPages,
             'current'   => $page,
-        );
+        ];
 
         $args = isset($paginationArgs) ? $paginationArgs : $defaultArgs;
         echo paginate_links($args);

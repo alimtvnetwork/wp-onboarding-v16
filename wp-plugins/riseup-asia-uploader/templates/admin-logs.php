@@ -25,38 +25,38 @@ $pluginName = PluginConfigType::Name->value;
 $pluginSlug = PluginConfigType::Slug->value;
 
 // Trigger source labels for display
-$triggerLabels = array(
+$triggerLabels = [
     TriggerSourceType::Api->value       => __('API', $pluginSlug),
     TriggerSourceType::Dashboard->value => __('Dashboard', $pluginSlug),
     TriggerSourceType::Agent->value     => __('Agent Push', $pluginSlug),
     TriggerSourceType::Cron->value      => __('Cron', $pluginSlug),
     TriggerSourceType::Cli->value       => __('WP-CLI', $pluginSlug),
-);
+];
 
 // Trigger source CSS classes for color coding
-$triggerClasses = array(
+$triggerClasses = [
     TriggerSourceType::Api->value       => 'trigger-api',
     TriggerSourceType::Dashboard->value => 'trigger-dashboard',
     TriggerSourceType::Agent->value     => 'trigger-agent',
     TriggerSourceType::Cron->value      => 'trigger-cron',
     TriggerSourceType::Cli->value       => 'trigger-cli',
-);
+];
 
 // Upload source labels for display
-$uploadSourceLabels = array(
+$uploadSourceLabels = [
     UploadSourceType::Script->value  => __('Upload Script', $pluginSlug),
     UploadSourceType::RestApi->value => __('REST API', $pluginSlug),
     UploadSourceType::AdminUi->value => __('Admin UI', $pluginSlug),
     UploadSourceType::WpCli->value   => __('WP-CLI', $pluginSlug),
-);
+];
 
 // Upload source CSS classes for color coding
-$uploadSourceClasses = array(
+$uploadSourceClasses = [
     UploadSourceType::Script->value  => 'source-script',
     UploadSourceType::RestApi->value => 'source-api',
     UploadSourceType::AdminUi->value => 'source-admin',
     UploadSourceType::WpCli->value   => 'source-cli',
-);
+];
 ?>
 <div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
     <?php
@@ -241,7 +241,7 @@ $uploadSourceClasses = array(
                         <?php if ($hasLogDetails): ?>
                             data-details="<?php echo esc_attr(json_encode($log[LogColumnType::Details->value])); ?>"
                         <?php elseif ($hasErrorMsg): ?>
-                            data-details="<?php echo esc_attr(json_encode(array(ResponseKeyType::Error->value => $log[LogColumnType::ErrorMsg->value]))); ?>"
+                            data-details="<?php echo esc_attr(json_encode([ResponseKeyType::Error->value => $log[LogColumnType::ErrorMsg->value]])); ?>"
                         <?php endif; ?>>
                         <td class="column-id"><?php echo esc_html($log[LogColumnType::Id->value]); ?></td>
                         <td class="column-timestamp">
