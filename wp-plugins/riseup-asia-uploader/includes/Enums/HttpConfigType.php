@@ -29,10 +29,10 @@ enum HttpConfigType: int
         return [
             'method'    => strtoupper($method),
             'timeout'   => self::TimeoutDefault->value,
-            'headers'   => array(
+            'headers'   => [
                 'Authorization' => $authHeader,
                 'Content-Type'  => ContentTypeValueType::Json->value,
-            ),
+            ],
             'sslverify' => true,
         ];
     }

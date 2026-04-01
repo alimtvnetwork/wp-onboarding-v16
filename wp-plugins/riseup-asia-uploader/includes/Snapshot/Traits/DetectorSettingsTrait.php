@@ -147,7 +147,7 @@ trait DetectorSettingsTrait {
             SettingsKeyType::ScheduleTime->value          => '03:00',
             SettingsKeyType::ScheduleDay->value           => 1,
             SettingsKeyType::DefaultScope->value          => SnapshotScopeType::WordPress->value,
-            SettingsKeyType::CustomTables->value          => array(),
+            SettingsKeyType::CustomTables->value          => [],
             SettingsKeyType::RetentionType->value         => RetentionType::Days->value,
             SettingsKeyType::RetentionDays->value         => SnapshotConfigType::RetentionDaysDefault->value,
             SettingsKeyType::RetentionCount->value        => SnapshotConfigType::RetentionCountDefault->value,

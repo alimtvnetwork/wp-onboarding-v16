@@ -53,11 +53,11 @@ trait LogClearAllTrait
                 ResponseKeyType::Success->value => true,
                 'riseup'                        => $riseupResult,
                 'qupload'                       => $quploadResult,
-                'cleared_by'                    => array(
+                'cleared_by'                    => [
                     'machine'   => $machineName,
                     'ip'        => $clientIp,
                     'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );

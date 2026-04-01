@@ -109,10 +109,10 @@ trait LogEmailTrait
                 'sent_to'          => $recipient,
                 'files_attached'   => $collected['file_names'],
                 'total_size_bytes' => $collected['total_size'],
-                'requested_by'     => array(
+                'requested_by'     => [
                     'machine' => $machineName,
                     'ip'      => $clientIp,
-                ),
+                ],
             ])
             ->toResponse();
     }
@@ -180,7 +180,7 @@ trait LogEmailTrait
 
     /** Collect archived log files from rotation folders. */
     private function collectArchivedFiles(string $archiveDir, array $logTypes): array {
-        $result = ['attachments' => array(), 'file_names' => array(), 'total_size' => 0, 'temp_files' => array()];
+        $result = ['attachments' => [], 'file_names' => [], 'total_size' => 0, 'temp_files' => []];
         $isArchiveMissing = !is_dir($archiveDir);
 
         if ($isArchiveMissing) {

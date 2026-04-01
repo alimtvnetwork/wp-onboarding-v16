@@ -27,8 +27,8 @@ trait CleanerOrphanTrait {
         $result = [
             ResponseKeyType::Removed->value    => 0,
             ResponseKeyType::BytesFreed->value => 0,
-            ResponseKeyType::Files->value      => array(),
-            ResponseKeyType::Errors->value     => array(),
+            ResponseKeyType::Files->value      => [],
+            ResponseKeyType::Errors->value     => [],
         ];
 
         try {
@@ -95,7 +95,7 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanSqliteFiles(bool $dryRun = false): array {
         $result = [
             ResponseKeyType::Removed->value => 0,
-            ResponseKeyType::Errors->value  => array(),
+            ResponseKeyType::Errors->value  => [],
         ];
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: [];
@@ -152,7 +152,7 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanDirectories(bool $dryRun = false): array {
         $result = [
             ResponseKeyType::Removed->value => 0,
-            ResponseKeyType::Errors->value  => array(),
+            ResponseKeyType::Errors->value  => [],
         ];
 
         $files = $this->db->queryAll('SELECT Filepath, Filename FROM ' . TableType::Snapshots->value) ?: [];
@@ -215,7 +215,7 @@ trait CleanerOrphanTrait {
     private function cleanupStuckSnapshots(bool $dryRun = false): array {
         $result = [
             ResponseKeyType::Cleaned->value => 0,
-            ResponseKeyType::Ids->value     => array(),
+            ResponseKeyType::Ids->value     => [],
         ];
 
         $stuckHours = SnapshotConfigType::StuckHours->value;

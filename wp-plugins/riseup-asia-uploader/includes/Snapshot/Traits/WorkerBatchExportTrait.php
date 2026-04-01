@@ -145,7 +145,7 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::PoolSize->value    => $this->poolSize,
             ResponseKeyType::Tables->value      => 0,
             ResponseKeyType::TotalRows->value   => 0,
-            ResponseKeyType::Errors->value      => array(),
+            ResponseKeyType::Errors->value      => [],
             ResponseKeyType::Duration->value    => $duration,
             ResponseKeyType::Status->value      => SnapshotJobStatusType::Queued->value,
         ]);

@@ -93,7 +93,7 @@ trait AdminSettingsTrait {
             'last_error'   => isset($current['last_error']) ? $current['last_error'] : '',
             'package_url'  => isset($current['package_url']) ? $current['package_url'] : '',
             'new_version'  => isset($current['new_version']) ? $current['new_version'] : '',
-            'update_info'  => isset($current['update_info']) ? $current['update_info'] : array(),
+            'update_info'  => isset($current['update_info']) ? $current['update_info'] : [],
         ];
     }
 

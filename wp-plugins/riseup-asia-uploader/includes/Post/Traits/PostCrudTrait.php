@@ -50,7 +50,7 @@ trait PostCrudTrait {
 
             $this->logger->logPostCreate($postId, [
                 'title' => $data['title'], 'slug' => get_post_field('post_name', $postId),
-                'status' => $postData['post_status'], 'categories' => $data['categories'] ?? array(),
+                'status' => $postData['post_status'], 'categories' => $data['categories'] ?? [],
             ]);
 
             return [ResponseKeyType::Success->value => true, 'post' => $this->formatPost(get_post($postId))];

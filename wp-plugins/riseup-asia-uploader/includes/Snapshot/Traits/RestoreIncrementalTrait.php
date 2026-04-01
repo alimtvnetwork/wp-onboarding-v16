@@ -41,7 +41,7 @@ trait RestoreIncrementalTrait {
             return [
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,
-                ResponseKeyType::Errors->value     => array(),
+                ResponseKeyType::Errors->value     => [],
             ];
         }
 
@@ -66,7 +66,7 @@ trait RestoreIncrementalTrait {
             return [
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,
-                ResponseKeyType::Errors->value     => array(),
+                ResponseKeyType::Errors->value     => [],
             ];
         }
 
@@ -106,7 +106,7 @@ trait RestoreIncrementalTrait {
 
             return [
                 ResponseKeyType::Rows->value   => 0,
-                ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folderName']),
+                ResponseKeyType::Errors->value => ['Incremental directory missing: ' . $inc['folderName']],
             ];
         }
 

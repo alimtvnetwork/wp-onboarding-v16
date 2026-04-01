@@ -55,7 +55,7 @@ trait UpdateResolverWpHooksTrait {
         return (object) [
             'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value, 'plugin' => $pluginFile,
             'new_version' => $updateInfo['version'], 'url' => $updateInfo['url'] ?? '',
-            'package' => $updateInfo['package'], 'icons' => array(), 'banners' => array(),
+            'package' => $updateInfo['package'], 'icons' => [], 'banners' => [],
             'tested' => $updateInfo['tested'] ?? '', 'requires' => $updateInfo['requires'] ?? '',
             'requires_php' => $updateInfo['requires_php'] ?? '',
         ];
@@ -102,10 +102,10 @@ trait UpdateResolverWpHooksTrait {
             'requires_php' => $updateInfo['requires_php'] ?? PluginConfigType::MinPhpVersion->value,
             'tested' => $updateInfo['tested'] ?? get_bloginfo('version'),
             'download_link' => $updateInfo['package'] ?? '',
-            'sections' => array(
+            'sections' => [
                 'description' => 'Remote plugin management, blog post publishing, and audit logging via REST API.',
                 'changelog' => $updateInfo['changelog'] ?? 'See plugin repository for changelog.',
-            ),
+            ],
         ];
     }
 

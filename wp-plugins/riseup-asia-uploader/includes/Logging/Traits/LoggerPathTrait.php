@@ -201,7 +201,7 @@ trait LoggerPathTrait {
         $isInitFailed = ($this->isInitialized === false && $this->initializePaths() === false);
 
         if ($isInitFailed) {
-            return ['deleted' => array(), 'failed' => array()];
+            return ['deleted' => [], 'failed' => []];
         }
 
         $files = $this->collectLogFiles();

@@ -35,30 +35,30 @@ trait DetectorValidationTrait {
 
     private function validateEnumFields(array &$settings): void {
         $rules = [
-            SettingsKeyType::PreferredProvider->value => array(
+            SettingsKeyType::PreferredProvider->value => [
                 SnapshotProviderType::Auto->value,
                 SnapshotProviderType::WpReset->value,
                 SnapshotProviderType::Updraft->value,
                 SnapshotProviderType::Native->value,
-            ),
-            SettingsKeyType::ScheduleFrequency->value => array(
+            ],
+            SettingsKeyType::ScheduleFrequency->value => [
                 SnapshotFrequencyType::Manual->value,
                 SnapshotFrequencyType::Hourly->value,
                 SnapshotFrequencyType::Daily->value,
                 SnapshotFrequencyType::Weekly->value,
                 SnapshotFrequencyType::Monthly->value,
-            ),
-            SettingsKeyType::DefaultScope->value => array(
+            ],
+            SettingsKeyType::DefaultScope->value => [
                 SnapshotScopeType::All->value,
                 SnapshotScopeType::WordPress->value,
                 SnapshotScopeType::Content->value,
                 SnapshotScopeType::Custom->value,
-            ),
-            SettingsKeyType::RetentionType->value => array(
+            ],
+            SettingsKeyType::RetentionType->value => [
                 RetentionType::Days->value,
                 RetentionType::Count->value,
                 RetentionType::None->value,
-            ),
+            ],
         ];
         $defaults = [
             SettingsKeyType::PreferredProvider->value  => SnapshotProviderType::Auto->value,

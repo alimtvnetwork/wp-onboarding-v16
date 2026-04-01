@@ -33,12 +33,12 @@ trait LogRotationStatusTrait
         return new WP_REST_Response(
             [
                 ResponseKeyType::Success->value => true,
-                'rotation' => array(
+                'rotation' => [
                     'config'          => $config,
                     'archive_count'   => $archiveCount,
                     'oldest_archive'  => $oldestArchive,
                     'newest_archive'  => $newestArchive,
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );

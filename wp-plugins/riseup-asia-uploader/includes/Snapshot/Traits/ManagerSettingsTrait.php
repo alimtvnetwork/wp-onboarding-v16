@@ -48,7 +48,7 @@ trait ManagerSettingsTrait {
             SettingsKeyType::Frequency->value        => SnapshotFrequencyType::Manual->value,
             SettingsKeyType::ScheduleTime->value     => '03:00',
             SettingsKeyType::PreRestoreBackup->value => true,
-            SettingsKeyType::CustomTables->value     => array(),
+            SettingsKeyType::CustomTables->value     => [],
         ];
 
         return array_merge($defaults, $settings);

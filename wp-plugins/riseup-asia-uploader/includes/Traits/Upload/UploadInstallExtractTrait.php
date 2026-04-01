@@ -406,11 +406,11 @@ trait UploadInstallExtractTrait
             ->setSingleResult([
                 ResponseKeyType::SelfUpdateStatus->value => $outcome->value,
                 ResponseKeyType::RollbackReason->value   => $reason->value,
-                'rollback' => array(
+                'rollback' => [
                     ResponseKeyType::RollbackAttempted->value => ($backupDir !== null),
                     ResponseKeyType::RollbackSuccess->value   => $rolledBack,
                     ResponseKeyType::RestoredVersion->value   => $restoredVersion,
-                ),
+                ],
                 $diagnosticsKey => $diagnostics,
             ])
             ->toResponse();

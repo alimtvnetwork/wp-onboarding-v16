@@ -63,31 +63,31 @@ trait AdminMenuTrait {
         $pluginSlug = $slug;
 
         $submenus = [
-            array(
+            [
                 $slug,
                 'Activity Logs',
                 'renderLogsPage',
-            ),
-            array(
+            ],
+            [
                 AdminPageType::Settings->value,
                 'Settings',
                 'renderSettingsPage',
-            ),
-            array(
+            ],
+            [
                 AdminPageType::Agents->value,
                 'Agent Sites',
                 'renderAgentsPage',
-            ),
-            array(
+            ],
+            [
                 AdminPageType::Snapshots->value,
                 'Snapshots',
                 'renderSnapshotsPage',
-            ),
-            array(
+            ],
+            [
                 AdminPageType::License->value,
                 'License',
                 'renderLicensePage',
-            ),
+            ],
         ];
 
         foreach ($submenus as $item) {
@@ -215,27 +215,27 @@ trait AdminMenuTrait {
         wp_localize_script('riseup-admin-errors', 'RiseupErrors', [
             'nonce'        => wp_create_nonce(NonceType::Admin->value),
             'activeTab'    => $activeTab,
-            'actions'      => array(
+            'actions'      => [
                 'dismissFlash'  => AjaxActionType::DismissErrorFlash->value,
                 'clearSessions' => AjaxActionType::ClearErrorSessions->value,
                 'readLogFile'   => AjaxActionType::ReadLogFile->value,
                 'clearLogFile'  => AjaxActionType::ClearLogFile->value,
                 'clearAllLogs'  => AjaxActionType::ClearAllLogs->value,
-            ),
-            'tabs'         => array(
+            ],
+            'tabs'         => [
                 'sessions'   => AdminTabType::Sessions->value,
                 'log'        => AdminTabType::Log->value,
                 'error'      => AdminTabType::Error->value,
                 'stacktrace' => AdminTabType::Stacktrace->value,
-            ),
-            'responseKeys' => array(
+            ],
+            'responseKeys' => [
                 'content'  => ResponseKeyType::Content->value,
                 'exists'   => ResponseKeyType::Exists->value,
                 'size'     => ResponseKeyType::Size->value,
                 'filename' => ResponseKeyType::Filename->value,
                 'message'  => ResponseKeyType::Message->value,
-            ),
-            'i18n'         => array(
+            ],
+            'i18n'         => [
                 'dismissing'      => __('Dismissing...', $pluginSlug),
                 'markAsSeen'      => __('Mark as Seen', $pluginSlug),
                 'confirmClearAll' => __('Are you sure you want to clear all error sessions? This cannot be undone.', $pluginSlug),
@@ -247,7 +247,7 @@ trait AdminMenuTrait {
                 'clearAllLogsFailed'  => __('Failed to clear all logs.', $pluginSlug),
                 'noStackTrace'    => __('No stack trace available.', $pluginSlug),
                 'noContextData'   => __('No context data', $pluginSlug),
-            ),
+            ],
         ]);
     }
 
@@ -258,32 +258,32 @@ trait AdminMenuTrait {
 
         wp_localize_script('riseup-admin-settings', 'RiseupSettings', [
             'nonce'         => wp_create_nonce(NonceType::Admin->value),
-            'updateActions' => array(
+            'updateActions' => [
                 'testConnection' => AjaxActionType::TestUpdateConnection->value,
                 'clearCache'     => AjaxActionType::ClearUpdateCache->value,
                 'checkUpdates'   => AjaxActionType::CheckForUpdates->value,
-            ),
-            'snapFrequency' => array(
+            ],
+            'snapFrequency' => [
                 'manual'  => SnapshotFrequencyType::Manual->value,
                 'hourly'  => SnapshotFrequencyType::Hourly->value,
                 'daily'   => SnapshotFrequencyType::Daily->value,
                 'weekly'  => SnapshotFrequencyType::Weekly->value,
                 'monthly' => SnapshotFrequencyType::Monthly->value,
-            ),
-            'snapRetention' => array(
+            ],
+            'snapRetention' => [
                 'none'  => RetentionType::None->value,
                 'days'  => RetentionType::Days->value,
                 'count' => RetentionType::Count->value,
-            ),
-            'snapStorage'   => array(
+            ],
+            'snapStorage'   => [
                 'single'   => StorageModeType::Single->value,
                 'perTable' => StorageModeType::PerTable->value,
-            ),
-            'snapActions'   => array(
+            ],
+            'snapActions'   => [
                 'storageStats' => AjaxActionType::GetSnapshotStorageStats->value,
                 'saveSettings' => AjaxActionType::SaveSnapshotSettings->value,
                 'runCleanup'   => AjaxActionType::RunSnapshotCleanup->value,
-            ),
+            ],
         ]);
     }
 
@@ -296,7 +296,7 @@ trait AdminMenuTrait {
         wp_localize_script('riseup-admin-agents', 'RiseupAgents', [
             'apiBase'       => esc_url(rest_url(PluginConfigType::apiFullNamespace())),
             'nonce'         => wp_create_nonce(NonceType::WpRest->value),
-            'endpoints'     => array(
+            'endpoints'     => [
                 'agents'        => EndpointType::Agents->value,
                 'agentsAdd'     => EndpointType::AgentsAdd->value,
                 'agentsRemove'  => EndpointType::AgentsRemove->value,
@@ -305,16 +305,16 @@ trait AdminMenuTrait {
                 'agentsPlugins' => EndpointType::AgentsPlugins->value,
                 'agentAction'   => EndpointType::AgentAction->value,
                 'agentHistory'  => EndpointType::AgentHistory->value,
-            ),
-            'agentStatus'   => array(
+            ],
+            'agentStatus'   => [
                 'pending'   => AgentStatusType::Pending->value,
                 'connected' => AgentStatusType::Connected->value,
                 'error'     => AgentStatusType::Error->value,
-            ),
-            'status'        => array(
+            ],
+            'status'        => [
                 'success' => StatusType::Success->value,
-            ),
-            'responseKeys'  => array(
+            ],
+            'responseKeys'  => [
                 'agents'  => ResponseKeyType::Agents->value,
                 'actions' => ResponseKeyType::Actions->value,
                 'plugins' => ResponseKeyType::Plugins->value,
@@ -322,16 +322,16 @@ trait AdminMenuTrait {
                 'message' => ResponseKeyType::Message->value,
                 'success' => ResponseKeyType::Success->value,
                 'error'   => ResponseKeyType::Error->value,
-            ),
-            'pluginStatus'  => array(
+            ],
+            'pluginStatus'  => [
                 'active' => __('active', $pluginSlug),
-            ),
-            'pluginActions' => array(
+            ],
+            'pluginActions' => [
                 'enable'  => strtolower(ActionType::Enable->value),
                 'disable' => strtolower(ActionType::Disable->value),
                 'delete_' => strtolower(ActionType::Delete->value),
-            ),
-            'i18n'          => array(
+            ],
+            'i18n'          => [
                 'active'              => __('Active', $pluginSlug),
                 'inactive'            => __('Inactive', $pluginSlug),
                 'enable'              => __('Enable', $pluginSlug),
@@ -356,7 +356,7 @@ trait AdminMenuTrait {
                 'pluginsSuffix'       => __('Plugins', $pluginSlug),
                 'historySuffix'       => __('Action History', $pluginSlug),
                 'noAgentsYet'         => __('No agent sites registered yet.', $pluginSlug),
-            ),
+            ],
         ]);
     }
 
@@ -372,31 +372,31 @@ trait AdminMenuTrait {
             'restBase'        => esc_url(rest_url(PluginConfigType::apiFullNamespace())),
             'logsPageUrl'     => AdminPageType::Logs->adminUrl(),
             'paginationLimit' => PaginationConfigType::DefaultLimit->value,
-            'status'          => array(
+            'status'          => [
                 'complete'  => SnapshotStatusType::Complete->value,
                 'running'   => SnapshotStatusType::Running->value,
                 'failed'    => SnapshotStatusType::Failed->value,
                 'pending'   => SnapshotStatusType::Pending->value,
                 'scheduled' => SnapshotStatusType::Scheduled->value,
-            ),
-            'mode'            => array(
+            ],
+            'mode'            => [
                 'full'        => SnapshotModeType::Full->value,
                 'incremental' => SnapshotModeType::Incremental->value,
-            ),
-            'scope'           => array(
+            ],
+            'scope'           => [
                 'all'       => SnapshotScopeType::All->value,
                 'wordpress' => SnapshotScopeType::WordPress->value,
                 'content'   => SnapshotScopeType::Content->value,
                 'custom'    => SnapshotScopeType::Custom->value,
-            ),
-            'frequency'       => array(
+            ],
+            'frequency'       => [
                 'manual'  => SnapshotFrequencyType::Manual->value,
                 'hourly'  => SnapshotFrequencyType::Hourly->value,
                 'daily'   => SnapshotFrequencyType::Daily->value,
                 'weekly'  => SnapshotFrequencyType::Weekly->value,
                 'monthly' => SnapshotFrequencyType::Monthly->value,
-            ),
-            'endpoints'       => array(
+            ],
+            'endpoints'       => [
                 'list'        => EndpointType::SnapshotList->value,
                 'schedule'    => EndpointType::SnapshotSchedule->value,
                 'info'        => EndpointType::SnapshotInfo->value,
@@ -412,23 +412,23 @@ trait AdminMenuTrait {
                 'cleanup'     => EndpointType::SnapshotCleanup->value,
                 'download'    => EndpointType::SnapshotDownload->value,
                 'progress'    => EndpointType::SnapshotProgress->value,
-            ),
-            'responseKeys'    => array(
+            ],
+            'responseKeys'    => [
                 'snapshots' => ResponseKeyType::Snapshots->value,
                 'total'     => ResponseKeyType::Total->value,
                 'jobId'     => ResponseKeyType::JobId->value,
                 'message'   => ResponseKeyType::Message->value,
                 'success'   => ResponseKeyType::Success->value,
-            ),
-            'retention'       => array(
+            ],
+            'retention'       => [
                 'none'  => RetentionType::None->value,
                 'days'  => RetentionType::Days->value,
                 'count' => RetentionType::Count->value,
-            ),
-            'actions'         => array(
+            ],
+            'actions'         => [
                 'saveSettings' => AjaxActionType::SaveSnapshotSettings->value,
-            ),
-            'monthNames'      => array(
+            ],
+            'monthNames'      => [
                 __('January', $pluginSlug),
                 __('February', $pluginSlug),
                 __('March', $pluginSlug),
@@ -441,8 +441,8 @@ trait AdminMenuTrait {
                 __('October', $pluginSlug),
                 __('November', $pluginSlug),
                 __('December', $pluginSlug),
-            ),
-            'i18n'            => array(
+            ],
+            'i18n'            => [
                 'copied'               => __('Copied!', $pluginSlug),
                 'copy'                 => __('Copy', $pluginSlug),
                 'copyReport'           => __('Copy Report', $pluginSlug),
@@ -484,7 +484,7 @@ trait AdminMenuTrait {
                 'checkLogs'            => __('Check Logs', $pluginSlug),
                 'incrementalSuffix'    => __('incremental', $pluginSlug),
                 'incrementalsSuffix'   => __('incrementals', $pluginSlug),
-            ),
+            ],
         ]);
     }
 
@@ -495,14 +495,14 @@ trait AdminMenuTrait {
 
         wp_localize_script('riseup-admin-license', 'RiseupLicense', [
             'nonce'   => wp_create_nonce(NonceType::License->value),
-            'actions' => array(
+            'actions' => [
                 'save'       => AjaxActionType::LicenseSave->value,
                 'activate'   => AjaxActionType::LicenseActivate->value,
                 'deactivate' => AjaxActionType::LicenseDeactivate->value,
                 'remove'     => AjaxActionType::LicenseRemove->value,
                 'refresh'    => AjaxActionType::LicenseRefresh->value,
-            ),
-            'i18n'    => array(
+            ],
+            'i18n'    => [
                 'enterKey'           => __('Please enter a license key.', $pluginSlug),
                 'validationFailed'   => __('Validation failed.', $pluginSlug),
                 'requestFailed'      => __('Request failed.', $pluginSlug),
@@ -512,7 +512,7 @@ trait AdminMenuTrait {
                 'confirmRemove'      => __('Remove the license key entirely? This cannot be undone.', $pluginSlug),
                 'removalFailed'      => __('Removal failed.', $pluginSlug),
                 'refreshFailed'      => __('Refresh failed.', $pluginSlug),
-            ),
+            ],
         ]);
     }
 
@@ -529,17 +529,17 @@ trait AdminMenuTrait {
 
         wp_localize_script('riseup-admin-feedback', 'RiseupFeedback', [
             'nonce'   => wp_create_nonce(NonceType::Feedback->value),
-            'actions' => array(
+            'actions' => [
                 'send'       => AjaxActionType::SendFeedback->value,
                 'checkReady' => AjaxActionType::CheckFeedbackReady->value,
-            ),
-            'i18n'    => array(
+            ],
+            'i18n'    => [
                 'sent'         => __('Feedback sent successfully!', $pluginSlug),
                 'sendFailed'   => __('Failed to send feedback. Please check your email configuration.', $pluginSlug),
                 'checkFailed'  => __('Failed to check feedback readiness.', $pluginSlug),
                 'tooManyFiles' => __('Maximum 3 files allowed.', $pluginSlug),
                 'invalidFile'  => __('Invalid file. Only JPG, PNG, GIF, WebP under 2 MB are allowed.', $pluginSlug),
-            ),
+            ],
         ]);
     }
 }

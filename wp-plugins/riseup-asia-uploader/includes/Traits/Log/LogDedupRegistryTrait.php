@@ -48,17 +48,17 @@ trait LogDedupRegistryTrait
             return new WP_REST_Response(
                 [
                     ResponseKeyType::Success->value => true,
-                    ResponseKeyType::DedupRegistry->value => array(
+                    ResponseKeyType::DedupRegistry->value => [
                         ResponseKeyType::Exists->value        => false,
                         ResponseKeyType::Version->value       => null,
                         ResponseKeyType::EntryCount->value    => 0,
                         ResponseKeyType::FileSizeBytes->value => 0,
-                        ResponseKeyType::Entries->value       => array(),
+                        ResponseKeyType::Entries->value       => [],
                         'InfoCount'                           => 0,
                         'DebugCount'                          => 0,
-                        'InfoEntries'                         => array(),
-                        'DebugEntries'                        => array(),
-                    ),
+                        'InfoEntries'                         => [],
+                        'DebugEntries'                        => [],
+                    ],
                 ],
                 HttpStatusType::Ok->value,
             );
@@ -91,7 +91,7 @@ trait LogDedupRegistryTrait
         return new WP_REST_Response(
             [
                 ResponseKeyType::Success->value => true,
-                ResponseKeyType::DedupRegistry->value => array(
+                ResponseKeyType::DedupRegistry->value => [
                     ResponseKeyType::Exists->value        => true,
                     ResponseKeyType::Version->value       => $version,
                     ResponseKeyType::EntryCount->value    => $entryCount,
@@ -101,7 +101,7 @@ trait LogDedupRegistryTrait
                     'DebugCount'                          => $debugCount,
                     'InfoEntries'                         => $infoEntries,
                     'DebugEntries'                        => $debugEntries,
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );

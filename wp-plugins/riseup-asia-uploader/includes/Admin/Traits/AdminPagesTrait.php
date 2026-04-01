@@ -114,54 +114,54 @@ trait AdminPagesTrait {
         $pluginSlug = PluginConfigType::Slug->value;
 
         return [
-            'core' => array(
+            'core' => [
                 'label' => __('Core Operations', $pluginSlug),
                 'icon'  => 'dashicons-admin-tools',
-                'endpoints' => array(
-                    'status'       => array('label' => 'Status Check', 'desc' => 'Returns plugin status and version'),
-                    'upload'       => array('label' => 'Plugin Upload', 'desc' => 'Upload and install plugins'),
-                    'plugins'      => array('label' => 'List Plugins', 'desc' => 'List all installed plugins'),
-                    'plugin_files' => array('label' => 'Plugin Files', 'desc' => 'List files in a plugin'),
-                    'plugin_file'  => array('label' => 'File Content', 'desc' => 'Get file content from plugin'),
-                    'export_self'  => array('label' => 'Export Self', 'desc' => 'Export this plugin as ZIP'),
-                ),
-            ),
-            'content' => array(
+                'endpoints' => [
+                    'status'       => ['label' => 'Status Check', 'desc' => 'Returns plugin status and version'],
+                    'upload'       => ['label' => 'Plugin Upload', 'desc' => 'Upload and install plugins'],
+                    'plugins'      => ['label' => 'List Plugins', 'desc' => 'List all installed plugins'],
+                    'plugin_files' => ['label' => 'Plugin Files', 'desc' => 'List files in a plugin'],
+                    'plugin_file'  => ['label' => 'File Content', 'desc' => 'Get file content from plugin'],
+                    'export_self'  => ['label' => 'Export Self', 'desc' => 'Export this plugin as ZIP'],
+                ],
+            ],
+            'content' => [
                 'label' => __('Content Management', $pluginSlug),
                 'icon'  => 'dashicons-edit-page',
-                'endpoints' => array(
-                    'posts'      => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
-                    'categories' => array('label' => 'Categories', 'desc' => 'Create and manage categories'),
-                ),
-            ),
-            'monitoring' => array(
+                'endpoints' => [
+                    'posts'      => ['label' => 'Blog Posts', 'desc' => 'Create and manage posts'],
+                    'categories' => ['label' => 'Categories', 'desc' => 'Create and manage categories'],
+                ],
+            ],
+            'monitoring' => [
                 'label' => __('Monitoring & Logs', $pluginSlug),
                 'icon'  => 'dashicons-chart-area',
-                'endpoints' => array(
-                    'logs'           => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
-                    'logs_stats'     => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
-                    'logs_status'    => array('label' => 'Remote Logs Status', 'desc' => 'Get remote log file metadata and counters'),
-                    'logs_clear'     => array('label' => 'Remote Logs Clear', 'desc' => 'Request secure two-step log clearing token'),
-                    'logs_confirm'   => array('label' => 'Remote Logs Confirm', 'desc' => 'Confirm and execute two-step log clearing'),
-                    'logs_email'     => array('label' => 'Remote Logs Email', 'desc' => 'Send log files via email attachments'),
-                    'error_logs'     => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
-                    'error_sessions' => array('label' => 'Error Sessions', 'desc' => 'Fetch grouped error sessions and stack traces'),
-                ),
-            ),
-            'backup' => array(
+                'endpoints' => [
+                    'logs'           => ['label' => 'Logs API', 'desc' => 'Fetch transaction logs'],
+                    'logs_stats'     => ['label' => 'Logs Stats', 'desc' => 'Get log statistics'],
+                    'logs_status'    => ['label' => 'Remote Logs Status', 'desc' => 'Get remote log file metadata and counters'],
+                    'logs_clear'     => ['label' => 'Remote Logs Clear', 'desc' => 'Request secure two-step log clearing token'],
+                    'logs_confirm'   => ['label' => 'Remote Logs Confirm', 'desc' => 'Confirm and execute two-step log clearing'],
+                    'logs_email'     => ['label' => 'Remote Logs Email', 'desc' => 'Send log files via email attachments'],
+                    'error_logs'     => ['label' => 'Error Logs', 'desc' => 'Fetch error log sessions'],
+                    'error_sessions' => ['label' => 'Error Sessions', 'desc' => 'Fetch grouped error sessions and stack traces'],
+                ],
+            ],
+            'backup' => [
                 'label' => __('Backups & Snapshots', $pluginSlug),
                 'icon'  => 'dashicons-database',
-                'endpoints' => array(
-                    'snapshots' => array('label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'),
-                ),
-            ),
-            'docs' => array(
+                'endpoints' => [
+                    'snapshots' => ['label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'],
+                ],
+            ],
+            'docs' => [
                 'label' => __('Documentation', $pluginSlug),
                 'icon'  => 'dashicons-media-document',
-                'endpoints' => array(
-                    'openapi' => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
-                ),
-            ),
+                'endpoints' => [
+                    'openapi' => ['label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'],
+                ],
+            ],
         ];
     }
 

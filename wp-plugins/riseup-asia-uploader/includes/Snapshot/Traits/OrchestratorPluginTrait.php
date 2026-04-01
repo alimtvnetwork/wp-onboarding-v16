@@ -38,7 +38,7 @@ trait OrchestratorPluginTrait {
             return [
                 ResponseKeyType::Count->value     => 0,
                 ResponseKeyType::TotalSize->value  => 0,
-                ResponseKeyType::Plugins->value    => array(),
+                ResponseKeyType::Plugins->value    => [],
             ];
         }
 

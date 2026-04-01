@@ -102,7 +102,7 @@ trait AgentLoggingTrait {
             $isPdoMissing = ($pdo === null);
 
             if ($isPdoMissing) {
-                return [$totalKey => 0, $actionsKey => array()];
+                return [$totalKey => 0, $actionsKey => []];
             }
 
             $total = $this->countAgentActions($pdo, $agentId);
@@ -113,7 +113,7 @@ trait AgentLoggingTrait {
         } catch (PDOException $e) {
             $this->fileLogger->logException($e, 'Failed to get action history');
 
-            return [$totalKey => 0, $actionsKey => array()];
+            return [$totalKey => 0, $actionsKey => []];
         }
     }
 

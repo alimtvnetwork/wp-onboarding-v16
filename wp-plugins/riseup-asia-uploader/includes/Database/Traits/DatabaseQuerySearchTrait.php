@@ -34,7 +34,7 @@ trait DatabaseQuerySearchTrait {
         if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready for query');
 
-            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array()];
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => []];
         }
 
         $limit = min(max(1, $limit), PaginationConfigType::MaxLimit->value);
@@ -45,7 +45,7 @@ trait DatabaseQuerySearchTrait {
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to query transactions');
 
-            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array()];
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => []];
         }
     }
 

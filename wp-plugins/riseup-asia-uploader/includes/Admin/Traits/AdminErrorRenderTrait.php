@@ -44,7 +44,7 @@ trait AdminErrorRenderTrait {
     /** Get safe default values for the error page. */
     private function getErrorPageDefaults(): array {
         return [
-            'errors'          => array(),
+            'errors'          => [],
             'total'           => 0,
             'totalPages'      => 1,
             'page'            => 1,

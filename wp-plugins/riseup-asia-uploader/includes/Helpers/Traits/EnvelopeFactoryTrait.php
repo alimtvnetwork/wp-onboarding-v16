@@ -41,9 +41,9 @@ trait EnvelopeFactoryTrait {
 
         $errors = [
             'BackendMessage' => $message,
-            'DelegatedServiceErrorStack' => array(),
-            'Backend' => array(),
-            'Frontend' => array(),
+            'DelegatedServiceErrorStack' => [],
+            'Backend' => [],
+            'Frontend' => [],
         ];
 
         if ($exception instanceof Throwable) {

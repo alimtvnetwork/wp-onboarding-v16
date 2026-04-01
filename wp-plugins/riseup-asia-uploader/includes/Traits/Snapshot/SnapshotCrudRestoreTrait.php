@@ -88,7 +88,7 @@ trait SnapshotCrudRestoreTrait {
             ResponseKeyType::CreateBackup->value       => isset($body[ResponseKeyType::CreateBackup->value]) ? (bool) $body[ResponseKeyType::CreateBackup->value] : true,
             ResponseKeyType::RequireBackup->value      => $hasRequireBackup,
             ResponseKeyType::Mode->value               => isset($body[ResponseKeyType::Mode->value]) ? sanitize_key($body[ResponseKeyType::Mode->value]) : RestoreModeType::Full->value,
-            ResponseKeyType::Tables->value             => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : array(),
+            ResponseKeyType::Tables->value             => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : [],
             ResponseKeyType::Strict->value             => $hasStrict,
             ResponseKeyType::ApplyIncrementals->value  => isset($body[ResponseKeyType::ApplyIncrementals->value]) ? (bool) $body[ResponseKeyType::ApplyIncrementals->value] : true,
         ];

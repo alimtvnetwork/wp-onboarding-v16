@@ -55,13 +55,13 @@ trait RestoreTableTrait {
 
     private function processRestoreOutcome(string $table, ?array $result, array $options): array {
         if ($result === null) {
-            return ['restored' => 0, 'rows' => 0, 'errors' => array($table . ': skipped')];
+            return ['restored' => 0, 'rows' => 0, 'errors' => [$table . ': skipped']];
         }
 
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
 
-            return ['restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value], 'errors' => array()];
+            return ['restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value], 'errors' => []];
         }
 
         return $this->handleRestoreFailure($table, $result, $options);
@@ -78,7 +78,7 @@ trait RestoreTableTrait {
             throw new Exception('Strict mode: table restore failed for ' . $table);
         }
 
-        return ['restored' => 0, 'rows' => 0, 'errors' => array($table . ': ' . $result[ResponseKeyType::Error->value])];
+        return ['restored' => 0, 'rows' => 0, 'errors' => [$table . ': ' . $result[ResponseKeyType::Error->value]]];
     }
 
     private function restoreSingleMasterTable(

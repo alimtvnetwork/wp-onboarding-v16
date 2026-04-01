@@ -48,20 +48,20 @@ class SnapshotCleaner {
         $isDryRun = !empty($options[ResponseKeyType::DryRun->value] ?? null);
 
         $results = ResultHelper::ok([
-            ResponseKeyType::Retention->value       => array(
+            ResponseKeyType::Retention->value       => [
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value => 0,
-                ResponseKeyType::Details->value       => array(),
-            ),
-            ResponseKeyType::Orphans->value         => array(
+                ResponseKeyType::Details->value       => [],
+            ],
+            ResponseKeyType::Orphans->value         => [
                 ResponseKeyType::Removed->value => 0,
-                ResponseKeyType::Files->value   => array(),
-            ),
-            ResponseKeyType::Stuck->value           => array(
+                ResponseKeyType::Files->value   => [],
+            ],
+            ResponseKeyType::Stuck->value           => [
                 ResponseKeyType::Cleaned->value => 0,
-                ResponseKeyType::Ids->value     => array(),
-            ),
-            ResponseKeyType::Errors->value          => array(),
+                ResponseKeyType::Ids->value     => [],
+            ],
+            ResponseKeyType::Errors->value          => [],
             ResponseKeyType::DryRun->value          => $isDryRun,
             ResponseKeyType::SpaceFreedBytes->value => 0,
         ]);
@@ -104,7 +104,7 @@ class SnapshotCleaner {
             ResponseKeyType::DeletedOrphans->value   => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
             ResponseKeyType::DeletedFailed->value    => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0,
             ResponseKeyType::SpaceFreedBytes->value  => $result[ResponseKeyType::SpaceFreedBytes->value] ?? 0,
-            ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? [],
         ];
     }
 

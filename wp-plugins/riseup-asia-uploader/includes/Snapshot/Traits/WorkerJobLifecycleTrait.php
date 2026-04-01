@@ -174,7 +174,7 @@ trait WorkerJobLifecycleTrait {
         wp_schedule_single_event(
             time() + 5,
             HookType::CronSnapshotWorkerBatch->value,
-            [array('jobId' => $jobId)],
+            [['jobId' => $jobId]],
         );
     }
 }

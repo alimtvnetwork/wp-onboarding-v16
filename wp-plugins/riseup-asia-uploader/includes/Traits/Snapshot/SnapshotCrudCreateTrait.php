@@ -91,7 +91,7 @@ trait SnapshotCrudCreateTrait {
         return $manager->createSnapshot([
             ResponseKeyType::Scope->value   => $scope,
             ResponseKeyType::Trigger->value => SnapshotTriggerType::Api->value,
-            ResponseKeyType::Tables->value  => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : array(),
+            ResponseKeyType::Tables->value  => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : [],
         ]);
     }
 

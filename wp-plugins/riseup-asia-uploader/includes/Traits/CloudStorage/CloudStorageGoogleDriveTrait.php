@@ -371,7 +371,7 @@ trait CloudStorageGoogleDriveTrait {
 
         $metadata = wp_json_encode([
             'name'    => $fileName,
-            'parents' => array($folderId),
+            'parents' => [$folderId],
         ]);
 
         $body = "--{$boundary}\r\n"
@@ -399,7 +399,7 @@ trait CloudStorageGoogleDriveTrait {
 
         $metadata = wp_json_encode([
             'name'    => $fileName,
-            'parents' => array($folderId),
+            'parents' => [$folderId],
         ]);
         $initOptions = $this->googleDriveBuildOptions('POST', $token);
         $initOptions['headers']['Content-Type']           = 'application/json; charset=UTF-8';

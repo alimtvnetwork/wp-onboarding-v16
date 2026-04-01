@@ -91,12 +91,12 @@ trait FileCacheScanTrait {
             $cached = $cachedEntries[$path];
             if ($cached['ModifiedAt'] === $mtimeStr && (int) $cached['FileSize'] === $fileInfo['size']) {
                 return [
-                    'file'   => array(
+                    'file'   => [
                         'path' => $path,
                         'hash' => $cached['Md5Hash'],
                         'modifiedAt' => $mtimeStr,
                         'size' => (int) $cached['FileSize'],
-                    ),
+                    ],
                     'cached' => true,
                 ];
             }
@@ -108,12 +108,12 @@ trait FileCacheScanTrait {
         $this->upsertCacheEntry($pluginSlug, $path, $hash, $mtimeStr, $fileInfo['size']);
 
         return [
-            'file'   => array(
+            'file'   => [
                 'path' => $path,
                 'hash' => $hash,
                 'modifiedAt' => $mtimeStr,
                 'size' => $fileInfo['size'],
-            ),
+            ],
             'cached' => false,
         ];
     }

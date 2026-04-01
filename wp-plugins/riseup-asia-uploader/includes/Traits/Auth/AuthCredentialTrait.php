@@ -115,7 +115,7 @@ trait AuthCredentialTrait
 
         return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, [
             'status' => HttpStatusType::Unauthorized->value,
-            'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
+            'headers' => ['WWW-Authenticate' => 'Basic realm="WordPress Application Password"'],
         ]);
     }
 

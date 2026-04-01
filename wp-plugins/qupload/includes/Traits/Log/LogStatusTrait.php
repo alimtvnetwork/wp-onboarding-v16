@@ -35,12 +35,12 @@ trait LogStatusTrait
         return new WP_REST_Response(
             [
                 ResponseKeyType::Success->value => true,
-                'logs' => array(
+                'logs' => [
                     'log_file'        => $logStatus,
                     'error_file'      => $errorStatus,
                     'stacktrace_file' => $stacktraceStatus,
                     'archive_count'   => $archiveCount,
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );

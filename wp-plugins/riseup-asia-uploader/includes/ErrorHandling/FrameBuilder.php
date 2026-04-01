@@ -117,13 +117,13 @@ class FrameBuilder
 
     public static function buildStructuredFrames(array $error, ?array $backtrace): array {
         $frames = [
-            array(
+            [
                 'file'     => $error['file'],
                 'fileBase' => basename($error['file']),
                 'line'     => $error['line'],
                 'function' => 'fatal_error',
                 'class'    => '',
-            ),
+            ],
         ];
 
         if (gettype($backtrace) === PhpNativeType::PhpArray->value) {

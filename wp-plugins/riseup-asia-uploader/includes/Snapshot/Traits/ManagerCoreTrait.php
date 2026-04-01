@@ -81,7 +81,7 @@ trait ManagerCoreTrait {
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
 
         return [
-            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Snapshots->value => $snapshots ?: [],
             ResponseKeyType::Total->value     => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
         ];
     }

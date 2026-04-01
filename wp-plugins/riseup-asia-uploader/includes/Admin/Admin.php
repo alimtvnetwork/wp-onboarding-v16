@@ -50,32 +50,32 @@ use RiseupAsia\Enums\PhpNativeType;
      * Default settings.
      */
     private static $defaults = [
-        'endpoints' => array(
-            'status'         => array('enabled' => true, 'auth_required' => true),
-            'upload'         => array('enabled' => true, 'auth_required' => true),
-            'plugins'        => array('enabled' => true, 'auth_required' => true),
-            'plugin_files'   => array('enabled' => true, 'auth_required' => true),
-            'plugin_file'    => array('enabled' => true, 'auth_required' => true),
-            'export_self'    => array('enabled' => true, 'auth_required' => true),
-            'posts'          => array('enabled' => true, 'auth_required' => true),
-            'categories'     => array('enabled' => true, 'auth_required' => true),
-            'logs'           => array('enabled' => true, 'auth_required' => true),
-            'logs_stats'     => array('enabled' => true, 'auth_required' => true),
-            'logs_status'    => array('enabled' => true, 'auth_required' => true),
-            'logs_clear'     => array('enabled' => true, 'auth_required' => true),
-            'logs_confirm'   => array('enabled' => true, 'auth_required' => true),
-            'logs_email'     => array('enabled' => true, 'auth_required' => true),
-            'error_logs'     => array('enabled' => true, 'auth_required' => true),
-            'error_sessions' => array('enabled' => true, 'auth_required' => true),
-            'openapi'        => array('enabled' => true, 'auth_required' => true),
-            'snapshots'      => array('enabled' => true, 'auth_required' => true),
-        ),
-        'log_retrieval' => array(
+        'endpoints' => [
+            'status'         => ['enabled' => true, 'auth_required' => true],
+            'upload'         => ['enabled' => true, 'auth_required' => true],
+            'plugins'        => ['enabled' => true, 'auth_required' => true],
+            'plugin_files'   => ['enabled' => true, 'auth_required' => true],
+            'plugin_file'    => ['enabled' => true, 'auth_required' => true],
+            'export_self'    => ['enabled' => true, 'auth_required' => true],
+            'posts'          => ['enabled' => true, 'auth_required' => true],
+            'categories'     => ['enabled' => true, 'auth_required' => true],
+            'logs'           => ['enabled' => true, 'auth_required' => true],
+            'logs_stats'     => ['enabled' => true, 'auth_required' => true],
+            'logs_status'    => ['enabled' => true, 'auth_required' => true],
+            'logs_clear'     => ['enabled' => true, 'auth_required' => true],
+            'logs_confirm'   => ['enabled' => true, 'auth_required' => true],
+            'logs_email'     => ['enabled' => true, 'auth_required' => true],
+            'error_logs'     => ['enabled' => true, 'auth_required' => true],
+            'error_sessions' => ['enabled' => true, 'auth_required' => true],
+            'openapi'        => ['enabled' => true, 'auth_required' => true],
+            'snapshots'      => ['enabled' => true, 'auth_required' => true],
+        ],
+        'log_retrieval' => [
             'include_error_log'  => true,
             'include_full_log'   => false,
             'include_stacktrace' => true,
             'max_lines'          => 500,
-        ),
+        ],
     ];
 
     /** @var Admin|null */

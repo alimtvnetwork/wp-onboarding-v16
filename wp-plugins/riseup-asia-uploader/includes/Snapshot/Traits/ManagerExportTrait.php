@@ -90,7 +90,7 @@ trait ManagerExportTrait {
             ResponseKeyType::FormatVersion->value => '1.0',
             ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
             ResponseKeyType::ExportedAt->value => DateHelper::nowIso(),
-            ResponseKeyType::Snapshot->value => array(
+            ResponseKeyType::Snapshot->value => [
                 ResponseKeyType::Id->value => $snapshot['Id'],
                 ResponseKeyType::Sequence->value => $snapshot['Sequence'],
                 ResponseKeyType::Filename->value => $snapshot['Filename'],
@@ -100,13 +100,13 @@ trait ManagerExportTrait {
                 ResponseKeyType::TotalRows->value => $snapshot['TotalRows'],
                 ResponseKeyType::FileSize->value => $snapshot['FileSize'],
                 ResponseKeyType::CreatedAt->value => $snapshot['CreatedAt'],
-            ),
-            ResponseKeyType::Source->value => array(
+            ],
+            ResponseKeyType::Source->value => [
                 ResponseKeyType::WpVersion->value => get_bloginfo('version'),
                 ResponseKeyType::PhpVersion->value => PHP_VERSION,
                 ResponseKeyType::SiteUrl->value => get_site_url(),
                 ResponseKeyType::DbPrefix->value => $this->wpdb->prefix,
-            ),
+            ],
         ];
     }
 }

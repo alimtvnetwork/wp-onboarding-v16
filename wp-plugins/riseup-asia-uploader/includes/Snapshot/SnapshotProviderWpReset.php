@@ -136,7 +136,7 @@ class SnapshotProviderWpReset extends SnapshotProviderInterface {
         );
 
         return [
-            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Snapshots->value => $snapshots ?: [],
             ResponseKeyType::Total->value => $total ? (int) $total[ResponseKeyType::Count->value] : 0,
         ];
     }

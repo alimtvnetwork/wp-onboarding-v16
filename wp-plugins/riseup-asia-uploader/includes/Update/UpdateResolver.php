@@ -59,7 +59,7 @@ class UpdateResolver {
         $defaults = [
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
             'cache_days' => UpdateConfigType::CacheDaysDefault->value, 'last_check' => '', 'last_error' => '',
-            'package_url' => '', 'new_version' => '', 'update_info' => array(),
+            'package_url' => '', 'new_version' => '', 'update_info' => [],
         ];
         $settings = get_option(OptionNameType::UpdateSettings->value, []);
 

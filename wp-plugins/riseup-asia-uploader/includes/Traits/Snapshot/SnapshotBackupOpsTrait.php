@@ -90,7 +90,7 @@ trait SnapshotBackupOpsTrait {
             ResponseKeyType::Directory->value => $result[ResponseKeyType::Directory->value] ?? null,
             ResponseKeyType::Tables->value    => $result[ResponseKeyType::Tables->value] ?? 0,
             ResponseKeyType::TotalRows->value => $result[ResponseKeyType::TotalRows->value] ?? 0,
-            ResponseKeyType::Errors->value    => $result[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Errors->value    => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Duration->value  => $result[ResponseKeyType::Duration->value] ?? 0,
             ResponseKeyType::Error->value     => $result[ResponseKeyType::Error->value] ?? null,
         ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);

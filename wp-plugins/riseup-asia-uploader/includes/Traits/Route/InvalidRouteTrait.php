@@ -53,7 +53,7 @@ trait InvalidRouteTrait
             'BackendMessage'             => "Route not found: {$method} /{$path}",
             'DelegatedServiceErrorStack' => $this->formatBacktraceLines($backtrace),
             'Backend'                    => $this->formatFramesSummary($frames),
-            'Frontend'                   => array(),
+            'Frontend'                   => [],
         ];
     }
 

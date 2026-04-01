@@ -184,11 +184,11 @@ trait LogClearingTrait
             [
                 ResponseKeyType::Success->value => true,
                 'cleared'                       => $clearResult,
-                'cleared_by'                    => array(
+                'cleared_by'                    => [
                     'machine'   => $machineName,
                     'ip'        => $clientIp,
                     'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );
@@ -279,8 +279,8 @@ trait LogClearingTrait
     /** Build the JSON details string for the audit entry. */
     private function buildAuditDetails(string $clientIp, string $timestamp, array $clearResult): string {
         return json_encode([
-            'cleared_files'  => array('log.txt', 'error.txt', 'stacktrace.txt'),
-            'cleared_tables' => array('Transactions', 'ErrorSessions'),
+            'cleared_files'  => ['log.txt', 'error.txt', 'stacktrace.txt'],
+            'cleared_tables' => ['Transactions', 'ErrorSessions'],
             'cleared_by_ip'  => $clientIp,
             'cleared_at'     => $timestamp,
             'results'        => $clearResult,

@@ -177,7 +177,7 @@ trait ExporterBuildTrait {
             $snapshotId,
             $zipFilename,
             $zipPath,
-            json_encode(array($snapshotId)),
+            json_encode([$snapshotId]),
             SnapshotExportStatusType::Building->value,
         ]);
     }
@@ -340,7 +340,7 @@ trait ExporterBuildTrait {
             $snapshotId,
             $zipMeta[ResponseKeyType::Filename->value],
             $zipMeta[ResponseKeyType::Path->value],
-            json_encode(array($snapshotId)),
+            json_encode([$snapshotId]),
             SnapshotExportStatusType::Building->value,
         ]);
 

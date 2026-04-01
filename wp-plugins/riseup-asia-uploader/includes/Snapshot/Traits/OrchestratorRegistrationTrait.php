@@ -71,9 +71,9 @@ trait OrchestratorRegistrationTrait {
         return json_encode([
             ResponseKeyType::Exported->value      => $workerResult[ResponseKeyType::Tables->value] ?? 0,
             ResponseKeyType::TotalRows->value     => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
-            ResponseKeyType::Errors->value        => $workerResult[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Errors->value        => $workerResult[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Plugins->value       => $pluginStats[ResponseKeyType::Count->value] ?? 0,
-            ResponseKeyType::PluginDetails->value => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
+            ResponseKeyType::PluginDetails->value => $pluginStats[ResponseKeyType::Plugins->value] ?? [],
         ]);
     }
 

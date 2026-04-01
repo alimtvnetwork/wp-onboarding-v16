@@ -82,7 +82,7 @@ trait UpdraftCrudTrait {
         );
 
         return [
-            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+            ResponseKeyType::Snapshots->value => $snapshots ?: [],
             ResponseKeyType::Total->value => $total ? (int)$total['count'] : 0,
         ];
     }

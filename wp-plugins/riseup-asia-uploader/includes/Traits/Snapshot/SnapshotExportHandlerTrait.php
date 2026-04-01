@@ -129,7 +129,7 @@ trait SnapshotExportHandlerTrait {
         );
 
         return EnvelopeBuilder::success()
-            ->setResults([array(
+            ->setResults([[
                 'url'               => $downloadUrl,
                 ResponseKeyType::Filename->value => $export['ZipFilename'],
                 ResponseKeyType::Size->value     => (int) $export['ZipSize'],
@@ -138,7 +138,7 @@ trait SnapshotExportHandlerTrait {
                 ResponseKeyType::IncrementalCount->value => (int) ($export['IncrementalCount'] ?? 0),
                 ResponseKeyType::CreatedAt->value        => $export['CreatedAt'] ?? '',
                 'status'                                 => $export['Status'] ?? 'valid',
-            )])
+            ]])
             ->setRequestedAt('/' . EndpointType::SnapshotDownload->value)
             ->toResponse();
     }

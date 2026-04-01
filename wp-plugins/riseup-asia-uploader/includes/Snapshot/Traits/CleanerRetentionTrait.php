@@ -29,7 +29,7 @@ trait CleanerRetentionTrait {
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value  => 0,
                 ResponseKeyType::BytesFreed->value     => 0,
-                ResponseKeyType::Details->value        => array(),
+                ResponseKeyType::Details->value        => [],
             ];
         }
 
@@ -55,7 +55,7 @@ trait CleanerRetentionTrait {
             ];
         }
 
-        return [ResponseKeyType::Snapshots->value => array(), ResponseKeyType::Reason->value => ''];
+        return [ResponseKeyType::Snapshots->value => [], ResponseKeyType::Reason->value => ''];
     }
 
     private function processRetentionDeletions(
@@ -67,7 +67,7 @@ trait CleanerRetentionTrait {
             ResponseKeyType::Deleted->value       => 0,
             ResponseKeyType::SkippedMaster->value  => 0,
             ResponseKeyType::BytesFreed->value     => 0,
-            ResponseKeyType::Details->value        => array(),
+            ResponseKeyType::Details->value        => [],
         ];
 
         foreach ($snapshots as $snapshot) {

@@ -167,11 +167,11 @@ trait LogClearingTrait
             [
                 ResponseKeyType::Success->value => true,
                 'cleared'                       => $clearResult,
-                'cleared_by'                    => array(
+                'cleared_by'                    => [
                     'machine'   => $machineName,
                     'ip'        => $clientIp,
                     'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
-                ),
+                ],
             ],
             HttpStatusType::Ok->value,
         );

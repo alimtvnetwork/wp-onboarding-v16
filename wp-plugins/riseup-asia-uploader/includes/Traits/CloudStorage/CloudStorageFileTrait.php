@@ -131,7 +131,7 @@ trait CloudStorageFileTrait {
         $isWithinLimit = ($excess <= 0);
 
         if ($isWithinLimit) {
-            return ['deleted' => 0, 'files' => array()];
+            return ['deleted' => 0, 'files' => []];
         }
 
         $deleted       = [];

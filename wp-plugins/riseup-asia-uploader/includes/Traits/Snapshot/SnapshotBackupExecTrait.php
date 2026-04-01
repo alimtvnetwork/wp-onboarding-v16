@@ -108,7 +108,7 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::Plugins->value    => $result[ResponseKeyType::Plugins->value] ?? 0,
             ResponseKeyType::ZipSize->value    => $result[ResponseKeyType::ZipSize->value] ?? 0,
             ResponseKeyType::Duration->value   => $result[ResponseKeyType::Duration->value] ?? 0,
-            ResponseKeyType::Errors->value     => $result[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Errors->value     => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value] ?? null,
             ResponseKeyType::Phase->value      => $result[ResponseKeyType::Phase->value] ?? null,
         ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
@@ -162,9 +162,9 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::FolderName->value    => $result[ResponseKeyType::FolderName->value] ?? null,
             ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
             ResponseKeyType::TotalNewRows->value  => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
-            ResponseKeyType::Tables->value        => $result[ResponseKeyType::Tables->value] ?? array(),
+            ResponseKeyType::Tables->value        => $result[ResponseKeyType::Tables->value] ?? [],
             ResponseKeyType::Duration->value      => $result[ResponseKeyType::Duration->value] ?? 0,
-            ResponseKeyType::Errors->value        => $result[ResponseKeyType::Errors->value] ?? array(),
+            ResponseKeyType::Errors->value        => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Error->value         => $result[ResponseKeyType::Error->value] ?? null,
         ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }

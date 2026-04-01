@@ -136,19 +136,19 @@ trait CloudStorageGitHubTrait {
 
         $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, [
             'base_tree' => $baseTreeSha,
-            'tree'      => array(array(
+            'tree'      => [[
                 'path' => $remotePath,
                 'mode' => '100644',
                 'type' => 'blob',
                 'sha'  => $blobSha,
-            )),
+            ]],
         ]);
         $newTreeSha = $treeBody['sha'] ?? '';
 
         $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, [
             'message' => sprintf('Backup: %s', basename($remotePath)),
             'tree'    => $newTreeSha,
-            'parents' => array($lastCommitSha),
+            'parents' => [$lastCommitSha],
         ]);
         $newCommitSha = $newCommitBody['sha'] ?? '';
 
@@ -312,7 +312,7 @@ trait CloudStorageGitHubTrait {
         $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, [
             'message' => sprintf('cleanup: remove folder %s', $path),
             'tree'    => $newTreeSha,
-            'parents' => array($lastCommitSha),
+            'parents' => [$lastCommitSha],
         ]);
         $newCommitSha = $newCommitBody['sha'] ?? '';
 
