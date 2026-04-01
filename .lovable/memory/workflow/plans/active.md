@@ -50,7 +50,7 @@
 | 4 | Cloud Storage Go pipeline `cloud_upload` stage | 🟡 Medium | ✅ Done — already implemented in ServicePublishCloudUpload.go + wired in pipeline | S-044 |
 | 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | ✅ Done — CloudStorageBackupTimeline component wired into account cards | S-047 |
 | 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | ✅ Done — all types, components, hooks, methods fixed | — |
-| 6 | Go Backend UserClient | 🟡 Medium | Open | — |
+| 6 | Go Backend UserClient + React wiring | 🟡 Medium | ✅ Done — route, sidebar, page, command palette all wired | — |
 | 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
 | 8 | Chunk reassembly manifest validation | 🟡 Medium | ✅ Done | S-048 |
 | 9 | Auto-invalidate cached ZIP on source change | 🟡 Medium | ✅ Done | S-052 |
