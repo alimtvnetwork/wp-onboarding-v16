@@ -25,7 +25,7 @@ $isInactive = ($licenseStatus === LicenseStatusType::Inactive->value);
 $isExpired = ($licenseStatus === LicenseStatusType::Expired->value);
 
 // Validation result from LicenseManager::validateLicense()
-$hasValidation = isset($validation) && is_array($validation);
+$hasValidation = isset($validation) && gettype($validation) === 'array';
 $validationPlan = $hasValidation && isset($validation['plan']) ? $validation['plan'] : '';
 $validationExpiry = $hasValidation && isset($validation['expires_at']) ? $validation['expires_at'] : '';
 $validationDomain = $hasValidation && isset($validation['domain']) ? $validation['domain'] : '';

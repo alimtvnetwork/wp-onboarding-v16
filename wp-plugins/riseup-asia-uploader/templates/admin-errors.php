@@ -232,14 +232,14 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
 
         <!-- Pagination -->
         <?php
-        $paginationArgs = array(
-            'base'      => add_query_arg(array('paged' => '%#%', 'tab' => AdminTabType::Sessions->value)),
+        $paginationArgs = [
+            'base'      => add_query_arg(['paged' => '%#%', 'tab' => AdminTabType::Sessions->value]),
             'format'    => '',
             'prev_text' => '&laquo;',
             'next_text' => '&raquo;',
             'total'     => $totalPages,
             'current'   => $page,
-        );
+        ];
         include __DIR__ . '/partials/shared/pagination.php';
         ?>
 
@@ -249,11 +249,11 @@ $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabT
         <!-- ============================================================ -->
         <?php
         $fileType = $activeTab; // 'log', 'error', or 'stacktrace'
-        $fileLabels = array(
+        $fileLabels = [
             AdminTabType::Log->value        => __('General Log', $pluginSlug) . ' (log.txt)',
             AdminTabType::Error->value      => __('Error Log', $pluginSlug) . ' (error.txt)',
             AdminTabType::Stacktrace->value => __('Stack Trace', $pluginSlug) . ' (stacktrace.txt)',
-        );
+        ];
         $fileLabel = isset($fileLabels[$fileType]) ? $fileLabels[$fileType] : $fileType;
         ?>
 

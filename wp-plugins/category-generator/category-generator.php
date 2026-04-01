@@ -53,82 +53,82 @@ class Category_Generator_Pro {
     private function __construct() {
         $this->db = CG_Database::get_instance();
         
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
-        add_action('admin_notices', array($this, 'show_whats_new_notice'));
-        add_action('wp_ajax_cg_dismiss_whats_new', array($this, 'ajax_dismiss_whats_new'));
+        add_action('admin_menu', [$this, 'add_admin_menu']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+        add_action('admin_notices', [$this, 'show_whats_new_notice']);
+        add_action('wp_ajax_cg_dismiss_whats_new', [$this, 'ajax_dismiss_whats_new']);
         
         // AJAX handlers
-        add_action('wp_ajax_cg_generate_categories', array($this, 'ajax_generate_categories'));
-        add_action('wp_ajax_cg_preview_combinations', array($this, 'ajax_preview_combinations'));
-        add_action('wp_ajax_cg_get_category_history', array($this, 'ajax_get_category_history'));
-        add_action('wp_ajax_cg_get_history_item', array($this, 'ajax_get_history_item'));
-        add_action('wp_ajax_cg_save_business_profile', array($this, 'ajax_save_business_profile'));
-        add_action('wp_ajax_cg_get_business_profile', array($this, 'ajax_get_business_profile'));
-        add_action('wp_ajax_cg_get_business_profiles', array($this, 'ajax_get_business_profiles'));
-        add_action('wp_ajax_cg_delete_business_profile', array($this, 'ajax_delete_business_profile'));
+        add_action('wp_ajax_cg_generate_categories', [$this, 'ajax_generate_categories']);
+        add_action('wp_ajax_cg_preview_combinations', [$this, 'ajax_preview_combinations']);
+        add_action('wp_ajax_cg_get_category_history', [$this, 'ajax_get_category_history']);
+        add_action('wp_ajax_cg_get_history_item', [$this, 'ajax_get_history_item']);
+        add_action('wp_ajax_cg_save_business_profile', [$this, 'ajax_save_business_profile']);
+        add_action('wp_ajax_cg_get_business_profile', [$this, 'ajax_get_business_profile']);
+        add_action('wp_ajax_cg_get_business_profiles', [$this, 'ajax_get_business_profiles']);
+        add_action('wp_ajax_cg_delete_business_profile', [$this, 'ajax_delete_business_profile']);
         
         // Template AJAX handlers
-        add_action('wp_ajax_cg_get_templates', array($this, 'ajax_get_templates'));
-        add_action('wp_ajax_cg_save_template', array($this, 'ajax_save_template'));
-        add_action('wp_ajax_cg_delete_template', array($this, 'ajax_delete_template'));
-        add_action('wp_ajax_cg_get_template', array($this, 'ajax_get_template'));
-        add_action('wp_ajax_cg_duplicate_template', array($this, 'ajax_duplicate_template'));
+        add_action('wp_ajax_cg_get_templates', [$this, 'ajax_get_templates']);
+        add_action('wp_ajax_cg_save_template', [$this, 'ajax_save_template']);
+        add_action('wp_ajax_cg_delete_template', [$this, 'ajax_delete_template']);
+        add_action('wp_ajax_cg_get_template', [$this, 'ajax_get_template']);
+        add_action('wp_ajax_cg_duplicate_template', [$this, 'ajax_duplicate_template']);
         
         // Inner Templates AJAX handlers
-        add_action('wp_ajax_cg_get_inner_templates', array($this, 'ajax_get_inner_templates'));
-        add_action('wp_ajax_cg_get_inner_template', array($this, 'ajax_get_inner_template'));
-        add_action('wp_ajax_cg_save_inner_template', array($this, 'ajax_save_inner_template'));
-        add_action('wp_ajax_cg_delete_inner_template', array($this, 'ajax_delete_inner_template'));
+        add_action('wp_ajax_cg_get_inner_templates', [$this, 'ajax_get_inner_templates']);
+        add_action('wp_ajax_cg_get_inner_template', [$this, 'ajax_get_inner_template']);
+        add_action('wp_ajax_cg_save_inner_template', [$this, 'ajax_save_inner_template']);
+        add_action('wp_ajax_cg_delete_inner_template', [$this, 'ajax_delete_inner_template']);
         
         // Variables AJAX handlers
-        add_action('wp_ajax_cg_get_variables', array($this, 'ajax_get_variables'));
-        add_action('wp_ajax_cg_save_variable', array($this, 'ajax_save_variable'));
-        add_action('wp_ajax_cg_delete_variable', array($this, 'ajax_delete_variable'));
+        add_action('wp_ajax_cg_get_variables', [$this, 'ajax_get_variables']);
+        add_action('wp_ajax_cg_save_variable', [$this, 'ajax_save_variable']);
+        add_action('wp_ajax_cg_delete_variable', [$this, 'ajax_delete_variable']);
         
         // Settings AJAX handlers
-        add_action('wp_ajax_cg_get_settings', array($this, 'ajax_get_settings'));
-        add_action('wp_ajax_cg_save_settings', array($this, 'ajax_save_settings'));
+        add_action('wp_ajax_cg_get_settings', [$this, 'ajax_get_settings']);
+        add_action('wp_ajax_cg_save_settings', [$this, 'ajax_save_settings']);
         
         // Import/Export AJAX handlers
-        add_action('wp_ajax_cg_export_data', array($this, 'ajax_export_data'));
-        add_action('wp_ajax_cg_import_data', array($this, 'ajax_import_data'));
-        add_action('wp_ajax_cg_get_import_history', array($this, 'ajax_get_import_history'));
+        add_action('wp_ajax_cg_export_data', [$this, 'ajax_export_data']);
+        add_action('wp_ajax_cg_import_data', [$this, 'ajax_import_data']);
+        add_action('wp_ajax_cg_get_import_history', [$this, 'ajax_get_import_history']);
         
         // Tests AJAX handlers
-        add_action('wp_ajax_cg_run_tests', array($this, 'ajax_run_tests'));
+        add_action('wp_ajax_cg_run_tests', [$this, 'ajax_run_tests']);
         
         // Saved Titles/Areas AJAX handlers
-        add_action('wp_ajax_cg_save_titles', array($this, 'ajax_save_titles'));
-        add_action('wp_ajax_cg_save_areas', array($this, 'ajax_save_areas'));
-        add_action('wp_ajax_cg_get_saved_titles', array($this, 'ajax_get_saved_titles'));
-        add_action('wp_ajax_cg_get_saved_areas', array($this, 'ajax_get_saved_areas'));
+        add_action('wp_ajax_cg_save_titles', [$this, 'ajax_save_titles']);
+        add_action('wp_ajax_cg_save_areas', [$this, 'ajax_save_areas']);
+        add_action('wp_ajax_cg_get_saved_titles', [$this, 'ajax_get_saved_titles']);
+        add_action('wp_ajax_cg_get_saved_areas', [$this, 'ajax_get_saved_areas']);
         
         // Reset database
-        add_action('wp_ajax_cg_reset_database', array($this, 'ajax_reset_database'));
+        add_action('wp_ajax_cg_reset_database', [$this, 'ajax_reset_database']);
         
         // History inject
-        add_action('wp_ajax_cg_inject_inner_template', array($this, 'ajax_inject_inner_template'));
-        add_action('wp_ajax_cg_get_term_description', array($this, 'ajax_get_term_description'));
+        add_action('wp_ajax_cg_inject_inner_template', [$this, 'ajax_inject_inner_template']);
+        add_action('wp_ajax_cg_get_term_description', [$this, 'ajax_get_term_description']);
         
         // Template categories
-        add_action('wp_ajax_cg_save_template_category', array($this, 'ajax_save_template_category'));
-        add_action('wp_ajax_cg_delete_template_category', array($this, 'ajax_delete_template_category'));
+        add_action('wp_ajax_cg_save_template_category', [$this, 'ajax_save_template_category']);
+        add_action('wp_ajax_cg_delete_template_category', [$this, 'ajax_delete_template_category']);
         
         // Database backup/restore
-        add_action('wp_ajax_cg_download_database', array($this, 'ajax_download_database'));
-        add_action('wp_ajax_cg_restore_database', array($this, 'ajax_restore_database'));
+        add_action('wp_ajax_cg_download_database', [$this, 'ajax_download_database']);
+        add_action('wp_ajax_cg_restore_database', [$this, 'ajax_restore_database']);
         
         // Snapshot AJAX handlers
-        add_action('wp_ajax_cg_create_snapshot', array($this, 'ajax_create_snapshot'));
-        add_action('wp_ajax_cg_restore_snapshot', array($this, 'ajax_restore_snapshot'));
-        add_action('wp_ajax_cg_delete_snapshot', array($this, 'ajax_delete_snapshot'));
-        add_action('wp_ajax_cg_download_snapshot', array($this, 'ajax_download_snapshot'));
-        add_action('wp_ajax_cg_get_recent_snapshots', array($this, 'ajax_get_recent_snapshots'));
+        add_action('wp_ajax_cg_create_snapshot', [$this, 'ajax_create_snapshot']);
+        add_action('wp_ajax_cg_restore_snapshot', [$this, 'ajax_restore_snapshot']);
+        add_action('wp_ajax_cg_delete_snapshot', [$this, 'ajax_delete_snapshot']);
+        add_action('wp_ajax_cg_download_snapshot', [$this, 'ajax_download_snapshot']);
+        add_action('wp_ajax_cg_get_recent_snapshots', [$this, 'ajax_get_recent_snapshots']);
         
         // Bulk delete history handlers
-        add_action('wp_ajax_cg_bulk_delete_history', array($this, 'ajax_bulk_delete_history'));
-        add_action('wp_ajax_cg_bulk_delete_history_and_categories', array($this, 'ajax_bulk_delete_history_and_categories'));
+        add_action('wp_ajax_cg_bulk_delete_history', [$this, 'ajax_bulk_delete_history']);
+        add_action('wp_ajax_cg_bulk_delete_history_and_categories', [$this, 'ajax_bulk_delete_history_and_categories']);
     }
     
     /**
@@ -147,7 +147,7 @@ class Category_Generator_Pro {
         $screen = get_current_screen();
         if (!$screen) return;
         
-        $allowed_screens = array('dashboard', 'plugins');
+        $allowed_screens = ['dashboard', 'plugins'];
         $is_plugin_page = strpos($screen->id, 'category-generator') !== false;
         
         if (!in_array($screen->id, $allowed_screens) && !$is_plugin_page) {
@@ -221,11 +221,11 @@ class Category_Generator_Pro {
         $template_type = sanitize_text_field($_POST['template_type'] ?? 'all');
         
         if (empty($name)) {
-            wp_send_json_error(array('message' => 'Name is required'));
+            wp_send_json_error(['message' => 'Name is required']);
         }
         
         $id = $this->db->save_template_category($name, $parent_id, $template_type);
-        wp_send_json_success(array('id' => $id));
+        wp_send_json_success(['id' => $id]);
     }
     
     public function ajax_delete_template_category() {
@@ -269,7 +269,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!isset($_FILES['database_file']) || $_FILES['database_file']['error'] !== UPLOAD_ERR_OK) {
-            wp_send_json_error(array('message' => __('No file uploaded or upload error', 'category-generator')));
+            wp_send_json_error(['message' => __('No file uploaded or upload error', 'category-generator')]);
         }
         
         $uploaded_file = $_FILES['database_file']['tmp_name'];
@@ -277,8 +277,8 @@ class Category_Generator_Pro {
         
         // Validate file extension
         $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
-        if (!in_array($ext, array('db', 'sqlite', 'sqlite3'))) {
-            wp_send_json_error(array('message' => __('Invalid file type. Please upload a .db, .sqlite, or .sqlite3 file', 'category-generator')));
+        if (!in_array($ext, ['db', 'sqlite', 'sqlite3'])) {
+            wp_send_json_error(['message' => __('Invalid file type. Please upload a .db, .sqlite, or .sqlite3 file', 'category-generator')]);
         }
         
         // Validate that it's a valid SQLite database
@@ -287,7 +287,7 @@ class Category_Generator_Pro {
             $test_db->query('SELECT 1');
             $test_db->close();
         } catch (Exception $e) {
-            wp_send_json_error(array('message' => __('Invalid SQLite database file', 'category-generator')));
+            wp_send_json_error(['message' => __('Invalid SQLite database file', 'category-generator')]);
         }
         
         $db_path = $this->db->get_db_path();
@@ -307,10 +307,10 @@ class Category_Generator_Pro {
             if (file_exists($backup_path)) {
                 copy($backup_path, $db_path);
             }
-            wp_send_json_error(array('message' => __('Failed to restore database', 'category-generator')));
+            wp_send_json_error(['message' => __('Failed to restore database', 'category-generator')]);
         }
         
-        wp_send_json_success(array('message' => __('Database restored successfully', 'category-generator')));
+        wp_send_json_success(['message' => __('Database restored successfully', 'category-generator')]);
     }
     
     /**
@@ -322,26 +322,26 @@ class Category_Generator_Pro {
             __('Category Generator', 'category-generator'),
             'manage_categories',
             'category-generator',
-            array($this, 'render_admin_page'),
+            [$this, 'render_admin_page'],
             'dashicons-category',
             30
         );
         
-        add_submenu_page('category-generator', __('Generate', 'category-generator'), __('Generate', 'category-generator'), 'manage_categories', 'category-generator', array($this, 'render_admin_page'));
-        add_submenu_page('category-generator', __('Snapshots', 'category-generator'), __('Snapshots', 'category-generator'), 'manage_categories', 'cg-snapshots', array($this, 'render_snapshots_page'));
-        add_submenu_page('category-generator', __('History', 'category-generator'), __('History', 'category-generator'), 'manage_categories', 'cg-history', array($this, 'render_history_page'));
-        add_submenu_page('category-generator', __('Templates', 'category-generator'), __('Templates', 'category-generator'), 'manage_categories', 'cg-templates', array($this, 'render_templates_page'));
-        add_submenu_page('category-generator', __('Inner Templates', 'category-generator'), __('Inner Templates', 'category-generator'), 'manage_categories', 'cg-inner-templates', array($this, 'render_inner_templates_page'));
-        add_submenu_page('category-generator', __('Business Profile', 'category-generator'), __('Business Profile', 'category-generator'), 'manage_categories', 'cg-business-profile', array($this, 'render_business_profile_page'));
-        add_submenu_page('category-generator', __('Settings', 'category-generator'), __('Settings', 'category-generator'), 'manage_categories', 'cg-settings', array($this, 'render_settings_page'));
-        add_submenu_page('category-generator', __('Test Cases', 'category-generator'), __('Test Cases', 'category-generator'), 'manage_categories', 'cg-tests', array($this, 'render_tests_page'));
+        add_submenu_page('category-generator', __('Generate', 'category-generator'), __('Generate', 'category-generator'), 'manage_categories', 'category-generator', [$this, 'render_admin_page']);
+        add_submenu_page('category-generator', __('Snapshots', 'category-generator'), __('Snapshots', 'category-generator'), 'manage_categories', 'cg-snapshots', [$this, 'render_snapshots_page']);
+        add_submenu_page('category-generator', __('History', 'category-generator'), __('History', 'category-generator'), 'manage_categories', 'cg-history', [$this, 'render_history_page']);
+        add_submenu_page('category-generator', __('Templates', 'category-generator'), __('Templates', 'category-generator'), 'manage_categories', 'cg-templates', [$this, 'render_templates_page']);
+        add_submenu_page('category-generator', __('Inner Templates', 'category-generator'), __('Inner Templates', 'category-generator'), 'manage_categories', 'cg-inner-templates', [$this, 'render_inner_templates_page']);
+        add_submenu_page('category-generator', __('Business Profile', 'category-generator'), __('Business Profile', 'category-generator'), 'manage_categories', 'cg-business-profile', [$this, 'render_business_profile_page']);
+        add_submenu_page('category-generator', __('Settings', 'category-generator'), __('Settings', 'category-generator'), 'manage_categories', 'cg-settings', [$this, 'render_settings_page']);
+        add_submenu_page('category-generator', __('Test Cases', 'category-generator'), __('Test Cases', 'category-generator'), 'manage_categories', 'cg-tests', [$this, 'render_tests_page']);
     }
     
     /**
      * Enqueue admin scripts and styles
      */
     public function enqueue_admin_scripts($hook) {
-        $allowed_hooks = array(
+        $allowed_hooks = [
             'toplevel_page_category-generator',
             'category-generator_page_cg-snapshots',
             'category-generator_page_cg-history',
@@ -350,7 +350,7 @@ class Category_Generator_Pro {
             'category-generator_page_cg-business-profile',
             'category-generator_page_cg-settings',
             'category-generator_page_cg-tests'
-        );
+        ];
         
         if (!in_array($hook, $allowed_hooks)) {
             return;
@@ -360,30 +360,30 @@ class Category_Generator_Pro {
         wp_enqueue_style(
             'font-awesome-5',
             'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
-            array(),
+            [],
             '5.15.4'
         );
         
         wp_enqueue_style(
             'category-generator-admin',
             CG_PLUGIN_URL . 'assets/css/admin.css',
-            array('font-awesome-5'),
+            ['font-awesome-5'],
             CG_PLUGIN_VERSION
         );
         
         wp_enqueue_script(
             'category-generator-admin',
             CG_PLUGIN_URL . 'assets/js/admin.js',
-            array('jquery'),
+            ['jquery'],
             CG_PLUGIN_VERSION,
             true
         );
         
-        wp_localize_script('category-generator-admin', 'cgAdmin', array(
+        wp_localize_script('category-generator-admin', 'cgAdmin', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('cg_nonce'),
             'currentPage' => $hook,
-            'strings' => array(
+            'strings' => [
                 'generating' => __('Generating categories...', 'category-generator'),
                 'success' => __('Categories created successfully!', 'category-generator'),
                 'error' => __('An error occurred. Please try again.', 'category-generator'),
@@ -391,19 +391,19 @@ class Category_Generator_Pro {
                 'saved' => __('Saved successfully!', 'category-generator'),
                 'deleted' => __('Deleted successfully!', 'category-generator'),
                 'loading' => __('Loading...', 'category-generator'),
-            )
-        ));
+            ]
+        ]);
     }
     
     /**
      * Render admin page
      */
     public function render_admin_page() {
-        $categories = get_categories(array(
+        $categories = get_categories([
             'hide_empty' => false,
             'orderby' => 'name',
             'order' => 'ASC'
-        ));
+        ]);
         
         $html_templates = $this->db->get_html_templates();
         $meta_templates = $this->db->get_meta_templates();
@@ -459,7 +459,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $titles = $this->parse_input(sanitize_textarea_field($_POST['titles'] ?? ''));
@@ -470,12 +470,12 @@ class Category_Generator_Pro {
         $make_children = isset($_POST['make_children']) && $_POST['make_children'] === 'true';
         
         if (empty($titles) || empty($areas)) {
-            wp_send_json_error(array('message' => __('Please enter both titles and areas.', 'category-generator')));
+            wp_send_json_error(['message' => __('Please enter both titles and areas.', 'category-generator')]);
         }
         
-        $preview_data = array();
-        $parent_categories = array();
-        $child_categories = array();
+        $preview_data = [];
+        $parent_categories = [];
+        $child_categories = [];
         $existing_parents = 0;
         $new_parents = 0;
         $existing_children = 0;
@@ -492,11 +492,11 @@ class Category_Generator_Pro {
                 $new_parents++;
             }
             
-            $parent_categories[] = array(
+            $parent_categories[] = [
                 'name' => $title,
                 'status' => $parent_status,
                 'is_parent' => true
-            );
+            ];
             
             // Process children for this parent
             foreach ($areas as $area) {
@@ -513,8 +513,8 @@ class Category_Generator_Pro {
                 $should_be_child = $make_children || $is_sub;
                 
                 $category_name = str_replace(
-                    array('{title}', '{area}'),
-                    array($title, $clean_area),
+                    ['{title}', '{area}'],
+                    [$title, $clean_area],
                     $format
                 );
                 
@@ -527,7 +527,7 @@ class Category_Generator_Pro {
                     $new_children++;
                 }
                 
-                $child_categories[] = array(
+                $child_categories[] = [
                     'name' => $category_name,
                     'title' => $title,
                     'area' => $clean_area,
@@ -536,24 +536,24 @@ class Category_Generator_Pro {
                     'will_be_child' => $should_be_child,
                     'parent_name' => $should_be_child ? $title : null,
                     'marked_with_s' => $is_sub
-                );
+                ];
             }
         }
         
-        wp_send_json_success(array(
+        wp_send_json_success([
             'create_parents' => $create_parents,
             'make_children' => $make_children,
             'parent_categories' => $parent_categories,
             'child_categories' => $child_categories,
-            'summary' => array(
+            'summary' => [
                 'total_parents' => count($titles),
                 'new_parents' => $new_parents,
                 'existing_parents' => $existing_parents,
                 'total_children' => count($child_categories),
                 'new_children' => $new_children,
                 'existing_children' => $existing_children
-            )
-        ));
+            ]
+        ]);
     }
     
     /**
@@ -563,7 +563,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         // Get form data
@@ -588,7 +588,7 @@ class Category_Generator_Pro {
         $schema_content = $_POST['schema_template'] ?? '';
         
         if (empty($titles) || empty($areas)) {
-            wp_send_json_error(array('message' => __('Please enter both titles and areas.', 'category-generator')));
+            wp_send_json_error(['message' => __('Please enter both titles and areas.', 'category-generator')]);
         }
         
         // Auto-snapshot before generation if enabled
@@ -605,17 +605,17 @@ class Category_Generator_Pro {
         // Get business profile for placeholders
         $business_profile = $this->db->get_business_profile();
         
-        $results = array(
-            'parents_created' => array(),
-            'parents_existed' => array(),
-            'categories_created' => array(),
-            'categories_existed' => array(),
-            'meta_updated' => array(),
-            'errors' => array()
-        );
+        $results = [
+            'parents_created' => [],
+            'parents_existed' => [],
+            'categories_created' => [],
+            'categories_existed' => [],
+            'meta_updated' => [],
+            'errors' => []
+        ];
         
         // Track parent term IDs
-        $parent_term_ids = array();
+        $parent_term_ids = [];
         
         // Step 1: Create parent categories if enabled
         if ($create_parents) {
@@ -623,27 +623,27 @@ class Category_Generator_Pro {
                 $existing = term_exists($title, $taxonomy);
                 
                 if ($existing) {
-                    $parent_term_ids[$title] = is_array($existing) ? $existing['term_id'] : $existing;
+                    $parent_term_ids[$title] = gettype($existing) === 'array' ? $existing['term_id'] : $existing;
                     $results['parents_existed'][] = $title;
                 } else {
                     $parent_result = wp_insert_term(
                         $title,
                         $taxonomy,
-                        array(
+                        [
                             'slug' => sanitize_title($title),
                             'parent' => $static_parent_id
-                        )
+                        ]
                     );
                     
                     if (!is_wp_error($parent_result)) {
                         $parent_term_ids[$title] = $parent_result['term_id'];
-                        $results['parents_created'][] = array(
+                        $results['parents_created'][] = [
                             'id' => $parent_result['term_id'],
                             'name' => $title
-                        );
+                        ];
                         
                         // Log to history
-                        $this->db->insert_category_history(array(
+                        $this->db->insert_category_history([
                             'term_id' => $parent_result['term_id'],
                             'name' => $title,
                             'slug' => sanitize_title($title),
@@ -654,7 +654,7 @@ class Category_Generator_Pro {
                             'meta_title' => '',
                             'meta_description' => '',
                             'has_schema' => 0
-                        ));
+                        ]);
                     } else {
                         $results['errors'][] = sprintf(__('Error creating parent "%s": %s', 'category-generator'), $title, $parent_result->get_error_message());
                     }
@@ -684,14 +684,14 @@ class Category_Generator_Pro {
                     // Check if parent exists in WP
                     $parent_term = term_exists($title, $taxonomy);
                     if ($parent_term) {
-                        $parent_id = is_array($parent_term) ? $parent_term['term_id'] : $parent_term;
+                        $parent_id = gettype($parent_term) === 'array' ? $parent_term['term_id'] : $parent_term;
                     }
                 }
                 
                 // Generate category name
                 $category_name = str_replace(
-                    array('{title}', '{area}'),
-                    array($title, $clean_area),
+                    ['{title}', '{area}'],
+                    [$title, $clean_area],
                     $format
                 );
                 
@@ -716,14 +716,14 @@ class Category_Generator_Pro {
                 
                 // Process inner templates
                 $inner_templates = CG_Inner_Templates::get_instance();
-                $html_body = $inner_templates->process_content($html_body, array(
+                $html_body = $inner_templates->process_content($html_body, [
                     'title' => $title,
                     'area' => $clean_area,
                     'category' => $category_name,
                     'slug' => $slug,
                     'url' => home_url('/' . $slug . '/'),
                     'business_profile' => $business_profile
-                ));
+                ]);
                 
                 // Wrap in div with proper class (NEVER p tag)
                 $description = '<div class="' . esc_attr($classes['wrapper_class']) . '">' . $html_body . '</div>';
@@ -738,7 +738,7 @@ class Category_Generator_Pro {
                 $existing = term_exists($category_name, $taxonomy);
                 
                 if ($existing) {
-                    $term_id = is_array($existing) ? $existing['term_id'] : $existing;
+                    $term_id = gettype($existing) === 'array' ? $existing['term_id'] : $existing;
                     $results['categories_existed'][] = $category_name;
                     
                     // Update Yoast meta if requested
@@ -751,11 +751,11 @@ class Category_Generator_Pro {
                     $result = wp_insert_term(
                         $category_name,
                         $taxonomy,
-                        array(
+                        [
                             'description' => $description,
                             'slug' => $slug,
                             'parent' => $parent_id
-                        )
+                        ]
                     );
                     
                     if (is_wp_error($result)) {
@@ -768,15 +768,15 @@ class Category_Generator_Pro {
                             $this->update_yoast_meta($term_id, $taxonomy, $meta_title, $meta_description);
                         }
                         
-                        $results['categories_created'][] = array(
+                        $results['categories_created'][] = [
                             'id' => $term_id,
                             'name' => $category_name,
                             'slug' => $slug,
                             'parent' => $should_be_child ? $title : null
-                        );
+                        ];
                         
                         // Log to history
-                        $this->db->insert_category_history(array(
+                        $this->db->insert_category_history([
                             'term_id' => $term_id,
                             'name' => $category_name,
                             'slug' => $slug,
@@ -787,7 +787,7 @@ class Category_Generator_Pro {
                             'meta_title' => $meta_title,
                             'meta_description' => $meta_description,
                             'has_schema' => $include_schema ? 1 : 0
-                        ));
+                        ]);
                     }
                 }
             }
@@ -815,15 +815,15 @@ class Category_Generator_Pro {
             update_term_meta($term_id, '_yoast_wpseo_focuskw', $focus_keyword);
             
             // Also update the taxonomy meta format Yoast uses internally
-            $tax_meta = get_option('wpseo_taxonomy_meta', array());
+            $tax_meta = get_option('wpseo_taxonomy_meta', []);
             if (!isset($tax_meta[$taxonomy])) {
-                $tax_meta[$taxonomy] = array();
+                $tax_meta[$taxonomy] = [];
             }
-            $tax_meta[$taxonomy][$term_id] = array(
+            $tax_meta[$taxonomy][$term_id] = [
                 'wpseo_title' => $meta_title,
                 'wpseo_desc' => $meta_description,
                 'wpseo_focuskw' => $focus_keyword
-            );
+            ];
             update_option('wpseo_taxonomy_meta', $tax_meta);
         }
         
@@ -835,12 +835,12 @@ class Category_Generator_Pro {
     /**
      * Generate content from pattern with placeholders
      */
-    private function generate_from_pattern($pattern, $title, $area, $category, $business_profile = array()) {
+    private function generate_from_pattern($pattern, $title, $area, $category, $business_profile = []) {
         if (empty($pattern)) {
             return '';
         }
         
-        $placeholders = array(
+        $placeholders = [
             '{title}' => $title,
             '{area}' => $area,
             '{category}' => $category,
@@ -869,7 +869,7 @@ class Category_Generator_Pro {
             '{rating_count}' => $business_profile['rating_count'] ?? '100',
             '{logo_url}' => $business_profile['logo_url'] ?? '',
             '{image_url}' => $business_profile['image_url'] ?? '',
-        );
+        ];
         
         return str_replace(array_keys($placeholders), array_values($placeholders), $pattern);
     }
@@ -891,7 +891,7 @@ class Category_Generator_Pro {
         $category_url = home_url('/' . $slug . '/');
         $contact_url = $business_profile['website'] ?? home_url('/contact/');
         
-        $placeholders = array(
+        $placeholders = [
             '{title}' => $title,
             '{area}' => $area,
             '{category}' => $category,
@@ -920,7 +920,7 @@ class Category_Generator_Pro {
             '{country}' => $business_profile['country'] ?? 'Australia',
             '{rating_value}' => $business_profile['rating_value'] ?? '5.0',
             '{rating_count}' => $business_profile['rating_count'] ?? '100',
-        );
+        ];
         
         return str_replace(array_keys($placeholders), array_values($placeholders), $template);
     }
@@ -931,7 +931,7 @@ class Category_Generator_Pro {
     private function generate_schema($template, $title, $area, $category, $slug, $meta_desc, $business_profile, $use_global = true) {
         $category_url = home_url('/' . $slug . '/');
         
-        $placeholders = array(
+        $placeholders = [
             '{title}' => $title,
             '{area}' => $area,
             '{category}' => $category,
@@ -958,7 +958,7 @@ class Category_Generator_Pro {
             '{image_url}' => $business_profile['image_url'] ?? '',
             '{latitude}' => '',
             '{longitude}' => '',
-        );
+        ];
         
         $schema = str_replace(array_keys($placeholders), array_values($placeholders), $template);
         
@@ -975,7 +975,7 @@ class Category_Generator_Pro {
      */
     private function parse_input($input) {
         $lines = explode("\n", $input);
-        $items = array();
+        $items = [];
         
         foreach ($lines as $line) {
             $line = trim($line);
@@ -994,7 +994,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $search = sanitize_text_field($_POST['search'] ?? '');
@@ -1013,11 +1013,11 @@ class Category_Generator_Pro {
             $offset = ($page - 1) * $per_page;
         }
         
-        $history = $this->db->get_category_history(array(
+        $history = $this->db->get_category_history([
             'search' => $search,
             'limit' => $per_page,
             'offset' => $offset
-        ));
+        ]);
         
         // Add Yoast SEO scores if requested
         if ($include_yoast && defined('WPSEO_VERSION')) {
@@ -1035,12 +1035,12 @@ class Category_Generator_Pro {
         
         $total = $this->db->get_category_history_count($search);
         
-        wp_send_json_success(array(
+        wp_send_json_success([
             'history' => $history,
             'total' => $total,
             'pages' => $per_page_raw === 'all' ? 1 : ceil($total / $per_page),
             'current_page' => $page
-        ));
+        ]);
     }
     
     /**
@@ -1050,13 +1050,13 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
-        $ids = isset($_POST['ids']) ? array_map('intval', $_POST['ids']) : array();
+        $ids = isset($_POST['ids']) ? array_map('intval', $_POST['ids']) : [];
         
         if (empty($ids)) {
-            wp_send_json_error(array('message' => __('No items selected.', 'category-generator')));
+            wp_send_json_error(['message' => __('No items selected.', 'category-generator')]);
         }
         
         $deleted = 0;
@@ -1066,10 +1066,10 @@ class Category_Generator_Pro {
             }
         }
         
-        wp_send_json_success(array(
+        wp_send_json_success([
             'message' => sprintf(__('%d log(s) deleted.', 'category-generator'), $deleted),
             'deleted' => $deleted
-        ));
+        ]);
     }
     
     /**
@@ -1079,14 +1079,14 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
-        $ids = isset($_POST['ids']) ? array_map('intval', $_POST['ids']) : array();
-        $terms = isset($_POST['terms']) ? $_POST['terms'] : array();
+        $ids = isset($_POST['ids']) ? array_map('intval', $_POST['ids']) : [];
+        $terms = isset($_POST['terms']) ? $_POST['terms'] : [];
         
         if (empty($ids)) {
-            wp_send_json_error(array('message' => __('No items selected.', 'category-generator')));
+            wp_send_json_error(['message' => __('No items selected.', 'category-generator')]);
         }
         
         $logs_deleted = 0;
@@ -1112,11 +1112,11 @@ class Category_Generator_Pro {
             }
         }
         
-        wp_send_json_success(array(
+        wp_send_json_success([
             'message' => sprintf(__('%d log(s) and %d category(ies) deleted.', 'category-generator'), $logs_deleted, $terms_deleted),
             'logs_deleted' => $logs_deleted,
             'terms_deleted' => $terms_deleted
-        ));
+        ]);
     }
     
     /**
@@ -1126,10 +1126,10 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
-        $data = array(
+        $data = [
             'business_name' => sanitize_text_field($_POST['business_name'] ?? ''),
             'business_type' => sanitize_text_field($_POST['business_type'] ?? 'LocalBusiness'),
             'street_address' => sanitize_text_field($_POST['street_address'] ?? ''),
@@ -1149,11 +1149,11 @@ class Category_Generator_Pro {
             'logo_url' => esc_url_raw($_POST['logo_url'] ?? ''),
             'image_url' => esc_url_raw($_POST['image_url'] ?? ''),
             'social_profiles' => sanitize_textarea_field($_POST['social_profiles'] ?? '')
-        );
+        ];
         
         $this->db->save_business_profile($data);
         
-        wp_send_json_success(array('message' => __('Business profile saved!', 'category-generator')));
+        wp_send_json_success(['message' => __('Business profile saved!', 'category-generator')]);
     }
     
     /**
@@ -1163,7 +1163,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $profile = $this->db->get_business_profile();
@@ -1177,7 +1177,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'html');
@@ -1203,7 +1203,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'html');
@@ -1223,7 +1223,7 @@ class Category_Generator_Pro {
         if ($template) {
             wp_send_json_success($template);
         } else {
-            wp_send_json_error(array('message' => __('Template not found.', 'category-generator')));
+            wp_send_json_error(['message' => __('Template not found.', 'category-generator')]);
         }
     }
     
@@ -1234,7 +1234,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'html');
@@ -1242,7 +1242,7 @@ class Category_Generator_Pro {
         $name = sanitize_text_field($_POST['name'] ?? '');
         
         if (empty($name)) {
-            wp_send_json_error(array('message' => __('Name is required.', 'category-generator')));
+            wp_send_json_error(['message' => __('Name is required.', 'category-generator')]);
         }
         
         switch ($type) {
@@ -1280,7 +1280,7 @@ class Category_Generator_Pro {
                 }
         }
         
-        wp_send_json_success(array('id' => $id, 'message' => __('Template saved!', 'category-generator')));
+        wp_send_json_success(['id' => $id, 'message' => __('Template saved!', 'category-generator')]);
     }
     
     /**
@@ -1290,14 +1290,14 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'html');
         $id = intval($_POST['id'] ?? 0);
         
         if ($id <= 0) {
-            wp_send_json_error(array('message' => __('Invalid template ID.', 'category-generator')));
+            wp_send_json_error(['message' => __('Invalid template ID.', 'category-generator')]);
         }
         
         switch ($type) {
@@ -1311,7 +1311,7 @@ class Category_Generator_Pro {
                 $this->db->delete_html_template($id);
         }
         
-        wp_send_json_success(array('message' => __('Template deleted!', 'category-generator')));
+        wp_send_json_success(['message' => __('Template deleted!', 'category-generator')]);
     }
     
     /**
@@ -1320,14 +1320,14 @@ class Category_Generator_Pro {
     public function ajax_get_history_item() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $id = intval($_POST['id'] ?? 0);
         $item = $this->db->get_category_history_item($id);
         if ($item) {
             wp_send_json_success($item);
         } else {
-            wp_send_json_error(array('message' => __('Item not found.', 'category-generator')));
+            wp_send_json_error(['message' => __('Item not found.', 'category-generator')]);
         }
     }
     
@@ -1337,7 +1337,7 @@ class Category_Generator_Pro {
     public function ajax_get_business_profiles() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $profiles = $this->db->get_all_business_profiles();
         wp_send_json_success($profiles);
@@ -1349,11 +1349,11 @@ class Category_Generator_Pro {
     public function ajax_delete_business_profile() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $id = intval($_POST['id'] ?? 0);
         $this->db->delete_business_profile($id);
-        wp_send_json_success(array('message' => __('Profile deleted!', 'category-generator')));
+        wp_send_json_success(['message' => __('Profile deleted!', 'category-generator')]);
     }
     
     /**
@@ -1362,7 +1362,7 @@ class Category_Generator_Pro {
     public function ajax_duplicate_template() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'html');
@@ -1404,9 +1404,9 @@ class Category_Generator_Pro {
         }
         
         if ($new_id) {
-            wp_send_json_success(array('id' => $new_id, 'message' => __('Template duplicated!', 'category-generator')));
+            wp_send_json_success(['id' => $new_id, 'message' => __('Template duplicated!', 'category-generator')]);
         } else {
-            wp_send_json_error(array('message' => __('Failed to duplicate.', 'category-generator')));
+            wp_send_json_error(['message' => __('Failed to duplicate.', 'category-generator')]);
         }
     }
     
@@ -1416,7 +1416,7 @@ class Category_Generator_Pro {
     public function ajax_get_inner_templates() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $inner = CG_Inner_Templates::get_instance();
         $templates = $inner->get_all();
@@ -1429,7 +1429,7 @@ class Category_Generator_Pro {
     public function ajax_get_inner_template() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $id = intval($_POST['id'] ?? 0);
         $inner = CG_Inner_Templates::get_instance();
@@ -1437,7 +1437,7 @@ class Category_Generator_Pro {
         if ($template) {
             wp_send_json_success($template);
         } else {
-            wp_send_json_error(array('message' => __('Template not found.', 'category-generator')));
+            wp_send_json_error(['message' => __('Template not found.', 'category-generator')]);
         }
     }
     
@@ -1447,18 +1447,18 @@ class Category_Generator_Pro {
     public function ajax_save_inner_template() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $id = intval($_POST['id'] ?? 0);
-        $data = array(
+        $data = [
             'name_id' => sanitize_text_field($_POST['name_id'] ?? ''),
             'name' => sanitize_text_field($_POST['name'] ?? ''),
             'type' => sanitize_text_field($_POST['type'] ?? 'anchor'),
             'category' => sanitize_text_field($_POST['category'] ?? ''),
             'content' => wp_kses_post($_POST['content'] ?? ''),
             'variations' => intval($_POST['variations'] ?? 1)
-        );
+        ];
         
         $inner = CG_Inner_Templates::get_instance();
         if ($id > 0) {
@@ -1467,7 +1467,7 @@ class Category_Generator_Pro {
             $id = $inner->create($data);
         }
         
-        wp_send_json_success(array('id' => $id, 'message' => __('Saved!', 'category-generator')));
+        wp_send_json_success(['id' => $id, 'message' => __('Saved!', 'category-generator')]);
     }
     
     /**
@@ -1476,12 +1476,12 @@ class Category_Generator_Pro {
     public function ajax_delete_inner_template() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $id = intval($_POST['id'] ?? 0);
         $inner = CG_Inner_Templates::get_instance();
         $inner->delete($id);
-        wp_send_json_success(array('message' => __('Deleted!', 'category-generator')));
+        wp_send_json_success(['message' => __('Deleted!', 'category-generator')]);
     }
     
     /**
@@ -1490,7 +1490,7 @@ class Category_Generator_Pro {
     public function ajax_get_variables() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $vars = CG_Variables::get_instance();
         wp_send_json_success($vars->get_all_variables());
@@ -1502,18 +1502,18 @@ class Category_Generator_Pro {
     public function ajax_save_variable() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $name = sanitize_text_field($_POST['name'] ?? '');
         $value = sanitize_textarea_field($_POST['value'] ?? '');
         
         if (empty($name)) {
-            wp_send_json_error(array('message' => __('Name is required.', 'category-generator')));
+            wp_send_json_error(['message' => __('Name is required.', 'category-generator')]);
         }
         
         $vars = CG_Variables::get_instance();
         $vars->save_variable($name, $value);
-        wp_send_json_success(array('message' => __('Saved!', 'category-generator')));
+        wp_send_json_success(['message' => __('Saved!', 'category-generator')]);
     }
     
     /**
@@ -1522,12 +1522,12 @@ class Category_Generator_Pro {
     public function ajax_delete_variable() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $name = sanitize_text_field($_POST['name'] ?? '');
         $vars = CG_Variables::get_instance();
         $vars->delete_variable($name);
-        wp_send_json_success(array('message' => __('Deleted!', 'category-generator')));
+        wp_send_json_success(['message' => __('Deleted!', 'category-generator')]);
     }
     
     /**
@@ -1536,7 +1536,7 @@ class Category_Generator_Pro {
     public function ajax_get_settings() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $settings = CG_Settings::get_instance();
         wp_send_json_success($settings->get_all());
@@ -1548,17 +1548,17 @@ class Category_Generator_Pro {
     public function ajax_save_settings() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
-        $settings_data = $_POST['settings'] ?? array();
+        $settings_data = $_POST['settings'] ?? [];
         $settings = CG_Settings::get_instance();
         
         foreach ($settings_data as $key => $value) {
             $settings->set(sanitize_text_field($key), $value);
         }
         
-        wp_send_json_success(array('message' => __('Settings saved!', 'category-generator')));
+        wp_send_json_success(['message' => __('Settings saved!', 'category-generator')]);
     }
     
     /**
@@ -1582,11 +1582,11 @@ class Category_Generator_Pro {
     public function ajax_import_data() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         if (empty($_FILES['file'])) {
-            wp_send_json_error(array('message' => __('No file uploaded.', 'category-generator')));
+            wp_send_json_error(['message' => __('No file uploaded.', 'category-generator')]);
         }
         
         $type = sanitize_text_field($_POST['type'] ?? 'all');
@@ -1596,9 +1596,9 @@ class Category_Generator_Pro {
         $result = $importer->import($_FILES['file'], $type, $update_existing);
         
         if ($result['success']) {
-            wp_send_json_success(array('message' => $result['message'], 'details' => $result));
+            wp_send_json_success(['message' => $result['message'], 'details' => $result]);
         } else {
-            wp_send_json_error(array('message' => $result['message']));
+            wp_send_json_error(['message' => $result['message']]);
         }
     }
     
@@ -1608,7 +1608,7 @@ class Category_Generator_Pro {
     public function ajax_get_import_history() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         $importer = CG_Import_Export::get_instance();
         wp_send_json_success($importer->get_history());
@@ -1620,7 +1620,7 @@ class Category_Generator_Pro {
     public function ajax_run_tests() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_categories')) {
-            wp_send_json_error(array('message' => __('Permission denied.', 'category-generator')));
+            wp_send_json_error(['message' => __('Permission denied.', 'category-generator')]);
         }
         
         $group = sanitize_text_field($_POST['group'] ?? 'all');
@@ -1648,7 +1648,7 @@ class Category_Generator_Pro {
         } else {
             $id = $this->db->save_titles($name, $content);
         }
-        wp_send_json_success(array('id' => $id));
+        wp_send_json_success(['id' => $id]);
     }
     
     public function ajax_save_areas() {
@@ -1662,30 +1662,30 @@ class Category_Generator_Pro {
         } else {
             $id = $this->db->save_areas($name, $content);
         }
-        wp_send_json_success(array('id' => $id));
+        wp_send_json_success(['id' => $id]);
     }
     
     public function ajax_get_saved_titles() {
         check_ajax_referer('cg_nonce', 'nonce');
         $id = intval($_POST['id'] ?? 0);
         $item = $this->db->get_saved_titles_item($id);
-        wp_send_json_success($item ?: array());
+        wp_send_json_success($item ?: []);
     }
     
     public function ajax_get_saved_areas() {
         check_ajax_referer('cg_nonce', 'nonce');
         $id = intval($_POST['id'] ?? 0);
         $item = $this->db->get_saved_areas_item($id);
-        wp_send_json_success($item ?: array());
+        wp_send_json_success($item ?: []);
     }
     
     public function ajax_reset_database() {
         check_ajax_referer('cg_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Permission denied'));
+            wp_send_json_error(['message' => 'Permission denied']);
         }
         $this->db->reset_database();
-        wp_send_json_success(array('message' => 'Database reset successfully'));
+        wp_send_json_success(['message' => 'Database reset successfully']);
     }
     
     public function ajax_inject_inner_template() {
@@ -1697,17 +1697,17 @@ class Category_Generator_Pro {
         $history = $this->db->get_category_history_item($history_id);
         
         if (!$history) {
-            wp_send_json_error(array('message' => 'History item not found'));
+            wp_send_json_error(['message' => 'History item not found']);
         }
         
         // Update in WordPress term
         $term_id = $history['term_id'];
-        wp_update_term($term_id, $history['taxonomy'], array('description' => $new_content));
+        wp_update_term($term_id, $history['taxonomy'], ['description' => $new_content]);
         
         // Update history record
-        $this->db->update_category_history($history_id, array('meta_description' => $new_content));
+        $this->db->update_category_history($history_id, ['meta_description' => $new_content]);
         
-        wp_send_json_success(array('message' => 'Injected successfully'));
+        wp_send_json_success(['message' => 'Injected successfully']);
     }
     
     public function ajax_get_term_description() {
@@ -1717,10 +1717,10 @@ class Category_Generator_Pro {
         
         $term = get_term($term_id, $taxonomy);
         if (!$term || is_wp_error($term)) {
-            wp_send_json_error(array('message' => 'Term not found'));
+            wp_send_json_error(['message' => 'Term not found']);
         }
         
-        wp_send_json_success(array('description' => $term->description));
+        wp_send_json_success(['description' => $term->description]);
     }
     
     // ==================== Snapshot AJAX Handlers ====================
@@ -1733,7 +1733,7 @@ class Category_Generator_Pro {
         $type = sanitize_text_field($_POST['type'] ?? 'manual');
         
         if (empty($title)) {
-            wp_send_json_error(array('message' => __('Snapshot title is required', 'category-generator')));
+            wp_send_json_error(['message' => __('Snapshot title is required', 'category-generator')]);
         }
         
         $snapshot = CG_Snapshot::get_instance();
@@ -1787,7 +1787,7 @@ class Category_Generator_Pro {
         check_ajax_referer('cg_nonce', 'nonce');
         $limit = intval($_POST['limit'] ?? 10);
         $snapshots = $this->db->get_recent_snapshots($limit);
-        wp_send_json_success(array('snapshots' => $snapshots));
+        wp_send_json_success(['snapshots' => $snapshots]);
     }
 }
 
