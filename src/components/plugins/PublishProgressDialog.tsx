@@ -327,18 +327,23 @@ export function PublishProgressDialog({
           });
         }
         
-        setStages(prev => prev.map(s => {
-          if (s.name === payload.stage) {
-            let mappedStatus: PublishStage["status"] = "running";
-            if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
-            else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
-            return { ...s, status: mappedStatus, message: payload.message };
-          }
-          if (s.status === "running" && s.name !== payload.stage) {
-            return { ...s, status: "success" };
-          }
-          return s;
-        }));
+        setStages(prev => {
+          const currentStageIdx = VISIBLE_STAGE_ORDER.indexOf(payload.stage);
+          return prev.map(s => {
+            if (s.name === payload.stage) {
+              let mappedStatus: PublishStage["status"] = "running";
+              if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
+              else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
+              return { ...s, status: mappedStatus, message: payload.message };
+            }
+            // Only auto-complete stages that appear BEFORE the current stage in the pipeline
+            const stageIdx = VISIBLE_STAGE_ORDER.indexOf(s.name);
+            if (s.status === "running" && currentStageIdx > stageIdx && stageIdx >= 0) {
+              return { ...s, status: "success" };
+            }
+            return s;
+          });
+        });
         setOverallProgress(payload.progress);
       }
     });
