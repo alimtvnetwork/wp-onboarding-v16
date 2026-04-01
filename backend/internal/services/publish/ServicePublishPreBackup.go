@@ -17,7 +17,7 @@ import (
 
 // createPreUploadBackup exports the remote plugin for rollback capability
 func (s *Service) createPreUploadBackup(ctx context.Context, pctx *publishContext) string {
-	s.broadcastProgress(pctx.progress(publishstep.PreBackup, 45, "Creating pre-upload backup for rollback..."))
+	s.broadcastProgress(pctx.progress(publishstep.PreBackup, progressPreBackup.Start, "Creating pre-upload backup for rollback..."))
 
 	return s.exportRemoteForRollback(pctx)
 }

@@ -29,7 +29,7 @@ func (s *Service) executeCleanupStage(ctx context.Context, pctx *publishContext)
 
 // broadcastCleanupProgress sends cleanup progress and log.
 func (s *Service) broadcastCleanupProgress(pctx *publishContext) {
-	s.broadcastProgress(pctx.progress(publishsteptype.Cleanup, 95, "Marking files as synced..."))
+	s.broadcastProgress(pctx.progress(publishsteptype.Cleanup, progressCleanup.Start, "Marking files as synced..."))
 
 	cleanLog := DetailedLogInput{
 		PluginId: pctx.PluginId,

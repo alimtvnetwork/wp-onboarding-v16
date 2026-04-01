@@ -16,7 +16,7 @@ import (
 // It delegates to backupService.Create to persist a real backup ZIP.
 func (s *Service) executeBackupStage(ctx context.Context, pctx *publishContext) Stage {
 	return s.runStage("backup", func() error {
-		s.broadcastProgress(pctx.progress(publishstep.Backup, 10, "Creating backup..."))
+		s.broadcastProgress(pctx.progress(publishstep.Backup, progressBackup.Start, "Creating backup..."))
 		s.broadcastBackupInitLog(pctx)
 
 		backupResult := s.backupService.Create(ctx, pctx.Mapping.Id)
@@ -80,7 +80,7 @@ func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 	var buildResult *PackageBuildResult
 
 	stage := s.runStage("package", func() error {
-		s.broadcastProgress(pctx.progress(publishstep.Packaging, 30, "Building package..."))
+		s.broadcastProgress(pctx.progress(publishstep.Packaging, progressPackage.Start, "Building package..."))
 
 		result, appErr := s.buildPluginPackage(pctx)
 		if appErr != nil {

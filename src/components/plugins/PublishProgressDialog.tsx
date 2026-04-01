@@ -124,14 +124,22 @@ ${logSection}
 
 const STAGE_LABELS: Record<string, string> = {
   backup: "Creating Backup",
+  remote_backup: "Remote Backup",
   cloud_upload: "Uploading to Cloud Storage",
   package: "Packaging Files",
+  pre_backup: "Pre-Upload Backup",
   upload: "Uploading to Site",
   activate: "Activating Plugin",
   cleanup: "Cleaning Up",
   verify: "Verifying Deployment",
   version_check: "Verifying Version",
 };
+
+// Stages visible in the progress UI (ordered).
+// Internal/non-blocking stages (remote_backup, pre_backup) are excluded.
+const VISIBLE_STAGE_ORDER = [
+  "backup", "cloud_upload", "package", "upload", "activate", "version_check",
+];
 
 function buildDefaultStages(): PublishStage[] {
   const stages: PublishStage[] = [
@@ -319,18 +327,23 @@ export function PublishProgressDialog({
           });
         }
         
-        setStages(prev => prev.map(s => {
-          if (s.name === payload.stage) {
-            let mappedStatus: PublishStage["status"] = "running";
-            if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
-            else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
-            return { ...s, status: mappedStatus, message: payload.message };
-          }
-          if (s.status === "running" && s.name !== payload.stage) {
-            return { ...s, status: "success" };
-          }
-          return s;
-        }));
+        setStages(prev => {
+          const currentStageIdx = VISIBLE_STAGE_ORDER.indexOf(payload.stage);
+          return prev.map(s => {
+            if (s.name === payload.stage) {
+              let mappedStatus: PublishStage["status"] = "running";
+              if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
+              else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
+              return { ...s, status: mappedStatus, message: payload.message };
+            }
+            // Only auto-complete stages that appear BEFORE the current stage in the pipeline
+            const stageIdx = VISIBLE_STAGE_ORDER.indexOf(s.name);
+            if (s.status === "running" && currentStageIdx > stageIdx && stageIdx >= 0) {
+              return { ...s, status: "success" };
+            }
+            return s;
+          });
+        });
         setOverallProgress(payload.progress);
       }
     });
