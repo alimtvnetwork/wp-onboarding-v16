@@ -56,7 +56,9 @@ function Invoke-SinglePluginZip {
 
         [System.IO.Compression.ZipFile]::CreateFromDirectory(
             $tempDir,
-            $zipOutputPath
+            $zipOutputPath,
+            [System.IO.Compression.CompressionLevel]::Optimal,
+            $false
         )
 
         Remove-Item $tempDir -Recurse -Force
