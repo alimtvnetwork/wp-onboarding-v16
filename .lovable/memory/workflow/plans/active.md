@@ -52,7 +52,7 @@
 | 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | ✅ Done — all types, components, hooks, methods fixed | — |
 | 6 | Go Backend UserClient | 🟡 Medium | Open | — |
 | 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
-| 8 | Chunk reassembly manifest validation | 🟡 Medium | Open | S-048 |
+| 8 | Chunk reassembly manifest validation | 🟡 Medium | ✅ Done | S-048 |
 | 9 | Auto-invalidate cached ZIP on source change | 🟡 Medium | Open | S-052 |
 | 10 | Google Drive Rotation (Phase 5F) | 🟢 Low | Open | S-046 |
 | 11 | Diagnostic Reporting (Spec #08) | 🟢 Low | Open | — |
