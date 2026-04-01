@@ -217,7 +217,8 @@ trait ExporterBuildTrait {
         $this->populateZipArchive($zip, $files, $incrementalData, $snapshot, $snapshotId);
         $zip->close();
 
-        $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData, $zipMeta);
+        $contentHash = $this->computeContentHash($snapshotDir);
+        $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData, $zipMeta, $contentHash);
         $export = $this->getValidExport($snapshotId);
 
         return ResultHelper::ok([
