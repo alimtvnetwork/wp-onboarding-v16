@@ -114,7 +114,7 @@ All suggestions tracked in this single file: `.lovable/memory/suggestions/01-sug
 
 ### Adding a New Suggestion
 Add to "Active Suggestions (Open)" section with:
-- **ID:** S-NNN (sequential, next is **S-055**)
+- **ID:** S-NNN (sequential, next is **S-057**)
 - **Created:** date
 - **Source:** where the suggestion originated (e.g., "Lovable", "User", "Audit")
 - **Priority:** low / medium / high
