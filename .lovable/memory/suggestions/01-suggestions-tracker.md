@@ -19,6 +19,8 @@
 | S-052 | 2026-03-16 | Medium | Lovable | open | Auto-invalidate cached ZIP when plugin source files change (hash-based) |
 | S-053 | 2026-03-16 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) — **needs spec first** |
 | S-054 | 2026-03-16 | Low | Lovable | open | Publish analytics / history reporting dashboard — **needs spec first** |
+| S-055 | 2026-04-01 | High | User | done | Scan and fix all QUpload-incompatible PHP patterns (is_array, array(), magic strings) across all plugins |
+| S-056 | 2026-04-01 | Medium | User | done | Create .ai-instructions files in plugin roots with PHP compatibility rules |
 
 ---
 
