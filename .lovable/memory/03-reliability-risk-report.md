@@ -2,28 +2,28 @@
 
 > **Location:** `.lovable/memory/03-reliability-risk-report.md`  
 > **Created:** 2026-02-01  
-> **Updated:** 2026-03-17  
+> **Updated:** 2026-04-01  
 > **Purpose:** Assess AI handoff reliability for full specification set across all projects
 
 ---
 
 ## Executive Summary
 
-The repository contains **3 projects** with **17+ spec folders**, **57 completed suggestions** (9 open), **10 DRY refactoring phases** (all complete), cloud storage providers (3 phases complete), and comprehensive coding standards across Go, PHP, and TypeScript. The specification quality is **excellent**: well-structured, cross-referenced, and battle-tested through 68 iterative improvement cycles.
+The repository contains **3 projects** with **17+ spec folders**, **42 issue write-ups**, **57 completed suggestions** (9 open), **10 DRY refactoring phases** (all complete), cloud storage providers (3 phases complete), comprehensive coding standards across Go, PHP, and TypeScript, and a fully rewritten bootstrap deploy pipeline (Phase J complete).
 
-**Overall Reliability Score: 92/100** (Very Good — minor gaps in deployment verification and backend integration)
+**Overall Reliability Score: 93/100** (Excellent — most implementation phases complete; remaining work well-specified)
 
 | Metric | Value |
 |--------|-------|
 | Spec Folders | 17 across all projects |
-| Issue Write-ups | 31 in `spec/02-app-issues/` (with TEMPLATE) |
-| Open Issues | 8 active (issues 25–31 + check command) |
-| Feature Phases | All core phases complete ✅ |
+| Issue Write-ups | 42 in `spec/02-app-issues/` (with TEMPLATE) |
+| Active Issues | 8 in `.lovable/memory/issues/` |
+| Completed Plan Phases | A (blocked), B–J (all done) |
 | DRY Refactoring | 10/10 phases ✅ |
-| Suggestions | 57 completed, 9 open, 1 N/A, 1 rejected |
+| Suggestions | 57 completed, 9 open, 1 N/A, 1 rejected (68 total) |
 | Coding Standards | 3 languages documented (Go, TypeScript, PHP) |
-| Memory Architecture Files | 11 subdirectories with established patterns |
-| Issues Fixed (with prevention rules) | 15 documented |
+| Prevention Rules | 15 documented in post-fix workflow |
+| Architecture Docs | 11 subdirectories in memory/architecture |
 
 ---
 
@@ -33,55 +33,43 @@ The repository contains **3 projects** with **17+ spec folders**, **57 completed
 
 | Module | Confidence | Assumptions |
 |--------|-----------|-------------|
-| Database Schema (SQLite) | 96% | GORM models match spec; migrations sequential; PascalCase convention documented |
-| Error Codes/Constants | 98% | SSOT in `66-shared-constants.md` + `envelope.schema.json` |
-| Config Seeding (JSON → SQLite) | 96% | Seed versioning documented; golden rule clear |
-| Site CRUD | 96% | Standard REST; AES encryption well-specified |
-| Plugin CRUD | 96% | File scanning, mappings well-documented |
-| QUpload UI Uplift | 93% | Visual parity task; reference design exists (issue #27) |
-
-**Assumptions:** New AI reads spec in recommended order; Go/React/PHP environments available; no API changes in dependencies.
+| Database Schema (SQLite/GORM) | 96% | PascalCase convention documented; split DB rules clear |
+| Error Codes/Constants | 98% | SSOT in shared-constants + envelope.schema.json |
+| Config Seeding (JSON → SQLite) | 96% | Golden rule well-documented |
+| Site/Plugin CRUD | 96% | Standard REST; AES encryption specified |
+| QUpload settings.json (S-049) | 95% | Simple config file; defaults documented |
+| Log rotation-status endpoint (S-050) | 94% | GET endpoint returning existing data |
 
 ### Tier 2: Medium Modules (90% success probability)
 
 | Module | Confidence | Assumptions |
 |--------|-----------|-------------|
-| Publish Pipeline (5-stage) | 91% | Multi-stage well-documented with 4 recovery strategies |
-| File Watcher (fsnotify) | 89% | Hybrid watcher mode documented; platform differences noted |
-| Sync Service (MD5 comparison) | 91% | Hash algorithm specified; diff logic clear |
-| Frontend API Client (`src/lib/api/`) | 93% | Modular split documented; envelope parsing clear |
-| Error Store (Zustand) | 93% | Factory pattern (`buildCapturedError`) documented |
-| QUpload Activate → PUT | 88% | All-layer change across 7+ files documented in issue #26 |
-| Log Rotation | 90% | Already implemented in FileLogger; `settings.json` config needed |
-| Cloud Storage CRUD (React) | 92% | Full dashboard already built; well-documented |
+| Publish Pipeline (5-stage) | 91% | Well-documented with 4 recovery strategies |
+| File Watcher (fsnotify) | 89% | Hybrid watcher mode documented |
+| Frontend API Client | 93% | Modular split documented |
+| Cloud Storage CRUD (React) | 92% | Full dashboard already built |
+| Verbose -check mode (S-051) | 90% | Extends existing mode-check.ps1 |
+| Chunk reassembly validation (S-048) | 88% | Go backend — clear scope |
+| Auto-invalidate cached ZIP (S-052) | 87% | Hash-based; well-scoped |
+| Backup History Visualization (S-047) | 89% | Cloud Storage dashboard exists |
+| Google Drive rotation (S-046) | 86% | Phase 5F; provider API documented |
 
-**Assumptions:** WordPress test sites available; fsnotify consistent across OS.
-
-### Tier 3: Complex / Agentic Workflows (84% success probability)
+### Tier 3: Complex / Agentic Workflows (83% success probability)
 
 | Module | Confidence | Assumptions |
 |--------|-----------|-------------|
-| Cloud Storage Go Pipeline (`cloud_upload` stage) | 82% | Backend integration pending; WS event types defined but untested |
-| Git Backup Strategy (Phases 5A–5F) | 78% | 2 spec files (09, 10) exist but implementation is greenfield |
-| Bulk Parallel Deploy | 86% | Concurrency=2 default; error recovery documented |
-| Multi-site Orchestration | 84% | Master-agent architecture; 301 redirect resolution |
-| WebSocket Real-time Sync | 88% | 11 event types; reconnection recovery documented |
-| Global Error Modal (8+ tabs) | 86% | Decomposed into 7 sub-files |
-| PHP Bootstrapping (circular dep guards) | 84% | Fixed; deep scan confirms boot chain integrity |
-| User Management (spec/16) | 80% | Spec exists (4 files) but no implementation started |
-| Licensing Server Dashboard | 76% | Only suggestion-level (S-053); no spec written |
-
-**Assumptions:** All WordPress sites accessible; WebSocket connections stable; PHP memory limits adequate.
+| Licensing Admin Dashboard (S-053) | 76% | No spec written — only suggestion-level |
+| Publish Analytics Dashboard (S-054) | 78% | No spec written — only suggestion-level |
+| User Management wiring (H-3) | 82% | PHP+Go+React scaffolded; needs route/sidebar |
+| Cross-stack error chain (PHP→Go→React) | 85% | Envelope v1.0.0 aligned; edge cases possible |
 
 ### Tier 4: End-to-End Workflows (79% success probability)
 
 | Module | Confidence | Assumptions |
 |--------|-----------|-------------|
-| Full Publish → Verify → Rollback cycle | 81% | Multiple services coordinate; network failures at any stage |
-| Cross-stack Error Chain (PHP→Go→React) | 83% | Envelope schema v1.0.0 aligned; runtime edge cases possible |
-| Remote Snapshot Streaming | 79% | Proxy architecture; WP host memory limits; large plugin handling |
-| Git Backup Full Cycle (backup → schedule → restore) | 72% | Greenfield; 6 phases; complex provider-specific behavior |
-| Deployment Verification (all remote sites) | 70% | Blocked on user running PowerShell scripts; version drift risk |
+| Full Publish → Verify → Rollback cycle | 81% | Multiple services coordinate |
+| Deployment verification (all remote sites) | 70% | Blocked on user PowerShell action |
+| Git Backup Full Cycle (backup→schedule→restore) | 75% | Complex provider-specific behavior |
 
 ---
 
@@ -91,46 +79,44 @@ The repository contains **3 projects** with **17+ spec folders**, **57 completed
 
 | Area | Risk Level | Why | Symptoms |
 |------|-----------|-----|----------|
-| **Deployment to remote sites** | 🔴 High | v2.17.0 not deployed; remote sites on v2.11–v2.14; code fixes unverified | EnvelopeBuilder crashes, missing preflight, broken ORM |
-| **Git Backup Strategy (5A–5F)** | 🟡 Medium-High | 6 greenfield phases; multi-provider complexity (GitHub API vs GitLab API vs Drive v3) | Wrong API calls, missing migration steps, incomplete restore |
-| **Cloud Storage Go pipeline** | 🟡 Medium | Backend `cloud_upload` stage not yet wired; WS event structure assumed | Silent skip of cloud upload; no progress feedback |
-| **QUpload Activate → PUT** | 🟡 Medium | All-layer change (PHP, Go, PowerShell, React, specs); easy to miss one layer | 405 Method Not Allowed; mixed state across layers |
-| **WordPress API Variability** | 🟡 Medium | Different WP versions, hosting configs, security plugins | 401/403 errors, unexpected response formats |
-| **Go `interface{}` remaining audit** | 🟢 Low | Most packages complete; remaining scope unclear | Type assertion panics if done incorrectly |
-| **Cross-platform Paths** | 🟢 Low | Windows vs Linux path separators | Files not found, incorrect zip structure |
-| **SQLite Concurrency** | 🟢 Low | Concurrent writes during bulk publish | "database is locked" errors |
+| **Deployment to remote sites** | 🔴 High | User must run PowerShell; version drift risk | EnvelopeBuilder crashes, missing preflight |
+| **Licensing Dashboard (S-053)** | 🟡 Medium-High | No spec — AI would need to invent design | Wrong UX, missing fields, no acceptance criteria |
+| **Publish Analytics (S-054)** | 🟡 Medium-High | No spec — ambiguous scope | Over/under-engineered dashboard |
+| **User Management wiring** | 🟡 Medium | Scaffolded but not routed; unclear priority | Partially integrated, dead routes |
+| **WordPress API variability** | 🟡 Medium | Different WP versions, hosting configs | 401/403, unexpected response formats |
+| **Cross-platform paths** | 🟢 Low | Windows vs Linux separators | Files not found |
+| **SQLite concurrency** | 🟢 Low | Bulk publish concurrent writes | "database is locked" |
 
-### 2.2 Cross-File Inconsistencies Found
+### 2.2 Cross-File Inconsistencies Found (2026-04-01)
 
-| Issue | Location | Severity | Notes |
-|-------|----------|----------|-------|
-| `pending-tasks.md` says "log rotation confirmed already implemented" but issue #28 still lists it as pending | `pending-tasks.md` vs `spec/02-app-issues/28` | Medium | Needs reconciliation — FileLogger has rotation but `settings.json` may still be needed |
-| `active.md` says "0 open suggestions" in workflow but tracker shows 9 open | `.lovable/memory/01-workflow.md` line 38 vs suggestions tracker | Low | Stale workflow doc |
-| `plan.md` pending count says "9 tasks" but `active.md` says different | Root `plan.md` vs `.lovable/plan/active.md` | Low | Minor sync drift |
-| `CONTEXT-FOR-AI.md` may still reference stale paths | Root | Low | Previously fixed but worth re-verifying |
+| Issue | Location | Severity | Fix |
+|-------|----------|----------|-----|
+| `.lovable/README.md` says "0 open suggestions, 18 completed" | `.lovable/README.md` line 84-89 | Medium | Update to 9 open, 57 completed |
+| `pending-tasks.md` lists items already completed in `plan.md` (Phase F, G done) | `pending-tasks.md` vs `plan.md` | Medium | Reconcile — pending-tasks is stale |
+| `plan/active.md` says "H-3 in progress" but plan.md says "H-3 Complete" | `plan/active.md` vs `plan.md` | Low | Sync status |
+| `02-project-context.md` says "companion WP Plugin v1.36.1" — likely outdated | `02-project-context.md` line 29 | Low | Verify current version |
+| `01-workflow.md` spec folder list uses old numbering (08→17) | `01-workflow.md` lines 57-68 | Low | Update to match new `spec/` structure |
 
 ### 2.3 Ambiguity Areas
 
 | Area | What's Ambiguous | Impact |
 |------|------------------|--------|
-| Git Backup restore workflow | Clone-based restore vs API download — when to use which? | Phase 5D implementation choice |
-| User Management | Spec exists (4 files) but not in any active plan | Unknown priority |
-| Licensing Dashboard | No spec exists (only S-053 suggestion) | Cannot implement without design decisions |
-| Email logs as attachment (issue #30) | Spec exists but no implementation plan or priority | Unknown scope |
-| Two-step remote log clearing (issue #29) | Spec exists but priority unclear | Deferred? |
+| Licensing Dashboard | No spec, no wireframe, no acceptance criteria | Cannot implement safely |
+| Publish Analytics | No spec, scope undefined | Risk of rework |
+| User Management priority | Scaffolded but not in any active phase | Unknown when to finish |
 
 ---
 
 ## 3. Corrective Actions (Prioritized)
 
-| Priority | Fix | Where | Expected Reliability Gain |
-|----------|-----|-------|--------------------------|
-| 1 | **Deploy v2.17.0 to all remote sites** | User action (PowerShell) | +5% — unblocks 3 pending verifications |
-| 2 | **Reconcile log rotation status** — clarify if issue #28 is done or needs `settings.json` | `pending-tasks.md` + issue #28 | +2% — removes contradictory status |
-| 3 | **Update `01-workflow.md` suggestion count** from "0 open, 18 completed" to "9 open, 57 completed" | `.lovable/memory/01-workflow.md` | +1% — accurate handoff info |
-| 4 | **Write spec for licensing dashboard** before attempting S-053 | New spec file | +3% — prevents wasted implementation cycles |
-| 5 | **Scope remaining `interface{}` audit** — list actual remaining files/counts | `.lovable/plan.md` | +1% — clearer task definition |
-| 6 | **Prioritize User Management spec** — is it active or deferred? | `spec/16-user-management/` | +1% — removes ambiguity |
+| # | Fix | Where | Expected Gain |
+|---|-----|-------|--------------|
+| 1 | **Deploy v2.30.0+ to all remote sites** | User action (PowerShell) | +5% — unblocks all deployment verifications |
+| 2 | **Write spec for Licensing Dashboard** before S-053 | New spec file under `spec/` | +3% — prevents wasted cycles |
+| 3 | **Write spec for Publish Analytics** before S-054 | New spec file under `spec/` | +3% — defines scope |
+| 4 | **Reconcile stale memory files** — pending-tasks.md, README.md counts | Multiple `.lovable/` files | +2% — accurate handoff |
+| 5 | **Finish User Management wiring** or explicitly defer | `plan/active.md` | +1% — removes ambiguity |
+| 6 | **Update `02-project-context.md`** version numbers | `.lovable/memory/02-project-context.md` | +1% — accurate state |
 
 ---
 
@@ -138,59 +124,53 @@ The repository contains **3 projects** with **17+ spec folders**, **57 completed
 
 ### ✅ READY FOR IMPLEMENTATION — with caveats
 
-The specification set is **production-quality** for all completed features and most pending work.
+**Ready to implement now (well-specified, 9 open suggestions):**
 
-**Ready to implement now (well-specified):**
-- QUpload Activate → PUT (issue #26 — all layers documented)
-- QUpload UI Uplift (issue #27 — reference design exists)
-- Cloud Storage Go pipeline integration (spec + React already built)
-- Git Backup Phases 5A–5B (2 detailed spec files exist)
+| ID | Task | Spec Quality |
+|----|------|-------------|
+| S-046 | Google Drive rotation (Phase 5F) | Good — provider API documented |
+| S-047 | Backup History Visualization | Good — dashboard exists |
+| S-048 | Chunk reassembly validation | Good — clear Go backend scope |
+| S-049 | QUpload settings.json | Good — simple config file |
+| S-050 | /logs/rotation-status endpoint | Good — GET endpoint |
+| S-051 | Verbose -check mode | Good — extends existing script |
+| S-052 | Auto-invalidate cached ZIP | Good — hash-based, scoped |
 
 **Not ready (needs spec work first):**
-- Licensing Dashboard (S-053) — no spec
-- Publish Analytics (S-054) — no spec
-- User Management — spec exists but not prioritized
+- S-053: Licensing Dashboard — no spec
+- S-054: Publish Analytics — no spec
 
 **Blocked (needs user action):**
-- ORM PDO Fix — requires deployment via PowerShell
-- EnvelopeBuilder verification — requires deployment
-- Preflight check verification — requires deployment
+- Phase A: Deployment to remote sites
+- I-4: Redeploy for plugin_slug fix (v2.30.0)
 
 **Risk Mitigation for New AI:**
-- Always test WordPress API calls against a staging site first
-- Respect the PHP bootstrapping order documented in memory
-- Use the `apperror.Wrap()` pattern — never `fmt.Errorf`
-- Follow the envelope schema for all API responses
-- Follow post-fix issue writeup workflow for every bug fix
-- Use `DateHelper` for all date formatting — never raw `date()`/`gmdate()`
-- Use `ResponseKeyType` for all structured array keys — never raw strings
-- Read specs in order documented in `spec/readme.md`
+1. Always test WordPress API calls against staging first
+2. Use `apperror.Wrap()` — never `fmt.Errorf`
+3. Follow envelope schema for all API responses
+4. Follow post-fix issue writeup workflow for every bug fix
+5. Use `DateHelper` — never raw `date()`/`gmdate()`
+6. Use `ResponseKeyType` — never raw string keys
+7. PHP: `catch(Throwable)` — never `catch(Exception)`
+8. PHP: namespace before ABSPATH guard — never reversed
+9. Read specs in order documented in `spec/readme.md`
+10. Don't modify `.release/` folder
 
 ---
 
-## 5. Projects in Repository
-
-| Project | Location | Status | Purpose | Spec Coverage |
-|---------|----------|--------|---------|---------------|
-| WP Plugin Publish | `backend/`, `src/`, `spec/` | 🔄 Active | Local WordPress plugin deployment tool | 17+ spec folders |
-| Plugins Onboard | `plugins-onboard/` | ✅ Complete (v1.0.5) | WordPress plugin for remote plugin management | PRD.md |
-| Spec Builder v3 | (Root context) | 📝 Dormant | PRD management tool | CONTEXT-FOR-AI.md only |
-
----
-
-## 6. AI Handoff Checklist
+## 5. AI Handoff Checklist
 
 | Step | Document | Status |
 |------|----------|--------|
-| 1 | `.lovable/memory/02-project-context.md` | ✅ Current |
-| 2 | `.lovable/memory/01-workflow.md` | ⚠️ Stale suggestion count — needs update |
-| 3 | `plan.md` (repo root) | ✅ Updated with roadmap |
+| 1 | `.lovable/memory/02-project-context.md` | ⚠️ Version numbers may be stale |
+| 2 | `.lovable/memory/01-workflow.md` | ⚠️ Spec folder numbering outdated |
+| 3 | `plan.md` (repo root) | ✅ Updated with full roadmap |
 | 4 | `01-suggestions-tracker.md` | ✅ 9 open, 57 completed |
-| 5 | `spec/readme.md` | ✅ Spec index |
-| 6 | This risk report | ✅ Updated 2026-03-17 |
-| 7 | `pending-tasks.md` | ✅ Current |
+| 5 | `spec/readme.md` | ✅ Current |
+| 6 | This risk report | ✅ Updated 2026-04-01 |
+| 7 | `pending-tasks.md` | ⚠️ Stale — needs reconciliation with plan.md |
 | 8 | Ask user what to implement next | ⏳ **Do this** |
 
 ---
 
-*Report updated 2026-03-17. Score: 92/100. 6 corrective actions identified. 3 items blocked on deployment.*
+*Report updated 2026-04-01. Score: 93/100. 6 corrective actions identified. 2 items blocked on deployment.*
