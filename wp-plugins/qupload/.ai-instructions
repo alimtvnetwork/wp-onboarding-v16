@@ -1,0 +1,64 @@
+# AI Instructions — QUpload Plugin
+
+> **Plugin:** QUpload (Quick Upload)
+> **Namespace:** `QUpload\`
+> **PHP Requirement:** 8.1+
+> **REST API:** `qupload-api/v1`
+> **Updated:** 2026-04-01
+
+---
+
+## Critical: Syntax Validator Compatibility
+
+QUpload validates all uploaded PHP files using `token_get_all($content, TOKEN_PARSE)` before activation. This is the source plugin that enforces the compatibility constraint.
+
+### BLOCKED Patterns (Never Use)
+
+| Pattern | Replacement |
+|---------|-------------|
+| `is_array($var)` | `gettype($var) === PhpNativeType::PhpArray->value` |
+| `is_string($var)` | `gettype($var) === PhpNativeType::PhpString->value` |
+| `is_int($var)` | `gettype($var) === PhpNativeType::PhpInteger->value` |
+| `is_float($var)` | `gettype($var) === PhpNativeType::PhpDouble->value` |
+| `is_bool($var)` | `gettype($var) === PhpNativeType::PhpBoolean->value` |
+| `is_object($var)` | `gettype($var) === PhpNativeType::PhpObject->value` |
+| `is_null($var)` | `gettype($var) === PhpNativeType::PhpNull->value` |
+| `array()` constructor | Use `[]` short syntax |
+| Magic type strings | Use `PhpNativeType` enum values |
+
+### SAFE Patterns
+
+`in_array()`, `array_merge()`, `array_filter()`, `array_map()`, `array_key_exists()` — all safe (tokenize as T_STRING).
+
+### PhpNativeType Enum
+
+Located at `includes/Enums/PhpNativeType.php`:
+
+```php
+use QUpload\Enums\PhpNativeType;
+
+gettype($var) === PhpNativeType::PhpArray->value
+```
+
+---
+
+## PHP Coding Rules
+
+- Catch `Throwable`, never `Exception`
+- Always log stack traces
+- Use `ErrorLogHelper::log($e, 'Context:')` or `::logAndThrow($e, ...)`
+- Positive boolean names only (`$isValid`, `$hasData`)
+- Extract ternary conditions to named booleans
+- Maximum 15 lines per function, 300 lines per file
+- ABSPATH guard after namespace (never before)
+- Namespaced files: `PascalCase.php`
+
+---
+
+## Version Bumping
+
+Any code change bumps at least minor version. Do NOT modify `.release/` folder.
+
+---
+
+*These instructions are enforced for all AI editors working on this plugin.*
