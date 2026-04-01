@@ -171,6 +171,7 @@ trait DatabaseConnectionTrait {
         $this->migrateV19CloudStorageBackupColumns($current);
         $this->migrateV20CloudStorageBackupHistory($current);
         $this->migrateV21CloudStorageBackupHistoryFolderColumns($current);
+        $this->migrateV22SnapshotExportsContentHash($current);
     }
 
     /**

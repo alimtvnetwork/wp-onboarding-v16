@@ -29,7 +29,7 @@
 | 4 | Backup History Visualization UI | S-047 | Open |
 | 5 | Chunk reassembly manifest validation | S-048 | Done |
 | 6 | Verbose -check mode (HEAD probing) | S-051 | Open |
-| 7 | Auto-invalidate cached ZIP on source change | S-052 | Open |
+| 7 | Auto-invalidate cached ZIP on source change | S-052 | Done |
 
 ---
 
