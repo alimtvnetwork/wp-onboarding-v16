@@ -160,7 +160,7 @@ trait StatusPayloadTrait {
             'SiteUrl'     => get_site_url(),
             'Wp'          => get_bloginfo('version'),
             'Php'         => PHP_VERSION,
-            'IsActive'    => in_array(plugin_basename(__FILE__), get_option(OptionNameType::ActivePlugins->value, array()), true),
+            'IsActive'    => in_array(plugin_basename(__FILE__), get_option(OptionNameType::ActivePlugins->value, []), true),
             'DbAvailable' => $dbAvailable,
             'ServerTime'  => DateHelper::nowIso(),
             'Timezone'    => wp_timezone_string(),

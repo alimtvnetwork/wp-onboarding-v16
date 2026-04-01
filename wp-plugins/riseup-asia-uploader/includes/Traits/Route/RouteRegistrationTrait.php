@@ -93,132 +93,132 @@ trait RouteRegistrationTrait
 
         // GET + POST /cloud-storage/accounts
         $safeRegister(EndpointType::CloudStorageAccounts->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListCloudStorageAccounts'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_accounts', $csPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleCreateCloudStorageAccount'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_accounts_create', $csPerm),
-            ),
+            ],
         ]);
 
         // GET + PUT + DELETE /cloud-storage/accounts/{id}
         $safeRegister(EndpointType::CloudStorageAccountId->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleGetCloudStorageAccount'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_get', $csPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Put->value,
                 'callback'            => array($this, 'handleUpdateCloudStorageAccount'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_update', $csPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Delete->value,
                 'callback'            => array($this, 'handleDeleteCloudStorageAccount'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_delete', $csPerm),
-            ),
+            ],
         ]);
 
         // POST /cloud-storage/accounts/test
         $safeRegister(EndpointType::CloudStorageAccountTest->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleTestCloudStorageAccount'),
+            'callback'            => [$this, 'handleTestCloudStorageAccount'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_account_test', $csPerm),
         ]);
 
         // GET /cloud-storage/settings
         $safeRegister(EndpointType::CloudStorageSettings->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleGetCloudStorageSettings'),
+            'callback'            => [$this, 'handleGetCloudStorageSettings'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_settings', $csPerm),
         ]);
 
         // PUT /cloud-storage/settings/{provider}
         $safeRegister(EndpointType::CloudStorageSettingsProvider->route(), [
             'methods'             => HttpMethodType::Put->value,
-            'callback'            => array($this, 'handleUpdateCloudStorageSettings'),
+            'callback'            => [$this, 'handleUpdateCloudStorageSettings'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_settings_update', $csPerm),
         ]);
 
         // POST /cloud-storage/upload
         $safeRegister(EndpointType::CloudStorageUpload->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleCloudStorageUpload'),
+            'callback'            => [$this, 'handleCloudStorageUpload'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_upload', $csPerm),
         ]);
 
         // GET /cloud-storage/files
         $safeRegister(EndpointType::CloudStorageFiles->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleListCloudStorageFiles'),
+            'callback'            => [$this, 'handleListCloudStorageFiles'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_files', $csPerm),
         ]);
 
         // DELETE /cloud-storage/delete
         $safeRegister(EndpointType::CloudStorageDelete->route(), [
             'methods'             => HttpMethodType::Delete->value,
-            'callback'            => array($this, 'handleDeleteCloudStorageFile'),
+            'callback'            => [$this, 'handleDeleteCloudStorageFile'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_delete', $csPerm),
         ]);
 
         // POST /cloud-storage/oauth/initiate
         $safeRegister(EndpointType::CloudStorageOAuthInitiate->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleCloudStorageOAuthInitiate'),
+            'callback'            => [$this, 'handleCloudStorageOAuthInitiate'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_oauth_initiate', $csPerm),
         ]);
 
         // GET /cloud-storage/oauth/callback
         $safeRegister(EndpointType::CloudStorageOAuthCallback->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleCloudStorageOAuthCallback'),
+            'callback'            => [$this, 'handleCloudStorageOAuthCallback'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_oauth_callback', $csPerm),
         ]);
 
         // GET /cloud-storage/repos
         $safeRegister(EndpointType::CloudStorageRepos->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleListCloudStorageRepos'),
+            'callback'            => [$this, 'handleListCloudStorageRepos'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_repos', $csPerm),
         ]);
 
         // GET /cloud-storage/branches
         $safeRegister(EndpointType::CloudStorageBranches->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleListCloudStorageBranches'),
+            'callback'            => [$this, 'handleListCloudStorageBranches'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_branches', $csPerm),
         ]);
 
         // GET + DELETE /cloud-storage/backup-history
         $safeRegister(EndpointType::CloudStorageBackupHistory->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleListBackupHistory'),
+            'callback'            => [$this, 'handleListBackupHistory'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history', $csPerm),
         ]);
 
         // GET + DELETE /cloud-storage/backup-history/{id}
         $safeRegister(EndpointType::CloudStorageBackupHistoryId->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleGetBackupHistoryRecord'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history_get', $csPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Delete->value,
                 'callback'            => array($this, 'handleDeleteBackupHistoryRecord'),
                 'permission_callback' => $this->buildPermissionCallback('cloud_storage_backup_history_delete', $csPerm),
-            ),
+            ],
         ]);
 
         // POST /cloud-storage/restore
         $safeRegister(EndpointType::CloudStorageRestore->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleCloudStorageRestore'),
+            'callback'            => [$this, 'handleCloudStorageRestore'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_restore', $csPerm),
         ]);
     }
@@ -231,20 +231,20 @@ trait RouteRegistrationTrait
     private function registerUtilityRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::Status->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleStatus'),
-            'permission_callback' => $this->buildPermissionCallback('status', array($this, 'checkStatusPermission')),
+            'callback'            => [$this, 'handleStatus'],
+            'permission_callback' => $this->buildPermissionCallback('status', [$this, 'checkStatusPermission']),
         ]);
 
         $safeRegister(EndpointType::Openapi->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleOpenapi'),
-            'permission_callback' => $this->buildPermissionCallback('openapi', array($this, 'checkStatusPermission')),
+            'callback'            => [$this, 'handleOpenapi'],
+            'permission_callback' => $this->buildPermissionCallback('openapi', [$this, 'checkStatusPermission']),
         ]);
 
         $safeRegister(EndpointType::OpcacheReset->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleOpcacheReset'),
-            'permission_callback' => $this->buildPermissionCallback('opcache_reset', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleOpcacheReset'],
+            'permission_callback' => $this->buildPermissionCallback('opcache_reset', [$this, 'checkPluginPermission']),
         ]);
     }
 
@@ -255,29 +255,29 @@ trait RouteRegistrationTrait
      */
     private function registerPostRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::Posts->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListPosts'),
                 'permission_callback' => $this->buildPermissionCallback('posts', array($this, 'checkPostPermission')),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleCreatePost'),
                 'permission_callback' => $this->buildPermissionCallback('posts', array($this, 'checkPostPermission')),
-            ),
+            ],
         ]);
 
         $safeRegister(EndpointType::Categories->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListCategories'),
                 'permission_callback' => $this->buildPermissionCallback('categories', array($this, 'checkPostPermission')),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleCreateCategory'),
                 'permission_callback' => $this->buildPermissionCallback('categories', array($this, 'checkPostPermission')),
-            ),
+            ],
         ]);
     }
 
@@ -291,25 +291,25 @@ trait RouteRegistrationTrait
 
         $safeRegister(EndpointType::Logs->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleQueryLogs'),
+            'callback'            => [$this, 'handleQueryLogs'],
             'permission_callback' => $this->buildPermissionCallback('logs', $logPerm),
         ]);
 
         $safeRegister(EndpointType::LogsStats->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleLogsStats'),
+            'callback'            => [$this, 'handleLogsStats'],
             'permission_callback' => $this->buildPermissionCallback('logs', $logPerm),
         ]);
 
         $safeRegister(EndpointType::ErrorLogs->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleErrorLogs'),
+            'callback'            => [$this, 'handleErrorLogs'],
             'permission_callback' => $this->buildPermissionCallback('error_logs', $logPerm),
         ]);
 
         $safeRegister(EndpointType::ErrorSessions->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleErrorSessions'),
+            'callback'            => [$this, 'handleErrorSessions'],
             'permission_callback' => $this->buildPermissionCallback('error_sessions', $logPerm),
         ]);
     }
@@ -324,56 +324,56 @@ trait RouteRegistrationTrait
 
         $safeRegister(EndpointType::LogsStatus->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleLogsStatus'),
+            'callback'            => [$this, 'handleLogsStatus'],
             'permission_callback' => $this->buildPermissionCallback('logs_status', $logPerm),
         ]);
 
         $safeRegister(EndpointType::LogsRotationStatus->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleLogsRotationStatus'),
+            'callback'            => [$this, 'handleLogsRotationStatus'],
             'permission_callback' => $this->buildPermissionCallback('logs_rotation_status', $logPerm),
         ]);
 
         $safeRegister(EndpointType::LogsClear->route(), [
             'methods'             => HttpMethodType::Delete->value,
-            'callback'            => array($this, 'handleLogsClearRequest'),
-            'permission_callback' => $this->buildPermissionCallback('logs_clear', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsClearRequest'],
+            'permission_callback' => $this->buildPermissionCallback('logs_clear', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::LogsClearAll->route(), [
             'methods'             => HttpMethodType::Delete->value,
-            'callback'            => array($this, 'handleLogsClearAll'),
-            'permission_callback' => $this->buildPermissionCallback('logs_clear_all', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsClearAll'],
+            'permission_callback' => $this->buildPermissionCallback('logs_clear_all', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::LogsConfirm->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleLogsClearConfirm'),
-            'permission_callback' => $this->buildPermissionCallback('logs_confirm', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsClearConfirm'],
+            'permission_callback' => $this->buildPermissionCallback('logs_confirm', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::LogsEmail->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleLogsEmail'),
-            'permission_callback' => $this->buildPermissionCallback('logs_email', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsEmail'],
+            'permission_callback' => $this->buildPermissionCallback('logs_email', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::LogsRetrieve->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleLogsRetrieve'),
-            'permission_callback' => $this->buildPermissionCallback('logs_retrieve', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsRetrieve'],
+            'permission_callback' => $this->buildPermissionCallback('logs_retrieve', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::LogsDedupRegistry->route(), [
             'methods'             => HttpMethodType::Get->value . ', ' . HttpMethodType::Delete->value,
-            'callback'            => array($this, 'handleLogsDedupRegistry'),
-            'permission_callback' => $this->buildPermissionCallback('logs_dedup_registry', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleLogsDedupRegistry'],
+            'permission_callback' => $this->buildPermissionCallback('logs_dedup_registry', [$this, 'checkPluginPermission']),
         ]);
 
         $safeRegister(EndpointType::MachinesApprove->route(), [
             'methods'             => HttpMethodType::Put->value,
-            'callback'            => array($this, 'handleApproveMachine'),
-            'permission_callback' => $this->buildPermissionCallback('machines_approve', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleApproveMachine'],
+            'permission_callback' => $this->buildPermissionCallback('machines_approve', [$this, 'checkPluginPermission']),
         ]);
     }
 
@@ -387,74 +387,74 @@ trait RouteRegistrationTrait
 
         // GET + POST /users
         $safeRegister(EndpointType::Users->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListUsers'),
                 'permission_callback' => $this->buildPermissionCallback('users_list', $userPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleCreateUser'),
                 'permission_callback' => $this->buildPermissionCallback('users_create', $userPerm),
-            ),
+            ],
         ]);
 
         // GET + PUT + DELETE /users/{id}
         $safeRegister(EndpointType::UserId->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleGetUser'),
                 'permission_callback' => $this->buildPermissionCallback('users_get', $userPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Put->value,
                 'callback'            => array($this, 'handleUpdateUser'),
                 'permission_callback' => $this->buildPermissionCallback('users_update', $userPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Delete->value,
                 'callback'            => array($this, 'handleDeleteUser'),
                 'permission_callback' => $this->buildPermissionCallback('users_delete', $userPerm),
-            ),
+            ],
         ]);
 
         // App passwords
         $safeRegister(EndpointType::UserAppPassword->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleCreateAppPass'),
                 'permission_callback' => $this->buildPermissionCallback('users_app_password', $userPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Delete->value,
                 'callback'            => array($this, 'handleRevokeAppPass'),
                 'permission_callback' => $this->buildPermissionCallback('users_app_password', $userPerm),
-            ),
+            ],
         ]);
 
         // Export/Import CSV
         $safeRegister(EndpointType::UsersExport->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleExportUsers'),
+            'callback'            => [$this, 'handleExportUsers'],
             'permission_callback' => $this->buildPermissionCallback('users_export', $userPerm),
         ]);
 
         $safeRegister(EndpointType::UsersImport->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleImportUsers'),
+            'callback'            => [$this, 'handleImportUsers'],
             'permission_callback' => $this->buildPermissionCallback('users_import', $userPerm),
         ]);
 
         // Export/Import SQLite
         $safeRegister(EndpointType::UsersExportSqlite->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleExportSqlite'),
+            'callback'            => [$this, 'handleExportSqlite'],
             'permission_callback' => $this->buildPermissionCallback('users_export_sqlite', $userPerm),
         ]);
 
         $safeRegister(EndpointType::UsersImportSqlite->route(), [
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handleImportSqlite'),
+            'callback'            => [$this, 'handleImportSqlite'],
             'permission_callback' => $this->buildPermissionCallback('users_import_sqlite', $userPerm),
         ]);
     }
@@ -469,22 +469,22 @@ trait RouteRegistrationTrait
 
         // GET + PUT /site-settings
         $safeRegister(EndpointType::SiteSettings->route(), [
-            array(
+            [
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleGetSiteSettings'),
                 'permission_callback' => $this->buildPermissionCallback('site_settings', $settingsPerm),
-            ),
-            array(
+            ],
+            [
                 'methods'             => HttpMethodType::Put->value,
                 'callback'            => array($this, 'handleUpdateSiteSettings'),
                 'permission_callback' => $this->buildPermissionCallback('site_settings_update', $settingsPerm),
-            ),
+            ],
         ]);
 
         // GET /site-health-summary
         $safeRegister(EndpointType::SiteHealthSummary->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleSiteHealthSummary'),
+            'callback'            => [$this, 'handleSiteHealthSummary'],
             'permission_callback' => $this->buildPermissionCallback('site_health_summary', $settingsPerm),
         ]);
     }
@@ -497,8 +497,8 @@ trait RouteRegistrationTrait
     private function registerDebugRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::DebugRoutes->route(), [
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handleDebugRoutes'),
-            'permission_callback' => $this->buildPermissionCallback('debug_routes', array($this, 'checkPluginPermission')),
+            'callback'            => [$this, 'handleDebugRoutes'],
+            'permission_callback' => $this->buildPermissionCallback('debug_routes', [$this, 'checkPluginPermission']),
         ]);
     }
 
@@ -509,14 +509,14 @@ trait RouteRegistrationTrait
      */
     private function registerCatchAllRoute(callable $safeRegister): void {
         $safeRegister('/(?P<invalid_path>.+)', [
-            'methods'             => array(
+            'methods'             => [
                 HttpMethodType::Get->value,
                 HttpMethodType::Post->value,
                 HttpMethodType::Put->value,
                 HttpMethodType::Patch->value,
                 HttpMethodType::Delete->value,
-            ),
-            'callback'            => array($this, 'handleInvalidRoute'),
+            ],
+            'callback'            => [$this, 'handleInvalidRoute'],
             'permission_callback' => '__return_true',
         ]);
     }

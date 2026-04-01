@@ -37,7 +37,7 @@ trait DetectorProviderTrait {
             ResponseKeyType::Id->value                 => SnapshotProviderType::WpReset->value,
             ResponseKeyType::Name->value               => 'WP Reset',
             ResponseKeyType::Available->value          => false,
-            ResponseKeyType::Capabilities->value       => array(),
+            ResponseKeyType::Capabilities->value       => [],
             ResponseKeyType::Version->value            => null,
             ResponseKeyType::DetectionMethod->value    => null,
         ];
@@ -90,7 +90,7 @@ trait DetectorProviderTrait {
             ResponseKeyType::Id->value                 => SnapshotProviderType::Updraft->value,
             ResponseKeyType::Name->value               => 'UpdraftPlus',
             ResponseKeyType::Available->value          => false,
-            ResponseKeyType::Capabilities->value       => array(),
+            ResponseKeyType::Capabilities->value       => [],
             ResponseKeyType::Version->value            => null,
             ResponseKeyType::DetectionMethod->value    => null,
         ];
@@ -156,7 +156,7 @@ trait DetectorProviderTrait {
             ResponseKeyType::Id->value                 => SnapshotProviderType::Native->value,
             ResponseKeyType::Name->value               => 'Native SQLite',
             ResponseKeyType::Available->value          => $hasSqlite,
-            ResponseKeyType::Capabilities->value       => array(
+            ResponseKeyType::Capabilities->value       => [
                 ResponseKeyType::FullSite->value     => false,
                 ResponseKeyType::DatabaseOnly->value => true,
                 ResponseKeyType::Selective->value    => true,
@@ -164,7 +164,7 @@ trait DetectorProviderTrait {
                 ResponseKeyType::Restore->value      => true,
                 ResponseKeyType::Export->value       => true,
                 ResponseKeyType::Import->value       => true,
-            ),
+            ],
             ResponseKeyType::Version->value            => PluginConfigType::Version->value,
             ResponseKeyType::DetectionMethod->value    => $hasSqlite ? 'extension_loaded' : 'extension_missing',
             ResponseKeyType::SqliteVersion->value      => $hasSqlite ? $this->getSqliteVersion() : null,
@@ -203,11 +203,11 @@ trait DetectorProviderTrait {
             'total'     => count($providers),
             'available' => count($available),
             ResponseKeyType::Providers->value => array_map(function($p) {
-                return array(
+                return [
                     ResponseKeyType::Id->value        => $p[ResponseKeyType::Id->value],
                     ResponseKeyType::Available->value => $p[ResponseKeyType::Available->value],
                     ResponseKeyType::Version->value   => $p[ResponseKeyType::Version->value],
-                );
+                ];
             }, $providers),
         ]);
     }
