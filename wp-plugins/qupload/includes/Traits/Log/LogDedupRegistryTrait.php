@@ -18,6 +18,7 @@ use WP_REST_Response;
 use QUpload\Enums\HttpMethodType;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\ResponseKeyType;
+use QUpload\Enums\PhpNativeType;
 
 trait LogDedupRegistryTrait
 {
@@ -65,10 +66,10 @@ trait LogDedupRegistryTrait
 
         $contents = @file_get_contents($registryPath);
         $data = ($contents !== false) ? json_decode($contents, true) : null;
-        $isValidData = is_array($data);
+        $isValidData = gettype($data) === PhpNativeType::PhpArray->value;
 
         $version = $isValidData ? ($data['version'] ?? null) : null;
-        $hashes = ($isValidData && isset($data['hashes']) && is_array($data['hashes'])) ? $data['hashes'] : [];
+        $hashes = ($isValidData && isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value) ? $data['hashes'] : [];
         $entryCount = count($hashes);
         $fileSize = @filesize($registryPath);
 
@@ -119,7 +120,7 @@ trait LogDedupRegistryTrait
         if ($isFileExists) {
             $contents = @file_get_contents($registryPath);
             $data = ($contents !== false) ? json_decode($contents, true) : null;
-            $hasHashes = is_array($data) && isset($data['hashes']) && is_array($data['hashes']);
+            $hasHashes = gettype($data) === PhpNativeType::PhpArray->value && isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value;
 
             if ($hasHashes) {
                 $previousCount = count($data['hashes']);

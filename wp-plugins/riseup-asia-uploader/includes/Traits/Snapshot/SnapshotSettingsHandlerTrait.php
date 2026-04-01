@@ -29,10 +29,10 @@ trait SnapshotSettingsHandlerTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Settings->value => $manager->getSettings(),
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'get_snapshot_settings');
@@ -42,16 +42,16 @@ trait SnapshotSettingsHandlerTrait {
     public function handleUpdateSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $this->fileLogger->info('Updating snapshot settings', array('keys' => array_keys($body)));
+            $this->fileLogger->info('Updating snapshot settings', ['keys' => array_keys($body)]);
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
-            $this->logger->logPluginAction(ActionType::SnapshotSettingsUpdate->value, LogCategoryType::Snapshot->value, StatusType::Success->value, array('keys' => array_keys($body)));
+            $this->logger->logPluginAction(ActionType::SnapshotSettingsUpdate->value, LogCategoryType::Snapshot->value, StatusType::Success->value, ['keys' => array_keys($body)]);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Settings->value => $updated,
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'update_snapshot_settings');
@@ -63,10 +63,10 @@ trait SnapshotSettingsHandlerTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Providers->value => $manager->getProviders(),
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'list_snapshot_providers');
@@ -78,10 +78,10 @@ trait SnapshotSettingsHandlerTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Tables->value => $manager->getAvailableTables(),
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'list_snapshot_tables');
@@ -96,14 +96,14 @@ trait SnapshotSettingsHandlerTrait {
             $analysis = $analyzer->analyze($scope);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Tables->value => $analysis[ResponseKeyType::Tables->value],
                     ResponseKeyType::Dependencies->value => $analysis[ResponseKeyType::Dependencies->value],
                     ResponseKeyType::SeedOrder->value => $analysis[ResponseKeyType::SeedOrder->value],
                     ResponseKeyType::TableCount->value => $analysis[ResponseKeyType::TableCount->value],
                     ResponseKeyType::DepCount->value => $analysis[ResponseKeyType::DepCount->value],
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'analyze_dependencies');

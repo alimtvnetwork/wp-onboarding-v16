@@ -40,9 +40,9 @@ trait CloudStorageScheduleHelpersTrait {
     {
         $orchestrator = SnapshotOrchestrator::getInstance();
 
-        $result = $orchestrator->executeFullBackup(array(
+        $result = $orchestrator->executeFullBackup([
             ResponseKeyType::Async->value => false,
-        ));
+        ]);
 
         $isSuccess = !empty($result[ResponseKeyType::Success->value]);
 
@@ -72,9 +72,9 @@ trait CloudStorageScheduleHelpersTrait {
     {
         $orchestrator = SnapshotOrchestrator::getInstance();
 
-        $result = $orchestrator->executeIncrementalBackup(array(
+        $result = $orchestrator->executeIncrementalBackup([
             ResponseKeyType::Async->value => false,
-        ));
+        ]);
 
         $isSuccess = !empty($result[ResponseKeyType::Success->value]);
 
@@ -91,11 +91,11 @@ trait CloudStorageScheduleHelpersTrait {
             throw new RuntimeException('Incremental backup ZIP not found after creation');
         }
 
-        return array(
+        return [
             ResponseKeyType::ZipPath->value        => $zipPath,
             ResponseKeyType::TablesChanged->value   => $result[ResponseKeyType::TablesChanged->value] ?? '',
             ResponseKeyType::TotalNewRows->value    => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
-        );
+        ];
     }
 
     /**
@@ -126,13 +126,13 @@ trait CloudStorageScheduleHelpersTrait {
             );
         }
 
-        return array(
+        return [
             'tempDir'      => $tempDir,
             'chunks'       => $result['chunks'],
             'manifestPath' => $result['manifestPath'],
             'chunkCount'   => $result['chunkCount'],
             'totalSize'    => $result['totalSize'],
-        );
+        ];
     }
 
     /** Upload split chunks + manifest to the remote folder path. */
@@ -172,10 +172,10 @@ trait CloudStorageScheduleHelpersTrait {
             );
         }
 
-        $this->fileLogger->info('[CLOUD-UPLOAD] All chunks uploaded', array(
+        $this->fileLogger->info('[CLOUD-UPLOAD] All chunks uploaded', [
             'folder' => $folderPath,
             'chunks' => count($splitResult['chunks']),
-        ));
+        ]);
     }
 
     /** Clean up source ZIP and split temp directory after backup (success or failure). */
@@ -210,13 +210,13 @@ trait CloudStorageScheduleHelpersTrait {
                 $provider->isGitHub()      => $this->githubListDirectories($account, $token, $path),
                 $provider->isGitLab()      => $this->gitlabListDirectories($account, $token, $path),
                 $provider->isGoogleDrive() => $this->googleDriveListDirectories($account, $token, $path),
-                default                    => array(),
+                default                    => [],
             };
 
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, '[CLOUD-BACKUP] Failed to list remote directories at ' . $path);
 
-            return array();
+            return [];
         }
     }
 
@@ -272,11 +272,11 @@ trait CloudStorageScheduleHelpersTrait {
 
         $fullBackups = $this->db->queryAll(
             "SELECT * FROM {$table} WHERE AccountId = :accountId AND BackupType = :type AND Status = :status ORDER BY CreatedAt DESC",
-            array(
+            [
                 'accountId' => $accountId,
                 'type'      => CloudStorageBackupType::Full->value,
                 'status'    => CloudStorageBackupStatusType::Success->value,
-            ),
+            ],
         );
 
         $totalFullBackups = count($fullBackups);
@@ -327,24 +327,24 @@ trait CloudStorageScheduleHelpersTrait {
         // Delete all history records linked to this full backup
         $this->db->execute(
             "DELETE FROM {$table} WHERE BaseFullBackupId = :baseId",
-            array('baseId' => $expiredId),
+            ['baseId' => $expiredId],
         );
 
         // Delete the full backup record itself
         $this->db->execute(
             "DELETE FROM {$table} WHERE Id = :id",
-            array('id' => $expiredId),
+            ['id' => $expiredId],
         );
 
         $parsed = $resolver->parseFullFolderName($folderName);
         $seq = $parsed['sequence'] ?? $expiredId;
         $cleanupMessage = $resolver->buildCleanupCommitMessage($seq);
 
-        $this->fileLogger->info('[CLOUD-ROTATION] Rotated full backup', array(
+        $this->fileLogger->info('[CLOUD-ROTATION] Rotated full backup', [
             'backupId' => $expiredId,
             'folder'   => $folderPath,
             'message'  => $cleanupMessage,
-        ));
+        ]);
     }
 
     // ── Private helpers ─────────────────────────────────────────
@@ -377,7 +377,7 @@ trait CloudStorageScheduleHelpersTrait {
 
         $settings = $this->db->queryOne(
             "SELECT RetentionCount FROM {$table} WHERE Provider = :provider",
-            array('provider' => $provider),
+            ['provider' => $provider],
         );
 
         return (int) ($settings['RetentionCount'] ?? 10);

@@ -50,7 +50,7 @@ trait PathHelperCoreTrait {
     private static function safeLog(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $upper = strtoupper($level);
         $method = strtolower($level);

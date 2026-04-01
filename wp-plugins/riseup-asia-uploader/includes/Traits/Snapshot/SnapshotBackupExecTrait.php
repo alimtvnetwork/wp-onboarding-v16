@@ -53,7 +53,7 @@ trait SnapshotBackupExecTrait {
             }
 
             $incremental = $this->createIncrementalBackup();
-            $result = $incremental->execute($masterDir, array(ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null));
+            $result = $incremental->execute($masterDir, [ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null]);
             $this->logIncrementalComplete($result);
 
             return $this->buildIncrementalResponse($result);
@@ -62,11 +62,11 @@ trait SnapshotBackupExecTrait {
 
     private function logBackupInitiated(string $action, array $body) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array(
+            [
                 ResponseKeyType::Title->value => $body[ResponseKeyType::Title->value] ?? null,
                 ResponseKeyType::Scope->value => $body[ResponseKeyType::Scope->value] ?? null,
                 ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value,
-            ));
+            ]);
     }
 
     private function createFullBackupOrchestrator(): SnapshotOrchestrator {
@@ -76,30 +76,30 @@ trait SnapshotBackupExecTrait {
     }
 
     private function extractFullBackupOptions(array $body): array {
-        return array(
+        return [
             ResponseKeyType::Title->value          => $body[ResponseKeyType::Title->value] ?? null,
             ResponseKeyType::Scope->value          => $body[ResponseKeyType::Scope->value] ?? null,
             ResponseKeyType::IncludePlugins->value  => $body[ResponseKeyType::IncludePlugins->value] ?? null,
             ResponseKeyType::PluginSelection->value => $body[ResponseKeyType::PluginSelection->value] ?? null,
             ResponseKeyType::Compression->value     => $body[ResponseKeyType::Compression->value] ?? null,
-        );
+        ];
     }
 
     private function logBackupComplete(string $action, array $result) {
         $this->logger->logPluginAction($action, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array(
+            [
                 ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
                 ResponseKeyType::Tables->value     => $result[ResponseKeyType::Tables->value] ?? 0,
                 ResponseKeyType::TotalRows->value  => $result[ResponseKeyType::TotalRows->value] ?? 0,
                 ResponseKeyType::Duration->value   => $result[ResponseKeyType::Duration->value] ?? 0,
                 ResponseKeyType::Phase->value      => SnapshotPhaseType::Complete->value,
-            ),
+            ],
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Backup failed'));
     }
 
     private function buildFullBackupResponse(array $result): WP_REST_Response {
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value    => $result[ResponseKeyType::Success->value],
             ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
             ResponseKeyType::Directory->value  => $result[ResponseKeyType::Directory->value] ?? null,
@@ -111,7 +111,7 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::Errors->value     => $result[ResponseKeyType::Errors->value] ?? array(),
             ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value] ?? null,
             ResponseKeyType::Phase->value      => $result[ResponseKeyType::Phase->value] ?? null,
-        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 
     private function resolveIncrementalMasterDir(array $body): string|WP_REST_Response {
@@ -144,18 +144,18 @@ trait SnapshotBackupExecTrait {
     private function logIncrementalComplete(array $result) {
         $this->logger->logPluginAction(ActionType::SnapshotIncremental->value, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array(
+            [
                 ResponseKeyType::SnapshotId->value    => $result[ResponseKeyType::SnapshotId->value] ?? null,
                 ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
                 ResponseKeyType::TotalNewRows->value  => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
                 ResponseKeyType::Duration->value      => $result[ResponseKeyType::Duration->value] ?? 0,
                 ResponseKeyType::Phase->value         => SnapshotPhaseType::Complete->value,
-            ),
+            ],
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Incremental backup failed'));
     }
 
     private function buildIncrementalResponse(array $result): WP_REST_Response {
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value       => $result[ResponseKeyType::Success->value],
             ResponseKeyType::SnapshotId->value    => $result[ResponseKeyType::SnapshotId->value] ?? null,
             ResponseKeyType::Sequence->value      => $result[ResponseKeyType::Sequence->value] ?? null,
@@ -166,6 +166,6 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::Duration->value      => $result[ResponseKeyType::Duration->value] ?? 0,
             ResponseKeyType::Errors->value        => $result[ResponseKeyType::Errors->value] ?? array(),
             ResponseKeyType::Error->value         => $result[ResponseKeyType::Error->value] ?? null,
-        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
     }
 }

@@ -20,14 +20,14 @@ trait LoggerLevelMethodsTrait {
     private function resolveCaller(array $trace): array {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
 
-        return array(
+        return [
             isset($caller['file']) ? $caller['file'] : __FILE__,
             isset($caller['line']) ? $caller['line'] : __LINE__,
-        );
+        ];
     }
 
     /** Log a debug message. */
-    public function debug(string $message, array $context = array()): bool {
+    public function debug(string $message, array $context = []): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         [$file, $line] = $this->resolveCaller($trace);
 
@@ -51,7 +51,7 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log an info message. */
-    public function info(string $message, array $context = array()): bool {
+    public function info(string $message, array $context = []): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         [$file, $line] = $this->resolveCaller($trace);
 
@@ -75,7 +75,7 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log a warning message. */
-    public function warn(string $message, array $context = array()): bool {
+    public function warn(string $message, array $context = []): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
         [$file, $line] = $this->resolveCaller($trace);
 
@@ -107,7 +107,7 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log an error message. */
-    public function error(string $message, array $context = array()): bool {
+    public function error(string $message, array $context = []): bool {
         $depth = $this->stackTraceDepth > 0 ? $this->stackTraceDepth : 0;
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $depth);
         [$file, $line] = $this->resolveCaller($trace);
@@ -153,7 +153,7 @@ trait LoggerLevelMethodsTrait {
         string $message,
         string $file,
         int $line,
-        array $context = array(),
+        array $context = [],
     ): bool {
         if ($this->isDuplicate($level, $message, $file, $line)) {
             return true;
@@ -186,7 +186,7 @@ trait LoggerLevelMethodsTrait {
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
-        $ctx = $this->prepareContext(array('trace' => $e->getTraceAsString()));
+        $ctx = $this->prepareContext(['trace' => $e->getTraceAsString()]);
 
         $entry = $this->formatEntry(
             LogLevelType::Error->value,
@@ -201,7 +201,7 @@ trait LoggerLevelMethodsTrait {
             $message,
             $e->getFile(),
             $e->getLine(),
-            array(),
+            [],
             $e->getTraceAsString(),
         );
 
@@ -235,7 +235,7 @@ trait LoggerLevelMethodsTrait {
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         [$file, $line] = $this->resolveCaller($trace);
-        $ctx = $this->prepareContext(array('trace' => $e->getTraceAsString()));
+        $ctx = $this->prepareContext(['trace' => $e->getTraceAsString()]);
 
         $entry = $this->formatEntry(
             LogLevelType::Debug->value,

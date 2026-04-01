@@ -52,11 +52,11 @@ trait ManagerRestoreValidationTrait {
             return null;
         }
 
-        $this->log(LogLevelType::Error->value, 'Incremental restore blocked: parent full snapshot missing', array(
+        $this->log(LogLevelType::Error->value, 'Incremental restore blocked: parent full snapshot missing', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             'masterDir'                        => $masterDirname,
             'expectedPath'                     => $masterDir,
-        ));
+        ]);
 
         return ResultHelper::errorWithCode(
             'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
@@ -81,12 +81,12 @@ trait ManagerRestoreValidationTrait {
         $isBackupCreated = !empty($backupResult[ResponseKeyType::Success->value]);
 
         if ($isBackupCreated) {
-            $this->log(LogLevelType::Info->value, 'Pre-restore backup created', array(ResponseKeyType::BackupId->value => $backupResult[ResponseKeyType::SnapshotId->value]));
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup created', [ResponseKeyType::BackupId->value => $backupResult[ResponseKeyType::SnapshotId->value]]);
 
             return $backupResult[ResponseKeyType::SnapshotId->value];
         }
 
-        $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array(ResponseKeyType::Error->value => $backupResult[ResponseKeyType::Error->value]));
+        $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', [ResponseKeyType::Error->value => $backupResult[ResponseKeyType::Error->value]]);
 
         if (!empty($options['require_backup'])) {
             return ResultHelper::error('Pre-restore backup failed: ' . $backupResult[ResponseKeyType::Error->value]);

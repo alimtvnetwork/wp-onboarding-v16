@@ -38,7 +38,7 @@ trait WorkerProgressTrait {
 
             foreach ($tables as $table) {
                 $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
-                $stmt->execute(array($table, $now));
+                $stmt->execute([$table, $now]);
 
                 $pdo->exec("UPDATE " . TableType::SnapshotProgress->value .
                     " SET RowsTotal = {$count} WHERE SnapshotId = 0 AND TableName = '{$table}'");
@@ -68,13 +68,13 @@ trait WorkerProgressTrait {
                 SET Status = ?, RowsExported = ?, CompletedAt = ?, ErrorMessage = ?
                 WHERE SnapshotId = 0 AND TableName = ?");
 
-            $stmt->execute(array(
+            $stmt->execute([
                 $status,
                 $rows,
                 ($status === SnapshotStatusType::Complete->value || $status === SnapshotStatusType::Failed->value) ? $now : null,
                 $error,
                 $table,
-            ));
+            ]);
         } catch (Throwable $e) {
             $this->logWarn($e, 'Failed to update progress');
         }

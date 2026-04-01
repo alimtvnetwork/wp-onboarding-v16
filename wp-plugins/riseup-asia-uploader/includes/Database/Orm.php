@@ -35,14 +35,14 @@ class Orm {
 
     private static ?PDO $pdo = null;
     private string $tableName = '';
-    private array $data = array();
-    private array $whereClauses = array();
-    private array $whereParams = array();
-    private array $orderBy = array();
+    private array $data = [];
+    private array $whereClauses = [];
+    private array $whereParams = [];
+    private array $orderBy = [];
     private ?int $limitValue = null;
     private ?int $offsetValue = null;
-    private array $selectColumns = array('*');
-    private array $groupBy = array();
+    private array $selectColumns = ['*'];
+    private array $groupBy = [];
     private bool $isNew = false;
     private int|string|null $id = null;
     private string $idColumn = 'Id';
@@ -72,9 +72,9 @@ class Orm {
     /**
      * Execute raw SQL query.
      */
-    public static function rawExecute(string $sql, array $params = array()): array {
+    public static function rawExecute(string $sql, array $params = []): array {
         if (!self::$pdo) {
-            return array();
+            return [];
         }
 
         try {
@@ -84,12 +84,12 @@ class Orm {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             $logger = FileLogger::getInstance();
-            $logger->error('Orm::rawExecute() failed', array(
+            $logger->error('Orm::rawExecute() failed', [
                 'sql' => $sql,
                 'error' => $e->getMessage(),
-            ));
+            ]);
 
-            return array();
+            return [];
         }
     }
 

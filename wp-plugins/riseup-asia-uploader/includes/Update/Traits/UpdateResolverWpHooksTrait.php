@@ -50,22 +50,22 @@ trait UpdateResolverWpHooksTrait {
     }
 
     private function buildUpdateTransientEntry(array $updateInfo, string $pluginFile): object {
-        $this->fileLogger->info('Update available', array('current' => PluginConfigType::Version->value, 'new' => $updateInfo['version']));
+        $this->fileLogger->info('Update available', ['current' => PluginConfigType::Version->value, 'new' => $updateInfo['version']]);
 
-        return (object) array(
+        return (object) [
             'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value, 'plugin' => $pluginFile,
             'new_version' => $updateInfo['version'], 'url' => $updateInfo['url'] ?? '',
             'package' => $updateInfo['package'], 'icons' => array(), 'banners' => array(),
             'tested' => $updateInfo['tested'] ?? '', 'requires' => $updateInfo['requires'] ?? '',
             'requires_php' => $updateInfo['requires_php'] ?? '',
-        );
+        ];
     }
 
     private function buildNoUpdateTransientEntry(string $pluginFile): object {
-        return (object) array(
+        return (object) [
             'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value,
             'plugin' => $pluginFile, 'new_version' => PluginConfigType::Version->value, 'url' => '', 'package' => '',
-        );
+        ];
     }
 
     public function pluginInfo(
@@ -94,7 +94,7 @@ trait UpdateResolverWpHooksTrait {
     }
 
     private function buildPluginInfoObject(array $updateInfo): object {
-        return (object) array(
+        return (object) [
             'name' => PluginConfigType::Name->value, 'slug' => PluginConfigType::Slug->value,
             'version' => $updateInfo['version'] ?? PluginConfigType::Version->value,
             'author' => 'MD ALIM UL KARIM', 'homepage' => 'https://rasia.pro/alim-r-profile-v1',
@@ -106,28 +106,28 @@ trait UpdateResolverWpHooksTrait {
                 'description' => 'Remote plugin management, blog post publishing, and audit logging via REST API.',
                 'changelog' => $updateInfo['changelog'] ?? 'See plugin repository for changelog.',
             ),
-        );
+        ];
     }
 
     public function testConnection(): array {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => 'No master URL configured');
+            return [ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => 'No master URL configured'];
         }
 
         $this->fileLogger->info('Testing update server connection');
         $resolved = $this->resolveUrl($settings['master_url']);
 
         if (is_wp_error($resolved)) {
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => $resolved->get_error_message());
+            return [ResponseKeyType::Success->value => false, ResponseKeyType::Message->value => $resolved->get_error_message()];
         }
 
-        $this->saveSettings(array(
+        $this->saveSettings([
             'resolved_url' => $resolved, 'resolved_at' => current_time('mysql', true),
             'last_check' => current_time('mysql', true), 'last_error' => '',
-        ));
+        ]);
 
-        return array(ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, ResponseKeyType::ResolvedUrl->value => $resolved);
+        return [ResponseKeyType::Success->value => true, ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value, ResponseKeyType::ResolvedUrl->value => $resolved];
     }
 }

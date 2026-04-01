@@ -41,15 +41,15 @@ trait LogClearAllTrait
         $quploadResult = $this->clearQUploadLogs();
         $clientIp = $this->resolveClientIp();
 
-        $this->fileLogger->info('Clear-all executed for both plugins', array(
+        $this->fileLogger->info('Clear-all executed for both plugins', [
             'machine' => $machineName,
             'ip'      => $clientIp,
             'riseup'  => $riseupResult,
             'qupload' => $quploadResult,
-        ));
+        ]);
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 'riseup'                        => $riseupResult,
                 'qupload'                       => $quploadResult,
@@ -58,7 +58,7 @@ trait LogClearAllTrait
                     'ip'        => $clientIp,
                     'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
                 ),
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -69,7 +69,7 @@ trait LogClearAllTrait
      * @return array{cleared: bool, files: bool, database: bool, error: string}
      */
     private function clearRiseupLogs(): array {
-        $result = array('cleared' => false, 'files' => false, 'database' => false, 'error' => '');
+        $result = ['cleared' => false, 'files' => false, 'database' => false, 'error' => ''];
 
         try {
             $logger = FileLogger::getInstance();
@@ -92,7 +92,7 @@ trait LogClearAllTrait
      * @return array{cleared: bool, error: string}
      */
     private function clearQUploadLogs(): array {
-        $result = array('cleared' => false, 'error' => '');
+        $result = ['cleared' => false, 'error' => ''];
 
         $quploadLoggerClass = 'QUpload\\Logging\\FileLogger';
         $isQUploadAvailable = class_exists($quploadLoggerClass);

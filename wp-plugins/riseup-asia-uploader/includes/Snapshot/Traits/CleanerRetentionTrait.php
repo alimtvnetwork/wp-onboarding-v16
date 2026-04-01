@@ -25,12 +25,12 @@ trait CleanerRetentionTrait {
         $resolved = $this->resolveRetentionSnapshots($settings);
 
         if (empty($resolved[ResponseKeyType::Snapshots->value])) {
-            return array(
+            return [
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value  => 0,
                 ResponseKeyType::BytesFreed->value     => 0,
                 ResponseKeyType::Details->value        => array(),
-            );
+            ];
         }
 
         return $this->processRetentionDeletions($resolved[ResponseKeyType::Snapshots->value], $resolved[ResponseKeyType::Reason->value], $dryRun);
@@ -40,22 +40,22 @@ trait CleanerRetentionTrait {
         $isDaysRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value && !empty($settings[SettingsKeyType::RetentionDays->value]));
 
         if ($isDaysRetention) {
-            return array(
+            return [
                 ResponseKeyType::Snapshots->value => $this->getSnapshotsOlderThan((int) $settings[SettingsKeyType::RetentionDays->value]),
                 ResponseKeyType::Reason->value    => "older than {$settings[SettingsKeyType::RetentionDays->value]} days",
-            );
+            ];
         }
 
         $isCountRetention = ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Count->value && !empty($settings[SettingsKeyType::RetentionCount->value]));
 
         if ($isCountRetention) {
-            return array(
+            return [
                 ResponseKeyType::Snapshots->value => $this->getSnapshotsBeyondCount((int) $settings[SettingsKeyType::RetentionCount->value]),
                 ResponseKeyType::Reason->value    => "exceeds max count of {$settings[SettingsKeyType::RetentionCount->value]}",
-            );
+            ];
         }
 
-        return array(ResponseKeyType::Snapshots->value => array(), ResponseKeyType::Reason->value => '');
+        return [ResponseKeyType::Snapshots->value => array(), ResponseKeyType::Reason->value => ''];
     }
 
     private function processRetentionDeletions(
@@ -63,12 +63,12 @@ trait CleanerRetentionTrait {
         string $reason,
         bool $dryRun,
     ): array {
-        $result = array(
+        $result = [
             ResponseKeyType::Deleted->value       => 0,
             ResponseKeyType::SkippedMaster->value  => 0,
             ResponseKeyType::BytesFreed->value     => 0,
             ResponseKeyType::Details->value        => array(),
-        );
+        ];
 
         foreach ($snapshots as $snapshot) {
             if ($this->isMasterSnapshot($snapshot)) {
@@ -76,11 +76,11 @@ trait CleanerRetentionTrait {
                 continue;
             }
 
-            $result[ResponseKeyType::Details->value][] = array(
+            $result[ResponseKeyType::Details->value][] = [
                 ResponseKeyType::Id->value               => $snapshot['Id'],
                 ResponseKeyType::Filename->value         => $snapshot['Filename'] ?? '',
                 ResponseKeyType::Reason->value           => $reason,
-            );
+            ];
 
             $this->applyRetentionDelete($snapshot, $dryRun, $result);
         }
@@ -132,21 +132,21 @@ trait CleanerRetentionTrait {
         return $this->db->queryAll(
             'SELECT Id, Filepath, Filename, FileSize, Scope FROM ' . TableType::Snapshots->value .
             ' WHERE Status = ? AND CreatedAt < ? ORDER BY CreatedAt ASC',
-            array(SnapshotStatusType::Complete->value, $cutoff)
-        ) ?: array();
+            [SnapshotStatusType::Complete->value, $cutoff]
+        ) ?: [];
     }
 
     private function getSnapshotsBeyondCount(int $count): array {
         $totalResult = $this->db->querySingle(
             'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE Status = ?',
-            array(SnapshotStatusType::Complete->value)
+            [SnapshotStatusType::Complete->value]
         );
 
         $isResultMissing = ($totalResult === null || $totalResult === false);
         $isBelowThreshold = ($isResultMissing || $totalResult['cnt'] <= $count);
 
         if ($isBelowThreshold) {
-            return array();
+            return [];
         }
 
         $toDelete = $totalResult['cnt'] - $count;
@@ -154,7 +154,7 @@ trait CleanerRetentionTrait {
         return $this->db->queryAll(
             'SELECT Id, Filepath, Filename, FileSize, Scope FROM ' . TableType::Snapshots->value .
             ' WHERE Status = ? ORDER BY CreatedAt ASC LIMIT ?',
-            array(SnapshotStatusType::Complete->value, $toDelete)
-        ) ?: array();
+            [SnapshotStatusType::Complete->value, $toDelete]
+        ) ?: [];
     }
 }

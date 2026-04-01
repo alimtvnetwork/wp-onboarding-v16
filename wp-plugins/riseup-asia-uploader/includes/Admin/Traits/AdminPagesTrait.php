@@ -47,7 +47,7 @@ trait AdminPagesTrait {
 
     /** Build log filters from query parameters. */
     private function buildLogFilters(): array {
-        $keys = array(
+        $keys = [
             FilterKeyType::Action->value        => 'filter_action',
             FilterKeyType::User->value          => 'filter_user',
             FilterKeyType::Status->value        => 'filter_status',
@@ -57,9 +57,9 @@ trait AdminPagesTrait {
             FilterKeyType::TriggeredBy->value   => 'filter_triggered_by',
             FilterKeyType::SourceMachine->value => 'filter_source_machine',
             FilterKeyType::UploadSource->value  => 'filter_upload_source',
-        );
+        ];
 
-        $filters = array();
+        $filters = [];
 
         foreach ($keys as $key => $param) {
             $filters[$key] = isset($_GET[$param]) ? sanitize_text_field($_GET[$param]) : '';
@@ -70,7 +70,7 @@ trait AdminPagesTrait {
 
     /** Get action label map for display. */
     private function getActionLabels(): array {
-        return array(
+        return [
             ActionType::UploadInitiated->value => 'Upload Initiated',
             ActionType::Upload->value          => 'Plugin Upload',
             ActionType::UploadActive->value    => 'Upload & Activate',
@@ -86,7 +86,7 @@ trait AdminPagesTrait {
             ActionType::MediaUpload->value     => 'Media Upload',
             ActionType::AuthFailed->value      => 'Auth Failed',
             ActionType::ExportSelf->value      => 'Export Self',
-        );
+        ];
     }
 
     /** Render the settings page. */
@@ -101,10 +101,10 @@ trait AdminPagesTrait {
         $endpointGroups = $this->buildEndpointGroups();
         $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
-        $supportSettings = get_option(\RiseupAsia\Enums\OptionNameType::SupportSettings->value, array(
+        $supportSettings = get_option(\RiseupAsia\Enums\OptionNameType::SupportSettings->value, [
             'support_email' => '',
             'fallback_url'  => '',
-        ));
+        ]);
 
         include dirname(__FILE__, 4) . '/templates/admin-settings.php';
     }
@@ -113,7 +113,7 @@ trait AdminPagesTrait {
     private function buildEndpointGroups(): array {
         $pluginSlug = PluginConfigType::Slug->value;
 
-        return array(
+        return [
             'core' => array(
                 'label' => __('Core Operations', $pluginSlug),
                 'icon'  => 'dashicons-admin-tools',
@@ -162,12 +162,12 @@ trait AdminPagesTrait {
                     'openapi' => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
                 ),
             ),
-        );
+        ];
     }
 
     /** Flatten endpoint groups for backward compatibility. */
     private function flattenEndpointGroups(array $groups): array {
-        $endpointsMeta = array();
+        $endpointsMeta = [];
 
         foreach ($groups as $group) {
             foreach ($group['endpoints'] as $key => $meta) {

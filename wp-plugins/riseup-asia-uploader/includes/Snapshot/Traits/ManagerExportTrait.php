@@ -60,7 +60,7 @@ trait ManagerExportTrait {
         $zip = new ZipArchive();
 
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array(ResponseKeyType::Path->value => $zipPath));
+            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', [ResponseKeyType::Path->value => $zipPath]);
 
             return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }
@@ -71,21 +71,21 @@ trait ManagerExportTrait {
         $zip->close();
 
         $size = filesize($zipPath);
-        $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             'zipPath'                          => $zipPath,
             ResponseKeyType::Size->value       => PathHelper::formatBytes($size),
-        ));
+        ]);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::FilePath->value => $zipPath,
             ResponseKeyType::Filename->value => basename($zipPath),
             ResponseKeyType::Size->value     => $size,
-        ));
+        ]);
     }
 
     private function createExportManifest(array $snapshot): array {
-        return array(
+        return [
             ResponseKeyType::Version->value => PluginConfigType::Version->value,
             ResponseKeyType::FormatVersion->value => '1.0',
             ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
@@ -107,6 +107,6 @@ trait ManagerExportTrait {
                 ResponseKeyType::SiteUrl->value => get_site_url(),
                 ResponseKeyType::DbPrefix->value => $this->wpdb->prefix,
             ),
-        );
+        ];
     }
 }

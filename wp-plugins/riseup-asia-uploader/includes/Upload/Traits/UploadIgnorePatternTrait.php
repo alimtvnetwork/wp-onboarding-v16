@@ -15,12 +15,12 @@ if (!defined('ABSPATH')) {
 trait UploadIgnorePatternTrait {
 
     private function compilePattern(string $pattern): array {
-        $info = array(
+        $info = [
             'original'   => $pattern,
             'anchored'   => false,
             'directory'  => false,
             'regex'      => '',
-        );
+        ];
 
         $isAnchored = (strpos($pattern, '/') === 0);
 

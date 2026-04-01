@@ -34,11 +34,11 @@ trait SnapshotCrudRestoreTrait {
         return $this->safeExecute(function() use ($request): WP_REST_Response {
             $body = $request->get_json_params();
             $id = isset($body[ResponseKeyType::Id->value]) ? (int) $body[ResponseKeyType::Id->value] : (int) $request->get_param('id');
-            $this->fileLogger->info('Deleting snapshot', array('id' => $id));
+            $this->fileLogger->info('Deleting snapshot', ['id' => $id]);
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value)
+                [ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value]
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -47,7 +47,7 @@ trait SnapshotCrudRestoreTrait {
             $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, LogCategoryType::Snapshot->value,
                 $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-                array(ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Complete->value),
+                [ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Complete->value],
                 $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Delete failed')
             );
 
@@ -64,8 +64,8 @@ trait SnapshotCrudRestoreTrait {
             $options = $this->parseRestoreOptions($body);
 
             $this->logger->logPluginAction(ActionType::SnapshotRestore->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Mode->value => $options[ResponseKeyType::Mode->value], ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value));
-            $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options[ResponseKeyType::Mode->value]));
+                [ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Mode->value => $options[ResponseKeyType::Mode->value], ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value]);
+            $this->fileLogger->info('Restoring snapshot', ['id' => $id, 'mode' => $options[ResponseKeyType::Mode->value]]);
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $this->routeRestoreToEngine($id, $options, $manager);
@@ -83,7 +83,7 @@ trait SnapshotCrudRestoreTrait {
         $hasRequireBackup = !empty($body[ResponseKeyType::RequireBackup->value] ?? null);
         $hasStrict = !empty($body[ResponseKeyType::Strict->value] ?? null);
 
-        return array(
+        return [
             ResponseKeyType::Confirm->value            => $hasConfirm,
             ResponseKeyType::CreateBackup->value       => isset($body[ResponseKeyType::CreateBackup->value]) ? (bool) $body[ResponseKeyType::CreateBackup->value] : true,
             ResponseKeyType::RequireBackup->value      => $hasRequireBackup,
@@ -91,7 +91,7 @@ trait SnapshotCrudRestoreTrait {
             ResponseKeyType::Tables->value             => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : array(),
             ResponseKeyType::Strict->value             => $hasStrict,
             ResponseKeyType::ApplyIncrementals->value  => isset($body[ResponseKeyType::ApplyIncrementals->value]) ? (bool) $body[ResponseKeyType::ApplyIncrementals->value] : true,
-        );
+        ];
     }
 
     private function routeRestoreToEngine(

@@ -34,10 +34,10 @@ trait CloudStorageFileTrait {
             $isNotFound = ($account === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
@@ -47,21 +47,21 @@ trait CloudStorageFileTrait {
                 $provider->isGitHub()      => $this->githubListFiles($account, $token, $path),
                 $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $path),
                 $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $path),
-                default                    => array(),
+                default                    => [],
             };
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Files->value   => $files,
                 ResponseKeyType::Total->value   => count($files),
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to list cloud storage files');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -77,10 +77,10 @@ trait CloudStorageFileTrait {
             $isNotFound = ($account === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
@@ -93,23 +93,23 @@ trait CloudStorageFileTrait {
                 default                    => false,
             };
 
-            $this->logCloudStorageAction(ActionType::CloudStorageDelete, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageDelete, [
                 ResponseKeyType::AccountId->value  => $accountId,
                 ResponseKeyType::RemotePath->value => $remotePath,
                 ResponseKeyType::Provider->value   => $provider->value,
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Deleted->value => $deleted,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to delete cloud storage file');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -122,7 +122,7 @@ trait CloudStorageFileTrait {
             $provider->isGitHub()      => $this->githubListFiles($account, $token, $backupDir),
             $provider->isGitLab()      => $this->gitlabListFiles($account, $token, $backupDir),
             $provider->isGoogleDrive() => $this->googleDriveListFiles($account, $token, $backupDir),
-            default                    => array(),
+            default                    => [],
         };
 
         usort($files, fn($a, $b) => strcmp($a['Name'], $b['Name']));
@@ -131,10 +131,10 @@ trait CloudStorageFileTrait {
         $isWithinLimit = ($excess <= 0);
 
         if ($isWithinLimit) {
-            return array('deleted' => 0, 'files' => array());
+            return ['deleted' => 0, 'files' => array()];
         }
 
-        $deleted       = array();
+        $deleted       = [];
         $filesToDelete = array_slice($files, 0, $excess);
 
         foreach ($filesToDelete as $file) {
@@ -153,13 +153,13 @@ trait CloudStorageFileTrait {
         $hasDeleted = !empty($deleted);
 
         if ($hasDeleted) {
-            $this->logCloudStorageAction(ActionType::CloudStorageRotation, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageRotation, [
                 ResponseKeyType::Provider->value     => $provider->value,
                 ResponseKeyType::FilesDeleted->value => count($deleted),
                 ResponseKeyType::Files->value        => $deleted,
-            ));
+            ]);
         }
 
-        return array('deleted' => count($deleted), 'files' => $deleted);
+        return ['deleted' => count($deleted), 'files' => $deleted];
     }
 }

@@ -32,17 +32,17 @@ trait FileCacheStoreTrait {
                 ->where('PluginSlug', $pluginSlug)
                 ->delete();
 
-            $this->logger->info('FileCache: Cache invalidated', array(
+            $this->logger->info('FileCache: Cache invalidated', [
                 'slug'    => $pluginSlug,
                 'deleted' => $deleted,
-            ));
+            ]);
 
             return $deleted;
         } catch (Throwable $e) {
-            $this->logger->error('FileCache: Failed to invalidate', array(
+            $this->logger->error('FileCache: Failed to invalidate', [
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
-            ));
+            ]);
 
             return 0;
         }
@@ -54,19 +54,19 @@ trait FileCacheStoreTrait {
                 ->where('PluginSlug', $pluginSlug)
                 ->findMany();
 
-            $entries = array();
+            $entries = [];
             foreach ($rows as $row) {
                 $entries[$row['RelativePath']] = $row;
             }
 
             return $entries;
         } catch (Throwable $e) {
-            $this->logger->error('FileCache: Failed to load cache', array(
+            $this->logger->error('FileCache: Failed to load cache', [
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
-            ));
+            ]);
 
-            return array();
+            return [];
         }
     }
 
@@ -92,19 +92,19 @@ trait FileCacheStoreTrait {
                 " (PluginSlug, RelativePath, Md5Hash, ModifiedAt, FileSize, CachedAt)" .
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
-            $stmt->execute(array(
+            $stmt->execute([
                 $pluginSlug,
                 $path,
                 $hash,
                 $modifiedAt,
                 $size,
                 $now,
-            ));
+            ]);
         } catch (Throwable $e) {
-            $this->logger->error('FileCache: Failed to upsert', array(
+            $this->logger->error('FileCache: Failed to upsert', [
                 'path'  => $path,
                 'error' => $e->getMessage(),
-            ));
+            ]);
         }
     }
 
@@ -115,10 +115,10 @@ trait FileCacheStoreTrait {
                 ->where('RelativePath', $path)
                 ->delete();
         } catch (Throwable $e) {
-            $this->logger->error('FileCache: Failed to delete entry', array(
+            $this->logger->error('FileCache: Failed to delete entry', [
                 'path'  => $path,
                 'error' => $e->getMessage(),
-            ));
+            ]);
         }
     }
 }

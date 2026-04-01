@@ -18,11 +18,11 @@ use RiseupAsia\Enums\ResponseKeyType;
 trait AnalyzerGraphTrait {
     /** Build adjacency list from dependency edges. */
     private function buildAdjacencyList(array $dependencies, array $allTables): array {
-        $graph = array();
-        $inDegree = array();
+        $graph = [];
+        $inDegree = [];
 
         foreach ($allTables as $table) {
-            $graph[$table] = array();
+            $graph[$table] = [];
             $inDegree[$table] = 0;
         }
 
@@ -40,7 +40,7 @@ trait AnalyzerGraphTrait {
             }
         }
 
-        return array(ResponseKeyType::Graph->value => $graph, ResponseKeyType::InDegree->value => $inDegree);
+        return [ResponseKeyType::Graph->value => $graph, ResponseKeyType::InDegree->value => $inDegree];
     }
 
     /** Topological sort using Kahn's algorithm. */
@@ -49,7 +49,7 @@ trait AnalyzerGraphTrait {
         $graph = $adj[ResponseKeyType::Graph->value];
         $inDegree = $adj[ResponseKeyType::InDegree->value];
 
-        $queue = array();
+        $queue = [];
         foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {
                 $queue[] = $table;
@@ -58,7 +58,7 @@ trait AnalyzerGraphTrait {
 
         sort($queue);
 
-        $sorted = array();
+        $sorted = [];
         while (!empty($queue)) {
             $current = array_shift($queue);
             $sorted[] = $current;
@@ -77,20 +77,20 @@ trait AnalyzerGraphTrait {
 
         if (count($sorted) < count($allTables)) {
             $cycled = array_diff($allTables, $sorted);
-            $this->log(LogLevelType::Warn->value, 'Cycle detected in table dependencies', array(
+            $this->log(LogLevelType::Warn->value, 'Cycle detected in table dependencies', [
                 'cycledTables' => array_values($cycled),
                 'sortedCount'  => count($sorted),
                 'totalCount'   => count($allTables),
-            ));
+            ]);
 
             foreach ($cycled as $table) {
                 $sorted[] = $table;
             }
         }
 
-        $this->log(LogLevelType::Info->value, 'Topological sort complete', array(
+        $this->log(LogLevelType::Info->value, 'Topological sort complete', [
             'tableCount' => count($sorted),
-        ));
+        ]);
 
         return $sorted;
     }

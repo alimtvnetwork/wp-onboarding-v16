@@ -23,24 +23,24 @@ trait SchedulerConfigTrait {
         $pluginSlug = PluginConfigType::Slug->value;
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Hourly->value)) {
-            $schedules[SnapshotFrequencyType::Hourly->value] = array(
+            $schedules[SnapshotFrequencyType::Hourly->value] = [
                 'interval' => HOUR_IN_SECONDS,
                 'display'  => __('Once Hourly', $pluginSlug),
-            );
+            ];
         }
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Weekly->value)) {
-            $schedules[SnapshotFrequencyType::Weekly->value] = array(
+            $schedules[SnapshotFrequencyType::Weekly->value] = [
                 'interval' => WEEK_IN_SECONDS,
                 'display'  => __('Once Weekly', $pluginSlug),
-            );
+            ];
         }
 
         if (BooleanHelpers::isKeyMissing($schedules, SnapshotFrequencyType::Monthly->value)) {
-            $schedules[SnapshotFrequencyType::Monthly->value] = array(
+            $schedules[SnapshotFrequencyType::Monthly->value] = [
                 'interval' => 30 * DAY_IN_SECONDS,
                 'display'  => __('Once Monthly', $pluginSlug),
-            );
+            ];
         }
 
         return $schedules;
@@ -50,7 +50,7 @@ trait SchedulerConfigTrait {
         if (BooleanHelpers::isWpScheduleMissing(HookType::CronSnapshotCleanup->value)) {
             $timestamp = strtotime('tomorrow 04:00:00');
             wp_schedule_event($timestamp, 'daily', HookType::CronSnapshotCleanup->value);
-            $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array('nextRun' => date('c', $timestamp)));
+            $this->logger->info('[SCHEDULER] Cleanup cron scheduled', ['nextRun' => date('c', $timestamp)]);
         }
     }
 
@@ -85,11 +85,11 @@ trait SchedulerConfigTrait {
         );
 
         if ($result) {
-            $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
+            $this->logger->info('[SCHEDULER] Scheduled snapshot cron', [
                 'frequency'  => $frequency,
                 'nextRun'    => date('c', $nextRun),
                 'recurrence' => $recurrence,
-            ));
+            ]);
         } else {
             $this->logger->error('[SCHEDULER] Failed to schedule snapshot cron');
         }

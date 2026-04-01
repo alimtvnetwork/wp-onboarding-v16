@@ -57,20 +57,20 @@ trait NativeTableExportTrait {
             $sqlite->rollBack();
         }
 
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => $e->getMessage(),
             ResponseKeyType::Rows->value    => 0,
             ResponseKeyType::Bytes->value   => 0,
-        );
+        ];
     }
 
     private function buildEmptyTableResult(): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Rows->value    => 0,
             ResponseKeyType::Bytes->value   => 0,
-        );
+        ];
     }
 
     private function exportTableRows(PDO $sqlite, string $table, int $count): array {
@@ -80,11 +80,11 @@ trait NativeTableExportTrait {
         $result = $this->executeBatchExport($insert[ResponseKeyType::Stmt->value], $table, $count);
         $sqlite->commit();
 
-        return array(
+        return [
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Rows->value    => $result[ResponseKeyType::Exported->value],
             ResponseKeyType::Bytes->value   => $result[ResponseKeyType::Bytes->value],
-        );
+        ];
     }
 
     private function prepareInsertStatement(PDO $sqlite, string $table): array {
@@ -95,7 +95,7 @@ trait NativeTableExportTrait {
 
         $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
 
-        return array(ResponseKeyType::Stmt->value => $stmt);
+        return [ResponseKeyType::Stmt->value => $stmt];
     }
 
     private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
@@ -113,10 +113,10 @@ trait NativeTableExportTrait {
             $this->logExportProgress($table, $offset, $count, $batchSize);
         }
 
-        return array(
+        return [
             ResponseKeyType::Exported->value => $exported,
             ResponseKeyType::Bytes->value    => $bytes,
-        );
+        ];
     }
 
     private function exportSingleBatch(PDOStatement $stmt, string $table, int $batchSize, int $offset): array {
@@ -134,7 +134,7 @@ trait NativeTableExportTrait {
             $bytes += strlen(implode('', array_map('strval', $row)));
         }
 
-        return array('exported' => $exported, 'bytes' => $bytes);
+        return ['exported' => $exported, 'bytes' => $bytes];
     }
 
     private function logExportProgress(string $table, int $offset, int $count, int $batchSize): void {

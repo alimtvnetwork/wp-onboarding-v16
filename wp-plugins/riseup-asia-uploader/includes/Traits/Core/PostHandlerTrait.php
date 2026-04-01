@@ -30,12 +30,12 @@ trait PostHandlerTrait
     public function handleListPosts(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->debug('List posts endpoint called');
 
-        $result = $this->postManager->listPosts(array(
+        $result = $this->postManager->listPosts([
             'status' => $request->get_param('status'),
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
             'search' => $request->get_param('search'),
-        ));
+        ]);
 
         return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
@@ -52,11 +52,11 @@ trait PostHandlerTrait
     public function handleListCategories(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->debug('List categories endpoint called');
 
-        $result = $this->postManager->listCategories(array(
+        $result = $this->postManager->listCategories([
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
             'search' => $request->get_param('search'),
-        ));
+        ]);
 
         return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
@@ -96,14 +96,14 @@ trait PostHandlerTrait
 
     private function buildLogQueryFilters(WP_REST_Request $request): array {
 
-        return array(
+        return [
             FilterKeyType::Plugin->value => $request->get_param(FilterKeyType::Plugin->value),
             FilterKeyType::Action->value => $request->get_param(FilterKeyType::Action->value),
             FilterKeyType::User->value   => $request->get_param(FilterKeyType::User->value),
             FilterKeyType::Status->value => $request->get_param(FilterKeyType::Status->value),
             FilterKeyType::From->value   => $request->get_param(FilterKeyType::From->value),
             FilterKeyType::To->value     => $request->get_param(FilterKeyType::To->value),
-        );
+        ];
     }
 
     public function handleLogsStats(WP_REST_Request $request): WP_REST_Response {

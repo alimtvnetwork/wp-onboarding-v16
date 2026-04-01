@@ -39,7 +39,7 @@ trait ErrorSessionHandlerTrait {
 
             if ($isTableMissing) {
                 return EnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
-                    ->autoDetectRequestedAt()->setResults(array())->toResponse();
+                    ->autoDetectRequestedAt()->setResults([])->toResponse();
             }
 
             $query   = $this->buildErrorSessionQuery($request);
@@ -69,17 +69,17 @@ trait ErrorSessionHandlerTrait {
         $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
         $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
 
-        $where  = array();
-        $params = array();
+        $where  = [];
+        $params = [];
         if (!empty($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
         if (!empty($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
         if ($sinceId > 0)   { $where[] = 'Id > ?';         $params[] = $sinceId; }
 
         $hasWhereClause = !empty($where);
-        return array(
+        return [
             'whereSql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
             'params' => $params, 'limit' => $limit, 'offset' => $offset,
-        );
+        ];
     }
 
     /** Count total error sessions matching the query. */
@@ -94,23 +94,23 @@ trait ErrorSessionHandlerTrait {
     private function fetchErrorSessions(PDO $pdo, array $query): array {
         $sql = "SELECT * FROM " . TableType::ErrorSessions->value . " {$query['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(array_merge($query['params'], array($query['limit'], $query['offset'])));
+        $stmt->execute(array_merge($query['params'], [$query['limit'], $query['offset']]));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /** Enrich raw error session rows with parsed context and stack trace frames. */
     private function enrichErrorEntries(array $rows): array {
-        $entries = array();
+        $entries = [];
 
         foreach ($rows as $row) {
-            $entry = array(
+            $entry = [
                 'id' => (int) $row['Id'], 'level' => $row['Level'], 'message' => $row['Message'],
                 'file' => $row['File'], 'fileBase' => $row['File'] ? basename($row['File']) : null,
                 'line' => $row['Line'] ? (int) $row['Line'] : null, 'stackTrace' => $row['StackTrace'],
                 'context' => $this->parseContextJson($row['ContextJson'] ?? ''), 'createdAt' => $row['CreatedAt'],
                 'pluginVersion' => $row['PluginVersion'] ?? null,
-            );
+            ];
             if (!empty($row['StackTrace'])) {
                 $entry['stackTraceFrames'] = $this->parseStackTraceString($row['StackTrace']);
             }
@@ -132,15 +132,15 @@ trait ErrorSessionHandlerTrait {
     private function countUnseenErrors(PDO $pdo, int $lastSeenId): int {
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
-            $stmt->execute(array($lastSeenId));
+            $stmt->execute([$lastSeenId]);
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
-            $this->fileLogger->warn('Failed to count unseen errors', array(
+            $this->fileLogger->warn('Failed to count unseen errors', [
                 'exception' => $e->getMessage(),
                 'trace'      => $e->getTraceAsString(),
                 'lastSeenId' => $lastSeenId,
-            ));
+            ]);
 
             return 0;
         }
@@ -148,7 +148,7 @@ trait ErrorSessionHandlerTrait {
 
     /** Parse a PHP stack trace string into structured frames. */
     private function parseStackTraceString(string $traceString): array {
-        $frames = array();
+        $frames = [];
         foreach (explode("\n", $traceString) as $line) {
             $frame = $this->parseTraceFrame(trim($line));
             if ($frame !== null) {
@@ -178,9 +178,9 @@ trait ErrorSessionHandlerTrait {
             list($class, $function) = explode('::', $funcPart, 2);
         }
 
-        return array(
+        return [
             'file' => $m[1], 'fileBase' => basename($m[1]),
             'line' => (int) $m[2], 'function' => rtrim($function, '()'), 'class' => $class,
-        );
+        ];
     }
 }

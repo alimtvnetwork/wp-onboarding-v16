@@ -51,7 +51,7 @@ trait SchedulerTriggerTrait {
         $scheduledNext = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
         $cleanupNext = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
 
-        return array(
+        return [
             ResponseKeyType::ScheduleEnabled->value       => $settings[SettingsKeyType::ScheduleEnabled->value],
             ResponseKeyType::Frequency->value              => $settings[SettingsKeyType::ScheduleFrequency->value],
             ResponseKeyType::Time->value                   => $settings[SettingsKeyType::ScheduleTime->value],
@@ -61,10 +61,10 @@ trait SchedulerTriggerTrait {
             ResponseKeyType::RetentionType->value         => $settings[SettingsKeyType::RetentionType->value],
             ResponseKeyType::RetentionDays->value         => $settings[SettingsKeyType::RetentionDays->value],
             ResponseKeyType::RetentionCount->value        => $settings[SettingsKeyType::RetentionCount->value],
-        );
+        ];
     }
 
-    public function triggerSnapshotNow(array $options = array()): array {
+    public function triggerSnapshotNow(array $options = []): array {
         $this->logger->info('[SCHEDULER] Snapshot Now triggered (scheduling cron)', $options);
 
         try {
@@ -74,17 +74,17 @@ trait SchedulerTriggerTrait {
                 ? 'Incremental Backup ' . DateHelper::nowCompactDatetime()
                 : 'Manual Backup ' . DateHelper::nowCompactDatetime());
 
-            $cronArgs = array(
+            $cronArgs = [
                 ResponseKeyType::SnapshotType->value      => $snapshotType,
                 ResponseKeyType::Title->value             => $title,
                 ResponseKeyType::Scope->value             => $options[ResponseKeyType::Scope->value] ?? $settings[SettingsKeyType::DefaultScope->value] ?? SnapshotScopeType::WordPress->value,
                 ResponseKeyType::MasterSnapshotId->value  => $options[ResponseKeyType::MasterSnapshotId->value] ?? null,
-            );
+            ];
 
             $scheduled = wp_schedule_single_event(
                 time() + 5,
                 HookType::CronSnapshotImmediate->value,
-                array($cronArgs),
+                [$cronArgs],
             );
 
             if ($scheduled === false) {
@@ -93,50 +93,50 @@ trait SchedulerTriggerTrait {
                 return ResultHelper::error('Failed to schedule background snapshot job');
             }
 
-            $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', array(
+            $this->logger->info('[SCHEDULER] Snapshot Now scheduled as background cron job', [
                 ResponseKeyType::Type->value  => $snapshotType,
                 ResponseKeyType::Title->value => $title,
-            ));
+            ]);
 
-            return ResultHelper::ok(array(
+            return ResultHelper::ok([
                 ResponseKeyType::Scheduled->value        => true,
                 ResponseKeyType::SnapshotType->value     => $snapshotType,
                 ResponseKeyType::Title->value            => $title,
                 ResponseKeyType::Message->value          => 'Snapshot has been scheduled and will run in the background.',
-            ));
+            ]);
         } catch (Throwable $e) {
-            $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', array(
+            $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', [
                 ResponseKeyType::Error->value => $e->getMessage(),
                 ResponseKeyType::Trace->value => $e->getTraceAsString(),
-            ));
+            ]);
 
             return ResultHelper::errorFromException($e);
         }
     }
 
-    public function scheduleRestore(int $snapshotId, array $options = array()): array {
-        $this->logger->info('[SCHEDULER] Scheduling background restore', array(ResponseKeyType::SnapshotId->value => $snapshotId));
+    public function scheduleRestore(int $snapshotId, array $options = []): array {
+        $this->logger->info('[SCHEDULER] Scheduling background restore', [ResponseKeyType::SnapshotId->value => $snapshotId]);
 
-        $cronArgs = array(
+        $cronArgs = [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Options->value    => $options,
-        );
+        ];
 
         $scheduled = wp_schedule_single_event(
             time() + 5,
             HookType::CronSnapshotRestore->value,
-            array($cronArgs),
+            [$cronArgs],
         );
 
         if ($scheduled === false) {
             return ResultHelper::error('Failed to schedule background restore');
         }
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Scheduled->value      => true,
             ResponseKeyType::SnapshotId->value     => $snapshotId,
             ResponseKeyType::Message->value        => 'Restore has been scheduled and will run in the background.',
-        ));
+        ]);
     }
 
     public function clearAllSchedules(): void {

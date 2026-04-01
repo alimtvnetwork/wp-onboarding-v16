@@ -22,6 +22,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait StatusPayloadTrait {
 
@@ -30,13 +31,13 @@ trait StatusPayloadTrait {
         $liveVersion = $this->detectLiveVersion();
         $dbAvailable = $this->db !== null;
 
-        $this->fileLogger->info('Status endpoint called', array(
+        $this->fileLogger->info('Status endpoint called', [
             'endpoint'    => 'GET /' . EndpointType::Status->value,
             'namespace'   => PluginConfigType::apiFullNamespace(),
             'version'     => $liveVersion,
             'dbAvailable' => $dbAvailable,
             'requestedAt' => DateHelper::nowIso(),
-        ));
+        ]);
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
@@ -88,7 +89,7 @@ trait StatusPayloadTrait {
      * Collect all registered REST routes for the plugin namespace.
      */
     private function collectRegisteredRoutes(): array {
-        $routes = array();
+        $routes = [];
         $nsPrefix = '/' . PluginConfigType::apiFullNamespace();
 
         foreach (rest_get_server()->get_routes() as $route => $handlers) {
@@ -98,7 +99,7 @@ trait StatusPayloadTrait {
                 continue;
             }
 
-            $routes[] = array(ResponseKeyType::Route->value => $route, ResponseKeyType::Methods->value => $this->extractRouteMethods($handlers));
+            $routes[] = [ResponseKeyType::Route->value => $route, ResponseKeyType::Methods->value => $this->extractRouteMethods($handlers)];
         }
 
         return $routes;
@@ -106,15 +107,15 @@ trait StatusPayloadTrait {
 
     /** Extract unique HTTP methods from route handlers. */
     private function extractRouteMethods(array $handlers): array {
-        $methods = array();
+        $methods = [];
 
         foreach ($handlers as $handler) {
             if (BooleanHelpers::isKeyMissing($handler, 'methods')) {
                 continue;
             }
-            $methods = array_merge($methods, is_array($handler['methods'])
+            $methods = array_merge($methods, gettype($handler['methods']) === PhpNativeType::PhpArray->value
                 ? array_keys($handler['methods'])
-                : array($handler['methods']));
+                : [$handler['methods']]);
         }
 
         return array_values(array_unique($methods));
@@ -141,17 +142,17 @@ trait StatusPayloadTrait {
     private function buildStatusPayload(string $version, bool $dbAvailable): array {
         return array_merge(
             $this->buildCoreStatusFields($version, $dbAvailable),
-            array(
+            [
                 'Features'         => $this->buildFeatureFlags($dbAvailable),
                 'RegisteredRoutes' => $this->collectRegisteredRoutes(),
                 'EndpointsRef'     => $this->loadEndpointsReference(),
-            )
+            ]
         );
     }
 
     /** Build core status fields. */
     private function buildCoreStatusFields(string $version, bool $dbAvailable): array {
-        return array(
+        return [
             'Plugin'      => PluginConfigType::Name->value,
             'Version'     => $version,
             'Slug'        => PluginConfigType::Slug->value,
@@ -168,7 +169,7 @@ trait StatusPayloadTrait {
             'MemoryLimit'            => ini_get('memory_limit'),
             'UploadMaxFilesizeBytes' => self::phpSizeToBytes(ini_get('upload_max_filesize')),
             'PostMaxSizeBytes'       => self::phpSizeToBytes(ini_get('post_max_size')),
-        );
+        ];
     }
 
     /**
@@ -191,7 +192,7 @@ trait StatusPayloadTrait {
      * Build the feature flags sub-section.
      */
     private function buildFeatureFlags(bool $dbAvailable): array {
-        return array(
+        return [
             'PluginUpload'   => true,
             'PluginManage'   => true,
             'FileOperations' => true,
@@ -202,6 +203,6 @@ trait StatusPayloadTrait {
             'ExportSelf'     => true,
             'Snapshots'      => $dbAvailable,
             'Agents'         => $dbAvailable,
-        );
+        ];
     }
 }

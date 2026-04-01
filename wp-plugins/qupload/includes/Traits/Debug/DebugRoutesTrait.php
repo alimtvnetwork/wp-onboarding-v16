@@ -18,6 +18,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
+use QUpload\Enums\PhpNativeType;
 
 trait DebugRoutesTrait
 {
@@ -46,9 +47,9 @@ trait DebugRoutesTrait
             foreach ($handlers as $handler) {
                 $handlerMethods = $handler['methods'] ?? [];
 
-                if (is_array($handlerMethods)) {
+                if (gettype($handlerMethods) === PhpNativeType::PhpArray->value) {
                     $methods = array_merge($methods, array_keys($handlerMethods));
-                } elseif (is_string($handlerMethods)) {
+                } elseif (gettype($handlerMethods) === PhpNativeType::PhpString->value) {
                     $methods = array_merge($methods, explode(',', $handlerMethods));
                 }
             }

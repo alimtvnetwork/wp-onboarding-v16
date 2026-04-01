@@ -37,12 +37,12 @@ trait SnapshotBackupOpsTrait {
             $rootDb = RootDb::getInstance($this->fileLogger, $analyzer);
             $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
-            $result = $worker->execute(array(
+            $result = $worker->execute([
                 ResponseKeyType::Title->value    => $body[ResponseKeyType::Title->value] ?? null,
                 ResponseKeyType::Scope->value    => $body[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
                 ResponseKeyType::Type->value     => $body[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
                 ResponseKeyType::Settings->value => $body[ResponseKeyType::Settings->value] ?? null,
-            ));
+            ]);
 
             return $this->buildExportResponse($result);
         }, SnapshotPhaseType::ExportPertable->value);
@@ -85,7 +85,7 @@ trait SnapshotBackupOpsTrait {
     /** Build export response. */
     private function buildExportResponse(array $result): WP_REST_Response {
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value   => $result[ResponseKeyType::Success->value],
             ResponseKeyType::Directory->value => $result[ResponseKeyType::Directory->value] ?? null,
             ResponseKeyType::Tables->value    => $result[ResponseKeyType::Tables->value] ?? 0,
@@ -93,18 +93,18 @@ trait SnapshotBackupOpsTrait {
             ResponseKeyType::Errors->value    => $result[ResponseKeyType::Errors->value] ?? array(),
             ResponseKeyType::Duration->value  => $result[ResponseKeyType::Duration->value] ?? 0,
             ResponseKeyType::Error->value     => $result[ResponseKeyType::Error->value] ?? null,
-        ), $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     /** Extract cleanup options from body. */
     private function extractCleanupOptions(array $body): array {
 
-        return array(
+        return [
             SettingsKeyType::RetentionType->value  => $body[SettingsKeyType::RetentionType->value] ?? null,
             SettingsKeyType::RetentionDays->value  => $body[SettingsKeyType::RetentionDays->value] ?? null,
             SettingsKeyType::RetentionCount->value => $body[SettingsKeyType::RetentionCount->value] ?? null,
             ResponseKeyType::DryRun->value         => $body[ResponseKeyType::DryRun->value] ?? false,
-        );
+        ];
     }
 
     /** Log cleanup if not a dry run. */
@@ -120,12 +120,12 @@ trait SnapshotBackupOpsTrait {
             ActionType::SnapshotCleanup->value,
             LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array(
+            [
                 'retentionRemoved' => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0,
                 'orphansRemoved'   => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
                 'stuckMarked'      => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0,
                 ResponseKeyType::Duration->value => $result[ResponseKeyType::Duration->value] ?? 0,
-            ),
+            ],
             $result[ResponseKeyType::Success->value] ? null : 'Cleanup encountered errors',
         );
     }
@@ -133,7 +133,7 @@ trait SnapshotBackupOpsTrait {
     /** Build cleanup response. */
     private function buildCleanupResponse(array $result): WP_REST_Response {
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value   => $result[ResponseKeyType::Success->value],
             ResponseKeyType::Retention->value => $result[ResponseKeyType::Retention->value],
             ResponseKeyType::Orphans->value   => $result[ResponseKeyType::Orphans->value],
@@ -141,7 +141,7 @@ trait SnapshotBackupOpsTrait {
             ResponseKeyType::Duration->value  => $result[ResponseKeyType::Duration->value],
             ResponseKeyType::DryRun->value    => $result[ResponseKeyType::DryRun->value],
             ResponseKeyType::Errors->value    => $result[ResponseKeyType::Errors->value],
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 
     /** Build a progress error response. */
@@ -150,11 +150,11 @@ trait SnapshotBackupOpsTrait {
         int $code,
         string $errorCode = '',
     ): WP_REST_Response {
-        $data = array(
+        $data = [
             ResponseKeyType::IsSuccess->value    => false,
             ResponseKeyType::HasAnyErrors->value => true,
             ResponseKeyType::Error->value        => $message,
-        );
+        ];
 
         if ($errorCode) {
             $data[ResponseKeyType::Code->value] = $errorCode;
@@ -174,7 +174,7 @@ trait SnapshotBackupOpsTrait {
     /** Build progress response. */
     private function buildProgressResponse(array $p): WP_REST_Response {
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::IsSuccess->value       => true,
             ResponseKeyType::HasAnyErrors->value    => false,
             ResponseKeyType::JobId->value           => $p[ResponseKeyType::JobId->value],
@@ -191,6 +191,6 @@ trait SnapshotBackupOpsTrait {
             ResponseKeyType::CreatedAt->value       => $p[ResponseKeyType::CreatedAt->value],
             ResponseKeyType::UpdatedAt->value       => $p[ResponseKeyType::UpdatedAt->value],
             ResponseKeyType::CompletedAt->value     => $p[ResponseKeyType::CompletedAt->value],
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 }

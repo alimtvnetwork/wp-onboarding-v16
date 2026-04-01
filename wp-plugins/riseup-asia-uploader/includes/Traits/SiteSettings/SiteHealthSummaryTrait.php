@@ -23,6 +23,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait SiteHealthSummaryTrait
 {
@@ -33,13 +34,13 @@ trait SiteHealthSummaryTrait
     {
         $this->fileLogger->info('Site health summary requested');
 
-        $payload = array(
+        $payload = [
             'system'          => $this->buildSystemInfo(),
             'plugins'         => $this->buildPluginSummary(),
             'integrations'    => $this->buildIntegrationsSummary(),
             'users'           => $this->buildUserSummary(),
             'database'        => $this->buildDatabaseSummary(),
-        );
+        ];
 
         return EnvelopeBuilder::success()
             ->setSingleResult($payload)
@@ -54,7 +55,7 @@ trait SiteHealthSummaryTrait
         $diskFree = function_exists('disk_free_space') ? @disk_free_space(ABSPATH) : false;
         $diskTotal = function_exists('disk_total_space') ? @disk_total_space(ABSPATH) : false;
 
-        return array(
+        return [
             'phpVersion'        => PHP_VERSION,
             'wpVersion'         => get_bloginfo('version'),
             'memoryLimit'       => ini_get('memory_limit'),
@@ -73,7 +74,7 @@ trait SiteHealthSummaryTrait
             'timezone'          => wp_timezone_string(),
             'wpDebug'           => defined('WP_DEBUG') && WP_DEBUG,
             'wpDebugLog'        => defined('WP_DEBUG_LOG') && WP_DEBUG_LOG,
-        );
+        ];
     }
 
     /**
@@ -86,7 +87,7 @@ trait SiteHealthSummaryTrait
         }
 
         $allPlugins = get_plugins();
-        $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
+        $activePlugins = get_option(OptionNameType::ActivePlugins->value, []);
 
         $activeCount = 0;
         $inactiveCount = 0;
@@ -99,11 +100,11 @@ trait SiteHealthSummaryTrait
             }
         }
 
-        return array(
+        return [
             'total'    => count($allPlugins),
             'active'   => $activeCount,
             'inactive' => $inactiveCount,
-        );
+        ];
     }
 
     /**
@@ -111,23 +112,23 @@ trait SiteHealthSummaryTrait
      */
     private function buildIntegrationsSummary(): array
     {
-        $integrations = array();
+        $integrations = [];
 
         // WP Reset detection
         $hasWpResetFree = class_exists('WP_Reset');
         $hasWpResetPro = class_exists('WP_Reset_Pro');
-        $integrations['wpReset'] = array(
+        $integrations['wpReset'] = [
             'available'  => $hasWpResetFree || $hasWpResetPro,
             'isPro'      => $hasWpResetPro,
             'snapshots'  => $this->countWpResetSnapshots(),
-        );
+        ];
 
         // UpdraftPlus detection
         $hasUpdraft = class_exists('UpdraftPlus');
-        $integrations['updraftPlus'] = array(
+        $integrations['updraftPlus'] = [
             'available' => $hasUpdraft,
             'backups'   => $hasUpdraft ? $this->countUpdraftBackups() : 0,
-        );
+        ];
 
         return $integrations;
     }
@@ -150,7 +151,7 @@ trait SiteHealthSummaryTrait
         global $wp_reset;
         if ($wp_reset !== null && method_exists($wp_reset, 'get_snapshots')) {
             $snapshots = $wp_reset->get_snapshots();
-            return is_array($snapshots) ? count($snapshots) : 0;
+            return gettype($snapshots) === PhpNativeType::PhpArray->value ? count($snapshots) : 0;
         }
 
         return 0;
@@ -166,8 +167,8 @@ trait SiteHealthSummaryTrait
             return 0;
         }
 
-        $history = get_option('updraft_backup_history', array());
-        return is_array($history) ? count($history) : 0;
+        $history = get_option('updraft_backup_history', []);
+        return gettype($history) === PhpNativeType::PhpArray->value ? count($history) : 0;
     }
 
     /**
@@ -177,10 +178,10 @@ trait SiteHealthSummaryTrait
     {
         $userCount = count_users();
 
-        return array(
+        return [
             'total'    => $userCount['total_users'],
             'byRole'   => $userCount['avail_roles'],
-        );
+        ];
     }
 
     /**
@@ -194,18 +195,18 @@ trait SiteHealthSummaryTrait
         $tableCount = 0;
 
         $tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
-        if (is_array($tables)) {
+        if (gettype($tables) === PhpNativeType::PhpArray->value) {
             $tableCount = count($tables);
             foreach ($tables as $table) {
                 $dbSize += (int) $table['Data_length'] + (int) $table['Index_length'];
             }
         }
 
-        return array(
+        return [
             'tableCount' => $tableCount,
             'totalSize'  => size_format($dbSize),
             'totalBytes' => $dbSize,
             'prefix'     => $wpdb->prefix,
-        );
+        ];
     }
 }

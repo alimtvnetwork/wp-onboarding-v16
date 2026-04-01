@@ -18,6 +18,7 @@ use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait ResponseTrait {
 
@@ -28,20 +29,20 @@ trait ResponseTrait {
     private function safeExecute(
         callable $callback,
         string $context = 'operation',
-        array $logContext = array(),
+        array $logContext = [],
     ): WP_REST_Response {
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, "Throwable in {$context}");
 
-            $this->fileLogger->error("safeExecute caught Throwable", array_merge($logContext, array(
+            $this->fileLogger->error("safeExecute caught Throwable", array_merge($logContext, [
                 'context'   => $context,
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
                 'file'      => $e->getFile(),
                 'line'      => $e->getLine(),
-            )));
+            ]));
 
             return $this->errorResponse(
                 "Error in {$context}: " . $e->getMessage(),
@@ -81,7 +82,7 @@ trait ResponseTrait {
 
         $maxDepth = $this->fileLogger->getStackTraceDepth();
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $maxDepth > 0 ? $maxDepth : 15);
-        $this->fileLogger->error('Error response', array(
+        $this->fileLogger->error('Error response', [
             'message'    => $message,
             'status'     => $status,
             'stackTrace' => implode("\n", array_map(function($i, $f) {
@@ -92,18 +93,18 @@ trait ResponseTrait {
 
                 return "#{$i} {$file}({$line}): {$class}{$func}()";
             }, array_keys($backtrace), $backtrace)),
-        ));
+        ]);
     }
 
     /** Get a meaningful error code from an exception. */
     private function getExceptionCode(Throwable $exception): string {
         $code = $exception->getCode();
-        if (is_int($code) && $code > 0) {
+        if (gettype($code) === PhpNativeType::PhpInteger->value && $code > 0) {
             return 'E' . $code;
         }
 
         $class = get_class($exception);
-        $short = str_replace(array('Exception', 'Error'), '', $class);
+        $short = str_replace(['Exception', 'Error'], '', $class);
         if (empty($short)) {
             return 'EXCEPTION';
         }

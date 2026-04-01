@@ -32,14 +32,14 @@ trait CleanerDeletionTrait {
             : $this->deleteSingleFileSnapshot($filepath);
 
         if ($bytesFreed === -1) {
-            return ResultHelper::failed(array(ResponseKeyType::BytesFreed->value => 0));
+            return ResultHelper::failed([ResponseKeyType::BytesFreed->value => 0]);
         }
 
         $this->deleteSnapshotRecords((int) $snapshot['Id']);
         $this->removeExportCache((int) $snapshot['Id']);
         $this->logSnapshotDeleted($snapshot, $bytesFreed);
 
-        return ResultHelper::ok(array(ResponseKeyType::BytesFreed->value => $bytesFreed));
+        return ResultHelper::ok([ResponseKeyType::BytesFreed->value => $bytesFreed]);
     }
 
     private function deleteDirectorySnapshot(string $filepath, int $snapshotId): int {
@@ -51,11 +51,11 @@ trait CleanerDeletionTrait {
     }
 
     private function logSnapshotDeleted(array $snapshot, int $bytesFreed): void {
-        $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
+        $this->log(LogLevelType::Debug->value, 'Deleted snapshot', [
             'id'                             => $snapshot['Id'],
             ResponseKeyType::Filename->value => $snapshot['Filename'] ?? '',
             'bytesFreed'                     => PathHelper::formatBytes($bytesFreed),
-        ));
+        ]);
     }
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
@@ -69,11 +69,11 @@ trait CleanerDeletionTrait {
         $this->deleteDirectoryRecursive($incrementalDir);
         $this->cascadeDeleteIncrementalRecords($filepath);
 
-        $this->log(LogLevelType::Info->value, 'Cascade-deleted incremental children', array(
+        $this->log(LogLevelType::Info->value, 'Cascade-deleted incremental children', [
             'parentId'   => $parentId,
             'parentDir'  => basename($filepath),
             'bytesFreed' => PathHelper::formatBytes($incSize),
-        ));
+        ]);
 
         return $incSize;
     }
@@ -99,7 +99,7 @@ trait CleanerDeletionTrait {
         $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
 
         if ($isDeleteFailed) {
-            $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
+            $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', ['filepath' => $filepath]);
 
             return -1;
         }
@@ -121,10 +121,10 @@ trait CleanerDeletionTrait {
     }
 
     private function deleteSnapshotRecords(int $snapshotId): void {
-        $this->db->delete(TableType::Snapshots->value, array('Id' => $snapshotId));
+        $this->db->delete(TableType::Snapshots->value, ['Id' => $snapshotId]);
         $this->db->execute(
             'DELETE FROM ' . TableType::SnapshotProgress->value . ' WHERE SnapshotId = ?',
-            array($snapshotId)
+            [$snapshotId]
         );
     }
 
@@ -136,10 +136,10 @@ trait CleanerDeletionTrait {
                 $exporter->removeExports($snapshotId);
             }
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Warn->value, 'Failed to remove cached ZIP exports during delete', array(
+            $this->log(LogLevelType::Warn->value, 'Failed to remove cached ZIP exports during delete', [
                 ResponseKeyType::SnapshotId->value => $snapshotId,
                 ResponseKeyType::Error->value      => $e->getMessage(),
-            ));
+            ]);
         }
     }
 
@@ -147,9 +147,9 @@ trait CleanerDeletionTrait {
         try {
             $this->deleteCascadedRecords($parentDir);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to cascade-delete incremental records', array(
+            $this->log(LogLevelType::Error->value, 'Failed to cascade-delete incremental records', [
                 ResponseKeyType::Error->value => $e->getMessage(),
-            ));
+            ]);
         }
     }
 
@@ -157,15 +157,15 @@ trait CleanerDeletionTrait {
         $incrementals = $this->db->queryAll(
             'SELECT Id FROM ' . TableType::Snapshots->value .
             " WHERE Scope = '" . SnapshotModeType::Incremental->value . "' AND Filepath LIKE ?",
-            array($parentDir . '/incremental/%')
-        ) ?: array();
+            [$parentDir . '/incremental/%']
+        ) ?: [];
 
         foreach ($incrementals as $inc) {
             $this->deleteSnapshotRecords((int) $inc['Id']);
         }
 
-        $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', array(
+        $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', [
             ResponseKeyType::Count->value => count($incrementals),
-        ));
+        ]);
     }
 }

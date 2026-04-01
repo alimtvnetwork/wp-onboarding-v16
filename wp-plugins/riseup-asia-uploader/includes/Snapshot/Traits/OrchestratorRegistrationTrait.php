@@ -68,13 +68,13 @@ trait OrchestratorRegistrationTrait {
     }
 
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
-        return json_encode(array(
+        return json_encode([
             ResponseKeyType::Exported->value      => $workerResult[ResponseKeyType::Tables->value] ?? 0,
             ResponseKeyType::TotalRows->value     => $workerResult[ResponseKeyType::TotalRows->value] ?? 0,
             ResponseKeyType::Errors->value        => $workerResult[ResponseKeyType::Errors->value] ?? array(),
             ResponseKeyType::Plugins->value       => $pluginStats[ResponseKeyType::Count->value] ?? 0,
             ResponseKeyType::PluginDetails->value => $pluginStats[ResponseKeyType::Plugins->value] ?? array(),
-        ));
+        ]);
     }
 
     private function insertSnapshotRecord(
@@ -107,7 +107,7 @@ trait OrchestratorRegistrationTrait {
         int $dirSize,
         string $now,
     ): array {
-        return array(
+        return [
             $sequence,
             basename($snapshotDir),
             $snapshotDir,
@@ -120,6 +120,6 @@ trait OrchestratorRegistrationTrait {
             SnapshotStatusType::Complete->value,
             $now,
             $now,
-        );
+        ];
     }
 }

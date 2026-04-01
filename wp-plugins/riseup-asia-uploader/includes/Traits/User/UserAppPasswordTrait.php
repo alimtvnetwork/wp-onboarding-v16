@@ -24,7 +24,7 @@ trait UserAppPasswordTrait {
      */
     public function handleCreateAppPass(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'POST /users/app-password'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users/app-password']);
 
         return $this->safeExecute(function () use ($request) {
             $body = $request->get_json_params();
@@ -53,16 +53,16 @@ trait UserAppPasswordTrait {
 
             $result = WP_Application_Passwords::create_new_application_password(
                 $userId,
-                array('name' => $name),
+                ['name' => $name],
             );
 
             $isError = is_wp_error($result);
 
             if ($isError) {
-                $this->fileLogger->error('App password creation failed', array(
+                $this->fileLogger->error('App password creation failed', [
                     'userId' => $userId,
                     'error'  => $result->get_error_message(),
-                ));
+                ]);
 
                 return EnvelopeBuilder::error('App password creation failed: ' . $result->get_error_message(), 400)
                     ->autoDetectRequestedAt()
@@ -70,19 +70,19 @@ trait UserAppPasswordTrait {
                     ->toResponse();
             }
 
-            $this->fileLogger->info('App password created', array(
+            $this->fileLogger->info('App password created', [
                 'userId' => $userId,
                 'name'   => $name,
                 'by'     => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('Application password created', 201)
-                ->setSingleResult(array(
+                ->setSingleResult([
                     'UserId'   => $userId,
                     'Name'     => $name,
                     'Password' => $result[0],
                     'Uuid'     => $result[1]['uuid'],
-                ))
+                ])
                 ->autoDetectRequestedAt()
                 ->setDelegatedAt(home_url())
                 ->toResponse();
@@ -94,7 +94,7 @@ trait UserAppPasswordTrait {
      */
     public function handleRevokeAppPass(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'DELETE /users/app-password'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'DELETE /users/app-password']);
 
         return $this->safeExecute(function () use ($request) {
             $body = $request->get_json_params();
@@ -115,11 +115,11 @@ trait UserAppPasswordTrait {
             $isError = is_wp_error($deleted);
 
             if ($isError) {
-                $this->fileLogger->error('App password revocation failed', array(
+                $this->fileLogger->error('App password revocation failed', [
                     'userId' => $userId,
                     'uuid'   => $uuid,
                     'error'  => $deleted->get_error_message(),
-                ));
+                ]);
 
                 return EnvelopeBuilder::error('Revocation failed: ' . $deleted->get_error_message(), 400)
                     ->autoDetectRequestedAt()
@@ -127,14 +127,14 @@ trait UserAppPasswordTrait {
                     ->toResponse();
             }
 
-            $this->fileLogger->info('App password revoked', array(
+            $this->fileLogger->info('App password revoked', [
                 'userId' => $userId,
                 'uuid'   => $uuid,
                 'by'     => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('Application password revoked')
-                ->setSingleResult(array('Revoked' => true))
+                ->setSingleResult(['Revoked' => true])
                 ->autoDetectRequestedAt()
                 ->setDelegatedAt(home_url())
                 ->toResponse();

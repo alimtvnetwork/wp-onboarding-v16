@@ -32,13 +32,13 @@ trait RootDbCompatTrait {
 
     /** Resolve column name: check PRAGMA for PascalCase, fall back to legacy. */
     private function resolveRootCol(PDO $pdo, string $table, string $pascal, string $legacy): string {
-        static $columnCache = array();
+        static $columnCache = [];
         $cacheKey = $table;
 
         $isCacheMissing = !isset($columnCache[$cacheKey]);
 
         if ($isCacheMissing) {
-            $columnCache[$cacheKey] = array();
+            $columnCache[$cacheKey] = [];
             $columns = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($columns as $col) {
                 $columnCache[$cacheKey][$col['name']] = true;

@@ -37,12 +37,12 @@ trait CloudStorageGitHubTrait {
         $body = $this->githubApiRequest('GET', '/user', $token);
         $login = $body['login'] ?? '';
 
-        return array(
+        return [
             ResponseKeyType::Success->value          => true,
             ResponseKeyType::ConnectionStatus->value => 'Connected',
             ResponseKeyType::Username->value         => $login,
             ResponseKeyType::Message->value          => sprintf('Successfully authenticated as %s', $login),
-        );
+        ];
     }
 
     /** Ensure the target repository exists; create if missing. */
@@ -57,20 +57,20 @@ trait CloudStorageGitHubTrait {
         $repoExists = ($statusCode === HttpStatusType::Ok->value);
 
         if ($repoExists) {
-            return array('exists' => true, 'created' => false);
+            return ['exists' => true, 'created' => false];
         }
 
         $isOrg  = $this->githubIsOrganization($owner, $token);
         $apiUrl = $isOrg ? sprintf('/orgs/%s/repos', urlencode($owner)) : '/user/repos';
 
-        $this->githubApiRequest('POST', $apiUrl, $token, array(
+        $this->githubApiRequest('POST', $apiUrl, $token, [
             'name'        => $repo,
             'description' => 'WordPress site backups managed by Riseup Asia Uploader',
             'private'     => true,
             'auto_init'   => true,
-        ));
+        ]);
 
-        return array('exists' => true, 'created' => true);
+        return ['exists' => true, 'created' => true];
     }
 
     /** Upload a file via the Contents API (≤100 MB). */
@@ -93,11 +93,11 @@ trait CloudStorageGitHubTrait {
 
         $content = file_get_contents($localPath);
 
-        $putBody = array(
+        $putBody = [
             'message' => sprintf('Backup: %s', basename($remotePath)),
             'content' => base64_encode($content),
             'branch'  => 'main',
-        );
+        ];
 
         $isUpdate = !empty($existingSha);
 
@@ -107,11 +107,11 @@ trait CloudStorageGitHubTrait {
 
         $body = $this->githubApiRequest('PUT', $contentsPath, $token, $putBody);
 
-        return array(
+        return [
             ResponseKeyType::RemotePath->value => $body['content']['path'] ?? $remotePath,
             ResponseKeyType::RemoteUrl->value  => $body['content']['html_url'] ?? '',
             ResponseKeyType::Bytes->value      => $fileSize,
-        );
+        ];
     }
 
     /** Upload a large file via the Git Data API (blob → tree → commit). */
@@ -128,13 +128,13 @@ trait CloudStorageGitHubTrait {
         $baseTreeSha = $commitBody['tree']['sha'] ?? '';
 
         $content  = file_get_contents($localPath);
-        $blobBody = $this->githubApiRequest('POST', "{$base}/git/blobs", $token, array(
+        $blobBody = $this->githubApiRequest('POST', "{$base}/git/blobs", $token, [
             'content'  => base64_encode($content),
             'encoding' => 'base64',
-        ));
+        ]);
         $blobSha = $blobBody['sha'] ?? '';
 
-        $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, array(
+        $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, [
             'base_tree' => $baseTreeSha,
             'tree'      => array(array(
                 'path' => $remotePath,
@@ -142,44 +142,44 @@ trait CloudStorageGitHubTrait {
                 'type' => 'blob',
                 'sha'  => $blobSha,
             )),
-        ));
+        ]);
         $newTreeSha = $treeBody['sha'] ?? '';
 
-        $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, array(
+        $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, [
             'message' => sprintf('Backup: %s', basename($remotePath)),
             'tree'    => $newTreeSha,
             'parents' => array($lastCommitSha),
-        ));
+        ]);
         $newCommitSha = $newCommitBody['sha'] ?? '';
 
-        $this->githubApiRequest('PATCH', "{$base}/git/refs/heads/main", $token, array(
+        $this->githubApiRequest('PATCH', "{$base}/git/refs/heads/main", $token, [
             'sha' => $newCommitSha,
-        ));
+        ]);
 
-        return array(
+        return [
             ResponseKeyType::RemotePath->value => $remotePath,
             ResponseKeyType::RemoteUrl->value  => sprintf('https://github.com/%s/%s/blob/main/%s', $owner, $repo, $remotePath),
             ResponseKeyType::Bytes->value      => filesize($localPath),
-        );
+        ];
     }
 
     /** List files in a repository directory. */
     private function githubListFiles(array $account, string $token, string $dir): array
     {
         $body = $this->githubListContents($account, $token, $dir);
-        $files = array();
+        $files = [];
 
         foreach ($body as $item) {
             $isFile = (($item['type'] ?? '') === 'file');
 
             if ($isFile) {
-                $files[] = array(
+                $files[] = [
                     'Name'      => $item['name'] ?? '',
                     'Path'      => $item['path'] ?? '',
                     'Size'      => $item['size'] ?? 0,
                     'Sha'       => $item['sha'] ?? '',
                     'RemoteUrl' => $item['html_url'] ?? '',
-                );
+                ];
             }
         }
 
@@ -197,7 +197,7 @@ trait CloudStorageGitHubTrait {
     private function githubListDirectories(array $account, string $token, string $dir): array
     {
         $body = $this->githubListContents($account, $token, $dir);
-        $dirs = array();
+        $dirs = [];
 
         foreach ($body as $item) {
             $isDir = (($item['type'] ?? '') === 'dir');
@@ -229,7 +229,7 @@ trait CloudStorageGitHubTrait {
         $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            return array();
+            return [];
         }
 
         return $this->githubApiRequest('GET', $path, $token);
@@ -250,11 +250,11 @@ trait CloudStorageGitHubTrait {
             return false;
         }
 
-        $this->githubApiRequest('DELETE', $contentsPath, $token, array(
+        $this->githubApiRequest('DELETE', $contentsPath, $token, [
             'message' => sprintf('Remove old backup: %s', basename($remotePath)),
             'sha'     => $sha,
             'branch'  => 'main',
-        ));
+        ]);
 
         return true;
     }
@@ -291,39 +291,39 @@ trait CloudStorageGitHubTrait {
         $baseTreeSha = $commitBody['tree']['sha'] ?? '';
 
         // 3. Build tree entries that delete each file (sha = null removes it)
-        $treeEntries = array();
+        $treeEntries = [];
 
         foreach ($filePaths as $filePath) {
-            $treeEntries[] = array(
+            $treeEntries[] = [
                 'path' => $filePath,
                 'mode' => '100644',
                 'type' => 'blob',
                 'sha'  => null,
-            );
+            ];
         }
 
-        $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, array(
+        $treeBody = $this->githubApiRequest('POST', "{$base}/git/trees", $token, [
             'base_tree' => $baseTreeSha,
             'tree'      => $treeEntries,
-        ));
+        ]);
         $newTreeSha = $treeBody['sha'] ?? '';
 
         // 4. Create commit and update ref
-        $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, array(
+        $newCommitBody = $this->githubApiRequest('POST', "{$base}/git/commits", $token, [
             'message' => sprintf('cleanup: remove folder %s', $path),
             'tree'    => $newTreeSha,
             'parents' => array($lastCommitSha),
-        ));
+        ]);
         $newCommitSha = $newCommitBody['sha'] ?? '';
 
-        $this->githubApiRequest('PATCH', "{$base}/git/refs/heads/main", $token, array(
+        $this->githubApiRequest('PATCH', "{$base}/git/refs/heads/main", $token, [
             'sha' => $newCommitSha,
-        ));
+        ]);
 
-        $this->fileLogger->info('[CLOUD-GITHUB] Deleted folder', array(
+        $this->fileLogger->info('[CLOUD-GITHUB] Deleted folder', [
             'path'      => $path,
             'fileCount' => count($filePaths),
-        ));
+        ]);
     }
 
     /**
@@ -344,11 +344,11 @@ trait CloudStorageGitHubTrait {
         $isNotFound   = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            return array();
+            return [];
         }
 
         $body  = $this->githubApiRequest('GET', $contentsPath, $token);
-        $paths = array();
+        $paths = [];
 
         foreach ($body as $item) {
             $type = $item['type'] ?? '';
@@ -404,7 +404,7 @@ trait CloudStorageGitHubTrait {
         }
 
         $statusCode  = wp_remote_retrieve_response_code($response);
-        $decoded     = json_decode(wp_remote_retrieve_body($response), true) ?? array();
+        $decoded     = json_decode(wp_remote_retrieve_body($response), true) ?? [];
         $isRateLimit = ($statusCode === 403);
 
         if ($isRateLimit) {

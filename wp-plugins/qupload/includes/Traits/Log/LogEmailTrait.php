@@ -23,6 +23,7 @@ use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\EnvelopeBuilder;
 use QUpload\Helpers\PathHelper;
+use QUpload\Enums\PhpNativeType;
 
 trait LogEmailTrait
 {
@@ -85,7 +86,7 @@ trait LogEmailTrait
         $clientIp = $this->resolveClientIp();
         $subject = $this->buildEmailSubject();
         $emailBody = $this->buildEmailBody($collected['file_names'], $collected['total_size'], $machineName, $clientIp);
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        $headers = ['Content-Type: text/plain; charset=UTF-8'];
 
         $wasSent = wp_mail($recipient, $subject, $emailBody, $headers, $collected['attachments']);
         $this->cleanupTempFiles($collected['temp_files']);
@@ -96,7 +97,7 @@ trait LogEmailTrait
         }
 
         $this->incrementEmailCount();
-        $this->fileLogger->info('Log files emailed', array('recipient' => $recipient, 'files' => $collected['file_names'], 'machine' => $machineName, 'ip' => $clientIp));
+        $this->fileLogger->info('Log files emailed', ['recipient' => $recipient, 'files' => $collected['file_names'], 'machine' => $machineName, 'ip' => $clientIp]);
 
         return $this->buildEmailSuccessResponse($recipient, $collected, $machineName, $clientIp);
     }
@@ -104,7 +105,7 @@ trait LogEmailTrait
     /** Build the success response after sending log email. */
     private function buildEmailSuccessResponse(string $recipient, array $collected, string $machineName, string $clientIp): WP_REST_Response {
         return EnvelopeBuilder::success('Log files emailed successfully')
-            ->setSingleResult(array(
+            ->setSingleResult([
                 'sent_to'          => $recipient,
                 'files_attached'   => $collected['file_names'],
                 'total_size_bytes' => $collected['total_size'],
@@ -112,7 +113,7 @@ trait LogEmailTrait
                     'machine' => $machineName,
                     'ip'      => $clientIp,
                 ),
-            ))
+            ])
             ->toResponse();
     }
 
@@ -124,7 +125,7 @@ trait LogEmailTrait
         $attachments = $activeResult['attachments'];
         $fileNames = $activeResult['file_names'];
         $totalSize = $activeResult['total_size'];
-        $tempFiles = array();
+        $tempFiles = [];
 
         if ($includeArchives) {
             $archiveResult = $this->collectArchivedFiles($logsDir . '/archive', $logTypes);
@@ -134,18 +135,18 @@ trait LogEmailTrait
             $tempFiles = $archiveResult['temp_files'];
         }
 
-        return array(
+        return [
             'attachments' => $attachments,
             'file_names'  => $fileNames,
             'total_size'  => $totalSize,
             'temp_files'  => $tempFiles,
-        );
+        ];
     }
 
     /** Collect active (non-archived) log files. */
     private function collectActiveLogFiles(string $logsDir, array $logTypes): array {
-        $attachments = array();
-        $fileNames = array();
+        $attachments = [];
+        $fileNames = [];
         $totalSize = 0;
 
         foreach ($logTypes as $logType) {
@@ -160,7 +161,7 @@ trait LogEmailTrait
             }
         }
 
-        return array('attachments' => $attachments, 'file_names' => $fileNames, 'total_size' => $totalSize);
+        return ['attachments' => $attachments, 'file_names' => $fileNames, 'total_size' => $totalSize];
     }
 
     /** Return file size in bytes if valid, or 0 if missing/empty. */
@@ -179,7 +180,7 @@ trait LogEmailTrait
 
     /** Collect archived log files from rotation folders. */
     private function collectArchivedFiles(string $archiveDir, array $logTypes): array {
-        $result = array('attachments' => array(), 'file_names' => array(), 'total_size' => 0, 'temp_files' => array());
+        $result = ['attachments' => array(), 'file_names' => array(), 'total_size' => 0, 'temp_files' => array()];
         $isArchiveMissing = !is_dir($archiveDir);
 
         if ($isArchiveMissing) {
@@ -233,7 +234,7 @@ trait LogEmailTrait
             return null;
         }
 
-        return array('path' => $tempPath, 'name' => $renamedName, 'size' => $size);
+        return ['path' => $tempPath, 'name' => $renamedName, 'size' => $size];
     }
 
     /** Build the temp file path for an archived log copy. */
@@ -250,7 +251,7 @@ trait LogEmailTrait
         $isReadFailed = ($entries === false);
 
         if ($isReadFailed) {
-            return array();
+            return [];
         }
 
         $folders = $this->filterDirectoryEntries($archiveDir, $entries);
@@ -261,7 +262,7 @@ trait LogEmailTrait
 
     /** Filter directory entries to only include subdirectories. */
     private function filterDirectoryEntries(string $parentDir, array $entries): array {
-        $folders = array();
+        $folders = [];
 
         foreach ($entries as $entry) {
             $isDotEntry = ($entry === '.' || $entry === '..');
@@ -309,7 +310,7 @@ trait LogEmailTrait
 
     /** Build the header lines for the email body. */
     private function buildEmailHeaderLines(string $machineName, string $clientIp): array {
-        return array(
+        return [
             PluginConfigType::Name->value . ' — Log File Export',
             str_repeat('=', 50),
             '',
@@ -319,7 +320,7 @@ trait LogEmailTrait
             'Timestamp:       ' . gmdate('Y-m-d\TH:i:s\Z'),
             '',
             'Attached Files:',
-        );
+        ];
     }
 
     /** Format bytes into human-readable string. */
@@ -344,7 +345,7 @@ trait LogEmailTrait
     /** Resolve the email recipient from request body or fall back to admin_email. */
     private function resolveEmailRecipient(array $body): string {
         $customRecipient = $body['recipient'] ?? '';
-        $hasCustomRecipient = (is_string($customRecipient) && strlen(trim($customRecipient)) > 0);
+        $hasCustomRecipient = (gettype($customRecipient) === PhpNativeType::PhpString->value && strlen(trim($customRecipient)) > 0);
 
         if ($hasCustomRecipient) {
             $sanitized = sanitize_email(trim($customRecipient));

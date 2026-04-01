@@ -32,7 +32,7 @@ trait RestoreSqliteValidationTrait {
 
             return ResultHelper::error(
                 'Table not found in SQLite file',
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
 
@@ -43,17 +43,17 @@ trait RestoreSqliteValidationTrait {
 
             return ResultHelper::error(
                 'No columns found in SQLite table',
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
 
         $rowCount = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Sqlite->value   => $sqlite,
             ResponseKeyType::Columns->value  => $columnNames,
             ResponseKeyType::RowCount->value => $rowCount,
-        ));
+        ]);
     }
 
     private function sqliteTableExists(PDO $sqlite, string $table): bool {
@@ -90,9 +90,9 @@ trait RestoreSqliteValidationTrait {
             $this->wpdb->query("COMMIT");
             $sqlite = null;
 
-            return ResultHelper::ok(array(
+            return ResultHelper::ok([
                 ResponseKeyType::Rows->value => $totalRows,
-            ));
+            ]);
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
 

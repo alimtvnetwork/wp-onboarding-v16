@@ -20,6 +20,7 @@ use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait DetectorValidationTrait {
     private function validateSettings(array $settings): array {
@@ -33,7 +34,7 @@ trait DetectorValidationTrait {
     }
 
     private function validateEnumFields(array &$settings): void {
-        $rules = array(
+        $rules = [
             SettingsKeyType::PreferredProvider->value => array(
                 SnapshotProviderType::Auto->value,
                 SnapshotProviderType::WpReset->value,
@@ -58,13 +59,13 @@ trait DetectorValidationTrait {
                 RetentionType::Count->value,
                 RetentionType::None->value,
             ),
-        );
-        $defaults = array(
+        ];
+        $defaults = [
             SettingsKeyType::PreferredProvider->value  => SnapshotProviderType::Auto->value,
             SettingsKeyType::ScheduleFrequency->value  => SnapshotFrequencyType::Daily->value,
             SettingsKeyType::DefaultScope->value       => SnapshotScopeType::WordPress->value,
             SettingsKeyType::RetentionType->value      => RetentionType::Days->value,
-        );
+        ];
 
         foreach ($rules as $key => $valid) {
             if (BooleanHelpers::isAbsentFromList($settings[$key], $valid)) {
@@ -101,10 +102,10 @@ trait DetectorValidationTrait {
             $settings[SettingsKeyType::ScheduleTime->value] = '03:00';
         }
 
-        $isCustomTablesInvalid = (is_array($settings[SettingsKeyType::CustomTables->value]) === false);
+        $isCustomTablesInvalid = (gettype($settings[SettingsKeyType::CustomTables->value]) === PhpNativeType::PhpArray->value === false);
 
         if ($isCustomTablesInvalid) {
-            $settings[SettingsKeyType::CustomTables->value] = array();
+            $settings[SettingsKeyType::CustomTables->value] = [];
         }
     }
 }

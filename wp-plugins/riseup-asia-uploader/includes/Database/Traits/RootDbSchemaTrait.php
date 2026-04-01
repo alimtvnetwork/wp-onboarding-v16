@@ -116,13 +116,13 @@ trait RootDbSchemaTrait {
     }
 
     private function getLegacyTableMap(): array {
-        return array(
+        return [
             'SnapshotMeta'       => 'snapshot_meta',
             'SnapshotTables'     => 'snapshot_tables',
             'TableDependencies'  => 'table_dependencies',
             'IncrementalBackups' => 'incremental_backups',
             'PluginSnapshots'    => 'plugin_snapshots',
-        );
+        ];
     }
 
     /**
@@ -152,7 +152,7 @@ trait RootDbSchemaTrait {
     }
 
     private function getLegacyColumnMap(): array {
-        return array(
+        return [
             'Id'              => 'id',
             'Title'           => 'title',
             'Type'            => 'type',
@@ -182,7 +182,7 @@ trait RootDbSchemaTrait {
             'PluginSlug'      => 'plugin_slug',
             'PluginName'      => 'plugin_name',
             'ZipFile'         => 'zip_file',
-        );
+        ];
     }
 
     /**
@@ -212,7 +212,7 @@ trait RootDbSchemaTrait {
     }
 
     private function buildMetadataValues(array $config, string $mysqlVersion, string $wpVersion): array {
-        return array(
+        return [
             $config[ResponseKeyType::Title->value] ?? SnapshotConfigType::UntitledTitle,
             $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
             DateHelper::nowIso(),
@@ -221,15 +221,15 @@ trait RootDbSchemaTrait {
             $wpVersion,
             PluginConfigType::Version->value,
             isset($config[ResponseKeyType::Settings->value]) ? json_encode($config[ResponseKeyType::Settings->value]) : null,
-        );
+        ];
     }
 
     private function logMetadataPopulated(array $config, string $mysqlVersion, string $wpVersion): void {
-        $this->log(LogLevelType::Info->value, 'Metadata populated', array(
+        $this->log(LogLevelType::Info->value, 'Metadata populated', [
             ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? 'Untitled',
             'mysqlVersion' => $mysqlVersion,
             'wpVersion' => $wpVersion,
-        ));
+        ]);
     }
 
     public function populateDependencies(PDO $pdo, string $scope = 'all'): array {
@@ -248,20 +248,20 @@ trait RootDbSchemaTrait {
         $pdo->beginTransaction();
 
         foreach ($dependencies as $dep) {
-            $stmt->execute(array(
+            $stmt->execute([
                 $dep['parent_table'],
                 $dep['child_table'],
                 $dep['fk_column'],
                 $dep['ref_column'],
-            ));
+            ]);
         }
         $pdo->commit();
     }
 
     private function logDependenciesPopulated(array $analysis): void {
-        $this->log(LogLevelType::Info->value, 'Dependencies populated', array(
+        $this->log(LogLevelType::Info->value, 'Dependencies populated', [
             'edges' => count($analysis[ResponseKeyType::Dependencies->value]),
             ResponseKeyType::Tables->value => count($analysis[ResponseKeyType::Tables->value]),
-        ));
+        ]);
     }
 }

@@ -34,7 +34,7 @@ trait LogRotationStatusTrait
         $newestArchive = $this->getNewestArchiveTimestamp($archiveDir);
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 'rotation' => array(
                     'config'          => $config,
@@ -42,7 +42,7 @@ trait LogRotationStatusTrait
                     'oldest_archive'  => $oldestArchive,
                     'newest_archive'  => $newestArchive,
                 ),
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -106,7 +106,7 @@ trait LogRotationStatusTrait
             return null;
         }
 
-        $folders = array();
+        $folders = [];
 
         foreach ($entries as $entry) {
             $isDotEntry = ($entry === '.' || $entry === '..');

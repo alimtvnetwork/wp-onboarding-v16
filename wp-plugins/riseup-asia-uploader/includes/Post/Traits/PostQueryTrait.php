@@ -23,17 +23,17 @@ use WP_Query;
 
 trait PostQueryTrait {
 
-    public function listPosts(array $params = array()): array {
+    public function listPosts(array $params = []): array {
         $this->fileLogger->debug('Listing posts', $params);
 
         try {
-            $args = array(
+            $args = [
                 'post_type'      => 'post',
                 'posts_per_page' => min((int) ($params['limit'] ?? PaginationConfigType::DefaultLimit->value), PaginationConfigType::MaxLimit->value),
                 'offset'         => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'        => 'date',
                 'order'          => 'DESC',
-            );
+            ];
 
             $hasStatus = !empty($params['status'] ?? null);
             if ($hasStatus) {
@@ -48,10 +48,10 @@ trait PostQueryTrait {
             }
 
             $query = new WP_Query($args);
-            $posts = array();
+            $posts = [];
 
             foreach ($query->posts as $post) {
-                $posts[] = array(
+                $posts[] = [
                     'id'         => $post->ID,
                     'title'      => $post->post_title,
                     'slug'       => $post->post_name,
@@ -59,15 +59,15 @@ trait PostQueryTrait {
                     'permalink'  => get_permalink($post->ID),
                     ResponseKeyType::CreatedAt->value => $post->post_date_gmt . 'Z',
                     ResponseKeyType::UpdatedAt->value => $post->post_modified_gmt . 'Z',
-                );
+                ];
             }
 
-            return ResultHelper::ok(array(
+            return ResultHelper::ok([
                 ResponseKeyType::Total->value  => $query->found_posts,
                 ResponseKeyType::Limit->value  => $args['posts_per_page'],
                 ResponseKeyType::Offset->value => $args['offset'],
                 ResponseKeyType::Posts->value   => $posts,
-            ));
+            ]);
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List posts exception');
         }

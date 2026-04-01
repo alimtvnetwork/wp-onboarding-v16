@@ -37,16 +37,16 @@ trait RestoreHelperTrait {
         array $meta,
         int $totalRows,
     ): array {
-        $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
+        $this->log(LogLevelType::Info->value, 'Per-table restore complete', [
             ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value          => $totalRows,
             ResponseKeyType::IncrementalsApplied->value => $incResult[ResponseKeyType::Applied->value],
             ResponseKeyType::Errors->value             => count($errors),
             ResponseKeyType::BackupId->value           => $backupId,
             ResponseKeyType::Duration->value           => round($duration, 2) . 's',
-        ));
+        ]);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::TablesRestored->value     => $masterResult[ResponseKeyType::TablesRestored->value],
             ResponseKeyType::TotalRows->value          => $totalRows,
             ResponseKeyType::IncrementalsApplied->value => $incResult[ResponseKeyType::Applied->value],
@@ -54,7 +54,7 @@ trait RestoreHelperTrait {
             ResponseKeyType::Errors->value             => $errors,
             ResponseKeyType::Duration->value           => $duration,
             ResponseKeyType::Meta->value                   => $meta,
-        ));
+        ]);
     }
 
     private function logAuditRestore(
@@ -89,13 +89,13 @@ trait RestoreHelperTrait {
         int $totalRows,
         float $duration,
     ): string {
-        return json_encode(array(
+        return json_encode([
             ResponseKeyType::Directory->value      => basename($snapshotDir),
             ResponseKeyType::TablesRestored->value  => $tablesRestored,
             ResponseKeyType::TotalRows->value       => $totalRows,
             ResponseKeyType::Duration->value        => round($duration, 2),
             ResponseKeyType::Type->value                => SnapshotWorkerModeType::PerTable->value,
-        ));
+        ]);
     }
 
     private function insertAuditRecord(PDO $pdo, string $details): void {
@@ -103,20 +103,20 @@ trait RestoreHelperTrait {
             "INSERT INTO " . TableType::Transactions->value .
             " (PluginSlug, Action, Status, Details, SourceMachine, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)"
         );
-        $stmt->execute(array(
+        $stmt->execute([
             PluginConfigType::Slug->value,
             ActionType::SnapshotRestore->value,
             StatusType::Success->value,
             $details,
             gethostname() ?: php_uname('n'),
             DateHelper::nowUtc(),
-        ));
+        ]);
     }
 
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $isLoggerMissing = ($this->logger === null);
 

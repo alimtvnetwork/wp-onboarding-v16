@@ -76,7 +76,7 @@ trait DatabaseMigrationsV6V8Trait {
         // 'All' = PluginSelectionType::All, 'Auto' = SnapshotProviderType::Auto,
         // 'WordPress' = SnapshotScopeType::WordPress, 'Manual' = SnapshotFrequencyType::Manual.
         // Literals are required here because enum ->value access is not permitted in array declarations.
-        $defaults = array(
+        $defaults = [
             array('snapshot.mode',             'PerTable',     'string'),
             array('snapshot.backup_type',      'Incremental',  'string'),
             array('snapshot.worker_count',     '10',           'int'),
@@ -92,18 +92,18 @@ trait DatabaseMigrationsV6V8Trait {
             array('snapshot.frequency',        'Manual',       'string'),
             array('snapshot.schedule_time',    '03:00',        'string'),
             array('snapshot.pre_restore_backup', '1',          'bool'),
-        );
+        ];
 
         $now  = DateHelper::nowUtc();
         $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO " . TableType::SnapshotSettings->value . " (Key, Value, Type, UpdatedAt) VALUES (?, ?, ?, ?)");
 
         foreach ($defaults as $row) {
-            $stmt->execute(array(
+            $stmt->execute([
                 $row[0],
                 $row[1],
                 $row[2],
                 $now,
-            ));
+            ]);
         }
 
         $this->recordMigration(8);

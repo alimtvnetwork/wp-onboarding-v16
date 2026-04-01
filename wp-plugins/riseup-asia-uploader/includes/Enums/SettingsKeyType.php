@@ -49,7 +49,7 @@ enum SettingsKeyType: string
      * @return array<string, self>
      */
     public static function legacyMap(): array {
-        return array(
+        return [
             'preferred_provider'     => self::PreferredProvider,
             'schedule_enabled'       => self::ScheduleEnabled,
             'schedule_frequency'     => self::ScheduleFrequency,
@@ -76,7 +76,7 @@ enum SettingsKeyType: string
             'provider'               => self::Provider,
             'scope'                  => self::Scope,
             'frequency'              => self::Frequency,
-        );
+        ];
     }
 
     /**
@@ -87,7 +87,7 @@ enum SettingsKeyType: string
      */
     public static function migrateArray(array $data): array {
         $map = self::legacyMap();
-        $migrated = array();
+        $migrated = [];
 
         foreach ($data as $key => $value) {
             $enumCase = $map[$key] ?? self::tryFrom($key);

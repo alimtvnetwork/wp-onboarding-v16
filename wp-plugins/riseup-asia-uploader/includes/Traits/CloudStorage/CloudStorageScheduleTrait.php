@@ -41,19 +41,19 @@ trait CloudStorageScheduleTrait {
         $biweeklyKey = BackupScheduleType::Biweekly->recurrence();
 
         if (BooleanHelpers::isKeyMissing($schedules, $biweeklyKey)) {
-            $schedules[$biweeklyKey] = array(
+            $schedules[$biweeklyKey] = [
                 'interval' => BackupScheduleType::Biweekly->intervalSeconds(),
                 'display'  => 'Every Two Weeks',
-            );
+            ];
         }
 
         $monthlyKey = BackupScheduleType::Monthly->recurrence();
 
         if (BooleanHelpers::isKeyMissing($schedules, $monthlyKey)) {
-            $schedules[$monthlyKey] = array(
+            $schedules[$monthlyKey] = [
                 'interval' => BackupScheduleType::Monthly->intervalSeconds(),
                 'display'  => 'Once Monthly',
-            );
+            ];
         }
 
         return $schedules;
@@ -62,9 +62,9 @@ trait CloudStorageScheduleTrait {
     /** Initialize cloud backup cron hooks. Called from plugin init. */
     public function initCloudBackupSchedule(): void
     {
-        add_filter(HookType::CronSchedules->value, array($this, 'registerCloudBackupCronSchedules'));
-        add_action(HookType::CronCloudFullBackup->value, array($this, 'handleScheduledFullBackup'));
-        add_action(HookType::CronCloudIncrementalBackup->value, array($this, 'handleScheduledIncrementalBackup'));
+        add_filter(HookType::CronSchedules->value, [$this, 'registerCloudBackupCronSchedules']);
+        add_action(HookType::CronCloudFullBackup->value, [$this, 'handleScheduledFullBackup']);
+        add_action(HookType::CronCloudIncrementalBackup->value, [$this, 'handleScheduledIncrementalBackup']);
 
         $this->syncCloudBackupSchedule();
     }
@@ -106,10 +106,10 @@ trait CloudStorageScheduleTrait {
                 HookType::CronCloudFullBackup->value,
             );
 
-            $this->fileLogger->info('[CLOUD-SCHEDULE] Full backup scheduled', array(
+            $this->fileLogger->info('[CLOUD-SCHEDULE] Full backup scheduled', [
                 'frequency' => $fullSchedule->value,
                 'nextRun'   => gmdate('c', $nextFullRun),
-            ));
+            ]);
         }
 
         // ── Schedule incremental backup (if strategy includes it) ─
@@ -129,10 +129,10 @@ trait CloudStorageScheduleTrait {
                     HookType::CronCloudIncrementalBackup->value,
                 );
 
-                $this->fileLogger->info('[CLOUD-SCHEDULE] Incremental backup scheduled', array(
+                $this->fileLogger->info('[CLOUD-SCHEDULE] Incremental backup scheduled', [
                     'frequency' => $incrSchedule->value,
                     'nextRun'   => gmdate('c', $nextIncrRun),
-                ));
+                ]);
             }
         }
     }
@@ -180,7 +180,7 @@ trait CloudStorageScheduleTrait {
      */
     public function handleManualBackup(string $label): void
     {
-        $this->fileLogger->info('[CLOUD-BACKUP] Starting manual backup', array('label' => $label));
+        $this->fileLogger->info('[CLOUD-BACKUP] Starting manual backup', ['label' => $label]);
 
         $accounts = $this->getEnabledCloudStorageAccounts();
 
@@ -192,7 +192,7 @@ trait CloudStorageScheduleTrait {
             }
         }
 
-        $this->fileLogger->info('[CLOUD-BACKUP] Manual backup complete', array('label' => $label));
+        $this->fileLogger->info('[CLOUD-BACKUP] Manual backup complete', ['label' => $label]);
     }
 
     /** Execute a full backup for a single account. */
@@ -217,7 +217,7 @@ trait CloudStorageScheduleTrait {
             $label,
         );
 
-        $historyId = $this->insertBackupHistory(array(
+        $historyId = $this->insertBackupHistory([
             'AccountId'  => $accountId,
             'BackupType' => CloudStorageBackupType::Full->value,
             'FileName'   => $folderName,
@@ -225,7 +225,7 @@ trait CloudStorageScheduleTrait {
             'BranchName' => 'main',
             'FolderPath' => $folderPath,
             'Status'     => CloudStorageBackupStatusType::Pending->value,
-        ));
+        ]);
 
         $zipPath     = null;
         $splitResult = null;
@@ -251,29 +251,29 @@ trait CloudStorageScheduleTrait {
 
             $duration = round(microtime(true) - $startTime, 2);
 
-            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, array(
+            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, [
                 'FolderPath'    => $folderPath,
                 'ChunkCount'    => $splitResult['chunkCount'],
                 'TotalSize'     => $splitResult['totalSize'],
                 'FileSizeBytes' => $splitResult['totalSize'],
                 'Duration'      => $duration,
-            ));
+            ]);
 
             // ── 4. Rotation ────────────────────────────────────
             $this->applyFullBackupRotation($account, $token);
 
-            $this->fileLogger->info('[CLOUD-BACKUP] Full backup uploaded', array(
+            $this->fileLogger->info('[CLOUD-BACKUP] Full backup uploaded', [
                 'accountId'  => $accountId,
                 'folder'     => $folderPath,
                 'chunks'     => $splitResult['chunkCount'],
                 'totalSize'  => $splitResult['totalSize'],
                 'duration'   => $duration,
-            ));
+            ]);
 
         } catch (Throwable $e) {
-            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, array(
+            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, [
                 'ErrorMessage' => $e->getMessage(),
-            ));
+            ]);
 
             $this->fileLogger->logException($e, '[CLOUD-BACKUP] Full backup failed for account ' . $accountId);
 
@@ -294,9 +294,9 @@ trait CloudStorageScheduleTrait {
         $hasNoFullBackup = ($latestFull === false);
 
         if ($hasNoFullBackup) {
-            $this->fileLogger->info('[CLOUD-BACKUP] No full backup found, running full backup instead', array(
+            $this->fileLogger->info('[CLOUD-BACKUP] No full backup found, running full backup instead', [
                 'accountId' => $accountId,
-            ));
+            ]);
 
             $this->executeFullBackupForAccount($account);
 
@@ -321,7 +321,7 @@ trait CloudStorageScheduleTrait {
             $timestamp,
         );
 
-        $historyId = $this->insertBackupHistory(array(
+        $historyId = $this->insertBackupHistory([
             'AccountId'        => $accountId,
             'BackupType'       => CloudStorageBackupType::Incremental->value,
             'FileName'         => str_pad((string) $incrSequence, 3, '0', STR_PAD_LEFT),
@@ -330,7 +330,7 @@ trait CloudStorageScheduleTrait {
             'FolderPath'       => $incrFolderPath,
             'BaseFullBackupId' => (int) $latestFull['Id'],
             'Status'           => CloudStorageBackupStatusType::Pending->value,
-        ));
+        ]);
 
         $zipPath     = null;
         $splitResult = null;
@@ -358,7 +358,7 @@ trait CloudStorageScheduleTrait {
 
             $duration = round(microtime(true) - $startTime, 2);
 
-            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, array(
+            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Success, [
                 'FolderPath'    => $incrFolderPath,
                 'ChunkCount'    => $splitResult['chunkCount'],
                 'TotalSize'     => $splitResult['totalSize'],
@@ -366,20 +366,20 @@ trait CloudStorageScheduleTrait {
                 'TablesChanged' => $incrResult[ResponseKeyType::TablesChanged->value] ?? '',
                 'RowsChanged'   => $incrResult[ResponseKeyType::TotalNewRows->value] ?? 0,
                 'Duration'      => $duration,
-            ));
+            ]);
 
-            $this->fileLogger->info('[CLOUD-BACKUP] Incremental backup uploaded', array(
+            $this->fileLogger->info('[CLOUD-BACKUP] Incremental backup uploaded', [
                 'accountId'     => $accountId,
                 'folder'        => $incrFolderPath,
                 'chunks'        => $splitResult['chunkCount'],
                 'tablesChanged' => $incrResult[ResponseKeyType::TablesChanged->value] ?? '',
                 'duration'      => $duration,
-            ));
+            ]);
 
         } catch (Throwable $e) {
-            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, array(
+            $this->updateBackupHistoryStatus($historyId, CloudStorageBackupStatusType::Failed, [
                 'ErrorMessage' => $e->getMessage(),
-            ));
+            ]);
 
             $this->fileLogger->logException($e, '[CLOUD-BACKUP] Incremental backup failed for account ' . $accountId);
 

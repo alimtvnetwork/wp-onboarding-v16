@@ -21,7 +21,7 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait ExporterBuildCollectTrait {
     private function collectSnapshotFiles(string $dir): array {
-        $files = array();
+        $files = [];
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
@@ -36,7 +36,7 @@ trait ExporterBuildCollectTrait {
     }
 
     private function collectIncrementalFiles(string $incrementalDir): array {
-        $files = array();
+        $files = [];
 
         if (PathHelper::isDirMissing($incrementalDir)) {
             return $files;
@@ -60,7 +60,7 @@ trait ExporterBuildCollectTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-            return array();
+            return [];
         }
 
         $stmt = $pdo->prepare(
@@ -68,7 +68,7 @@ trait ExporterBuildCollectTrait {
             ' WHERE Scope = \'incremental\' AND Filepath LIKE ? AND Status = ? ORDER BY CreatedAt ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';
-        $stmt->execute(array($parentDir, SnapshotStatusType::Complete->value));
+        $stmt->execute([$parentDir, SnapshotStatusType::Complete->value]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

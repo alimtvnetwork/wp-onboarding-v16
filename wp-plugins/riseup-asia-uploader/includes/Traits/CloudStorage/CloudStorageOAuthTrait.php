@@ -42,23 +42,23 @@ trait CloudStorageOAuthTrait {
             $isClientMissing = empty($clientId);
 
             if ($isClientMissing) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Google OAuth Client ID not configured. Go to Settings to add your Google Cloud credentials.',
-                ), HttpStatusType::BadRequest->value);
+                ], HttpStatusType::BadRequest->value);
             }
 
             $state = wp_generate_password(32, false);
 
-            set_transient('riseup_oauth_state_' . $state, array(
+            set_transient('riseup_oauth_state_' . $state, [
                 'label' => $accountLabel,
                 'time'  => time(),
-            ), 600);
+            ], 600);
 
             $namespace  = PluginConfigType::ApiNamespace->value;
             $redirectUri = rest_url($namespace . '/' . EndpointType::CloudStorageOAuthCallback->value);
 
-            $oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(array(
+            $oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
                 'client_id'     => $clientId,
                 'redirect_uri'  => $redirectUri,
                 'response_type' => 'code',
@@ -66,20 +66,20 @@ trait CloudStorageOAuthTrait {
                 'access_type'   => 'offline',
                 'prompt'        => 'consent',
                 'state'         => $state,
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value    => true,
                 ResponseKeyType::OAuthUrl->value   => $oauthUrl,
                 ResponseKeyType::OAuthState->value => $state,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to initiate Google OAuth');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -105,10 +105,10 @@ trait CloudStorageOAuthTrait {
             $isStateMissing = ($stored === false);
 
             if ($isStateMissing) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Invalid or expired OAuth state. Please try again.',
-                ), HttpStatusType::BadRequest->value);
+                ], HttpStatusType::BadRequest->value);
             }
 
             delete_transient('riseup_oauth_state_' . $state);
@@ -120,16 +120,16 @@ trait CloudStorageOAuthTrait {
 
             $tokenOptions           = HttpConfigType::defaultGetOptions();
             $tokenOptions['method'] = 'POST';
-            $tokenOptions['body']   = array(
+            $tokenOptions['body']   = [
                 'code'          => $code,
                 'client_id'     => $clientId,
                 'client_secret' => $clientSecret,
                 'redirect_uri'  => $redirectUri,
                 'grant_type'    => 'authorization_code',
-            );
+            ];
 
             $tokenResponse = wp_remote_post('https://oauth2.googleapis.com/token', $tokenOptions);
-            $tokenBody     = json_decode(wp_remote_retrieve_body($tokenResponse), true) ?? array();
+            $tokenBody     = json_decode(wp_remote_retrieve_body($tokenResponse), true) ?? [];
 
             $isTokenError = isset($tokenBody['error']);
 
@@ -150,26 +150,26 @@ trait CloudStorageOAuthTrait {
 
             $userOptions  = HttpConfigType::authenticatedOptions('GET', 'Bearer ' . $accessToken);
             $userResponse = wp_remote_get('https://www.googleapis.com/drive/v3/about?fields=user', $userOptions);
-            $userData     = json_decode(wp_remote_retrieve_body($userResponse), true) ?? array();
+            $userData     = json_decode(wp_remote_retrieve_body($userResponse), true) ?? [];
 
             $expiresAt = gmdate('Y-m-d\TH:i:s\Z', time() + (int) ($tokenBody['expires_in'] ?? 3600));
 
-            $accountData = array(
+            $accountData = [
                 'Provider'       => CloudStorageProviderType::GoogleDrive->value,
                 'AccountLabel'   => $stored['label'],
                 'Email'          => $userData['user']['emailAddress'] ?? '',
                 'AccessToken'    => $accessToken,
                 'RefreshToken'   => $tokenBody['refresh_token'] ?? '',
                 'TokenExpiresAt' => $expiresAt,
-            );
+            ];
 
             $accountId = $this->createCloudStorageAccountFromOAuth($accountData);
 
-            $this->logCloudStorageAction(ActionType::CloudStorageAccountAdd, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageAccountAdd, [
                 ResponseKeyType::AccountId->value    => $accountId,
                 ResponseKeyType::AccountLabel->value => $stored['label'],
                 ResponseKeyType::Provider->value     => CloudStorageProviderType::GoogleDrive->value,
-            ));
+            ]);
 
             $redirectUrl = admin_url(
                 'admin.php?page=' . AdminPageType::Settings->value
@@ -198,7 +198,7 @@ trait CloudStorageOAuthTrait {
     {
         $table = TableType::CloudStorageAccounts->value;
 
-        $row = array(
+        $row = [
             'Provider'       => $data['Provider'],
             'AccountLabel'   => sanitize_text_field($data['AccountLabel']),
             'Username'       => '',
@@ -212,7 +212,7 @@ trait CloudStorageOAuthTrait {
             'FolderId'       => '',
             'FolderName'     => '',
             'IsActive'       => 1,
-        );
+        ];
 
         $columns      = implode(', ', array_keys($row));
         $placeholders = implode(', ', array_fill(0, count($row), '?'));

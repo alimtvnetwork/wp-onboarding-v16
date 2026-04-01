@@ -28,7 +28,7 @@ use RiseupAsia\Logging\FileLogger;
 class SelfUpdateValidator
 {
     /** Critical files that must exist for the plugin to boot. */
-    private const CRITICAL_FILES = array(
+    private const CRITICAL_FILES = [
         'riseup-asia-uploader.php',
         'includes/Autoloader.php',
         'includes/Core/Plugin.php',
@@ -45,7 +45,7 @@ class SelfUpdateValidator
         'includes/Helpers/PathHelper.php',
         'includes/Helpers/InitHelpers.php',
         'includes/Helpers/EnvelopeBuilder.php',
-    );
+    ];
 
     /** Maximum number of PHP files to syntax-check (safety limit). */
     private const MAX_SYNTAX_CHECK_FILES = 500;
@@ -53,7 +53,7 @@ class SelfUpdateValidator
     private FileLogger $fileLogger;
 
     /** @var array<int, array{code: string, message: string}> Collected validation errors. */
-    private array $errors = array();
+    private array $errors = [];
 
     public function __construct(FileLogger $fileLogger)
     {
@@ -69,13 +69,13 @@ class SelfUpdateValidator
      */
     public function validate(string $pluginDir): bool
     {
-        $this->errors = array();
+        $this->errors = [];
 
-        $this->fileLogger->info('Starting self-update validation', array('dir' => $pluginDir));
+        $this->fileLogger->info('Starting self-update validation', ['dir' => $pluginDir]);
 
         if (PathHelper::isDirMissing($pluginDir)) {
             $this->addError(SelfUpdateStatusType::DirectoryMissing, 'Plugin directory does not exist: ' . $pluginDir);
-            $this->fileLogger->error('Self-update validation failed: directory missing', array('dir' => $pluginDir));
+            $this->fileLogger->error('Self-update validation failed: directory missing', ['dir' => $pluginDir]);
 
             return false;
         }
@@ -86,10 +86,10 @@ class SelfUpdateValidator
         $hasErrors = !empty($this->errors);
 
         if ($hasErrors) {
-            $this->fileLogger->error('Self-update validation failed', array(
+            $this->fileLogger->error('Self-update validation failed', [
                 'errorCount' => count($this->errors),
                 'errors'     => $this->errors,
-            ));
+            ]);
 
             return false;
         }
@@ -116,11 +116,11 @@ class SelfUpdateValidator
      */
     public function getDiagnostics(): array
     {
-        return array(
+        return [
             ResponseKeyType::Passed->value     => empty($this->errors),
             ResponseKeyType::ErrorCount->value => count($this->errors),
             ResponseKeyType::Errors->value     => $this->errors,
-        );
+        ];
     }
 
     /**
@@ -133,10 +133,10 @@ class SelfUpdateValidator
 
             if (!file_exists($fullPath)) {
                 $this->addError(SelfUpdateStatusType::CriticalFileMissing, 'Critical file missing: ' . $relativeFile);
-                $this->fileLogger->error('Critical file missing after extraction', array(
+                $this->fileLogger->error('Critical file missing after extraction', [
                     'file' => $relativeFile,
                     'path' => $fullPath,
-                ));
+                ]);
             }
         }
     }
@@ -153,10 +153,10 @@ class SelfUpdateValidator
 
         foreach ($phpFiles as $filePath) {
             if ($checkedCount >= self::MAX_SYNTAX_CHECK_FILES) {
-                $this->fileLogger->info('Syntax check limit reached', array(
+                $this->fileLogger->info('Syntax check limit reached', [
                     'limit'   => self::MAX_SYNTAX_CHECK_FILES,
                     'checked' => $checkedCount,
-                ));
+                ]);
 
                 break;
             }
@@ -165,7 +165,7 @@ class SelfUpdateValidator
             $checkedCount++;
         }
 
-        $this->fileLogger->info('Syntax check completed', array('filesChecked' => $checkedCount));
+        $this->fileLogger->info('Syntax check completed', ['filesChecked' => $checkedCount]);
     }
 
     /**
@@ -187,11 +187,11 @@ class SelfUpdateValidator
         } catch (Throwable $e) {
             $relativePath = str_replace($pluginDir . '/', '', $filePath);
             $this->addError(SelfUpdateStatusType::SyntaxError, 'Syntax error in ' . $relativePath . ': ' . $e->getMessage());
-            $this->fileLogger->error('Syntax error detected in new version', array(
+            $this->fileLogger->error('Syntax error detected in new version', [
                 'file'    => $relativePath,
                 'message' => $e->getMessage(),
                 'line'    => $e->getLine(),
-            ));
+            ]);
         }
     }
 
@@ -200,10 +200,10 @@ class SelfUpdateValidator
      */
     private function addError(SelfUpdateStatusType $code, string $message): void
     {
-        $this->errors[] = array(
+        $this->errors[] = [
             'code'    => $code->value,
             'message' => $message,
-        );
+        ];
     }
 
     /**
@@ -213,7 +213,7 @@ class SelfUpdateValidator
      */
     private function collectPhpFiles(string $pluginDir): array
     {
-        $files = array();
+        $files = [];
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($pluginDir, RecursiveDirectoryIterator::SKIP_DOTS),

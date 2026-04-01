@@ -108,12 +108,12 @@ class BackupFolderResolver
 
         $hasLabel = !empty($matches[4]);
 
-        return array(
+        return [
             'sequence' => (int) $matches[1],
             'date'     => $matches[2],
             'week'     => (int) $matches[3],
             'label'    => $hasLabel ? $matches[4] : null,
-        );
+        ];
     }
 
     /**
@@ -147,10 +147,10 @@ class BackupFolderResolver
             return null;
         }
 
-        return array(
+        return [
             'parentFolder'        => $parentFolder,
             'incrementalSequence' => (int) $incSeq,
-        );
+        ];
     }
 
     /**

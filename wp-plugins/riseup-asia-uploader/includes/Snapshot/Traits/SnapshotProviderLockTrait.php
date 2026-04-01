@@ -36,7 +36,7 @@ trait SnapshotProviderLockTrait {
 
         if ($isStaleByAge) {
             PathHelper::deleteFile($lockFile);
-            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (age exceeded)', array('ageMinutes' => round($age / 60)));
+            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (age exceeded)', ['ageMinutes' => round($age / 60)]);
 
             return false;
         }
@@ -45,7 +45,7 @@ trait SnapshotProviderLockTrait {
 
         if ($isStaleByPid) {
             PathHelper::deleteFile($lockFile);
-            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (PID dead)', array('ageMinutes' => round($age / 60)));
+            $this->log(LogLevelType::Warn->value, 'Removed stale lock file (PID dead)', ['ageMinutes' => round($age / 60)]);
 
             return false;
         }
@@ -98,23 +98,23 @@ trait SnapshotProviderLockTrait {
 
     private function writeLockFile(): bool {
         $lockFile = PathHelper::join($this->getSnapshotsDir(), '.lock');
-        $lockData = json_encode(array(
+        $lockData = json_encode([
             'LockedAt' => DateHelper::nowIso(),
             'LockedBy' => $this->providerId,
             'Pid'      => getmypid(),
-        ));
+        ]);
 
         $result = @file_put_contents($lockFile, $lockData);
         if ($result === false) {
             $error = error_get_last();
-            $this->log(LogLevelType::Error->value, 'Failed to acquire lock', array(
+            $this->log(LogLevelType::Error->value, 'Failed to acquire lock', [
                 'path' => $lockFile, 'error' => $error ? $error['message'] : 'Unknown error',
-            ));
+            ]);
 
             return false;
         }
 
-        $this->log(LogLevelType::Debug->value, 'Lock acquired', array('path' => $lockFile));
+        $this->log(LogLevelType::Debug->value, 'Lock acquired', ['path' => $lockFile]);
 
         return true;
     }

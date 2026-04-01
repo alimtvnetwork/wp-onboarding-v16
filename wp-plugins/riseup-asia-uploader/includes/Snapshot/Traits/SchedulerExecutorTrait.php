@@ -33,22 +33,22 @@ trait SchedulerExecutorTrait {
         $settings = $this->detector->getSettings();
         list(, $orchestrator) = $this->createOrchestrator();
 
-        $result = $orchestrator->executeFullBackup(array(
+        $result = $orchestrator->executeFullBackup([
             ResponseKeyType::Scope->value   => $settings[SettingsKeyType::DefaultScope->value] ?? SnapshotScopeType::WordPress->value,
             ResponseKeyType::Trigger->value => SnapshotTriggerType::Cron->value,
             ResponseKeyType::Title->value   => 'Scheduled Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Async->value   => true,
-        ));
+        ]);
 
         return $this->buildCronResult($result, ActionType::SnapshotCreate->value, TriggerSourceType::Cron->value, $this->buildScheduledAuditData($result));
     }
 
     private function buildScheduledAuditData(array $result): array {
-        return array(
+        return [
             ResponseKeyType::Trigger->value    => SnapshotTriggerType::Cron->value,
             ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
             ResponseKeyType::JobId->value      => $result[ResponseKeyType::JobId->value] ?? null,
-        );
+        ];
     }
 
     private function runImmediateSnapshot(array $args): array {
@@ -58,32 +58,32 @@ trait SchedulerExecutorTrait {
 
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
 
-        return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, array(
+        return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, [
             ResponseKeyType::Trigger->value    => SnapshotTriggerType::Manual->value,
             ResponseKeyType::SnapshotId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
             ResponseKeyType::Type->value       => $snapshotType,
-        ));
+        ]);
     }
 
     private function runCronRestore(array $args): array {
         if (empty($args[ResponseKeyType::SnapshotId->value])) {
             $this->logger->error('[SCHEDULER] Missing SnapshotId for cron restore');
 
-            return ResultHelper::error('Missing SnapshotId', array(ResponseKeyType::SkipAudit->value => true));
+            return ResultHelper::error('Missing SnapshotId', [ResponseKeyType::SkipAudit->value => true]);
         }
 
         $manager = SnapshotFactory::manager($this->logger, $this->db);
         $result = $this->executeScheduledRestore($manager, $args);
 
-        return $this->buildCronResult($result, ActionType::SnapshotRestore->value, TriggerSourceType::Cron->value, array(
+        return $this->buildCronResult($result, ActionType::SnapshotRestore->value, TriggerSourceType::Cron->value, [
             ResponseKeyType::SnapshotId->value => $args[ResponseKeyType::SnapshotId->value],
             ResponseKeyType::Tables->value     => $result[ResponseKeyType::Tables->value] ?? 0,
             ResponseKeyType::Rows->value       => $result[ResponseKeyType::Rows->value] ?? 0,
-        ));
+        ]);
     }
 
     private function executeScheduledRestore(object $manager, array $args): array {
-        $restoreOptions = $args[ResponseKeyType::Options->value] ?? array();
+        $restoreOptions = $args[ResponseKeyType::Options->value] ?? [];
         $restoreOptions[ResponseKeyType::Confirm->value] = true;
 
         return $manager->restoreSnapshot($args[ResponseKeyType::SnapshotId->value], $restoreOptions);
@@ -92,15 +92,15 @@ trait SchedulerExecutorTrait {
     private function runCronIncremental(array $args): array {
         list(, $orchestrator) = $this->createOrchestrator();
 
-        $result = $orchestrator->executeIncrementalBackup(array(
+        $result = $orchestrator->executeIncrementalBackup([
             ResponseKeyType::Title->value            => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::MasterSnapshotId->value => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
-        ));
+        ]);
 
-        return $this->buildCronResult($result, ActionType::SnapshotIncremental->value, TriggerSourceType::Cron->value, array(
+        return $this->buildCronResult($result, ActionType::SnapshotIncremental->value, TriggerSourceType::Cron->value, [
             ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
             ResponseKeyType::TotalNewRows->value  => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
-        ));
+        ]);
     }
 
     private function runCleanup(): array {
@@ -114,22 +114,22 @@ trait SchedulerExecutorTrait {
     }
 
     private function buildCleanupAuditData(array $result): array {
-        return array(
+        return [
             ResponseKeyType::DeletedByPolicy->value => $result[ResponseKeyType::DeletedByPolicy->value] ?? 0,
             ResponseKeyType::DeletedOrphans->value  => $result[ResponseKeyType::DeletedOrphans->value] ?? 0,
             ResponseKeyType::DeletedFailed->value   => $result[ResponseKeyType::DeletedFailed->value] ?? 0,
             ResponseKeyType::SpaceFreedBytes->value => $result[ResponseKeyType::SpaceFreedBytes->value] ?? 0,
-        );
+        ];
     }
 
     private function enrichCleanupResult(array $cronResult, array $auditData, array $result): array {
         $totalDeleted = array_sum(array_slice($auditData, 0, 3));
 
         $cronResult[ResponseKeyType::SkipAudit->value] = ($totalDeleted === 0);
-        $cronResult[ResponseKeyType::LogDataKey->value] = $auditData + array(
+        $cronResult[ResponseKeyType::LogDataKey->value] = $auditData + [
             'spaceFreed'  => PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
             'errorsCount' => count($result[ResponseKeyType::Errors->value]),
-        );
+        ];
 
         return $cronResult;
     }

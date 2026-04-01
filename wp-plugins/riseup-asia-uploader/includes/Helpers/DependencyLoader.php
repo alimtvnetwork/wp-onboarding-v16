@@ -18,7 +18,7 @@ use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Logging\FileLogger;
 
 class DependencyLoader {
-    private static array $results = array();
+    private static array $results = [];
 
     public static function load(string $label, string $path): bool {
         if (PathHelper::isFileMissing($path)) {
@@ -45,12 +45,12 @@ class DependencyLoader {
         bool $success,
         ?string $error,
     ): void {
-        self::$results[] = array(
+        self::$results[] = [
             'label'   => $label,
             'file'    => basename($path),
             ResponseKeyType::Success->value => $success,
             ResponseKeyType::Error->value   => $error,
-        );
+        ];
     }
 
     public static function loadManifest(array $manifest): int {
@@ -82,7 +82,7 @@ class DependencyLoader {
         $failed = count(self::getFailures());
 
         if ($failed > 0) {
-            $logger->warn('[DEPS] Dependency loading complete with failures', array(
+            $logger->warn('[DEPS] Dependency loading complete with failures', [
                 'total'    => $total,
                 'failed'   => $failed,
                 'failures' => array_map(function (array $r): string {
@@ -90,11 +90,11 @@ class DependencyLoader {
                         . ' (' . $r['file'] . '): '
                         . $r['error'];
                 }, self::getFailures()),
-            ));
+            ]);
         } else {
-            $logger->debug('[DEPS] All dependencies loaded', array('total' => $total));
+            $logger->debug('[DEPS] All dependencies loaded', ['total' => $total]);
         }
     }
 
-    public static function reset(): void { self::$results = array(); }
+    public static function reset(): void { self::$results = []; }
 }

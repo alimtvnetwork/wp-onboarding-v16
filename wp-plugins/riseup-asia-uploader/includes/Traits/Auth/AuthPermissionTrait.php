@@ -37,7 +37,7 @@ trait AuthPermissionTrait
             $isEndpointDisabled = ($this->isEndpointEnabled($endpoint) === false);
 
             if ($isEndpointDisabled) {
-                return new WP_Error(WpErrorCodeType::RestDisabled->value, 'This endpoint is disabled', array('status' => HttpStatusType::Forbidden->value));
+                return new WP_Error(WpErrorCodeType::RestDisabled->value, 'This endpoint is disabled', ['status' => HttpStatusType::Forbidden->value]);
             }
 
             $isAuthOptional = ($this->isAuthRequired($endpoint) === false);

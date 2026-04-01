@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait AdminSettingsTrait {
 
@@ -24,19 +25,19 @@ trait AdminSettingsTrait {
         register_setting(
             PluginConfigType::SettingsGroup->value,
             OptionNameType::PluginSettings->value,
-            array($this, 'sanitizeSettings'),
+            [$this, 'sanitizeSettings'],
         );
 
         register_setting(
             PluginConfigType::SettingsGroup->value,
             OptionNameType::UpdateSettings->value,
-            array($this, 'sanitizeUpdateSettings'),
+            [$this, 'sanitizeUpdateSettings'],
         );
 
         register_setting(
             PluginConfigType::SettingsGroup->value,
             OptionNameType::SupportSettings->value,
-            array($this, 'sanitizeSupportSettings'),
+            [$this, 'sanitizeSupportSettings'],
         );
     }
 
@@ -44,7 +45,7 @@ trait AdminSettingsTrait {
     public function sanitizeSettings(array $input): array {
         $sanitized = self::$defaults;
 
-        $hasEndpoints = !empty($input['endpoints'] ?? null) && is_array($input['endpoints']);
+        $hasEndpoints = !empty($input['endpoints'] ?? null) && gettype($input['endpoints']) === PhpNativeType::PhpArray->value;
 
         if ($hasEndpoints) {
             foreach ($input['endpoints'] as $endpoint => $config) {
@@ -55,7 +56,7 @@ trait AdminSettingsTrait {
             }
         }
 
-        if (isset($input['log_retrieval']) && is_array($input['log_retrieval'])) {
+        if (isset($input['log_retrieval']) && gettype($input['log_retrieval']) === PhpNativeType::PhpArray->value) {
             $sanitized['log_retrieval']['include_error_log']  = !empty($input['log_retrieval']['include_error_log'] ?? null);
             $sanitized['log_retrieval']['include_full_log']   = !empty($input['log_retrieval']['include_full_log'] ?? null);
             $sanitized['log_retrieval']['include_stacktrace'] = !empty($input['log_retrieval']['include_stacktrace'] ?? null);
@@ -69,7 +70,7 @@ trait AdminSettingsTrait {
 
     /** Sanitize auto-update settings on save. */
     public function sanitizeUpdateSettings(array $input): array {
-        $current = get_option(OptionNameType::UpdateSettings->value, array());
+        $current = get_option(OptionNameType::UpdateSettings->value, []);
         $sanitized = $this->buildSanitizedUpdateFields($input, $current);
 
         if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {
@@ -82,7 +83,7 @@ trait AdminSettingsTrait {
 
     /** Build sanitized update settings fields. */
     private function buildSanitizedUpdateFields(array $input, array $current): array {
-        return array(
+        return [
             'enabled'      => !empty($input['enabled'] ?? null),
             'master_url'   => isset($input['master_url']) ? esc_url_raw($input['master_url']) : '',
             'cache_days'   => isset($input['cache_days']) ? max(1, min(30, (int) $input['cache_days'])) : 7,
@@ -93,21 +94,21 @@ trait AdminSettingsTrait {
             'package_url'  => isset($current['package_url']) ? $current['package_url'] : '',
             'new_version'  => isset($current['new_version']) ? $current['new_version'] : '',
             'update_info'  => isset($current['update_info']) ? $current['update_info'] : array(),
-        );
+        ];
     }
 
     /** Sanitize support settings on save. */
     public function sanitizeSupportSettings(array $input): array {
-        return array(
+        return [
             'support_email' => isset($input['support_email']) ? sanitize_email($input['support_email']) : '',
             'fallback_url'  => isset($input['fallback_url']) ? esc_url_raw($input['fallback_url']) : '',
-        );
+        ];
     }
 
     /** Get plugin settings. */
     public static function getSettings(): array {
-        $settings = get_option(OptionNameType::PluginSettings->value, array());
-        $isSettingsArray = is_array($settings);
+        $settings = get_option(OptionNameType::PluginSettings->value, []);
+        $isSettingsArray = gettype($settings) === PhpNativeType::PhpArray->value;
 
         if ($isSettingsArray === false) {
             return self::$defaults;
@@ -120,7 +121,7 @@ trait AdminSettingsTrait {
     public static function isEndpointEnabled(string $endpoint): bool {
         $settings = self::getSettings();
         $endpointConfig = $settings['endpoints'][$endpoint] ?? null;
-        $hasEnabledFlag = (is_array($endpointConfig) && array_key_exists('enabled', $endpointConfig));
+        $hasEnabledFlag = (gettype($endpointConfig) === PhpNativeType::PhpArray->value && array_key_exists('enabled', $endpointConfig));
 
         if ($hasEnabledFlag === false) {
             return true;
@@ -133,7 +134,7 @@ trait AdminSettingsTrait {
     public static function isAuthRequired(string $endpoint): bool {
         $settings = self::getSettings();
         $endpointConfig = $settings['endpoints'][$endpoint] ?? null;
-        $hasAuthFlag = (is_array($endpointConfig) && array_key_exists('auth_required', $endpointConfig));
+        $hasAuthFlag = (gettype($endpointConfig) === PhpNativeType::PhpArray->value && array_key_exists('auth_required', $endpointConfig));
 
         if ($hasAuthFlag === false) {
             return true;

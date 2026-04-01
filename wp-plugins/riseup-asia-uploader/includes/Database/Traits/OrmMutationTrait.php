@@ -23,7 +23,7 @@ trait OrmMutationTrait {
     /** Create a new record instance. */
     public function create(): static {
         $this->isNew = true;
-        $this->data = array();
+        $this->data = [];
 
         return $this;
     }
@@ -66,7 +66,7 @@ trait OrmMutationTrait {
             implode(', ', $placeholders),
         );
 
-        $params = array();
+        $params = [];
 
         foreach ($this->data as $col => $val) {
             $params[':' . $col] = $val;
@@ -88,8 +88,8 @@ trait OrmMutationTrait {
             return 0;
         }
 
-        $setClauses = array();
-        $params = array();
+        $setClauses = [];
+        $params = [];
 
         foreach ($this->data as $col => $val) {
             $paramName = ':set_' . $col;

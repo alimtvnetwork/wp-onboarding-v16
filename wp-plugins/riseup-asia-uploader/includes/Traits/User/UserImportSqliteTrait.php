@@ -28,7 +28,7 @@ trait UserImportSqliteTrait {
      */
     public function handleImportSqlite(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'POST /users/import-sqlite'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users/import-sqlite']);
 
         return $this->safeExecute(function () use ($request) {
             $files = $request->get_file_params();
@@ -77,12 +77,12 @@ trait UserImportSqliteTrait {
             $pdo = null;
             unlink($dbPath);
 
-            $this->fileLogger->info('Users imported from SQLite', array(
+            $this->fileLogger->info('Users imported from SQLite', [
                 'created' => $result['Created'],
                 'updated' => $result['Updated'],
                 'errors'  => count($result['Errors']),
                 'by'      => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('Import complete')
                 ->setSingleResult($result)
@@ -97,7 +97,7 @@ trait UserImportSqliteTrait {
         $created = 0;
         $updated = 0;
         $skipped = 0;
-        $errors = array();
+        $errors = [];
 
         $users = $pdo->query("SELECT * FROM users")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -118,7 +118,7 @@ trait UserImportSqliteTrait {
                 $isError = str_starts_with($updateResult, 'error:');
 
                 if ($isError) {
-                    $errors[] = array('Username' => $username, 'Error' => substr($updateResult, 6));
+                    $errors[] = ['Username' => $username, 'Error' => substr($updateResult, 6)];
                 } else {
                     $updated++;
                 }
@@ -127,26 +127,26 @@ trait UserImportSqliteTrait {
                 $isError = str_starts_with($createResult, 'error:');
 
                 if ($isError) {
-                    $errors[] = array('Username' => $username, 'Error' => substr($createResult, 6));
+                    $errors[] = ['Username' => $username, 'Error' => substr($createResult, 6)];
                 } else {
                     $created++;
                 }
             }
         }
 
-        return array(
+        return [
             'Created' => $created,
             'Updated' => $updated,
             'Skipped' => $skipped,
             'Errors'  => $errors,
-        );
+        ];
     }
 
     private function createUserFromSqlite(array $sqliteUser, PDO $pdo): string
     {
         $tempPassword = wp_generate_password(24, true, true);
 
-        $userdata = array(
+        $userdata = [
             'user_login'   => sanitize_user($sqliteUser['username']),
             'user_email'   => sanitize_email($sqliteUser['email']),
             'user_pass'    => $tempPassword,
@@ -157,7 +157,7 @@ trait UserImportSqliteTrait {
             'user_url'     => $sqliteUser['website'] ?? '',
             'description'  => $sqliteUser['bio'] ?? '',
             'role'         => $sqliteUser['role'] ?? 'subscriber',
-        );
+        ];
 
         $newUserId = wp_insert_user($userdata);
         $isError = is_wp_error($newUserId);
@@ -171,7 +171,7 @@ trait UserImportSqliteTrait {
 
         if ($hasPasswordHash) {
             global $wpdb;
-            $wpdb->update($wpdb->users, array('user_pass' => $sqliteUser['password_hash']), array('ID' => $newUserId));
+            $wpdb->update($wpdb->users, ['user_pass' => $sqliteUser['password_hash']], ['ID' => $newUserId]);
             wp_cache_delete($newUserId, 'users');
         }
 
@@ -182,7 +182,7 @@ trait UserImportSqliteTrait {
 
     private function updateUserFromSqlite(int $userId, array $sqliteUser, PDO $pdo): string
     {
-        $userdata = array('ID' => $userId);
+        $userdata = ['ID' => $userId];
 
         $hasEmail = !empty($sqliteUser['email']);
         if ($hasEmail) { $userdata['user_email'] = sanitize_email($sqliteUser['email']); }
@@ -209,7 +209,7 @@ trait UserImportSqliteTrait {
 
         if ($hasPasswordHash) {
             global $wpdb;
-            $wpdb->update($wpdb->users, array('user_pass' => $sqliteUser['password_hash']), array('ID' => $userId));
+            $wpdb->update($wpdb->users, ['user_pass' => $sqliteUser['password_hash']], ['ID' => $userId]);
             wp_cache_delete($userId, 'users');
         }
 
@@ -223,12 +223,12 @@ trait UserImportSqliteTrait {
         $sqliteId = (int) $sqliteUser['id'];
 
         // Core meta
-        $metaMap = array(
+        $metaMap = [
             'first_name'  => $sqliteUser['first_name'] ?? '',
             'last_name'   => $sqliteUser['last_name'] ?? '',
             'nickname'    => $sqliteUser['nickname'] ?? '',
             'description' => $sqliteUser['bio'] ?? '',
-        );
+        ];
 
         foreach ($metaMap as $key => $value) {
             $hasValue = !empty($value);
@@ -251,10 +251,10 @@ trait UserImportSqliteTrait {
 
         // Social meta from SQLite
         $socialStmt = $pdo->prepare("SELECT platform, url FROM user_social WHERE user_id = ?");
-        $socialStmt->execute(array($sqliteId));
+        $socialStmt->execute([$sqliteId]);
         $socialRows = $socialStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $socialJsonKeyToMeta = array();
+        $socialJsonKeyToMeta = [];
 
         foreach (UserMetaKeyType::socialCases() as $meta) {
             $socialJsonKeyToMeta[$meta->jsonKey()] = $meta->value;
@@ -271,10 +271,10 @@ trait UserImportSqliteTrait {
 
         // Yoast meta from SQLite
         $yoastStmt = $pdo->prepare("SELECT meta_key, value FROM user_yoast WHERE user_id = ?");
-        $yoastStmt->execute(array($sqliteId));
+        $yoastStmt->execute([$sqliteId]);
         $yoastRows = $yoastStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $yoastJsonKeyToMeta = array();
+        $yoastJsonKeyToMeta = [];
 
         foreach (UserMetaKeyType::yoastCases() as $meta) {
             $yoastJsonKeyToMeta[$meta->jsonKey()] = $meta->value;

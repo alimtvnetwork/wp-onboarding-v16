@@ -24,7 +24,7 @@ trait UserReadTrait {
      */
     public function handleListUsers(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'GET /users'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'GET /users']);
 
         return $this->safeExecute(function () use ($request) {
             $page    = (int) ($request->get_param('page') ?: 1);
@@ -38,12 +38,12 @@ trait UserReadTrait {
                 $perPage = 100;
             }
 
-            $queryArgs = array(
+            $queryArgs = [
                 'number'  => $perPage,
                 'paged'   => $page,
                 'orderby' => 'ID',
                 'order'   => 'ASC',
-            );
+            ];
 
             $hasRole = !empty($role);
 
@@ -55,7 +55,7 @@ trait UserReadTrait {
 
             if ($hasSearch) {
                 $queryArgs['search'] = '*' . sanitize_text_field($search) . '*';
-                $queryArgs['search_columns'] = array('user_login', 'user_email', 'display_name');
+                $queryArgs['search_columns'] = ['user_login', 'user_email', 'display_name'];
             }
 
             $userQuery = new WP_User_Query($queryArgs);
@@ -67,11 +67,11 @@ trait UserReadTrait {
                 $users,
             );
 
-            $this->fileLogger->info('Users listed', array(
+            $this->fileLogger->info('Users listed', [
                 'total' => $total,
                 'page'  => $page,
                 'count' => count($results),
-            ));
+            ]);
 
             return EnvelopeBuilder::success('Users retrieved')
                 ->setResults($results)
@@ -88,14 +88,14 @@ trait UserReadTrait {
     public function handleGetUser(WP_REST_Request $request): WP_REST_Response
     {
         $userId = (int) $request->get_param('id');
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'GET /users/{id}', 'userId' => $userId));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'GET /users/{id}', 'userId' => $userId]);
 
         return $this->safeExecute(function () use ($userId) {
             $user = get_userdata($userId);
             $isUserFound = ($user !== false);
 
             if (!$isUserFound) {
-                $this->fileLogger->warn('User not found', array('userId' => $userId));
+                $this->fileLogger->warn('User not found', ['userId' => $userId]);
 
                 return EnvelopeBuilder::error('User not found', 404)
                     ->autoDetectRequestedAt()

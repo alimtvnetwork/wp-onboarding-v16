@@ -28,7 +28,7 @@ trait LoggerContextTrait {
 
     /** Get client IP address. */
     private function getClientIp(): string {
-        $ipKeys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
+        $ipKeys = ['HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
 
         foreach ($ipKeys as $key) {
             if (empty($_SERVER[$key])) {
@@ -69,20 +69,20 @@ trait LoggerContextTrait {
     /** Get current user info. */
     private function getUserInfo(): array {
         if (BooleanHelpers::isFuncMissing('wp_get_current_user')) {
-            return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
+            return ['login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID];
         }
 
         $currentUser = wp_get_current_user();
         if ($currentUser && $currentUser->ID > 0) {
-            return array('login' => $currentUser->user_login, 'id' => $currentUser->ID);
+            return ['login' => $currentUser->user_login, 'id' => $currentUser->ID];
         }
 
-        return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
+        return ['login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID];
     }
 
     /** Build enhanced fields with source machine and plugin version. */
-    private function buildEnhancedFields(array $extraEnhanced = array()): array {
-        $enhanced = array();
+    private function buildEnhancedFields(array $extraEnhanced = []): array {
+        $enhanced = [];
         $sourceMachine = $this->getSourceMachine();
 
         if ($sourceMachine) {

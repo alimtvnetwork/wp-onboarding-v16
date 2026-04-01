@@ -23,6 +23,7 @@ use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\ResponseKeyType;
 use QUpload\Helpers\EnvelopeBuilder;
 use QUpload\Logging\FileLogger;
+use QUpload\Enums\PhpNativeType;
 
 trait LogClearingTrait
 {
@@ -57,15 +58,15 @@ trait LogClearingTrait
         $transientKey = $this->buildClearTokenKey($machineName);
         $clientIp = $this->resolveClientIp();
 
-        $tokenData = array(
+        $tokenData = [
             'token'        => $token,
             'machine'      => $machineName,
             'requested_at' => gmdate('Y-m-d\TH:i:s\Z'),
             'requested_by' => $clientIp,
-        );
+        ];
 
         set_transient($transientKey, $tokenData, self::CLEAR_TOKEN_TTL_SECONDS);
-        $this->fileLogger->info('Log clear token issued', array('machine' => $machineName, 'ip' => $clientIp));
+        $this->fileLogger->info('Log clear token issued', ['machine' => $machineName, 'ip' => $clientIp]);
         $namespace = PluginConfigType::apiFullNamespace();
 
         return $this->buildClearTokenResponse($token, $namespace);
@@ -74,14 +75,14 @@ trait LogClearingTrait
     /** Build the WP_REST_Response for a newly issued clear token. */
     private function buildClearTokenResponse(string $token, string $namespace): WP_REST_Response {
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 'confirmation_required'         => true,
                 'confirm_endpoint'              => '/wp-json/' . $namespace . '/logs/clear/confirm',
                 'token'                         => $token,
                 'expires_in'                    => self::CLEAR_TOKEN_TTL_SECONDS,
                 'message'                       => 'Confirmation required. Send POST to confirm_endpoint within 60 seconds.',
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -150,12 +151,12 @@ trait LogClearingTrait
         $clearResult = $this->executeLogClearing($type);
         $clientIp = $this->resolveClientIp();
 
-        $this->fileLogger->info('Logs cleared remotely', array(
+        $this->fileLogger->info('Logs cleared remotely', [
             'machine' => $machineName,
             'ip'      => $clientIp,
             'type'    => $type,
             'cleared' => $clearResult,
-        ));
+        ]);
 
         return $this->buildClearSuccessResponse($machineName, $clientIp, $clearResult);
     }
@@ -163,7 +164,7 @@ trait LogClearingTrait
     /** Build the success response after log clearing. */
     private function buildClearSuccessResponse(string $machineName, string $clientIp, array $clearResult): WP_REST_Response {
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 'cleared'                       => $clearResult,
                 'cleared_by'                    => array(
@@ -171,7 +172,7 @@ trait LogClearingTrait
                     'ip'        => $clientIp,
                     'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
                 ),
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -187,15 +188,15 @@ trait LogClearingTrait
         if ($isAllOrUnfiltered) {
             $logger->clearAllLogFiles();
 
-            return array(
+            return [
                 'log_file'        => true,
                 'error_file'      => true,
                 'stacktrace_file' => true,
-            );
+            ];
         }
 
         // Selective clearing by type
-        $result = array('log_file' => false, 'error_file' => false, 'stacktrace_file' => false);
+        $result = ['log_file' => false, 'error_file' => false, 'stacktrace_file' => false];
 
         if ($type === 'log') {
             $result['log_file'] = $logger->clearLogFileByType('log');
@@ -221,7 +222,7 @@ trait LogClearingTrait
         $isMachineApproved = $this->isMachineApproved($machineName);
 
         if ($isMachineApproved === false) {
-            $this->fileLogger->warn('Log action rejected: machine not approved', array('machine' => $machineName));
+            $this->fileLogger->warn('Log action rejected: machine not approved', ['machine' => $machineName]);
 
             return $this->buildLogErrorResponse('Machine not in approved list', 'machine_not_approved', HttpStatusType::Forbidden);
         }
@@ -232,12 +233,12 @@ trait LogClearingTrait
     /** Check if a machine name is in the approved list (case-insensitive, fail-closed). */
     private function isMachineApproved(string $machineName): bool {
         $settingsJson = $this->loadPluginSettings();
-        $approvedMachines = $settingsJson['approved_machines'] ?? array();
+        $approvedMachines = $settingsJson['approved_machines'] ?? [];
         $hasNoApprovedMachines = empty($approvedMachines);
 
         if ($hasNoApprovedMachines) {
-            $settingsOption = get_option(PluginConfigType::SettingsGroup->value, array());
-            $approvedMachines = $settingsOption['approved_machines'] ?? array();
+            $settingsOption = get_option(PluginConfigType::SettingsGroup->value, []);
+            $approvedMachines = $settingsOption['approved_machines'] ?? [];
             $hasNoApprovedMachines = empty($approvedMachines);
 
             if ($hasNoApprovedMachines) {
@@ -264,20 +265,20 @@ trait LogClearingTrait
         $isSettingsExists = file_exists($settingsPath);
 
         if ($isSettingsExists === false) {
-            return array();
+            return [];
         }
 
         $contents = @file_get_contents($settingsPath);
         $isReadFailed = ($contents === false);
 
         if ($isReadFailed) {
-            return array();
+            return [];
         }
 
         $settings = json_decode($contents, true);
-        $isValidSettings = is_array($settings);
+        $isValidSettings = gettype($settings) === PhpNativeType::PhpArray->value;
 
-        return $isValidSettings ? $settings : array();
+        return $isValidSettings ? $settings : [];
     }
 
     // ── Rate Limiting ─────────────────────────────────────────────────
@@ -305,11 +306,11 @@ trait LogClearingTrait
         $displayMessage = ($message !== '') ? $message : $error;
 
         return EnvelopeBuilder::error($displayMessage, $status->value)
-            ->setSingleResult(array(
+            ->setSingleResult([
                 'error'   => $error,
                 'code'    => $code,
                 'message' => $displayMessage,
-            ))
+            ])
             ->toResponse();
     }
 

@@ -41,10 +41,10 @@ trait CloudStorageRestoreTrait {
             $isNotFound = ($backup === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Backup not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $account = $this->getCloudStorageAccountById((int) $backup['AccountId']);
@@ -52,10 +52,10 @@ trait CloudStorageRestoreTrait {
             $isAccountMissing = ($account === false);
 
             if ($isAccountMissing) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Cloud storage account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $tempDir = sys_get_temp_dir() . '/riseup-restore-' . wp_generate_uuid4();
@@ -73,18 +73,18 @@ trait CloudStorageRestoreTrait {
 
             $this->cleanupTempDir($tempDir);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Backup restored successfully',
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
 
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, '[CLOUD-RESTORE] Restore failed');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -127,11 +127,11 @@ trait CloudStorageRestoreTrait {
             );
         }
 
-        $this->fileLogger->info('[CLOUD-RESTORE] Reassembled ZIP', array(
+        $this->fileLogger->info('[CLOUD-RESTORE] Reassembled ZIP', [
             'folderPath' => $folderPath,
             'totalSize'  => $result['totalSize'] ?? 0,
             'chunkCount' => $result['chunkCount'] ?? 0,
-        ));
+        ]);
 
         return $outputPath;
     }
@@ -175,10 +175,10 @@ trait CloudStorageRestoreTrait {
             file_put_contents($localPath, $content);
         }
 
-        $this->fileLogger->info('[CLOUD-RESTORE] Downloaded folder contents', array(
+        $this->fileLogger->info('[CLOUD-RESTORE] Downloaded folder contents', [
             'folderPath' => $folderPath,
             'fileCount'  => count($files),
-        ));
+        ]);
     }
 
     /** Restore an incremental backup by first restoring its base full backup. */
@@ -245,10 +245,10 @@ trait CloudStorageRestoreTrait {
 
         $label = $isIncremental ? 'incremental' : 'full';
 
-        $this->fileLogger->info('[CLOUD-RESTORE] Extracted ' . $label . ' ZIP', array(
+        $this->fileLogger->info('[CLOUD-RESTORE] Extracted ' . $label . ' ZIP', [
             'zipPath'    => $zipPath,
             'extractDir' => $extractDir,
-        ));
+        ]);
     }
 
     /**
@@ -322,7 +322,7 @@ trait CloudStorageRestoreTrait {
      */
     private function isShellCommandAvailable(string $command): bool
     {
-        $output   = array();
+        $output   = [];
         $exitCode = 0;
         exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)), $output, $exitCode);
 

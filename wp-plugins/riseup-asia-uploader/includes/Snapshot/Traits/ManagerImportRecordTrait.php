@@ -44,7 +44,7 @@ trait ManagerImportRecordTrait {
         string $filename,
         string $filepath,
     ): array {
-        return array(
+        return [
             'Sequence' => $sequence,
             'Filename' => $filename,
             'Filepath' => $filepath,
@@ -62,6 +62,6 @@ trait ManagerImportRecordTrait {
                 ResponseKeyType::OriginalCreatedAt->value => $snapshotData['created_at'] ?? null,
                 ResponseKeyType::SourceSite->value => $manifest['source']['site_url'] ?? null,
             )),
-        );
+        ];
     }
 }

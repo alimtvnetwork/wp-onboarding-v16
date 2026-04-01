@@ -76,7 +76,7 @@ trait AgentLoggingTrait {
     ): int {
         $stmt = $pdo->prepare(self::ACTION_INSERT_QUERY);
 
-        $stmt->execute(array(
+        $stmt->execute([
             $agentId,
             $action,
             $plugin,
@@ -84,7 +84,7 @@ trait AgentLoggingTrait {
             $details ? json_encode($details) : null,
             $errorMsg,
             DateHelper::nowUtc(),
-        ));
+        ]);
 
         return (int) $pdo->lastInsertId();
     }
@@ -102,24 +102,24 @@ trait AgentLoggingTrait {
             $isPdoMissing = ($pdo === null);
 
             if ($isPdoMissing) {
-                return array($totalKey => 0, $actionsKey => array());
+                return [$totalKey => 0, $actionsKey => array()];
             }
 
             $total = $this->countAgentActions($pdo, $agentId);
             $actions = $this->fetchAgentActions($pdo, $agentId, $limit, $offset);
             $this->decodeActionDetails($actions);
 
-            return array($totalKey => $total, $actionsKey => $actions);
+            return [$totalKey => $total, $actionsKey => $actions];
         } catch (PDOException $e) {
             $this->fileLogger->logException($e, 'Failed to get action history');
 
-            return array($totalKey => 0, $actionsKey => array());
+            return [$totalKey => 0, $actionsKey => array()];
         }
     }
 
     private function countAgentActions(PDO $pdo, int $agentId): int {
         $stmt = $pdo->prepare(self::ACTION_COUNT_QUERY);
-        $stmt->execute(array($agentId));
+        $stmt->execute([$agentId]);
 
         return (int) $stmt->fetch(PDO::FETCH_ASSOC)[ResponseKeyType::Total->value];
     }
@@ -131,11 +131,11 @@ trait AgentLoggingTrait {
         int $offset,
     ): array {
         $stmt = $pdo->prepare(self::ACTION_LIST_QUERY);
-        $stmt->execute(array(
+        $stmt->execute([
             $agentId,
             $limit,
             $offset,
-        ));
+        ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

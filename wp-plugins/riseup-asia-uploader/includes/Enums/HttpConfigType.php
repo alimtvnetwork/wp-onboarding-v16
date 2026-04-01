@@ -18,15 +18,15 @@ enum HttpConfigType: int
     case TimeoutShort = 15;
 
     public static function headRedirectOptions(): array {
-        return array('timeout' => self::TimeoutShort->value, 'redirection' => 0, 'sslverify' => true);
+        return ['timeout' => self::TimeoutShort->value, 'redirection' => 0, 'sslverify' => true];
     }
 
     public static function defaultGetOptions(): array {
-        return array('timeout' => self::TimeoutDefault->value, 'sslverify' => true);
+        return ['timeout' => self::TimeoutDefault->value, 'sslverify' => true];
     }
 
     public static function authenticatedOptions(string $method, string $authHeader): array {
-        return array(
+        return [
             'method'    => strtoupper($method),
             'timeout'   => self::TimeoutDefault->value,
             'headers'   => array(
@@ -34,7 +34,7 @@ enum HttpConfigType: int
                 'Content-Type'  => ContentTypeValueType::Json->value,
             ),
             'sslverify' => true,
-        );
+        ];
     }
 
     public function isEqual(self $other): bool { return $this === $other; }

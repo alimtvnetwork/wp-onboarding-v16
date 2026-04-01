@@ -35,7 +35,7 @@ trait DetectorSettingsTrait {
      * @return string Provider ID.
      */
     public function getPreferredProvider(): string {
-        $settings = get_option(OptionNameType::SnapshotSettings->value, array());
+        $settings = get_option(OptionNameType::SnapshotSettings->value, []);
         $settings = SettingsKeyType::migrateArray($settings);
         $preferred = isset($settings[SettingsKeyType::PreferredProvider->value]) ? $settings[SettingsKeyType::PreferredProvider->value] : SnapshotProviderType::Auto->value;
 
@@ -51,7 +51,7 @@ trait DetectorSettingsTrait {
             }
         }
 
-        $this->logger->warn('[SNAPSHOT] Preferred provider not available, falling back', array('preferred' => $preferred));
+        $this->logger->warn('[SNAPSHOT] Preferred provider not available, falling back', ['preferred' => $preferred]);
 
         return $this->getBestAvailableProvider();
     }
@@ -63,11 +63,11 @@ trait DetectorSettingsTrait {
      */
     public function getBestAvailableProvider(): string {
         $providers = $this->detectAvailableProviders();
-        $priority = array(
+        $priority = [
             SnapshotProviderType::WpReset->value,
             SnapshotProviderType::Updraft->value,
             SnapshotProviderType::Native->value,
-        );
+        ];
 
         foreach ($priority as $candidateId) {
             foreach ($providers as $provider) {
@@ -140,7 +140,7 @@ trait DetectorSettingsTrait {
      * @return array Snapshot settings.
      */
     public function getSettings(): array {
-        $defaults = array(
+        $defaults = [
             SettingsKeyType::PreferredProvider->value     => SnapshotProviderType::Auto->value,
             SettingsKeyType::ScheduleEnabled->value       => false,
             SettingsKeyType::ScheduleFrequency->value     => SnapshotFrequencyType::Daily->value,
@@ -157,9 +157,9 @@ trait DetectorSettingsTrait {
             SettingsKeyType::BatchSize->value             => SnapshotConfigType::BatchSize->value,
             SettingsKeyType::WorkerPoolSize->value        => SnapshotConfigType::WorkerPoolDefault->value,
             SettingsKeyType::StorageMode->value           => StorageModeType::PerTable->value,
-        );
+        ];
 
-        $saved = get_option(OptionNameType::SnapshotSettings->value, array());
+        $saved = get_option(OptionNameType::SnapshotSettings->value, []);
         $saved = SettingsKeyType::migrateArray($saved);
 
         return array_merge($defaults, $saved);
@@ -179,7 +179,7 @@ trait DetectorSettingsTrait {
         $result = update_option(OptionNameType::SnapshotSettings->value, $updated);
 
         if ($result) {
-            $this->logger->info('[SNAPSHOT] Settings updated', array('changedKeys' => array_keys(array_diff_assoc($settings, $current))));
+            $this->logger->info('[SNAPSHOT] Settings updated', ['changedKeys' => array_keys(array_diff_assoc($settings, $current))]);
         }
 
         return $result;

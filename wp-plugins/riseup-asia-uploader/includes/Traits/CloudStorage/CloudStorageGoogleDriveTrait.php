@@ -39,12 +39,12 @@ trait CloudStorageGoogleDriveTrait {
 
         $email = $body['user']['emailAddress'] ?? '';
 
-        return array(
+        return [
             ResponseKeyType::Success->value          => true,
             ResponseKeyType::ConnectionStatus->value => 'Connected',
             ResponseKeyType::Email->value            => $email,
             ResponseKeyType::Message->value          => sprintf('Connected as %s', $email),
-        );
+        ];
     }
 
     /** Ensure a backup folder exists; create if missing. Returns folder ID. */
@@ -62,7 +62,7 @@ trait CloudStorageGoogleDriveTrait {
             $isFound    = ($statusCode === HttpStatusType::Ok->value);
 
             if ($isFound) {
-                $data      = json_decode(wp_remote_retrieve_body($response), true) ?? array();
+                $data      = json_decode(wp_remote_retrieve_body($response), true) ?? [];
                 $isTrashed = ($data['trashed'] ?? false);
 
                 if (!$isTrashed) {
@@ -78,7 +78,7 @@ trait CloudStorageGoogleDriveTrait {
 
         $this->db->execute(
             "UPDATE {$table} SET FolderId = ?, FolderName = ?, UpdatedAt = datetime('now') WHERE Id = ?",
-            array($newId, $folderName, $account['Id']),
+            [$newId, $folderName, $account['Id']],
         );
 
         return $newId;
@@ -99,11 +99,11 @@ trait CloudStorageGoogleDriveTrait {
             $fileData = $this->googleDriveUploadSimple($validToken, $folderId, $localPath, $fileName);
         }
 
-        return array(
+        return [
             ResponseKeyType::RemotePath->value => $fileName,
             ResponseKeyType::RemoteUrl->value  => $fileData['webViewLink'] ?? '',
             ResponseKeyType::Bytes->value      => $fileSize,
-        );
+        ];
     }
 
     /** List files in the backup folder. */
@@ -114,7 +114,7 @@ trait CloudStorageGoogleDriveTrait {
         $isEmpty    = empty($folderId);
 
         if ($isEmpty) {
-            return array();
+            return [];
         }
 
         $query = sprintf(
@@ -122,27 +122,27 @@ trait CloudStorageGoogleDriveTrait {
             $folderId,
         );
 
-        $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+        $url = self::GDRIVE_API . '/files?' . http_build_query([
             'q'       => $query,
             'fields'  => 'files(id,name,size,createdTime,webViewLink)',
             'orderBy' => 'name',
-        ));
+        ]);
 
         $options  = $this->googleDriveBuildOptions('GET', $validToken);
         $response = wp_remote_get($url, $options);
         $body     = $this->googleDriveParseResponse($response);
 
-        $files    = array();
-        $items    = $body['files'] ?? array();
+        $files    = [];
+        $items    = $body['files'] ?? [];
 
         foreach ($items as $item) {
-            $files[] = array(
+            $files[] = [
                 'Name'      => $item['name'] ?? '',
                 'Path'      => $item['id'] ?? '',
                 'Size'      => (int) ($item['size'] ?? 0),
                 'CreatedAt' => $item['createdTime'] ?? '',
                 'RemoteUrl' => $item['webViewLink'] ?? '',
-            );
+            ];
         }
 
         return $files;
@@ -156,7 +156,7 @@ trait CloudStorageGoogleDriveTrait {
         $isRootEmpty  = empty($rootFolderId);
 
         if ($isRootEmpty) {
-            return array();
+            return [];
         }
 
         // Resolve the target folder by walking the path
@@ -164,7 +164,7 @@ trait CloudStorageGoogleDriveTrait {
         $isNotFound = empty($parentId);
 
         if ($isNotFound) {
-            return array();
+            return [];
         }
 
         $query = sprintf(
@@ -172,18 +172,18 @@ trait CloudStorageGoogleDriveTrait {
             $parentId,
         );
 
-        $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+        $url = self::GDRIVE_API . '/files?' . http_build_query([
             'q'       => $query,
             'fields'  => 'files(id,name)',
             'orderBy' => 'name',
-        ));
+        ]);
 
         $options  = $this->googleDriveBuildOptions('GET', $validToken);
         $response = wp_remote_get($url, $options);
         $body     = $this->googleDriveParseResponse($response);
 
-        $dirs  = array();
-        $items = $body['files'] ?? array();
+        $dirs  = [];
+        $items = $body['files'] ?? [];
 
         foreach ($items as $item) {
             $dirs[] = $item['name'] ?? '';
@@ -222,7 +222,7 @@ trait CloudStorageGoogleDriveTrait {
         $isNotFound = empty($folderId);
 
         if ($isNotFound) {
-            $this->fileLogger->info('[CLOUD-GDRIVE] Folder not found for deletion', array('path' => $path));
+            $this->fileLogger->info('[CLOUD-GDRIVE] Folder not found for deletion', ['path' => $path]);
 
             return;
         }
@@ -235,10 +235,10 @@ trait CloudStorageGoogleDriveTrait {
         $isDeleted  = ($statusCode === HttpStatusType::NoContent->value);
 
         if ($isDeleted) {
-            $this->fileLogger->info('[CLOUD-GDRIVE] Deleted folder', array(
+            $this->fileLogger->info('[CLOUD-GDRIVE] Deleted folder', [
                 'path'     => $path,
                 'folderId' => $folderId,
-            ));
+            ]);
         }
     }
 
@@ -261,16 +261,16 @@ trait CloudStorageGoogleDriveTrait {
                 addslashes($segment),
             );
 
-            $url = self::GDRIVE_API . '/files?' . http_build_query(array(
+            $url = self::GDRIVE_API . '/files?' . http_build_query([
                 'q'      => $query,
                 'fields' => 'files(id)',
-            ));
+            ]);
 
             $options  = $this->googleDriveBuildOptions('GET', $token);
             $response = wp_remote_get($url, $options);
             $body     = $this->googleDriveParseResponse($response);
 
-            $files   = $body['files'] ?? array();
+            $files   = $body['files'] ?? [];
             $isFound = !empty($files);
 
             if (!$isFound) {
@@ -309,15 +309,15 @@ trait CloudStorageGoogleDriveTrait {
 
         $refreshOptions           = HttpConfigType::defaultGetOptions();
         $refreshOptions['method'] = 'POST';
-        $refreshOptions['body']   = array(
+        $refreshOptions['body']   = [
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
             'refresh_token' => $refreshToken,
             'grant_type'    => 'refresh_token',
-        );
+        ];
 
         $response = wp_remote_post(self::GDRIVE_TOKEN, $refreshOptions);
-        $body     = json_decode(wp_remote_retrieve_body($response), true) ?? array();
+        $body     = json_decode(wp_remote_retrieve_body($response), true) ?? [];
 
         $isRefreshError = isset($body['error']);
 
@@ -336,7 +336,7 @@ trait CloudStorageGoogleDriveTrait {
 
         $this->db->execute(
             "UPDATE {$table} SET AccessToken = ?, TokenExpiresAt = ?, UpdatedAt = datetime('now') WHERE Id = ?",
-            array($this->encryptToken($newAccessToken), $newExpiresAt, $account['Id']),
+            [$this->encryptToken($newAccessToken), $newExpiresAt, $account['Id']],
         );
 
         $account['AccessToken']   = $this->encryptToken($newAccessToken);
@@ -348,10 +348,10 @@ trait CloudStorageGoogleDriveTrait {
     /** Create a folder in Google Drive. Returns the folder ID. */
     private function googleDriveCreateFolder(string $token, string $folderName): string
     {
-        $metadata = wp_json_encode(array(
+        $metadata = wp_json_encode([
             'name'     => $folderName,
             'mimeType' => 'application/vnd.google-apps.folder',
-        ));
+        ]);
 
         $options = $this->googleDriveBuildOptions('POST', $token);
         $options['headers']['Content-Type'] = 'application/json';
@@ -369,10 +369,10 @@ trait CloudStorageGoogleDriveTrait {
         $boundary    = wp_generate_password(24, false);
         $fileContent = file_get_contents($localPath);
 
-        $metadata = wp_json_encode(array(
+        $metadata = wp_json_encode([
             'name'    => $fileName,
             'parents' => array($folderId),
-        ));
+        ]);
 
         $body = "--{$boundary}\r\n"
             . "Content-Type: application/json; charset=UTF-8\r\n\r\n"
@@ -397,10 +397,10 @@ trait CloudStorageGoogleDriveTrait {
     {
         $fileSize = filesize($localPath);
 
-        $metadata = wp_json_encode(array(
+        $metadata = wp_json_encode([
             'name'    => $fileName,
             'parents' => array($folderId),
-        ));
+        ]);
         $initOptions = $this->googleDriveBuildOptions('POST', $token);
         $initOptions['headers']['Content-Type']           = 'application/json; charset=UTF-8';
         $initOptions['headers']['X-Upload-Content-Type']  = 'application/zip';
@@ -444,7 +444,7 @@ trait CloudStorageGoogleDriveTrait {
 
             if ($isComplete) {
                 fclose($handle);
-                return json_decode(wp_remote_retrieve_body($chunkResponse), true) ?? array();
+                return json_decode(wp_remote_retrieve_body($chunkResponse), true) ?? [];
             }
 
             fclose($handle);
@@ -478,12 +478,12 @@ trait CloudStorageGoogleDriveTrait {
         }
 
         $statusCode = (int) wp_remote_retrieve_response_code($response);
-        $decoded    = json_decode(wp_remote_retrieve_body($response), true) ?? array();
+        $decoded    = json_decode(wp_remote_retrieve_body($response), true) ?? [];
 
         $isNoContent = ($statusCode === HttpStatusType::NoContent->value);
 
         if ($isNoContent) {
-            return array();
+            return [];
         }
 
         $isClientError = ($statusCode >= 400);

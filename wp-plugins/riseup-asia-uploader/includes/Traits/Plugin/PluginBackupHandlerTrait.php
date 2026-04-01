@@ -32,6 +32,7 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\ResultHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait PluginBackupHandlerTrait
 {
@@ -76,7 +77,7 @@ trait PluginBackupHandlerTrait
 
             // Generate filename with timestamp
             $timestamp = DateHelper::nowIso();
-            $safeTimestamp = str_replace(array(':', 'T'), array('-', '_'), $timestamp);
+            $safeTimestamp = str_replace([':', 'T'], ['-', '_'], $timestamp);
             $filename = $slug . '_v' . $version . '_' . $safeTimestamp . '.zip';
             $zipPath = PathHelper::join($backupDir, $filename);
 
@@ -97,7 +98,7 @@ trait PluginBackupHandlerTrait
             $fileSize = filesize($zipPath);
 
             // Build metadata
-            $meta = array(
+            $meta = [
                 'filename'   => $filename,
                 'slug'       => $slug,
                 'version'    => $version,
@@ -106,7 +107,7 @@ trait PluginBackupHandlerTrait
                 'file_size'  => $fileSize,
                 'created_at' => $timestamp,
                 'path'       => $zipPath,
-            );
+            ];
 
             // Write metadata JSON alongside zip
             $metaPath = $zipPath . '.json';
@@ -115,15 +116,15 @@ trait PluginBackupHandlerTrait
             // Enforce retention limit
             $this->enforceBackupRetention($backupDir);
 
-            $this->fileLogger->info('Plugin backup created', array(
+            $this->fileLogger->info('Plugin backup created', [
                 'slug'     => $slug,
                 'version'  => $version,
                 'type'     => $backupType->value,
                 'size'     => $fileSize,
                 'filename' => $filename,
-            ));
+            ]);
 
-            return new WP_REST_Response(ResultHelper::ok(array(
+            return new WP_REST_Response(ResultHelper::ok([
                 ResponseKeyType::Success->value  => true,
                 ResponseKeyType::Message->value  => 'Backup created successfully',
                 ResponseKeyType::Filename->value => $filename,
@@ -131,7 +132,7 @@ trait PluginBackupHandlerTrait
                 ResponseKeyType::Version->value  => $version,
                 ResponseKeyType::Size->value     => $fileSize,
                 ResponseKeyType::Type->value     => $backupType->value,
-            )), HttpStatusType::Ok->value);
+            ]), HttpStatusType::Ok->value);
         }, 'plugin_backup');
     }
 
@@ -209,32 +210,32 @@ trait PluginBackupHandlerTrait
                 if ($rawMeta !== false) {
                     $meta = json_decode($rawMeta, true);
 
-                    if (is_array($meta)) {
+                    if (gettype($meta) === PhpNativeType::PhpArray->value) {
                         $meta['status'] = BackupStatusType::Restored->value;
                         $meta['restored_at'] = DateHelper::nowIso();
                         $isWriteFailed = (file_put_contents($metaPath, wp_json_encode($meta, JSON_PRETTY_PRINT)) === false);
 
                         if ($isWriteFailed) {
-                            $this->fileLogger->warn('Failed to update backup metadata after restore', array('path' => $metaPath));
+                            $this->fileLogger->warn('Failed to update backup metadata after restore', ['path' => $metaPath]);
                         }
                     }
                 } else {
-                    $this->fileLogger->warn('Failed to read backup metadata', array('path' => $metaPath));
+                    $this->fileLogger->warn('Failed to read backup metadata', ['path' => $metaPath]);
                 }
             }
 
-            $this->fileLogger->info('Plugin restored from backup', array(
+            $this->fileLogger->info('Plugin restored from backup', [
                 'slug'     => $slug,
                 'filename' => $filename,
                 'reactivated' => $wasActive,
-            ));
+            ]);
 
-            return new WP_REST_Response(ResultHelper::ok(array(
+            return new WP_REST_Response(ResultHelper::ok([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Plugin restored successfully from backup',
                 ResponseKeyType::Slug->value    => $slug,
                 ResponseKeyType::Filename->value => $filename,
-            )), HttpStatusType::Ok->value);
+            ]), HttpStatusType::Ok->value);
         }, 'plugin_backup_restore');
     }
 
@@ -248,7 +249,7 @@ trait PluginBackupHandlerTrait
         return $this->safeExecute(function () use ($request) {
             $slug = sanitize_text_field($request->get_param('slug') ?? '');
             $backupsBaseDir = PathHelper::getBackupsDir();
-            $result = array();
+            $result = [];
 
             if (!empty($slug)) {
                 $pluginBackups = $this->listBackupsForPlugin($backupsBaseDir, $slug);
@@ -280,10 +281,10 @@ trait PluginBackupHandlerTrait
                 return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
             });
 
-            return new WP_REST_Response(ResultHelper::ok(array(
+            return new WP_REST_Response(ResultHelper::ok([
                 'backups' => $result,
                 ResponseKeyType::Total->value => count($result),
-            )), HttpStatusType::Ok->value);
+            ]), HttpStatusType::Ok->value);
         }, 'plugin_backup_list');
     }
 
@@ -330,15 +331,15 @@ trait PluginBackupHandlerTrait
                 );
             }
 
-            $this->fileLogger->info('Plugin backup deleted', array(
+            $this->fileLogger->info('Plugin backup deleted', [
                 'slug'     => $slug,
                 'filename' => $filename,
-            ));
+            ]);
 
-            return new WP_REST_Response(ResultHelper::ok(array(
+            return new WP_REST_Response(ResultHelper::ok([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Backup deleted successfully',
-            )), HttpStatusType::Ok->value);
+            ]), HttpStatusType::Ok->value);
         }, 'plugin_backup_delete');
     }
 
@@ -427,7 +428,7 @@ trait PluginBackupHandlerTrait
     private function listBackupsForPlugin(string $backupsBaseDir, string $slug): array
     {
         $dir = PathHelper::join($backupsBaseDir, $slug);
-        $result = array();
+        $result = [];
 
         if (!is_dir($dir)) {
             return $result;
@@ -443,7 +444,7 @@ trait PluginBackupHandlerTrait
                 $rawMeta = @file_get_contents($metaFile);
                 $meta = ($rawMeta !== false) ? json_decode($rawMeta, true) : null;
 
-                if (is_array($meta)) {
+                if (gettype($meta) === PhpNativeType::PhpArray->value) {
                     $meta['filename'] = $filename;
                     $meta['file_size'] = filesize($zipFile);
                     $result[] = $meta;
@@ -453,7 +454,7 @@ trait PluginBackupHandlerTrait
             }
 
             // Fallback: build metadata from filename
-            $result[] = array(
+            $result[] = [
                 'filename'   => $filename,
                 'slug'       => $slug,
                 'version'    => 'unknown',
@@ -461,7 +462,7 @@ trait PluginBackupHandlerTrait
                 'status'     => BackupStatusType::Complete->value,
                 'file_size'  => filesize($zipFile),
                 'created_at' => gmdate('Y-m-d\TH:i:s\Z', filemtime($zipFile)),
-            );
+            ];
         }
 
         return $result;
@@ -488,9 +489,9 @@ trait PluginBackupHandlerTrait
         $toDelete = array_slice($files, $maxBackups);
 
         foreach ($toDelete as $file) {
-            $this->fileLogger->info('Auto-deleting old backup', array(
+            $this->fileLogger->info('Auto-deleting old backup', [
                 'file' => basename($file),
-            ));
+            ]);
             @unlink($file);
 
             $metaFile = $file . '.json';

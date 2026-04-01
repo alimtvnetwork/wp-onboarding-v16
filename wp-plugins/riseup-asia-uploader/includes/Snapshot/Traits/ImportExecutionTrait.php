@@ -64,7 +64,7 @@ trait ImportExecutionTrait {
     /** Validate all import file inventories (tables, incrementals, plugins). */
     private function validateAllImportFiles(string $rootDbPath, string $snapshotRoot): array {
         $tables = $this->readRootDbTables($rootDbPath);
-        $this->log(LogLevelType::Info->value, 'Validating table files', array(ResponseKeyType::Count->value => count($tables)));
+        $this->log(LogLevelType::Info->value, 'Validating table files', [ResponseKeyType::Count->value => count($tables)]);
         $this->validateTableFiles($snapshotRoot, $tables);
 
         $incrementals = $this->readRootDbIncrementals($rootDbPath);
@@ -73,34 +73,34 @@ trait ImportExecutionTrait {
         $plugins = $this->readRootDbPlugins($rootDbPath);
         $this->validatePluginFiles($snapshotRoot, $plugins);
 
-        return array(
+        return [
             ResponseKeyType::Tables->value       => $tables,
             ResponseKeyType::Incrementals->value  => $incrementals,
             ResponseKeyType::Plugins->value       => $plugins,
-        );
+        ];
     }
 
     /** Build the final import result array. */
     private function buildImportResult(int $snapshotId, string $destDir, array $metadata, array $inventories): array {
         $this->logImportComplete($snapshotId, $inventories);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::SnapshotId->value   => $snapshotId,
             ResponseKeyType::Folder->value       => basename($destDir),
             ResponseKeyType::Tables->value       => count($inventories[ResponseKeyType::Tables->value]),
             ResponseKeyType::TotalRows->value    => $metadata['total_rows'] ?? 0,
             ResponseKeyType::Incrementals->value => count($inventories[ResponseKeyType::Incrementals->value]),
             ResponseKeyType::Plugins->value      => count($inventories[ResponseKeyType::Plugins->value]),
-        ));
+        ]);
     }
 
     private function logImportComplete(int $snapshotId, array $inventories): void {
-        $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', array(
+        $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', [
             ResponseKeyType::SnapshotId->value    => $snapshotId,
             ResponseKeyType::Tables->value        => count($inventories[ResponseKeyType::Tables->value]),
             ResponseKeyType::Incrementals->value  => count($inventories[ResponseKeyType::Incrementals->value]),
             ResponseKeyType::Plugins->value       => count($inventories[ResponseKeyType::Plugins->value]),
-        ));
+        ]);
     }
 
     /** Move snapshot to final location in snapshots directory. */
@@ -148,7 +148,7 @@ trait ImportExecutionTrait {
 
     /** Build the snapshot database record for import. */
     private function buildSnapshotRecord(array $metadata, array $inventories, string $destDir, array $tableNames): array {
-        return array(
+        return [
             'Sequence'      => $this->manager->getNextSequence(),
             'Filename'      => basename($destDir),
             'Filepath'      => $destDir,
@@ -162,12 +162,12 @@ trait ImportExecutionTrait {
             'CreatedAt'     => DateHelper::nowIso(),
             'CompletedAt'   => DateHelper::nowIso(),
             'ImportSource'  => json_encode($this->buildImportSourceMeta($metadata, $inventories)),
-        );
+        ];
     }
 
     /** Build the import_source metadata. */
     private function buildImportSourceMeta(array $metadata, array $inventories): array {
-        return array(
+        return [
             ResponseKeyType::OriginalTitle->value     => $metadata['title'] ?? null,
             ResponseKeyType::OriginalType->value      => $metadata['type'] ?? null,
             ResponseKeyType::OriginalCreatedAt->value => $metadata['created_at'] ?? null,
@@ -177,6 +177,6 @@ trait ImportExecutionTrait {
             ResponseKeyType::IncrementalCount->value  => count($inventories[ResponseKeyType::Incrementals->value]),
             ResponseKeyType::PluginCount->value       => count($inventories[ResponseKeyType::Plugins->value]),
             ResponseKeyType::Format->value            => SnapshotWorkerModeType::PerTable->value,
-        );
+        ];
     }
 }

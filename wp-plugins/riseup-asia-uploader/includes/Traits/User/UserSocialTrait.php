@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\UserMetaKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait UserSocialTrait {
 
@@ -23,11 +24,11 @@ trait UserSocialTrait {
      */
     private function readSocialMeta(int $userId): array
     {
-        $result = array();
+        $result = [];
 
         foreach (UserMetaKeyType::socialCases() as $meta) {
             $value = get_user_meta($userId, $meta->value, true);
-            $result[$meta->jsonKey()] = is_string($value) ? $value : '';
+            $result[$meta->jsonKey()] = gettype($value) === PhpNativeType::PhpString->value ? $value : '';
         }
 
         return $result;
@@ -41,7 +42,7 @@ trait UserSocialTrait {
      */
     private function writeSocialMeta(int $userId, array $socialData): array
     {
-        $modified = array();
+        $modified = [];
 
         foreach (UserMetaKeyType::socialCases() as $meta) {
             $jsonKey = $meta->jsonKey();

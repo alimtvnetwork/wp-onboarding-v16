@@ -34,20 +34,20 @@ trait RestoreValidationTrait {
         $isUnconfirmed = !$isConfirmed;
 
         if ($isUnconfirmed) {
-            return array(
+            return [
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Restore requires explicit confirmation (Confirm=true)',
                 ResponseKeyType::Code->value    => SnapshotErrorType::RestoreNoConfirm->value,
-            );
+            ];
         }
 
         $rootPath = $snapshotDir . PathDatabaseType::Root->value;
 
         if (PathHelper::isFileMissing($rootPath)) {
-            return array(
+            return [
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
-            );
+            ];
         }
 
         return null;
@@ -55,7 +55,7 @@ trait RestoreValidationTrait {
 
     private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
         $mode = $options[ResponseKeyType::Mode->value] ?? RestoreModeType::Full->value;
-        $selectedTables = $options[ResponseKeyType::Tables->value] ?? array();
+        $selectedTables = $options[ResponseKeyType::Tables->value] ?? [];
 
         $tableInventory = $this->getTableInventory($rootPdo);
         $restoreOrder = $this->getRestoreOrder($rootPdo, $tableInventory);
@@ -68,23 +68,23 @@ trait RestoreValidationTrait {
             }));
 
             if (empty($restoreOrder)) {
-                return array(
+                return [
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'None of the selected tables exist in the snapshot',
-                );
+                ];
             }
         }
 
-        $this->log(LogLevelType::Info->value, 'Restore order determined', array(
+        $this->log(LogLevelType::Info->value, 'Restore order determined', [
             ResponseKeyType::Tables->value => count($restoreOrder),
             ResponseKeyType::Order->value  => array_slice($restoreOrder, 0, 10),
-        ));
+        ]);
 
-        return array(
+        return [
             ResponseKeyType::Success->value   => true,
             ResponseKeyType::Tables->value    => $restoreOrder,
             ResponseKeyType::Inventory->value => $tableInventory,
-        );
+        ];
     }
 
     private function createSafetyBackup(array $options): ?int {
@@ -98,23 +98,23 @@ trait RestoreValidationTrait {
 
         $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
 
-        $result = $this->orchestrator->executeFullBackup(array(
+        $result = $this->orchestrator->executeFullBackup([
             ResponseKeyType::Title->value          => 'Pre-Restore Safety Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Compression->value     => false,
             ResponseKeyType::IncludePlugins->value  => false,
-        ));
+        ]);
 
         if ($result[ResponseKeyType::Success->value]) {
-            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array(
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', [
                 ResponseKeyType::BackupId->value => $result[ResponseKeyType::SnapshotId->value] ?? null,
-            ));
+            ]);
 
             return $result[ResponseKeyType::SnapshotId->value] ?? null;
         }
 
-        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array(
+        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', [
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value] ?? 'Unknown',
-        ));
+        ]);
 
         $isBackupRequired = !empty($options[ResponseKeyType::RequireBackup->value] ?? null);
 

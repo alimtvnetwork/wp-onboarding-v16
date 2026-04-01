@@ -24,7 +24,7 @@ use RiseupAsia\Helpers\ResultHelper;
 trait CategoryTrait {
 
     public function createCategory(array $data): array {
-        $this->fileLogger->info('Creating category', array('name' => $data['name'] ?? ''));
+        $this->fileLogger->info('Creating category', ['name' => $data['name'] ?? '']);
 
         if (empty($data['name'])) {
             $this->fileLogger->warn('Category creation failed: name required');
@@ -33,10 +33,10 @@ trait CategoryTrait {
         }
 
         try {
-            $args = array(
+            $args = [
                 'description' => sanitize_textarea_field($data['description'] ?? ''),
                 'parent'      => (int) ($data['parent'] ?? 0),
-            );
+            ];
             $hasSlug = !empty($data['slug'] ?? null);
             if ($hasSlug) {
                 $args['slug'] = sanitize_title($data['slug']);
@@ -46,38 +46,38 @@ trait CategoryTrait {
 
             if (is_wp_error($result)) {
                 $errorMsg = $result->get_error_message();
-                $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
+                $this->fileLogger->error('Category creation failed', ['error' => $errorMsg]);
                 $this->logger->logPostAction(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
 
                 return ResultHelper::error($errorMsg);
             }
 
-            $this->logger->logCategoryCreate($result['term_id'], array(
+            $this->logger->logCategoryCreate($result['term_id'], [
                 'name' => $data['name'],
                 'slug' => $args['slug'] ?? '',
-            ));
+            ]);
 
-            $this->fileLogger->info('Category created', array('termId' => $result['term_id']));
-            return ResultHelper::ok(array(
+            $this->fileLogger->info('Category created', ['termId' => $result['term_id']]);
+            return ResultHelper::ok([
                 ResponseKeyType::Category->value => $this->formatCategory(get_term($result['term_id'], 'category')),
-            ));
+            ]);
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Category creation exception');
         }
     }
 
-    public function listCategories(array $params = array()): array {
+    public function listCategories(array $params = []): array {
         $this->fileLogger->debug('Listing categories', $params);
 
         try {
-            $args = array(
+            $args = [
                 'taxonomy'   => 'category',
                 'hide_empty' => false,
                 'number'     => min((int) ($params['limit'] ?? PaginationConfigType::DefaultLimit->value), PaginationConfigType::MaxLimit->value),
                 'offset'     => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'    => 'name',
                 'order'      => 'ASC',
-            );
+            ];
             $hasSearch = !empty($params['search'] ?? null);
             if ($hasSearch) {
                 $args['search'] = sanitize_text_field($params['search']);
@@ -85,33 +85,33 @@ trait CategoryTrait {
 
             $terms = get_terms($args);
             if (is_wp_error($terms)) {
-                $this->fileLogger->error('List categories failed', array('error' => $terms->get_error_message()));
+                $this->fileLogger->error('List categories failed', ['error' => $terms->get_error_message()]);
 
                 return ResultHelper::error($terms->get_error_message());
             }
 
-            $categories = array_map(array($this, 'formatCategory'), $terms);
-            $total = wp_count_terms(array('taxonomy' => 'category', 'hide_empty' => false));
+            $categories = array_map([$this, 'formatCategory'], $terms);
+            $total = wp_count_terms(['taxonomy' => 'category', 'hide_empty' => false]);
 
-            return ResultHelper::ok(array(
+            return ResultHelper::ok([
                 ResponseKeyType::Total->value      => (int) $total,
                 ResponseKeyType::Limit->value      => $args['number'],
                 ResponseKeyType::Offset->value     => $args['offset'],
                 ResponseKeyType::Categories->value => $categories,
-            ));
+            ]);
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List categories exception');
         }
     }
 
     private function formatCategory(object $term): array {
-        return array(
+        return [
             'id'          => $term->term_id,
             'name'        => $term->name,
             'slug'        => $term->slug,
             'description' => $term->description,
             'parent'      => $term->parent,
             'count'       => $term->count,
-        );
+        ];
     }
 }

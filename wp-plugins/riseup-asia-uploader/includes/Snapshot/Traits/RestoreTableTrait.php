@@ -35,7 +35,7 @@ trait RestoreTableTrait {
     ): array {
         $tablesRestored = 0;
         $totalRows = 0;
-        $errors = array();
+        $errors = [];
 
         foreach ($restoreOrder as $table) {
             $result = $this->restoreSingleMasterTable($table, $tableInventory, $snapshotDir);
@@ -46,31 +46,31 @@ trait RestoreTableTrait {
             $errors = array_merge($errors, $outcome['errors']);
         }
 
-        return array(
+        return [
             ResponseKeyType::TablesRestored->value => $tablesRestored,
             ResponseKeyType::TotalRows->value      => $totalRows,
             ResponseKeyType::Errors->value         => $errors,
-        );
+        ];
     }
 
     private function processRestoreOutcome(string $table, ?array $result, array $options): array {
         if ($result === null) {
-            return array('restored' => 0, 'rows' => 0, 'errors' => array($table . ': skipped'));
+            return ['restored' => 0, 'rows' => 0, 'errors' => array($table . ': skipped')];
         }
 
         if ($result[ResponseKeyType::Success->value]) {
             $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result[ResponseKeyType::Rows->value]));
 
-            return array('restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value], 'errors' => array());
+            return ['restored' => 1, 'rows' => $result[ResponseKeyType::Rows->value], 'errors' => array()];
         }
 
         return $this->handleRestoreFailure($table, $result, $options);
     }
 
     private function handleRestoreFailure(string $table, array $result, array $options): array {
-        $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array(
+        $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, [
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
-        ));
+        ]);
 
         $isStrictMode = !empty($options[ResponseKeyType::Strict->value] ?? null);
 
@@ -78,7 +78,7 @@ trait RestoreTableTrait {
             throw new Exception('Strict mode: table restore failed for ' . $table);
         }
 
-        return array('restored' => 0, 'rows' => 0, 'errors' => array($table . ': ' . $result[ResponseKeyType::Error->value]));
+        return ['restored' => 0, 'rows' => 0, 'errors' => array($table . ': ' . $result[ResponseKeyType::Error->value])];
     }
 
     private function restoreSingleMasterTable(
@@ -92,7 +92,7 @@ trait RestoreTableTrait {
         if ($isTableInfoMissing) {
             return ResultHelper::error(
                 $table . ': not found in inventory',
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
 
@@ -107,7 +107,7 @@ trait RestoreTableTrait {
 
             return ResultHelper::error(
                 'SQLite file missing (' . $tableInfo[ResponseKeyType::SqliteFile->value] . ')',
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
 
@@ -115,10 +115,10 @@ trait RestoreTableTrait {
     }
 
     private function logMissingSqliteFile(string $table, array $tableInfo): void {
-        $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array(
+        $this->log(LogLevelType::Error->value, 'SQLite file missing for table', [
             'table' => $table,
             'file'  => $tableInfo[ResponseKeyType::SqliteFile->value],
-        ));
+        ]);
     }
 
     private function restoreTableFromFile(
@@ -144,7 +144,7 @@ trait RestoreTableTrait {
         } catch (Throwable $e) {
             return ResultHelper::errorFromException(
                 $e,
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
     }

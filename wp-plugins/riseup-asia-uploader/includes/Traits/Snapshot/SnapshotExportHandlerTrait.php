@@ -34,11 +34,11 @@ trait SnapshotExportHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
-            $this->fileLogger->info('Exporting snapshot', array('id' => $id));
+            $this->fileLogger->info('Exporting snapshot', ['id' => $id]);
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::SnapshotId->value => $id, 'trigger' => SnapshotTriggerType::Api->value, ResponseKeyType::Phase->value => 'initiated')
+                [ResponseKeyType::SnapshotId->value => $id, 'trigger' => SnapshotTriggerType::Api->value, ResponseKeyType::Phase->value => 'initiated']
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -48,7 +48,7 @@ trait SnapshotExportHandlerTrait {
             if ($isExportFailed) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
-                    array(ResponseKeyType::SnapshotId->value => $id),
+                    [ResponseKeyType::SnapshotId->value => $id],
                     $result[ResponseKeyType::Error->value] ?? 'Export failed'
                 );
 
@@ -59,7 +59,7 @@ trait SnapshotExportHandlerTrait {
             if (PathHelper::isFileMissing($filepath)) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
-                    array(ResponseKeyType::SnapshotId->value => $id),
+                    [ResponseKeyType::SnapshotId->value => $id],
                     'Export file not found'
                 );
 
@@ -68,15 +68,15 @@ trait SnapshotExportHandlerTrait {
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotExport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Filename->value => $result[ResponseKeyType::Filename->value], ResponseKeyType::Size->value => $result[ResponseKeyType::Size->value])
+                [ResponseKeyType::SnapshotId->value => $id, ResponseKeyType::Filename->value => $result[ResponseKeyType::Filename->value], ResponseKeyType::Size->value => $result[ResponseKeyType::Size->value]]
             );
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value     => true,
                 ResponseKeyType::Filename->value    => $result[ResponseKeyType::Filename->value],
                 ResponseKeyType::Size->value        => $result[ResponseKeyType::Size->value],
                 ResponseKeyType::DownloadUrl->value => rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotList->value . '/' . $id . '/download'),
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         }, 'export_snapshot');
     }
 
@@ -94,11 +94,11 @@ trait SnapshotExportHandlerTrait {
     }
 
     private function buildDownloadResponse(int $snapshotId) {
-        $this->fileLogger->info('Snapshot download requested', array('snapshotId' => $snapshotId));
+        $this->fileLogger->info('Snapshot download requested', ['snapshotId' => $snapshotId]);
 
         $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Phase->value => 'initiated')
+            [ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Phase->value => 'initiated']
         );
 
         $exporter = SnapshotExporter::getInstance($this->fileLogger, $this->db);
@@ -108,7 +108,7 @@ trait SnapshotExportHandlerTrait {
         if ($isDownloadFailed) {
             $this->logger->logPluginAction(
                 ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Failed->value,
-                array(ResponseKeyType::SnapshotId->value => $snapshotId),
+                [ResponseKeyType::SnapshotId->value => $snapshotId],
                 $result[ResponseKeyType::Error->value] ?? 'Download failed'
             );
 
@@ -120,16 +120,16 @@ trait SnapshotExportHandlerTrait {
 
         $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array(
+            [
                 ResponseKeyType::SnapshotId->value => $snapshotId,
                 ResponseKeyType::Cached->value     => $result[ResponseKeyType::Cached->value] ?? false,
                 ResponseKeyType::Size->value       => $export['ZipSize'] ?? 0,
                 ResponseKeyType::Filename->value   => $export['ZipFilename'] ?? '',
-            )
+            ]
         );
 
         return EnvelopeBuilder::success()
-            ->setResults(array(array(
+            ->setResults([array(
                 'url'               => $downloadUrl,
                 ResponseKeyType::Filename->value => $export['ZipFilename'],
                 ResponseKeyType::Size->value     => (int) $export['ZipSize'],
@@ -138,7 +138,7 @@ trait SnapshotExportHandlerTrait {
                 ResponseKeyType::IncrementalCount->value => (int) ($export['IncrementalCount'] ?? 0),
                 ResponseKeyType::CreatedAt->value        => $export['CreatedAt'] ?? '',
                 'status'                                 => $export['Status'] ?? 'valid',
-            )))
+            )])
             ->setRequestedAt('/' . EndpointType::SnapshotDownload->value)
             ->toResponse();
     }

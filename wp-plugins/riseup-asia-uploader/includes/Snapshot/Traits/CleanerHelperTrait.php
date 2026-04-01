@@ -29,22 +29,23 @@ use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 
 trait CleanerHelperTrait {
     private function loadSettings(array $overrides): array {
-        $defaults = array(
+        $defaults = [
             SettingsKeyType::RetentionType->value  => RetentionType::Days->value,
             SettingsKeyType::RetentionDays->value  => SnapshotConfigType::RetentionDaysDefault->value,
             SettingsKeyType::RetentionCount->value => SnapshotConfigType::RetentionCountDefault->value,
-        );
+        ];
 
         $saved = get_option(
             OptionNameType::SnapshotSettings->value,
-            array()
+            []
         );
 
-        if (is_array($saved)) {
+        if (gettype($saved) === PhpNativeType::PhpArray->value) {
             $saved = SettingsKeyType::migrateArray($saved);
             $defaults = array_merge($defaults, $saved);
         }
@@ -67,7 +68,7 @@ trait CleanerHelperTrait {
             return;
         }
 
-        $items = array_diff(scandir($dir), array('.', '..'));
+        $items = array_diff(scandir($dir), ['.', '..']);
 
         foreach ($items as $item) {
             $path = $dir . '/' . $item;
@@ -106,7 +107,7 @@ trait CleanerHelperTrait {
         try {
             $this->db->logTransaction(
                 ActionType::SnapshotCleanup->value,
-                json_encode(array(
+                json_encode([
                     'retentionDeleted'               => $results[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value],
                     'retentionSkipped'               => $results[ResponseKeyType::Retention->value][ResponseKeyType::SkippedMaster->value],
                     'orphansRemoved'                 => $results[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value],
@@ -114,7 +115,7 @@ trait CleanerHelperTrait {
                     'spaceFreed'                     => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
                     ResponseKeyType::Errors->value   => count($results[ResponseKeyType::Errors->value]),
                     ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
-                )),
+                ]),
                 empty($results[ResponseKeyType::Errors->value]) ? StatusType::Success->value : StatusType::Failed->value,
                 TriggerSourceType::Api->value,
             );
@@ -123,7 +124,7 @@ trait CleanerHelperTrait {
         }
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         try {
             $context[ResponseKeyType::Error->value] = $e->getMessage();
             $context['trace'] = $e->getTraceAsString();
@@ -133,7 +134,7 @@ trait CleanerHelperTrait {
         }
     }
 
-    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+    private function logWarn(Throwable $e, string $message, array $context = []): void {
         try {
             $context[ResponseKeyType::Error->value] = $e->getMessage();
             $context['trace'] = $e->getTraceAsString();
@@ -146,7 +147,7 @@ trait CleanerHelperTrait {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $isLoggerMissing = ($this->logger === null);
 

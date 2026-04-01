@@ -22,25 +22,25 @@ use RiseupAsia\Enums\SnapshotProviderType;
 
 trait DetectorProviderTrait {
     public function detectAvailableProviders(): array {
-        $providers = array(
+        $providers = [
             $this->detectWpReset(),
             $this->detectUpdraft(),
             $this->detectNative(),
-        );
+        ];
         $this->logDetectionResults($providers);
 
         return $providers;
     }
 
     private function detectWpReset(): array {
-        $result = array(
+        $result = [
             ResponseKeyType::Id->value                 => SnapshotProviderType::WpReset->value,
             ResponseKeyType::Name->value               => 'WP Reset',
             ResponseKeyType::Available->value          => false,
             ResponseKeyType::Capabilities->value       => array(),
             ResponseKeyType::Version->value            => null,
             ResponseKeyType::DetectionMethod->value    => null,
-        );
+        ];
 
         if (class_exists('WP_Reset')) {
             $result[ResponseKeyType::Available->value] = true;
@@ -71,7 +71,7 @@ trait DetectorProviderTrait {
                 $result[ResponseKeyType::Version->value] = WP_RESET_VERSION;
             }
 
-            $result[ResponseKeyType::Capabilities->value] = array(
+            $result[ResponseKeyType::Capabilities->value] = [
                 ResponseKeyType::FullSite->value     => true,
                 ResponseKeyType::DatabaseOnly->value => true,
                 ResponseKeyType::Selective->value    => true,
@@ -79,21 +79,21 @@ trait DetectorProviderTrait {
                 ResponseKeyType::Restore->value      => true,
                 ResponseKeyType::Export->value       => true,
                 ResponseKeyType::Import->value       => true,
-            );
+            ];
         }
 
         return $result;
     }
 
     private function detectUpdraft(): array {
-        $result = array(
+        $result = [
             ResponseKeyType::Id->value                 => SnapshotProviderType::Updraft->value,
             ResponseKeyType::Name->value               => 'UpdraftPlus',
             ResponseKeyType::Available->value          => false,
             ResponseKeyType::Capabilities->value       => array(),
             ResponseKeyType::Version->value            => null,
             ResponseKeyType::DetectionMethod->value    => null,
-        );
+        ];
 
         if (class_exists('UpdraftPlus')) {
             $result[ResponseKeyType::Available->value] = true;
@@ -110,7 +110,7 @@ trait DetectorProviderTrait {
         $isStillUnavailable = ($result[ResponseKeyType::Available->value] === false);
 
         if ($isStillUnavailable) {
-            $pluginFiles = array('updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php');
+            $pluginFiles = ['updraftplus/updraftplus.php', 'updraftplus-premium/updraftplus.php'];
 
             foreach ($pluginFiles as $pluginFile) {
                 if (is_plugin_active($pluginFile) || is_plugin_active_for_network($pluginFile)) {
@@ -135,7 +135,7 @@ trait DetectorProviderTrait {
 
             $isPremium = (strpos($result[ResponseKeyType::Name->value], 'Premium') !== false);
 
-            $result[ResponseKeyType::Capabilities->value] = array(
+            $result[ResponseKeyType::Capabilities->value] = [
                 ResponseKeyType::FullSite->value     => true,
                 ResponseKeyType::DatabaseOnly->value => true,
                 ResponseKeyType::Selective->value    => $isPremium,
@@ -143,7 +143,7 @@ trait DetectorProviderTrait {
                 ResponseKeyType::Restore->value      => true,
                 ResponseKeyType::Export->value       => true,
                 ResponseKeyType::Import->value       => true,
-            );
+            ];
         }
 
         return $result;
@@ -152,7 +152,7 @@ trait DetectorProviderTrait {
     private function detectNative(): array {
         $hasSqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
-        return array(
+        return [
             ResponseKeyType::Id->value                 => SnapshotProviderType::Native->value,
             ResponseKeyType::Name->value               => 'Native SQLite',
             ResponseKeyType::Available->value          => $hasSqlite,
@@ -168,7 +168,7 @@ trait DetectorProviderTrait {
             ResponseKeyType::Version->value            => PluginConfigType::Version->value,
             ResponseKeyType::DetectionMethod->value    => $hasSqlite ? 'extension_loaded' : 'extension_missing',
             ResponseKeyType::SqliteVersion->value      => $hasSqlite ? $this->getSqliteVersion() : null,
-        );
+        ];
     }
 
     private function getSqliteVersion(): ?string {
@@ -199,7 +199,7 @@ trait DetectorProviderTrait {
             return $isAvailable;
         });
 
-        $this->logger->info('[SNAPSHOT] Provider detection complete', array(
+        $this->logger->info('[SNAPSHOT] Provider detection complete', [
             'total'     => count($providers),
             'available' => count($available),
             ResponseKeyType::Providers->value => array_map(function($p) {
@@ -209,6 +209,6 @@ trait DetectorProviderTrait {
                     ResponseKeyType::Version->value   => $p[ResponseKeyType::Version->value],
                 );
             }, $providers),
-        ));
+        ]);
     }
 }

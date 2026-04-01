@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\PhpNativeType;
 
 class SettingsMigrationHelper {
     /** Option key tracking whether migration has run. */
@@ -27,20 +28,20 @@ class SettingsMigrationHelper {
      *
      * @var array<string,string>
      */
-    private const KEY_MAP = array(
+    private const KEY_MAP = [
         'riseup_snapshot_settings'            => 'RiseupSnapshotSettings',
         'riseup_log_retrieval_settings'       => 'RiseupLogRetrievalSettings',
         'riseup_update_settings'              => 'RiseupUpdateSettings',
         'riseup_asia_settings'                => 'RiseupAsiaSettings',
         'riseup_error_notification_settings'  => 'RiseupErrorNotificationSettings',
-    );
+    ];
 
     /**
      * Value mappings: old lowercase/snake_case → new PascalCase.
      *
      * @var array<string,string>
      */
-    private const VALUE_MAP = array(
+    private const VALUE_MAP = [
         // SnapshotProviderType
         'auto'    => 'Auto',
         'native'  => 'Native',
@@ -64,20 +65,20 @@ class SettingsMigrationHelper {
         // StorageModeType
         'single'    => 'Single',
         'per-table' => 'PerTable',
-    );
+    ];
 
     /**
      * Fields within snapshot settings that hold enum values.
      *
      * @var array<string>
      */
-    private const SNAPSHOT_FIELDS = array(
+    private const SNAPSHOT_FIELDS = [
         'preferred_provider',
         'schedule_frequency',
         'default_scope',
         'retention_type',
         'storage_mode',
-    );
+    ];
 
     /** Run the migration if not already completed. */
     public static function migrateIfNeeded(): void {
@@ -123,10 +124,10 @@ class SettingsMigrationHelper {
     private static function migrateSnapshotSettings(): void {
         $settings = get_option(
             OptionNameType::SnapshotSettings->value,
-            array(),
+            [],
         );
 
-        $isSettingsEmpty = empty($settings) || !is_array($settings);
+        $isSettingsEmpty = empty($settings) || gettype($settings) !== PhpNativeType::PhpArray->value;
 
         if ($isSettingsEmpty) {
             return;
@@ -135,7 +136,7 @@ class SettingsMigrationHelper {
         $hasChanges = false;
 
         foreach (self::SNAPSHOT_FIELDS as $field) {
-            $hasField = isset($settings[$field]) && is_string($settings[$field]);
+            $hasField = isset($settings[$field]) && gettype($settings[$field]) === PhpNativeType::PhpString->value;
             $isMissingField = !$hasField;
 
             if ($isMissingField) {

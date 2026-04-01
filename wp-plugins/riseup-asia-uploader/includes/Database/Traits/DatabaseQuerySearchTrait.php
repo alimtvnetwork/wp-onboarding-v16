@@ -25,7 +25,7 @@ use RiseupAsia\Helpers\DateHelper;
 trait DatabaseQuerySearchTrait {
 
     public function queryTransactions(
-        array $filters = array(),
+        array $filters = [],
         int $limit = 50, // PaginationConfigType::DefaultLimit (PHP constraint: no enum in defaults)
         int $offset = 0,
     ): array {
@@ -34,7 +34,7 @@ trait DatabaseQuerySearchTrait {
         if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready for query');
 
-            return array(ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array());
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array()];
         }
 
         $limit = min(max(1, $limit), PaginationConfigType::MaxLimit->value);
@@ -45,7 +45,7 @@ trait DatabaseQuerySearchTrait {
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to query transactions');
 
-            return array(ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array());
+            return [ResponseKeyType::Total->value => 0, ResponseKeyType::Logs->value => array()];
         }
     }
 
@@ -54,7 +54,7 @@ trait DatabaseQuerySearchTrait {
         int $limit,
         int $offset,
     ): array {
-        $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
+        $this->fileLogger->debug('Querying transactions', ['filters' => $filters]);
 
         $countQuery = Orm::forTable(TableType::Transactions->value);
         $dataQuery = Orm::forTable(TableType::Transactions->value);
@@ -66,9 +66,9 @@ trait DatabaseQuerySearchTrait {
         $logs = $dataQuery->orderByDesc('CreatedAt')->limit($limit)->offset($offset)->findMany();
 
         $this->decodeLogDetails($logs);
-        $this->fileLogger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
+        $this->fileLogger->debug('Query complete', ['total' => $total, 'returned' => count($logs)]);
 
-        return array(ResponseKeyType::Total->value => $total, ResponseKeyType::Logs->value => $logs);
+        return [ResponseKeyType::Total->value => $total, ResponseKeyType::Logs->value => $logs];
     }
 
     private function decodeLogDetails(array &$logs): void {
@@ -157,22 +157,22 @@ trait DatabaseQuerySearchTrait {
         $isDbUnready = ($this->isReady() === false);
 
         if ($isDbUnready) {
-            return array();
+            return [];
         }
 
         try {
-            return array(
+            return [
                 ResponseKeyType::TotalTransactions->value => Orm::forTable(TableType::Transactions->value)->count(),
                 ResponseKeyType::ByAction->value          => $this->countByColumn('Action'),
                 ResponseKeyType::ByStatus->value          => $this->countByColumn('Status'),
                 ResponseKeyType::Last24h->value           => Orm::forTable(TableType::Transactions->value)
                     ->whereGte('CreatedAt', DateHelper::formatUtc(time() - DAY_IN_SECONDS))
                     ->count(),
-            );
+            ];
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get stats');
 
-            return array();
+            return [];
         }
     }
 
@@ -180,7 +180,7 @@ trait DatabaseQuerySearchTrait {
         $rows = Orm::rawExecute(
             "SELECT {$column}, COUNT(*) as count FROM " . TableType::Transactions->value . " GROUP BY {$column}"
         );
-        $result = array();
+        $result = [];
 
         foreach ($rows as $row) {
             $result[$row[$column]] = (int) $row['count'];
@@ -203,7 +203,7 @@ trait DatabaseQuerySearchTrait {
                 ->whereLt('CreatedAt', $cutoff)
                 ->delete();
 
-            $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));
+            $this->fileLogger->info('Cleanup complete', ['deleted' => $deleted]);
 
             return $deleted;
         } catch (Throwable $e) {

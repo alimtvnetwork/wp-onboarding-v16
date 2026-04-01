@@ -58,7 +58,7 @@ trait WorkerJobLifecycleTrait {
                 (SnapshotDir, TablesJson, PoolSize, Status, ConfigJson, CreatedAt, UpdatedAt)
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-            $stmt->execute(array(
+            $stmt->execute([
                 $snapshotDir,
                 json_encode($tables),
                 $this->poolSize,
@@ -66,7 +66,7 @@ trait WorkerJobLifecycleTrait {
                 json_encode($config),
                 $now,
                 $now,
-            ));
+            ]);
 
             return (int) $pdo->lastInsertId();
         } catch (Throwable $e) {
@@ -78,7 +78,7 @@ trait WorkerJobLifecycleTrait {
 
     private function getJob(PDO $pdo, int $jobId): ?array {
         $stmt = $pdo->prepare("SELECT * FROM " . TableType::SnapshotJobs->value . " WHERE Id = ?");
-        $stmt->execute(array($jobId));
+        $stmt->execute([$jobId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $row ?: null;
@@ -96,19 +96,19 @@ trait WorkerJobLifecycleTrait {
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET Status = ?, UpdatedAt = ?, CompletedAt = COALESCE(?, CompletedAt) WHERE Id = ?");
 
-        $stmt->execute(array(
+        $stmt->execute([
             $status,
             $now,
             $completed,
             $jobId,
-        ));
+        ]);
 
         if ($error) {
             $job = $this->getJob($pdo, $jobId);
             $errors = json_decode($job['ErrorsJson'] ?? '[]', true);
             $errors[] = $error;
             $stmt2 = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . " SET ErrorsJson = ? WHERE Id = ?");
-            $stmt2->execute(array(json_encode($errors), $jobId));
+            $stmt2->execute([json_encode($errors), $jobId]);
         }
     }
 
@@ -129,14 +129,14 @@ trait WorkerJobLifecycleTrait {
                 TotalRows = TotalRows + ?, ErrorsJson = ?, UpdatedAt = ?
             WHERE Id = ?");
 
-        $stmt->execute(array(
+        $stmt->execute([
             $nextBatch,
             $batchExported,
             $batchRows,
             json_encode($allErrors),
             $now,
             $jobId,
-        ));
+        ]);
     }
 
     private function finalizeJob(
@@ -162,19 +162,19 @@ trait WorkerJobLifecycleTrait {
 
         $errors = json_decode($job['ErrorsJson'] ?? '[]', true);
 
-        $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot job complete', [
             'jobId'                               => $jobId,
             'tablesExported'                      => $job['TablesExported'],
             ResponseKeyType::TotalRows->value     => $job['TotalRows'],
             ResponseKeyType::Errors->value        => count($errors),
-        ));
+        ]);
     }
 
     private function scheduleNextBatch(int $jobId): void {
         wp_schedule_single_event(
             time() + 5,
             HookType::CronSnapshotWorkerBatch->value,
-            array(array('jobId' => $jobId)),
+            [array('jobId' => $jobId)],
         );
     }
 }

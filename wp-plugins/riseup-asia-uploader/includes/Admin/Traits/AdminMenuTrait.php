@@ -51,7 +51,7 @@ trait AdminMenuTrait {
             __('Riseup Uploader', $pluginSlug),
             CapabilityType::ManageOptions->value,
             $slug,
-            array($this, 'renderLogsPage'),
+            [$this, 'renderLogsPage'],
             'dashicons-upload',
             80,
         );
@@ -62,7 +62,7 @@ trait AdminMenuTrait {
         $slug = PluginConfigType::Slug->value;
         $pluginSlug = $slug;
 
-        $submenus = array(
+        $submenus = [
             array(
                 $slug,
                 'Activity Logs',
@@ -88,7 +88,7 @@ trait AdminMenuTrait {
                 'License',
                 'renderLicensePage',
             ),
-        );
+        ];
 
         foreach ($submenus as $item) {
             add_submenu_page(
@@ -97,7 +97,7 @@ trait AdminMenuTrait {
                 __($item[1], $pluginSlug),
                 CapabilityType::ManageOptions->value,
                 $item[0],
-                array($this, $item[2]),
+                [$this, $item[2]],
             );
         }
     }
@@ -114,7 +114,7 @@ trait AdminMenuTrait {
             __('Error Log', $pluginSlug) . $errorBubble,
             CapabilityType::ManageOptions->value,
             AdminPageType::Errors->value,
-            array($this, 'renderErrorsPage'),
+            [$this, 'renderErrorsPage'],
         );
     }
 
@@ -129,7 +129,7 @@ trait AdminMenuTrait {
             __('Report / Feedback', $pluginSlug),
             CapabilityType::ManageOptions->value,
             AdminPageType::Feedback->value,
-            array($this, 'renderFeedbackPage'),
+            [$this, 'renderFeedbackPage'],
         );
     }
 
@@ -159,7 +159,7 @@ trait AdminMenuTrait {
         wp_enqueue_style(
             'riseup-admin-styles',
             plugins_url('assets/admin.css', $pluginFile),
-            array(),
+            [],
             $version,
         );
 
@@ -207,12 +207,12 @@ trait AdminMenuTrait {
 
     /** Enqueue Error Log page assets. */
     private function enqueueErrorsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-errors', plugins_url('assets/css/admin-errors.css', $pluginFile), array(), $version);
-        wp_enqueue_script('riseup-admin-errors', plugins_url('assets/js/admin-errors.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-errors', plugins_url('assets/css/admin-errors.css', $pluginFile), [], $version);
+        wp_enqueue_script('riseup-admin-errors', plugins_url('assets/js/admin-errors.js', $pluginFile), ['jquery'], $version, true);
 
         $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : AdminTabType::Sessions->value;
 
-        wp_localize_script('riseup-admin-errors', 'RiseupErrors', array(
+        wp_localize_script('riseup-admin-errors', 'RiseupErrors', [
             'nonce'        => wp_create_nonce(NonceType::Admin->value),
             'activeTab'    => $activeTab,
             'actions'      => array(
@@ -248,15 +248,15 @@ trait AdminMenuTrait {
                 'noStackTrace'    => __('No stack trace available.', $pluginSlug),
                 'noContextData'   => __('No context data', $pluginSlug),
             ),
-        ));
+        ]);
     }
 
     /** Enqueue Settings page assets. */
     private function enqueueSettingsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-settings', plugins_url('assets/css/admin-settings.css', $pluginFile), array(), $version);
-        wp_enqueue_script('riseup-admin-settings', plugins_url('assets/js/admin-settings.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-settings', plugins_url('assets/css/admin-settings.css', $pluginFile), [], $version);
+        wp_enqueue_script('riseup-admin-settings', plugins_url('assets/js/admin-settings.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-settings', 'RiseupSettings', array(
+        wp_localize_script('riseup-admin-settings', 'RiseupSettings', [
             'nonce'         => wp_create_nonce(NonceType::Admin->value),
             'updateActions' => array(
                 'testConnection' => AjaxActionType::TestUpdateConnection->value,
@@ -284,16 +284,16 @@ trait AdminMenuTrait {
                 'saveSettings' => AjaxActionType::SaveSnapshotSettings->value,
                 'runCleanup'   => AjaxActionType::RunSnapshotCleanup->value,
             ),
-        ));
+        ]);
     }
 
     /** Enqueue Agent Sites page assets. */
     private function enqueueAgentsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), array(), $version);
-        wp_enqueue_style('riseup-admin-agents', plugins_url('assets/css/admin-agents.css', $pluginFile), array('riseup-admin-shared'), $version);
-        wp_enqueue_script('riseup-admin-agents', plugins_url('assets/js/admin-agents.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), [], $version);
+        wp_enqueue_style('riseup-admin-agents', plugins_url('assets/css/admin-agents.css', $pluginFile), ['riseup-admin-shared'], $version);
+        wp_enqueue_script('riseup-admin-agents', plugins_url('assets/js/admin-agents.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-agents', 'RiseupAgents', array(
+        wp_localize_script('riseup-admin-agents', 'RiseupAgents', [
             'apiBase'       => esc_url(rest_url(PluginConfigType::apiFullNamespace())),
             'nonce'         => wp_create_nonce(NonceType::WpRest->value),
             'endpoints'     => array(
@@ -357,16 +357,16 @@ trait AdminMenuTrait {
                 'historySuffix'       => __('Action History', $pluginSlug),
                 'noAgentsYet'         => __('No agent sites registered yet.', $pluginSlug),
             ),
-        ));
+        ]);
     }
 
     /** Enqueue Snapshots page assets. */
     private function enqueueSnapshotsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), array(), $version);
-        wp_enqueue_style('riseup-admin-snapshots', plugins_url('assets/css/admin-snapshots.css', $pluginFile), array('riseup-admin-shared'), $version);
-        wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), [], $version);
+        wp_enqueue_style('riseup-admin-snapshots', plugins_url('assets/css/admin-snapshots.css', $pluginFile), ['riseup-admin-shared'], $version);
+        wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-snapshots', 'RiseupSnapshots', array(
+        wp_localize_script('riseup-admin-snapshots', 'RiseupSnapshots', [
             'nonce'           => wp_create_nonce(NonceType::Admin->value),
             'restNonce'       => wp_create_nonce(NonceType::WpRest->value),
             'restBase'        => esc_url(rest_url(PluginConfigType::apiFullNamespace())),
@@ -485,15 +485,15 @@ trait AdminMenuTrait {
                 'incrementalSuffix'    => __('incremental', $pluginSlug),
                 'incrementalsSuffix'   => __('incrementals', $pluginSlug),
             ),
-        ));
+        ]);
     }
 
     /** Enqueue License page assets. */
     private function enqueueLicenseAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-license', plugins_url('assets/css/admin-license.css', $pluginFile), array(), $version);
-        wp_enqueue_script('riseup-admin-license', plugins_url('assets/js/admin-license.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-license', plugins_url('assets/css/admin-license.css', $pluginFile), [], $version);
+        wp_enqueue_script('riseup-admin-license', plugins_url('assets/js/admin-license.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-license', 'RiseupLicense', array(
+        wp_localize_script('riseup-admin-license', 'RiseupLicense', [
             'nonce'   => wp_create_nonce(NonceType::License->value),
             'actions' => array(
                 'save'       => AjaxActionType::LicenseSave->value,
@@ -513,21 +513,21 @@ trait AdminMenuTrait {
                 'removalFailed'      => __('Removal failed.', $pluginSlug),
                 'refreshFailed'      => __('Refresh failed.', $pluginSlug),
             ),
-        ));
+        ]);
     }
 
     /** Enqueue Activity Logs page assets. */
     private function enqueueLogsAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-logs', plugins_url('assets/css/admin-logs.css', $pluginFile), array(), $version);
-        wp_enqueue_script('riseup-admin-logs', plugins_url('assets/js/admin-logs.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-logs', plugins_url('assets/css/admin-logs.css', $pluginFile), [], $version);
+        wp_enqueue_script('riseup-admin-logs', plugins_url('assets/js/admin-logs.js', $pluginFile), ['jquery'], $version, true);
     }
 
     /** Enqueue Feedback page assets. */
     private function enqueueFeedbackAssets(string $pluginFile, string $version, string $pluginSlug): void {
-        wp_enqueue_style('riseup-admin-feedback', plugins_url('assets/css/admin-feedback.css', $pluginFile), array(), $version);
-        wp_enqueue_script('riseup-admin-feedback', plugins_url('assets/js/admin-feedback.js', $pluginFile), array('jquery'), $version, true);
+        wp_enqueue_style('riseup-admin-feedback', plugins_url('assets/css/admin-feedback.css', $pluginFile), [], $version);
+        wp_enqueue_script('riseup-admin-feedback', plugins_url('assets/js/admin-feedback.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-feedback', 'RiseupFeedback', array(
+        wp_localize_script('riseup-admin-feedback', 'RiseupFeedback', [
             'nonce'   => wp_create_nonce(NonceType::Feedback->value),
             'actions' => array(
                 'send'       => AjaxActionType::SendFeedback->value,
@@ -540,6 +540,6 @@ trait AdminMenuTrait {
                 'tooManyFiles' => __('Maximum 3 files allowed.', $pluginSlug),
                 'invalidFile'  => __('Invalid file. Only JPG, PNG, GIF, WebP under 2 MB are allowed.', $pluginSlug),
             ),
-        ));
+        ]);
     }
 }

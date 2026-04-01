@@ -121,10 +121,10 @@ trait WorkerExecuteTrait {
 
         if ($isOverLimit) {
             $sizeMb = round($estimatedBytes / 1024 / 1024, 1);
-            $this->log(LogLevelType::Error->value, 'Pre-snapshot size validation failed', array(
+            $this->log(LogLevelType::Error->value, 'Pre-snapshot size validation failed', [
                 'estimatedMb' => $sizeMb,
                 'maxMb'       => SnapshotConfigType::MaxSizeMb->value,
-            ));
+            ]);
 
             return ResultHelper::error(
                 "Database size ({$sizeMb} MB) exceeds the maximum allowed snapshot size (" . SnapshotConfigType::MaxSizeMb->value . " MB)",
@@ -139,7 +139,7 @@ trait WorkerExecuteTrait {
 
         if ($isDirExisting) {
             PathHelper::deleteDirectory($dir);
-            $this->log(LogLevelType::Warn->value, 'Cleaned up orphaned snapshot directory', array('path' => $dir));
+            $this->log(LogLevelType::Warn->value, 'Cleaned up orphaned snapshot directory', ['path' => $dir]);
         }
     }
 }

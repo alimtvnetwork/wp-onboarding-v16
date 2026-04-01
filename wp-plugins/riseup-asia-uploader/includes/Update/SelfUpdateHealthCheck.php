@@ -26,7 +26,7 @@ class SelfUpdateHealthCheck
     private FileLogger $fileLogger;
 
     /** @var array<int, array{code: string, message: string}> Collected health check issues. */
-    private array $issues = array();
+    private array $issues = [];
 
     public function __construct(FileLogger $fileLogger)
     {
@@ -40,7 +40,7 @@ class SelfUpdateHealthCheck
      */
     public function check(): bool
     {
-        $this->issues = array();
+        $this->issues = [];
 
         $this->fileLogger->info('Running post-activation health check');
 
@@ -51,10 +51,10 @@ class SelfUpdateHealthCheck
         $hasIssues = !empty($this->issues);
 
         if ($hasIssues) {
-            $this->fileLogger->error('Post-activation health check failed', array(
+            $this->fileLogger->error('Post-activation health check failed', [
                 'issueCount' => count($this->issues),
                 'issues'     => $this->issues,
-            ));
+            ]);
 
             return false;
         }
@@ -71,7 +71,7 @@ class SelfUpdateHealthCheck
      */
     public function getDiagnostics(): array
     {
-        $bootErrors = array();
+        $bootErrors = [];
 
         $collector = BootErrorCollector::getInstance();
 
@@ -79,12 +79,12 @@ class SelfUpdateHealthCheck
             $bootErrors = $collector->getErrors();
         }
 
-        return array(
+        return [
             ResponseKeyType::Healthy->value    => empty($this->issues),
             ResponseKeyType::IssueCount->value => count($this->issues),
             ResponseKeyType::Issues->value     => $this->issues,
             ResponseKeyType::BootErrors->value => $bootErrors,
-        );
+        ];
     }
 
     /**
@@ -104,10 +104,10 @@ class SelfUpdateHealthCheck
             $this->addIssue(SelfUpdateStatusType::BootErrorDetected, 'Boot error [' . $error['context'] . ']: ' . $error['message']);
         }
 
-        $this->fileLogger->warn('BootErrorCollector has errors after activation', array(
+        $this->fileLogger->warn('BootErrorCollector has errors after activation', [
             'count'  => count($errors),
             'errors' => $errors,
-        ));
+        ]);
     }
 
     /**
@@ -118,7 +118,7 @@ class SelfUpdateHealthCheck
      */
     private function checkCriticalClasses(): void
     {
-        $criticalClasses = array(
+        $criticalClasses = [
             // Core
             'RiseupAsia\\Core\\Plugin',
 
@@ -149,7 +149,7 @@ class SelfUpdateHealthCheck
             'RiseupAsia\\Enums\\PluginConfigType',
             'RiseupAsia\\Enums\\ResponseKeyType',
             'RiseupAsia\\Enums\\HookType',
-        );
+        ];
 
         foreach ($criticalClasses as $className) {
             if (class_exists($className, false) === false) {
@@ -166,11 +166,11 @@ class SelfUpdateHealthCheck
      */
     private function checkCriticalFunctions(): void
     {
-        $requiredActions = array(
+        $requiredActions = [
             'rest_api_init'      => 'REST API route registration',
             'activated_plugin'   => 'Plugin activation lifecycle hook',
             'deactivated_plugin' => 'Plugin deactivation lifecycle hook',
-        );
+        ];
 
         foreach ($requiredActions as $hook => $description) {
             $hasHook = has_action($hook);
@@ -193,9 +193,9 @@ class SelfUpdateHealthCheck
      */
     private function addIssue(SelfUpdateStatusType $code, string $message): void
     {
-        $this->issues[] = array(
+        $this->issues[] = [
             'code'    => $code->value,
             'message' => $message,
-        );
+        ];
     }
 }

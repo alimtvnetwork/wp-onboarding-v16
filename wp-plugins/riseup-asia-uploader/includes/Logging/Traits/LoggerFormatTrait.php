@@ -23,7 +23,7 @@ trait LoggerFormatTrait {
         string $message,
         string $file,
         int $line,
-        array $context = array(),
+        array $context = [],
     ): string {
         $timestamp = DateHelper::nowLogDisplay();
         $basename  = basename($file);
@@ -40,7 +40,7 @@ trait LoggerFormatTrait {
 
     /** Format a debug_backtrace array into a readable string. */
     private function formatBacktrace(array $trace): string {
-        $lines = array();
+        $lines = [];
 
         foreach ($trace as $i => $frame) {
             $file  = isset($frame['file']) ? basename($frame['file']) : self::TRACE_LABEL_INTERNAL;
@@ -66,7 +66,7 @@ trait LoggerFormatTrait {
             return $this->requestMetadataCache;
         }
 
-        $meta = array();
+        $meta = [];
         $meta['_request'] = (php_sapi_name() === 'cli')
             ? $this->buildCliRequestMeta()
             : $this->buildHttpRequestMeta();
@@ -78,10 +78,10 @@ trait LoggerFormatTrait {
 
     /** Build request metadata for CLI context. */
     private function buildCliRequestMeta(): array {
-        return array(
+        return [
             'method' => 'CLI',
             'script' => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : self::TRACE_LABEL_UNKNOWN,
-        );
+        ];
     }
 
     /** Build request metadata for HTTP context. */
@@ -92,15 +92,15 @@ trait LoggerFormatTrait {
         $useragent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
         $ip        = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
 
-        return array(
+        return [
             'method'    => $method,
             'endpoint'  => $uri . $query,
             'userAgent' => strlen($useragent) > self::USER_AGENT_MAX_LENGTH ? substr($useragent, 0, self::USER_AGENT_MAX_LENGTH) . '…' : $useragent,
             'ip'        => $ip,
-        );
+        ];
     }
 
-    /** Merge request metadata into a context array (non-destructive). */
+    /** Merge request metadata into a context [non-destructive]. */
     private function enrichContextWithRequest(array $context): array {
         $meta = $this->getRequestMetadata();
         if (BooleanHelpers::isKeyMissing($context, '_request')) {
@@ -134,7 +134,7 @@ trait LoggerFormatTrait {
 
     /** Build an invocation chain from a backtrace (skipping frame 0). */
     private function buildInvocationChain(array $trace): array {
-        $chain = array();
+        $chain = [];
 
         foreach ($trace as $i => $frame) {
             if ($i === 0) {
@@ -152,7 +152,7 @@ trait LoggerFormatTrait {
 
     /** Extract a single chain entry from a backtrace frame. */
     private function extractChainEntry(array $frame): array {
-        $entry = array();
+        $entry = [];
 
         if (isset($frame['class'])) {
             $entry['class'] = $frame['class'];

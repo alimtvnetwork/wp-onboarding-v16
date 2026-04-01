@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\UserMetaKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait UserYoastTrait {
 
@@ -49,11 +50,11 @@ trait UserYoastTrait {
             return null;
         }
 
-        $result = array();
+        $result = [];
 
         foreach (UserMetaKeyType::yoastCases() as $meta) {
             $value = get_user_meta($userId, $meta->value, true);
-            $result[$meta->jsonKey()] = is_string($value) ? $value : '';
+            $result[$meta->jsonKey()] = gettype($value) === PhpNativeType::PhpString->value ? $value : '';
         }
 
         return $result;
@@ -70,10 +71,10 @@ trait UserYoastTrait {
         $isActive = $this->isYoastActive();
 
         if (!$isActive) {
-            return array();
+            return [];
         }
 
-        $modified = array();
+        $modified = [];
 
         foreach (UserMetaKeyType::yoastCases() as $meta) {
             $jsonKey = $meta->jsonKey();

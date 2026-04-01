@@ -46,20 +46,20 @@ trait WorkerSetupTrait {
             $this->setPoolSize($config[ResponseKeyType::Settings->value]['worker_pool_size']);
         }
 
-        return array(
+        return [
             ResponseKeyType::Title->value => $config[ResponseKeyType::Title->value] ?? (SnapshotConfigType::DefaultTitle . ' ' . DateHelper::nowCompactDatetime()),
             ResponseKeyType::Scope->value => $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             ResponseKeyType::Type->value  => $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
-        );
+        ];
     }
 
     private function logSnapshotStart(array $resolved): void {
-        $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
+        $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', [
             ResponseKeyType::Title->value    => $resolved[ResponseKeyType::Title->value],
             ResponseKeyType::Scope->value    => $resolved[ResponseKeyType::Scope->value],
             ResponseKeyType::Type->value     => $resolved[ResponseKeyType::Type->value],
             ResponseKeyType::PoolSize->value => $this->poolSize,
-        ));
+        ]);
     }
 
     private function buildSnapshotDirPath(array $resolved): string {
@@ -70,22 +70,22 @@ trait WorkerSetupTrait {
     }
 
     private function buildSnapshotDirResult(string $snapshotDir, array $resolved): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::SnapshotDir->value => $snapshotDir,
             ResponseKeyType::DirName->value     => basename($snapshotDir),
             ResponseKeyType::Title->value       => $resolved[ResponseKeyType::Title->value],
             ResponseKeyType::Scope->value       => $resolved[ResponseKeyType::Scope->value],
             ResponseKeyType::Type->value        => $resolved[ResponseKeyType::Type->value],
-        ));
+        ]);
     }
 
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/' . SnapshotConfigType::RootDbFilename);
-        $this->rootDb->populateMetadata($rootPdo, array(
+        $this->rootDb->populateMetadata($rootPdo, [
             ResponseKeyType::Title->value    => $config[ResponseKeyType::Title->value] ?? SnapshotConfigType::DefaultTitle,
             ResponseKeyType::Type->value     => $config[ResponseKeyType::Type->value] ?? SnapshotModeType::Full->value,
             ResponseKeyType::Settings->value => $config[ResponseKeyType::Settings->value] ?? null,
-        ));
+        ]);
 
         return $rootPdo;
     }
@@ -93,10 +93,10 @@ trait WorkerSetupTrait {
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value);
 
-        $this->log(LogLevelType::Info->value, 'Export order determined', array(
+        $this->log(LogLevelType::Info->value, 'Export order determined', [
             ResponseKeyType::Tables->value   => count($analysis[ResponseKeyType::SeedOrder->value]),
             ResponseKeyType::PoolSize->value => $this->poolSize,
-        ));
+        ]);
 
         return $analysis[ResponseKeyType::SeedOrder->value];
     }
@@ -111,7 +111,7 @@ trait WorkerSetupTrait {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $full = $this->formatLogMessage($message, $context);
         $isLoggerMissing = ($this->logger === null);
@@ -142,13 +142,13 @@ trait WorkerSetupTrait {
         }
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
     }
 
-    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+    private function logWarn(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Warn->value, $message, $context);

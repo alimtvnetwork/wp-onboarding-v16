@@ -35,11 +35,11 @@ trait OrchestratorPluginTrait {
         if ($isDirCreationFailed) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
 
-            return array(
+            return [
                 ResponseKeyType::Count->value     => 0,
                 ResponseKeyType::TotalSize->value  => 0,
                 ResponseKeyType::Plugins->value    => array(),
-            );
+            ];
         }
 
         $pluginsToSnapshot = $this->collectPluginsToSnapshot($selection);
@@ -47,7 +47,7 @@ trait OrchestratorPluginTrait {
 
         $count = 0;
         $totalSize = 0;
-        $pluginList = array();
+        $pluginList = [];
 
         foreach ($pluginsToSnapshot as $pluginFile => $info) {
             $result = $this->archiveSinglePlugin($info, $pluginsDir, $rootPdo);
@@ -65,11 +65,11 @@ trait OrchestratorPluginTrait {
 
         $rootPdo = null;
 
-        return array(
+        return [
             ResponseKeyType::Count->value    => $count,
             ResponseKeyType::TotalSize->value => $totalSize,
             ResponseKeyType::Plugins->value  => $pluginList,
-        );
+        ];
     }
 
     private function collectPluginsToSnapshot(string $selection): array {
@@ -78,8 +78,8 @@ trait OrchestratorPluginTrait {
         }
 
         $allPlugins = get_plugins();
-        $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
-        $pluginsToSnapshot = array();
+        $activePlugins = get_option(OptionNameType::ActivePlugins->value, []);
+        $pluginsToSnapshot = [];
 
         foreach ($allPlugins as $pluginFile => $pluginData) {
             $slug = dirname($pluginFile);
@@ -99,18 +99,18 @@ trait OrchestratorPluginTrait {
                 continue;
             }
 
-            $pluginsToSnapshot[$pluginFile] = array(
+            $pluginsToSnapshot[$pluginFile] = [
                 ResponseKeyType::Slug->value    => $slug,
                 ResponseKeyType::Name->value    => $pluginData['Name'] ?? $slug,
                 ResponseKeyType::Version->value => $pluginData['Version'] ?? '0.0.0',
-            );
+            ];
         }
 
-        $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array(
+        $this->log(LogLevelType::Info->value, 'Snapshotting plugins', [
             'total'     => count($allPlugins),
             'selected'  => count($pluginsToSnapshot),
             'selection' => $selection,
-        ));
+        ]);
 
         return $pluginsToSnapshot;
     }
@@ -135,28 +135,28 @@ trait OrchestratorPluginTrait {
         $isZipFailed = BooleanHelpers::isResultFailed($zipResult);
 
         if ($isZipFailed) {
-            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array(ResponseKeyType::Error->value => $zipResult[ResponseKeyType::Error->value]));
+            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, [ResponseKeyType::Error->value => $zipResult[ResponseKeyType::Error->value]]);
 
             return ResultHelper::failed();
         }
 
-        $entry = array(
+        $entry = [
             ResponseKeyType::Slug->value    => $info[ResponseKeyType::Slug->value],
             ResponseKeyType::Name->value    => $info[ResponseKeyType::Name->value],
             ResponseKeyType::Version->value => $info[ResponseKeyType::Version->value],
             ResponseKeyType::Zip->value     => $zipFilename,
             ResponseKeyType::Size->value    => filesize($zipPath),
-        );
+        ];
 
         if ($rootPdo) {
-            $this->rootDb->registerPluginSnapshot($rootPdo, array(
+            $this->rootDb->registerPluginSnapshot($rootPdo, [
                 ResponseKeyType::PluginSlug->value    => $info[ResponseKeyType::Slug->value],
                 ResponseKeyType::PluginName->value    => $info[ResponseKeyType::Name->value],
                 ResponseKeyType::PluginVersion->value => $info[ResponseKeyType::Version->value],
                 ResponseKeyType::ZipFile->value       => 'plugins/' . $zipFilename,
                 ResponseKeyType::FileSizeBytes->value  => filesize($zipPath),
                 ResponseKeyType::ChecksumMd5->value   => md5_file($zipPath),
-            ));
+            ]);
         }
 
         $this->log(LogLevelType::Info->value, sprintf(
@@ -165,10 +165,10 @@ trait OrchestratorPluginTrait {
             $this->formatBytes($entry[ResponseKeyType::Size->value]),
         ));
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Size->value  => $entry[ResponseKeyType::Size->value],
             ResponseKeyType::Entry->value => $entry,
-        ));
+        ]);
     }
 
     private function createPluginZip(

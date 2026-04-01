@@ -27,7 +27,7 @@ trait AgentHandlerActionTrait {
     public function handleTestAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
-            $this->fileLogger->info('Testing agent connection', array('id' => $id));
+            $this->fileLogger->info('Testing agent connection', ['id' => $id]);
             $manager = AgentManager::getInstance();
             $result = $manager->testConnection($id);
             $statusCode = $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::BadRequest->value;
@@ -40,7 +40,7 @@ trait AgentHandlerActionTrait {
     public function handleSyncAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
-            $this->fileLogger->info('Syncing plugins from agent', array('id' => $id));
+            $this->fileLogger->info('Syncing plugins from agent', ['id' => $id]);
             $manager = AgentManager::getInstance();
             $result = $manager->syncPlugins($id);
 
@@ -49,11 +49,11 @@ trait AgentHandlerActionTrait {
             }
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Plugins->value => $result,
                     ResponseKeyType::Count->value   => count($result),
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'sync_agent');
@@ -63,7 +63,7 @@ trait AgentHandlerActionTrait {
     public function handleAgentPlugins(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
-            $this->fileLogger->info('Listing plugins from agent', array('id' => $id));
+            $this->fileLogger->info('Listing plugins from agent', ['id' => $id]);
             $manager = AgentManager::getInstance();
             $result = $manager->getAgentPlugins($id);
 
@@ -72,11 +72,11 @@ trait AgentHandlerActionTrait {
             }
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Plugins->value => $result,
                     ResponseKeyType::Count->value   => count($result),
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'agent_plugins');
@@ -88,17 +88,17 @@ trait AgentHandlerActionTrait {
             $id = (int) $request->get_param('id');
             $action = sanitize_key($request->get_param('action'));
             $slug = sanitize_text_field($request->get_param('slug'));
-            $this->fileLogger->info('Executing agent action', array(
+            $this->fileLogger->info('Executing agent action', [
                 'id'     => $id,
                 'action' => $action,
                 'slug'   => $slug,
-            ));
+            ]);
 
-            $allowedActions = array(
+            $allowedActions = [
                 ActionType::Enable->value,
                 ActionType::Disable->value,
                 ActionType::Delete->value,
-            );
+            ];
 
             if (BooleanHelpers::isAbsentFromList($action, $allowedActions)) {
                 return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowedActions), HttpStatusType::BadRequest->value);
@@ -125,16 +125,16 @@ trait AgentHandlerActionTrait {
             $id = (int) $request->get_param('id');
             $limit = $request->get_param('limit') ?: 50;
             $offset = $request->get_param('offset') ?: 0;
-            $this->fileLogger->info('Getting agent action history', array('id' => $id));
+            $this->fileLogger->info('Getting agent action history', ['id' => $id]);
             $manager = AgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
 
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Total->value   => $result[ResponseKeyType::Total->value],
                     ResponseKeyType::Actions->value => $result[ResponseKeyType::Actions->value],
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }, 'agent_history');

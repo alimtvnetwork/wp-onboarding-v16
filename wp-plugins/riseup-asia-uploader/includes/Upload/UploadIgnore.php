@@ -23,8 +23,8 @@ class UploadIgnore implements RiseupUploadIgnore {
 
     use UploadIgnorePatternTrait;
 
-    private array $patterns = array();
-    private array $negations = array();
+    private array $patterns = [];
+    private array $negations = [];
     private bool $isLoaded = false;
     private FileLogger $fileLogger;
 
@@ -34,7 +34,7 @@ class UploadIgnore implements RiseupUploadIgnore {
 
     public function load(string $pluginDir): bool {
         $ignoreFile = rtrim($pluginDir, '/\\') . '/' . PluginConfigType::IgnoreFilename->value;
-        $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
+        $this->fileLogger->debug('Loading uploadignore', ['path' => $ignoreFile]);
 
         if (PathHelper::isFileMissing($ignoreFile)) {
             $this->fileLogger->debug('No uploadignore file found');
@@ -74,10 +74,10 @@ class UploadIgnore implements RiseupUploadIgnore {
             }
 
             $this->isLoaded = true;
-            $this->fileLogger->info('Uploadignore loaded', array(
+            $this->fileLogger->info('Uploadignore loaded', [
                 'patterns'  => count($this->patterns),
                 'negations' => count($this->negations),
-            ));
+            ]);
 
             return true;
         } catch (Throwable $e) {

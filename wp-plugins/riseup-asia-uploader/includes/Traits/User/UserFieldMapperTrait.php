@@ -17,14 +17,14 @@ use WP_User;
 trait UserFieldMapperTrait {
 
     /**
-     * Build full user response array (for single GET).
+     * Build full user response [for single GET].
      */
     private function mapUserToResponse(WP_User $user): array
     {
         $roles = $user->roles;
         $primaryRole = !empty($roles) ? reset($roles) : 'subscriber';
 
-        $response = array(
+        $response = [
             'Id'           => $user->ID,
             'Username'     => $user->user_login,
             'Email'        => $user->user_email,
@@ -37,7 +37,7 @@ trait UserFieldMapperTrait {
             'Role'         => $primaryRole,
             'RegisteredAt' => $user->user_registered,
             'Social'       => $this->readSocialMeta($user->ID),
-        );
+        ];
 
         $yoast = $this->readYoastMeta($user->ID);
         $hasYoast = ($yoast !== null);
@@ -50,20 +50,20 @@ trait UserFieldMapperTrait {
     }
 
     /**
-     * Build summary user response array (for list).
+     * Build summary user response [for list].
      */
     private function mapUserToSummary(WP_User $user): array
     {
         $roles = $user->roles;
         $primaryRole = !empty($roles) ? reset($roles) : 'subscriber';
 
-        return array(
+        return [
             'Id'           => $user->ID,
             'Username'     => $user->user_login,
             'Email'        => $user->user_email,
             'DisplayName'  => $user->display_name,
             'Role'         => $primaryRole,
             'RegisteredAt' => $user->user_registered,
-        );
+        ];
     }
 }

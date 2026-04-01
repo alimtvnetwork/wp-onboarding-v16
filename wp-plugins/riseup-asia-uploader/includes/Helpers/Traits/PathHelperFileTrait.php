@@ -61,7 +61,7 @@ trait PathHelperFileTrait {
         $targetPath = ($resolvedPath === false) ? $path : $resolvedPath;
 
         if (self::isIrregularPath($targetPath)) {
-            self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $targetPath));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', ['path' => $targetPath]);
             return false;
         }
 
@@ -76,11 +76,11 @@ trait PathHelperFileTrait {
 
         if ($isDeleted === false || file_exists($targetPath)) {
             $error = error_get_last();
-            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', array(
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', [
                 'path' => $targetPath,
                 'error' => $error ? $error['message'] : 'Unknown error',
                 'parent_writable' => is_writable(dirname($targetPath)),
-            ));
+            ]);
             return false;
         }
 
@@ -105,11 +105,11 @@ trait PathHelperFileTrait {
         $scanResult = scandir($path);
 
         if ($scanResult === false) {
-            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to read directory for deletion', array('path' => $path));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to read directory for deletion', ['path' => $path]);
             return false;
         }
 
-        $files = array_diff($scanResult, array('.', '..'));
+        $files = array_diff($scanResult, ['.', '..']);
 
         foreach ($files as $file) {
             $filePath = self::join($path, $file);
@@ -126,7 +126,7 @@ trait PathHelperFileTrait {
         }
 
         if (!@rmdir($path)) {
-            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to remove directory', array('path' => $path));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to remove directory', ['path' => $path]);
             return false;
         }
 
@@ -142,7 +142,7 @@ trait PathHelperFileTrait {
 
     public static function formatBytes(int $bytes, int $decimals = 1): string {
         if ($bytes === 0) { return '0 B'; }
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
         $factor = floor(log($bytes, 1024));
         $factor = min($factor, count($units) - 1);
 

@@ -16,13 +16,14 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait LoggerPersistentDedupTrait {
     private const DEDUP_REGISTRY_FILENAME = 'dedup-registry.json';
     private const DEDUP_MAX_ENTRIES = 500;
 
     /** @var array<string, string> Hash => log level ('info'|'debug'). */
-    private array $persistentDedupHashes = array();
+    private array $persistentDedupHashes = [];
     private bool $persistentDedupLoaded = false;
 
     /**
@@ -74,7 +75,7 @@ trait LoggerPersistentDedupTrait {
         }
 
         $data = json_decode($contents, true);
-        $isDecodeFailed = (!is_array($data));
+        $isDecodeFailed = (gettype($data) !== PhpNativeType::PhpArray->value);
 
         if ($isDecodeFailed) {
             return;
@@ -85,14 +86,14 @@ trait LoggerPersistentDedupTrait {
         $isVersionMismatch = ($storedVersion !== $currentVersion);
 
         if ($isVersionMismatch) {
-            $this->persistentDedupHashes = array();
+            $this->persistentDedupHashes = [];
             @unlink($registryPath);
 
             return;
         }
 
-        $hasHashes = isset($data['hashes']) && is_array($data['hashes']);
-        $this->persistentDedupHashes = $hasHashes ? $data['hashes'] : array();
+        $hasHashes = isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value;
+        $this->persistentDedupHashes = $hasHashes ? $data['hashes'] : [];
     }
 
     /** Save the persistent dedup registry to disk with LOCK_EX. */
@@ -106,10 +107,10 @@ trait LoggerPersistentDedupTrait {
 
         $this->pruneRegistryIfNeeded();
 
-        $data = array(
+        $data = [
             'version' => PluginConfigType::Version->value,
             'hashes'  => $this->persistentDedupHashes,
-        );
+        ];
 
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         @file_put_contents($registryPath, $json, LOCK_EX);
@@ -130,7 +131,7 @@ trait LoggerPersistentDedupTrait {
 
     /** Delete the persistent dedup registry file. */
     public function clearPersistentDedupRegistry(): void {
-        $this->persistentDedupHashes = array();
+        $this->persistentDedupHashes = [];
         $this->persistentDedupLoaded = false;
 
         $registryPath = $this->getPersistentDedupPath();

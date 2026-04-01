@@ -86,20 +86,20 @@ trait UploadInstallActivateTrait
         $isActivationSkipped = ($activate === false) && ($wasActive === false);
 
         if ($isActivationSkipped) {
-            return array('activated' => false);
+            return ['activated' => false];
         }
 
         try {
             $result = activate_plugin($pluginFile);
         } catch (Throwable $e) {
-            $this->fileLogger->error('Plugin activation threw an exception', array(
+            $this->fileLogger->error('Plugin activation threw an exception', [
                 'slug'       => $slug,
                 'pluginFile' => $pluginFile,
                 'exception'  => $e->getMessage(),
                 'file'       => $e->getFile(),
                 'line'       => $e->getLine(),
                 'trace'      => $this->buildSafeStackTrace($e),
-            ));
+            ]);
 
             return $this->buildActivationFailureResponse(
                 $slug,
@@ -111,11 +111,11 @@ trait UploadInstallActivateTrait
         }
 
         if (is_wp_error($result)) {
-            $this->fileLogger->error('Plugin activation returned WP_Error', array(
+            $this->fileLogger->error('Plugin activation returned WP_Error', [
                 'slug'      => $slug,
                 'errorCode' => $result->get_error_code(),
                 'errorMsg'  => $result->get_error_message(),
-            ));
+            ]);
 
             return $this->buildActivationFailureResponse(
                 $slug,
@@ -125,7 +125,7 @@ trait UploadInstallActivateTrait
             );
         }
 
-        return array('activated' => true);
+        return ['activated' => true];
     }
 
     /**
@@ -142,21 +142,21 @@ trait UploadInstallActivateTrait
     ): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $errorMsg);
 
-        $resultPayload = array(
+        $resultPayload = [
             ResponseKeyType::PluginSlug->value      => $slug,
             ResponseKeyType::IsUpdate->value        => $isUpdate,
             ResponseKeyType::Activated->value       => false,
             ResponseKeyType::ActivationError->value => $errorMsg,
             ResponseKeyType::SelfUpdateStatus->value => $statusCode->value,
-        );
+        ];
 
         if ($exception !== null) {
-            $resultPayload[ResponseKeyType::RootCause->value] = array(
+            $resultPayload[ResponseKeyType::RootCause->value] = [
                 ResponseKeyType::Message->value => $exception->getMessage(),
                 'file'                          => $exception->getFile(),
                 'line'                          => $exception->getLine(),
                 ResponseKeyType::Trace->value   => $this->buildSafeStackTrace($exception),
-            );
+            ];
         }
 
         return EnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
@@ -172,18 +172,18 @@ trait UploadInstallActivateTrait
      */
     private function buildSafeStackTrace(Throwable $e): array
     {
-        $trace = array();
+        $trace = [];
         $frames = $e->getTrace();
         $maxFrames = min(count($frames), 15);
 
         for ($i = 0; $i < $maxFrames; $i++) {
             $frame = $frames[$i];
 
-            $trace[] = array(
+            $trace[] = [
                 'file'     => $frame['file'] ?? '(internal)',
                 'line'     => $frame['line'] ?? 0,
                 'function' => ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? ''),
-            );
+            ];
         }
 
         return $trace;
@@ -205,7 +205,7 @@ trait UploadInstallActivateTrait
 
         $version = $this->resolveEffectiveVersion($installedVersion, $clientVersion, $isSelfUpdate);
 
-        return array(ResponseKeyType::Version->value => $version);
+        return [ResponseKeyType::Version->value => $version];
     }
 
     /** Read the version header from a plugin's main PHP file. */

@@ -99,18 +99,18 @@ trait IncrementalDeltaTrait {
                 $this->formatBytes($result[ResponseKeyType::FileSize->value]),
             ));
 
-            $result[ResponseKeyType::Entry->value] = array(
+            $result[ResponseKeyType::Entry->value] = [
                 'table'                         => $tableName,
                 ResponseKeyType::NewRows->value => $result[ResponseKeyType::Rows->value],
                 ResponseKeyType::Size->value    => $result[ResponseKeyType::FileSize->value],
-            );
+            ];
 
             return;
         }
 
-        $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array(
+        $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, [
             ResponseKeyType::Error->value => $result[ResponseKeyType::Error->value],
-        ));
+        ]);
     }
 
     private function exportDeltaRows(
@@ -192,21 +192,21 @@ trait IncrementalDeltaTrait {
     }
 
     private function buildDeltaSuccessResult(int $exported, string $filename, string $filepath): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Rows->value     => $exported,
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::FileSize->value => filesize($filepath),
             ResponseKeyType::Checksum->value => md5_file($filepath),
-        ));
+        ]);
     }
 
     private function buildDeltaErrorResult(Throwable $e, string $filename): array {
-        return ResultHelper::errorFromException($e, array(
+        return ResultHelper::errorFromException($e, [
             ResponseKeyType::Rows->value     => 0,
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::FileSize->value => 0,
             ResponseKeyType::Checksum->value => '',
-        ));
+        ]);
     }
 
     private function getLastMaxId(
@@ -248,7 +248,7 @@ trait IncrementalDeltaTrait {
 
             return ($maxId !== null) ? $maxId : 0;
         } catch (Throwable $e) {
-            $this->logWarn($e, 'Could not read master SQLite for max ID', array('table' => $tableName));
+            $this->logWarn($e, 'Could not read master SQLite for max ID', ['table' => $tableName]);
 
             return (int) $info['rowCount'];
         }
@@ -320,7 +320,7 @@ trait IncrementalDeltaTrait {
         $tableNameCol = $this->resolveRootCol($rootPdo, $table, 'TableName', 'table_name');
 
         $stmt = $rootPdo->prepare("SELECT {$sqliteFileCol} FROM {$table} WHERE {$tableNameCol} = ?");
-        $stmt->execute(array($tableName));
+        $stmt->execute([$tableName]);
         $filename = $stmt->fetchColumn();
 
         $isFilenameAbsent = ($filename === false || $filename === null);

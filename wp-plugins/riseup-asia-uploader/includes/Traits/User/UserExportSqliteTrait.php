@@ -29,7 +29,7 @@ trait UserExportSqliteTrait {
      */
     public function handleExportSqlite(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'GET /users/export-sqlite'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'GET /users/export-sqlite']);
 
         return $this->safeExecute(function () use ($request) {
             $uploadDir = wp_upload_dir();
@@ -48,7 +48,7 @@ trait UserExportSqliteTrait {
 
             $this->createSqliteUserSchema($pdo);
 
-            $userQuery = new WP_User_Query(array('number' => -1, 'orderby' => 'ID', 'order' => 'ASC'));
+            $userQuery = new WP_User_Query(['number' => -1, 'orderby' => 'ID', 'order' => 'ASC']);
             $users = $userQuery->get_results();
 
             $this->populateSqliteUsers($pdo, $users);
@@ -67,10 +67,10 @@ trait UserExportSqliteTrait {
             unlink($dbPath);
             unlink($zipPath);
 
-            $this->fileLogger->info('Users exported as SQLite ZIP', array(
+            $this->fileLogger->info('Users exported as SQLite ZIP', [
                 'count' => count($users),
                 'by'    => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             $response = new WP_REST_Response($zipContent, 200);
             $response->header('Content-Type', 'application/zip');
@@ -130,7 +130,7 @@ trait UserExportSqliteTrait {
             $roles = $user->roles;
             $primaryRole = !empty($roles) ? reset($roles) : 'subscriber';
 
-            $userStmt->execute(array(
+            $userStmt->execute([
                 $user->ID,
                 $user->user_login,
                 $user->user_email,
@@ -143,7 +143,7 @@ trait UserExportSqliteTrait {
                 get_user_meta($user->ID, 'description', true) ?: '',
                 $primaryRole,
                 $user->user_registered,
-            ));
+            ]);
 
             // Social meta
             foreach (UserMetaKeyType::socialCases() as $meta) {
@@ -151,7 +151,7 @@ trait UserExportSqliteTrait {
                 $hasValue = !empty($value);
 
                 if ($hasValue) {
-                    $socialStmt->execute(array($user->ID, $meta->jsonKey(), $value));
+                    $socialStmt->execute([$user->ID, $meta->jsonKey(), $value]);
                 }
             }
 
@@ -161,7 +161,7 @@ trait UserExportSqliteTrait {
                 $hasValue = !empty($value);
 
                 if ($hasValue) {
-                    $yoastStmt->execute(array($user->ID, $meta->jsonKey(), $value));
+                    $yoastStmt->execute([$user->ID, $meta->jsonKey(), $value]);
                 }
             }
         }

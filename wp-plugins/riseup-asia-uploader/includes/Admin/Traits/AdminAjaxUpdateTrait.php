@@ -26,7 +26,7 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $resolver = UpdateResolver::getInstance();
@@ -44,13 +44,13 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $resolver = UpdateResolver::getInstance();
         $resolver->clearCache();
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'Cache cleared successfully'));
+        wp_send_json_success([ResponseKeyType::Message->value => 'Cache cleared successfully']);
     }
 
     /** AJAX handler: Check for updates now. */
@@ -58,19 +58,19 @@ trait AdminAjaxUpdateTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $resolver = UpdateResolver::getInstance();
         $result = $resolver->fetchUpdateInfo(true);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => $result->get_error_message()));
+            wp_send_json_error([ResponseKeyType::Message->value => $result->get_error_message()]);
         } else {
-            wp_send_json_success(array(
+            wp_send_json_success([
                 ResponseKeyType::Message->value => 'Update check complete',
                 'update_info' => $result,
-            ));
+            ]);
         }
     }
 }

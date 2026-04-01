@@ -23,6 +23,7 @@ use RiseupAsia\ErrorHandling\FrameBuilder;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait InvalidRouteTrait
 {
@@ -30,7 +31,7 @@ trait InvalidRouteTrait
         $invalidPath = $request->get_param('invalid_path');
         $method = $request->get_method();
 
-        $this->fileLogger->warn('Invalid route requested', array(ResponseKeyType::Path->value => $invalidPath, 'method' => $method));
+        $this->fileLogger->warn('Invalid route requested', [ResponseKeyType::Path->value => $invalidPath, 'method' => $method]);
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
@@ -46,18 +47,18 @@ trait InvalidRouteTrait
         string $path,
         array $backtrace,
     ): array {
-        $frames = class_exists(FrameBuilder::class) ? FrameBuilder::backtraceToFrames($backtrace) : array();
+        $frames = class_exists(FrameBuilder::class) ? FrameBuilder::backtraceToFrames($backtrace) : [];
 
-        return array(
+        return [
             'BackendMessage'             => "Route not found: {$method} /{$path}",
             'DelegatedServiceErrorStack' => $this->formatBacktraceLines($backtrace),
             'Backend'                    => $this->formatFramesSummary($frames),
             'Frontend'                   => array(),
-        );
+        ];
     }
 
     private function formatBacktraceLines(array $backtrace): array {
-        $lines = array();
+        $lines = [];
         foreach ($backtrace as $i => $frame) {
             $file  = $frame['file'] ?? '[internal]';
             $line  = $frame['line'] ?? '?';
@@ -103,7 +104,7 @@ trait InvalidRouteTrait
         }
 
         $data = $response->get_data();
-        $isDataInvalid = (is_array($data) === false);
+        $isDataInvalid = (gettype($data) === PhpNativeType::PhpArray->value === false);
 
         if ($isDataInvalid) {
 
@@ -185,7 +186,7 @@ trait InvalidRouteTrait
         $server = rest_get_server();
         $allRoutes = array_keys($server->get_routes($namespace));
 
-        $pluginRoutes = array();
+        $pluginRoutes = [];
 
         foreach ($allRoutes as $routePattern) {
             $isPluginRoute = (strpos($routePattern, $prefix) === 0);
@@ -195,18 +196,18 @@ trait InvalidRouteTrait
             }
         }
 
-        $data['_routeDiagnostics'] = array(
+        $data['_routeDiagnostics'] = [
             'requestedRoute'   => $route,
             'namespace'        => $namespace,
             'registeredCount'  => count($pluginRoutes),
             'registeredRoutes' => $pluginRoutes,
             'hint'             => 'If expected routes are missing, check the plugin error log for "Route group ... failed" messages.',
-        );
+        ];
 
-        $this->fileLogger->warn('Route not found — diagnostics attached', array(
+        $this->fileLogger->warn('Route not found — diagnostics attached', [
             'route'           => $route,
             'registeredCount' => count($pluginRoutes),
-        ));
+        ]);
 
         return $data;
     }
@@ -231,13 +232,13 @@ trait InvalidRouteTrait
         array $data,
         ?WpErrorCodeType $errorCode,
     ): void {
-        $context = array(
+        $context = [
             'route'          => $route,
             'status'         => $status,
             ResponseKeyType::ErrorCategory->value => $data[ResponseKeyType::ErrorCategory->value] ?? 'unknown',
             ResponseKeyType::Message->value => $data[ResponseKeyType::Message->value] ?? $data['Status']['Message'] ?? 'Unknown',
             ResponseKeyType::PluginVersion->value => PluginConfigType::Version->value,
-        );
+        ];
 
         $isWarnLevel = ($errorCode !== null && ($errorCode->isAuthError() || $errorCode->isValidationError()));
 

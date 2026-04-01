@@ -58,12 +58,12 @@ trait PluginLifecycleHelpersTrait
         $exists     = $pluginFile !== null;
         $isActive   = $exists && is_plugin_active($pluginFile);
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Slug->value   => $slug,
             'exists'                       => $exists,
             'active'                       => $isActive,
             ResponseKeyType::PluginFile->value => $pluginFile ?? '',
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 
     /**
@@ -173,9 +173,9 @@ trait PluginLifecycleHelpersTrait
      * array, avoiding manual concatenation in every catch block.
      */
     private function logPluginLifecycleException(Throwable $e, string $action, string $slug): void {
-        $this->logPluginLifecycle($action, $slug, StatusType::Failed->value, array(
+        $this->logPluginLifecycle($action, $slug, StatusType::Failed->value, [
             'exception' => $e->getMessage(),
             'trace'     => $e->getTraceAsString(),
-        ));
+        ]);
     }
 }

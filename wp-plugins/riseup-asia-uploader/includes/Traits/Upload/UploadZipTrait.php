@@ -40,9 +40,9 @@ trait UploadZipTrait
 
         $hasSlug = !empty($slug);
         $finalSlug = $hasSlug ? $slug : $detectedSlug;
-        $this->fileLogger->info('Plugin slug determined', array('slug' => $finalSlug));
+        $this->fileLogger->info('Plugin slug determined', ['slug' => $finalSlug]);
 
-        return array(ResponseKeyType::TempFile->value => $tempFile, ResponseKeyType::Slug->value => $finalSlug);
+        return [ResponseKeyType::TempFile->value => $tempFile, ResponseKeyType::Slug->value => $finalSlug];
     }
 
     /** Write ZIP content to a temp file. */
@@ -50,7 +50,7 @@ trait UploadZipTrait
         $tempDir  = $this->getTempDir();
         $tempFile = $tempDir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
-        $this->fileLogger->debug('Writing temp file', array('path' => $tempFile));
+        $this->fileLogger->debug('Writing temp file', ['path' => $tempFile]);
 
         if (file_put_contents($tempFile, $zipContent) === false) {
             $this->fileLogger->error('Failed to write temp file');
@@ -131,7 +131,7 @@ trait UploadZipTrait
         }
 
         $dupDir = $pluginsDir . '/' . $pdir;
-        $this->fileLogger->warn('Duplicate plugin folder detected', array('duplicateDir' => $pdir, 'targetSlug' => $slug));
+        $this->fileLogger->warn('Duplicate plugin folder detected', ['duplicateDir' => $pdir, 'targetSlug' => $slug]);
 
         if (is_plugin_active($pfile)) {
             deactivate_plugins($pfile);
@@ -169,17 +169,17 @@ trait UploadZipTrait
         $fileSize,
     ) {
         $oldVersion = PluginConfigType::Version->value;
-        $this->fileLogger->info('Self-update detected, pre-logging activity', array('oldVersion' => $oldVersion));
+        $this->fileLogger->info('Self-update detected, pre-logging activity', ['oldVersion' => $oldVersion]);
 
         $this->logger->logPluginAction(
             ActionType::Upload->value, $slug, StatusType::Success->value,
-            array(
+            [
                 ResponseKeyType::IsUpdate->value => true, ResponseKeyType::IsSelfUpdate->value => true,
                 'oldVersion' => $oldVersion, 'newVersion' => $clientVersion,
                 'fileSize' => $fileSize, 'note' => 'Pre-logged before self-update to ensure audit trail',
-            ),
+            ],
             null,
-            array(ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'uploadSource' => $uploadSource)
+            [ResponseKeyType::PluginVersion->value => $clientVersion ?: $oldVersion, 'uploadSource' => $uploadSource]
         );
     }
 }

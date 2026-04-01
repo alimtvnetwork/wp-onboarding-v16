@@ -27,7 +27,7 @@ trait ManagerCoreTrait {
         return $this->detector->getProviderInstance($providerId, $this->logger, $this->db);
     }
 
-    public function createSnapshot(array $options = array()): array {
+    public function createSnapshot(array $options = []): array {
         $provider = $this->getProvider();
         $isProviderMissing = ($provider === null);
 
@@ -38,10 +38,10 @@ trait ManagerCoreTrait {
             );
         }
 
-        $this->log(LogLevelType::Info->value, 'Creating snapshot', array(
+        $this->log(LogLevelType::Info->value, 'Creating snapshot', [
             'provider' => $provider->getProviderId(),
             ResponseKeyType::Scope->value => $options[ResponseKeyType::Scope->value] ?? 'default',
-        ));
+        ]);
 
         return $provider->createSnapshot($options);
     }
@@ -75,15 +75,15 @@ trait ManagerCoreTrait {
     public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
-            array($limit, $offset)
+            [$limit, $offset]
         );
 
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
 
-        return array(
+        return [
             ResponseKeyType::Snapshots->value => $snapshots ?: array(),
             ResponseKeyType::Total->value     => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
-        );
+        ];
     }
 
     public function getProviders(): array {
@@ -95,19 +95,19 @@ trait ManagerCoreTrait {
         $isProviderMissing = ($provider === null);
 
         if ($isProviderMissing) {
-            return array();
+            return [];
         }
 
         return $provider->getAvailableTables();
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
     }
 
-    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+    private function logWarn(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Warn->value, $message, $context);
@@ -116,7 +116,7 @@ trait ManagerCoreTrait {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
         $hasContext = !empty($context);

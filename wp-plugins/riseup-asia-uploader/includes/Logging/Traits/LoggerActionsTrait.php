@@ -21,16 +21,16 @@ trait LoggerActionsTrait {
         string $action,
         string $pluginSlug,
         string $status = '',
-        array $details = array(),
+        array $details = [],
         ?string $errorMsg = null,
-        array $extraEnhanced = array(),
+        array $extraEnhanced = [],
     ) {
         $status = $status ?: StatusType::Success->value;
-        $this->fileLogger->info('Logging plugin action', array(
+        $this->fileLogger->info('Logging plugin action', [
             'action' => $action,
             'plugin' => $pluginSlug,
             'status' => $status,
-        ));
+        ]);
 
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields($extraEnhanced);
@@ -54,15 +54,15 @@ trait LoggerActionsTrait {
         string $action,
         int $postId,
         string $status = '',
-        array $details = array(),
+        array $details = [],
         ?string $errorMsg = null,
     ) {
         $status = $status ?: StatusType::Success->value;
-        $this->fileLogger->info('Logging post action', array(
+        $this->fileLogger->info('Logging post action', [
             'action' => $action,
             'postId' => $postId,
             'status' => $status,
-        ));
+        ]);
 
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields();
@@ -82,8 +82,8 @@ trait LoggerActionsTrait {
     }
 
     /** Log an authentication failure. */
-    public function logAuthFailure(string $reason, array $details = array()) {
-        $this->fileLogger->warn('Auth failure', array('reason' => $reason));
+    public function logAuthFailure(string $reason, array $details = []) {
+        $this->fileLogger->warn('Auth failure', ['reason' => $reason]);
         $providedUser = isset($details['username']) ? $details['username'] : 'unknown';
         $enhanced = $this->buildEnhancedFields();
 
@@ -104,8 +104,8 @@ trait LoggerActionsTrait {
     /** Log upload initiated. */
     public function logUploadInitiated(
         string $pluginSlug,
-        array $details = array(),
-        array $extraEnhanced = array(),
+        array $details = [],
+        array $extraEnhanced = [],
     ) {
         return $this->logPluginAction(
             ActionType::UploadInitiated->value,
@@ -120,8 +120,8 @@ trait LoggerActionsTrait {
     /** Log upload success. */
     public function logUpload(
         string $pluginSlug,
-        array $details = array(),
-        array $extraEnhanced = array(),
+        array $details = [],
+        array $extraEnhanced = [],
     ) {
         return $this->logPluginAction(
             ActionType::Upload->value,
@@ -137,9 +137,9 @@ trait LoggerActionsTrait {
     public function logUploadFailed(
         string $pluginSlug,
         string $error,
-        array $details = array(),
+        array $details = [],
     ) {
-        $this->fileLogger->error('Upload failed', array('plugin' => $pluginSlug, 'error' => $error));
+        $this->fileLogger->error('Upload failed', ['plugin' => $pluginSlug, 'error' => $error]);
 
         return $this->logPluginAction(
             ActionType::Upload->value,
@@ -151,7 +151,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log plugin enable. */
-    public function logEnable(string $pluginSlug, array $details = array()) {
+    public function logEnable(string $pluginSlug, array $details = []) {
         return $this->logPluginAction(
             ActionType::Enable->value,
             $pluginSlug,
@@ -161,7 +161,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log plugin disable. */
-    public function logDisable(string $pluginSlug, array $details = array()) {
+    public function logDisable(string $pluginSlug, array $details = []) {
         return $this->logPluginAction(
             ActionType::Disable->value,
             $pluginSlug,
@@ -171,7 +171,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log plugin delete. */
-    public function logDelete(string $pluginSlug, array $details = array()) {
+    public function logDelete(string $pluginSlug, array $details = []) {
         return $this->logPluginAction(
             ActionType::Delete->value,
             $pluginSlug,
@@ -184,7 +184,7 @@ trait LoggerActionsTrait {
     public function logFileReplace(
         string $pluginSlug,
         string $filePath,
-        array $details = array(),
+        array $details = [],
     ) {
         $details['filePath'] = $filePath;
 
@@ -200,7 +200,7 @@ trait LoggerActionsTrait {
     public function logFileDelete(
         string $pluginSlug,
         string $filePath,
-        array $details = array(),
+        array $details = [],
     ) {
         $details['filePath'] = $filePath;
 
@@ -213,7 +213,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log post creation. */
-    public function logPostCreate(int $postId, array $details = array()) {
+    public function logPostCreate(int $postId, array $details = []) {
         return $this->logPostAction(
             ActionType::PostCreate->value,
             $postId,
@@ -223,7 +223,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log post update. */
-    public function logPostUpdate(int $postId, array $details = array()) {
+    public function logPostUpdate(int $postId, array $details = []) {
         return $this->logPostAction(
             ActionType::PostUpdate->value,
             $postId,
@@ -233,7 +233,7 @@ trait LoggerActionsTrait {
     }
 
     /** Log category creation. */
-    public function logCategoryCreate(int $termId, array $details = array()) {
+    public function logCategoryCreate(int $termId, array $details = []) {
         return $this->logPostAction(
             ActionType::CategoryCreate->value,
             $termId,

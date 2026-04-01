@@ -57,7 +57,7 @@ trait SyncManifestTrait
         $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Data->value => array(
                 ResponseKeyType::Plugin->value    => $slug,
@@ -71,7 +71,7 @@ trait SyncManifestTrait
                 ),
                 ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
             ),
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 
     private function scanDirectoryForFiles(
@@ -106,11 +106,11 @@ trait SyncManifestTrait
     }
 
     private function buildFileEntry(string $relPath, string $fullPath): array {
-        return array(
+        return [
             'path' => str_replace('\\', '/', $relPath),
             'hash' => @md5_file($fullPath) ?: '',
             'size' => @filesize($fullPath) ?: 0,
             'modifiedAt' => ($mtime = @filemtime($fullPath)) ? DateHelper::formatIso($mtime) : null,
-        );
+        ];
     }
 }

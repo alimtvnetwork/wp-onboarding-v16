@@ -44,11 +44,12 @@ class Admin {
     use AdminFeedbackAjaxTrait;
     use AdminLicensePageTrait;
     use AdminLicenseAjaxTrait;
+use RiseupAsia\Enums\PhpNativeType;
 
     /**
      * Default settings.
      */
-    private static $defaults = array(
+    private static $defaults = [
         'endpoints' => array(
             'status'         => array('enabled' => true, 'auth_required' => true),
             'upload'         => array('enabled' => true, 'auth_required' => true),
@@ -75,7 +76,7 @@ class Admin {
             'include_stacktrace' => true,
             'max_lines'          => 500,
         ),
-    );
+    ];
 
     /** @var Admin|null */
     private static $instance = null;
@@ -95,36 +96,36 @@ class Admin {
      * @return array<string, mixed>
      */
     public static function get_settings(): array {
-        $saved = get_option('riseup_asia_uploader_settings', array());
+        $saved = get_option('riseup_asia_uploader_settings', []);
 
-        return array_replace_recursive(self::$defaults, is_array($saved) ? $saved : array());
+        return array_replace_recursive(self::$defaults, gettype($saved) === PhpNativeType::PhpArray->value ? $saved : []);
     }
 
     /** Constructor. */
     private function __construct() {
         InitHelpers::errorLogWithPrefix('Admin::__construct() — registering admin hooks');
         $this->registerBootNotices();
-        add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
-        add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
-        add_action(HookType::AdminEnqueue->value, array($this, 'enqueueAdminAssets'));
-        add_action(HookType::AdminNotices->value, array($this, 'renderGlobalErrorNotice'));
-        add_action(HookType::ajax(AjaxActionType::TestUpdateConnection->value), array($this, 'ajaxTestUpdateConnection'));
-        add_action(HookType::ajax(AjaxActionType::ClearUpdateCache->value), array($this, 'ajaxClearUpdateCache'));
-        add_action(HookType::ajax(AjaxActionType::CheckForUpdates->value), array($this, 'ajaxCheckForUpdates'));
-        add_action(HookType::ajax(AjaxActionType::SaveSnapshotSettings->value), array($this, 'ajaxSaveSnapshotSettings'));
-        add_action(HookType::ajax(AjaxActionType::RunSnapshotCleanup->value), array($this, 'ajaxRunSnapshotCleanup'));
-        add_action(HookType::ajax(AjaxActionType::GetSnapshotStorageStats->value), array($this, 'ajaxGetSnapshotStorageStats'));
-        add_action(HookType::ajax(AjaxActionType::DismissErrorFlash->value), array($this, 'ajaxDismissErrorFlash'));
-        add_action(HookType::ajax(AjaxActionType::ClearErrorSessions->value), array($this, 'ajaxClearErrorSessions'));
-        add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), array($this, 'ajaxReadLogFile'));
-        add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), array($this, 'ajaxClearLogFile'));
-        add_action(HookType::ajax(AjaxActionType::ClearAllLogs->value), array($this, 'ajaxClearAllLogs'));
-        add_action(HookType::ajax(AjaxActionType::LicenseSave->value), array($this, 'ajaxLicenseSave'));
-        add_action(HookType::ajax(AjaxActionType::LicenseActivate->value), array($this, 'ajaxLicenseActivate'));
-        add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), array($this, 'ajaxLicenseDeactivate'));
-        add_action(HookType::ajax(AjaxActionType::LicenseRemove->value), array($this, 'ajaxLicenseRemove'));
-        add_action(HookType::ajax(AjaxActionType::LicenseRefresh->value), array($this, 'ajaxLicenseRefresh'));
-        add_action(HookType::ajax(AjaxActionType::SendFeedback->value), array($this, 'ajaxSendFeedback'));
-        add_action(HookType::ajax(AjaxActionType::CheckFeedbackReady->value), array($this, 'ajaxCheckFeedbackReady'));
+        add_action(HookType::AdminMenu->value, [$this, 'addAdminMenu']);
+        add_action(HookType::AdminInit->value, [$this, 'registerSettings']);
+        add_action(HookType::AdminEnqueue->value, [$this, 'enqueueAdminAssets']);
+        add_action(HookType::AdminNotices->value, [$this, 'renderGlobalErrorNotice']);
+        add_action(HookType::ajax(AjaxActionType::TestUpdateConnection->value), [$this, 'ajaxTestUpdateConnection']);
+        add_action(HookType::ajax(AjaxActionType::ClearUpdateCache->value), [$this, 'ajaxClearUpdateCache']);
+        add_action(HookType::ajax(AjaxActionType::CheckForUpdates->value), [$this, 'ajaxCheckForUpdates']);
+        add_action(HookType::ajax(AjaxActionType::SaveSnapshotSettings->value), [$this, 'ajaxSaveSnapshotSettings']);
+        add_action(HookType::ajax(AjaxActionType::RunSnapshotCleanup->value), [$this, 'ajaxRunSnapshotCleanup']);
+        add_action(HookType::ajax(AjaxActionType::GetSnapshotStorageStats->value), [$this, 'ajaxGetSnapshotStorageStats']);
+        add_action(HookType::ajax(AjaxActionType::DismissErrorFlash->value), [$this, 'ajaxDismissErrorFlash']);
+        add_action(HookType::ajax(AjaxActionType::ClearErrorSessions->value), [$this, 'ajaxClearErrorSessions']);
+        add_action(HookType::ajax(AjaxActionType::ReadLogFile->value), [$this, 'ajaxReadLogFile']);
+        add_action(HookType::ajax(AjaxActionType::ClearLogFile->value), [$this, 'ajaxClearLogFile']);
+        add_action(HookType::ajax(AjaxActionType::ClearAllLogs->value), [$this, 'ajaxClearAllLogs']);
+        add_action(HookType::ajax(AjaxActionType::LicenseSave->value), [$this, 'ajaxLicenseSave']);
+        add_action(HookType::ajax(AjaxActionType::LicenseActivate->value), [$this, 'ajaxLicenseActivate']);
+        add_action(HookType::ajax(AjaxActionType::LicenseDeactivate->value), [$this, 'ajaxLicenseDeactivate']);
+        add_action(HookType::ajax(AjaxActionType::LicenseRemove->value), [$this, 'ajaxLicenseRemove']);
+        add_action(HookType::ajax(AjaxActionType::LicenseRefresh->value), [$this, 'ajaxLicenseRefresh']);
+        add_action(HookType::ajax(AjaxActionType::SendFeedback->value), [$this, 'ajaxSendFeedback']);
+        add_action(HookType::ajax(AjaxActionType::CheckFeedbackReady->value), [$this, 'ajaxCheckFeedbackReady']);
     }
 }

@@ -26,7 +26,7 @@ trait RestoreGraphTrait {
         $idCol = $this->resolveRootCol($rootPdo, $table, 'Id', 'id');
         $row = $rootPdo->query("SELECT * FROM {$table} WHERE {$idCol} = 1")->fetch(PDO::FETCH_ASSOC);
 
-        return $row ?: array();
+        return $row ?: [];
     }
 
     private function getTableInventory(PDO $rootPdo): array {
@@ -40,15 +40,15 @@ trait RestoreGraphTrait {
             "SELECT {$tableNameCol}, {$sqliteFileCol}, {$rowCountCol}, {$checksumCol} FROM {$table} ORDER BY {$tableNameCol}"
         )->fetchAll(PDO::FETCH_ASSOC);
 
-        $inventory = array();
+        $inventory = [];
 
         foreach ($rows as $row) {
             $name = $row[$tableNameCol];
-            $inventory[$name] = array(
+            $inventory[$name] = [
                 'sqliteFile'  => $row[$sqliteFileCol],
                 'rowCount'    => (int) $row[$rowCountCol],
                 'checksumMd5' => $row[$checksumCol],
-            );
+            ];
         }
 
         return $inventory;
@@ -77,11 +77,11 @@ trait RestoreGraphTrait {
     }
 
     private function buildDependencyGraph(array $allTables, array $deps): array {
-        $graph = array();
-        $inDegree = array();
+        $graph = [];
+        $inDegree = [];
 
         foreach ($allTables as $t) {
-            $graph[$t] = array();
+            $graph[$t] = [];
             $inDegree[$t] = 0;
         }
 
@@ -99,10 +99,10 @@ trait RestoreGraphTrait {
             $inDegree[$child]++;
         }
 
-        return array(
+        return [
             'adjacency' => $graph,
             'inDegree'  => $inDegree,
-        );
+        ];
     }
 
     private function topologicalSort(
@@ -110,7 +110,7 @@ trait RestoreGraphTrait {
         array $inDegree,
         array $allTables,
     ): array {
-        $queue = array();
+        $queue = [];
 
         foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {
@@ -118,7 +118,7 @@ trait RestoreGraphTrait {
             }
         }
 
-        $sorted = array();
+        $sorted = [];
 
         while (!empty($queue)) {
             sort($queue);

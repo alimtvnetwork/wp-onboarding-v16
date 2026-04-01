@@ -25,6 +25,7 @@ use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait AdminErrorAjaxTrait {
 
@@ -33,19 +34,19 @@ trait AdminErrorAjaxTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $db = Database::getInstance();
 
         if ($db->isReady() === false) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database is not ready'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Database is not ready']);
         }
 
         $pdo = $db->getPdo();
 
         if ($pdo === null) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database connection unavailable'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Database connection unavailable']);
         }
 
         $stmt = $pdo->query('SELECT MAX(Id) FROM ' . TableType::ErrorSessions->value);
@@ -56,7 +57,7 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'All errors marked as seen', ResponseKeyType::LastSeenId->value => $maxId));
+        wp_send_json_success([ResponseKeyType::Message->value => 'All errors marked as seen', ResponseKeyType::LastSeenId->value => $maxId]);
     }
 
     /** AJAX handler: Clear all error sessions. */
@@ -64,19 +65,19 @@ trait AdminErrorAjaxTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $db = Database::getInstance();
 
         if ($db->isReady() === false) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database is not ready'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Database is not ready']);
         }
 
         $pdo = $db->getPdo();
 
         if ($pdo === null) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Database connection unavailable'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Database connection unavailable']);
         }
 
         $pdo->exec('DELETE FROM ' . TableType::ErrorSessions->value);
@@ -85,7 +86,7 @@ trait AdminErrorAjaxTrait {
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('last_seen_error_id', '0', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO {$flashTable} (Key, Value, UpdatedAt) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array(ResponseKeyType::Message->value => 'All error sessions cleared'));
+        wp_send_json_success([ResponseKeyType::Message->value => 'All error sessions cleared']);
     }
 
     /** Resolve a log file type to its absolute path. */
@@ -112,14 +113,14 @@ trait AdminErrorAjaxTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : ''; // file_type: external POST param
         $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Invalid file type']);
         }
 
         wp_send_json_success($this->readLogFileContent($path));
@@ -161,12 +162,12 @@ trait AdminErrorAjaxTrait {
             }
         }
 
-        return array(
+        return [
             ResponseKeyType::Content->value  => $content,
             ResponseKeyType::Exists->value   => $exists,
             ResponseKeyType::Size->value     => $size,
             ResponseKeyType::Filename->value => basename($path),
-        );
+        ];
     }
 
     /** AJAX handler: Clear all log files from disk. */
@@ -174,33 +175,33 @@ trait AdminErrorAjaxTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : ''; // file_type: external POST param
         $requestedPath = $this->resolveLogFilePath($type);
 
         if ($requestedPath === false) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Invalid file type'));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Invalid file type']);
         }
 
         $logger = FileLogger::getInstance();
         $clearResult = $logger->clearAllLogFiles();
-        $deletedFiles = isset($clearResult['deleted']) && is_array($clearResult['deleted']) ? $clearResult['deleted'] : array();
-        $failedFiles = isset($clearResult['failed']) && is_array($clearResult['failed']) ? $clearResult['failed'] : array();
+        $deletedFiles = isset($clearResult['deleted']) && gettype($clearResult['deleted']) === PhpNativeType::PhpArray->value ? $clearResult['deleted'] : [];
+        $failedFiles = isset($clearResult['failed']) && gettype($clearResult['failed']) === PhpNativeType::PhpArray->value ? $clearResult['failed'] : [];
         $hasFailures = !empty($failedFiles);
 
         if ($hasFailures) {
             $failedList = implode(', ', $failedFiles);
             $failureMessage = 'Failed to delete one or more log files from disk: ' . $failedList;
 
-            wp_send_json_error(array(
+            wp_send_json_error([
                 ResponseKeyType::Message->value  => $failureMessage,
                 ResponseKeyType::FileType->value => $type,
                 ResponseKeyType::Path->value     => $requestedPath,
                 ResponseKeyType::Files->value    => $failedFiles,
                 ResponseKeyType::Count->value    => count($deletedFiles),
-            ));
+            ]);
         }
 
         $hasDeletedFiles = !empty($deletedFiles);
@@ -208,13 +209,13 @@ trait AdminErrorAjaxTrait {
             ? 'Log files deleted from disk: ' . implode(', ', $deletedFiles)
             : 'No log files found on disk';
 
-        wp_send_json_success(array(
+        wp_send_json_success([
             ResponseKeyType::Message->value  => $message,
             ResponseKeyType::FileType->value => $type,
             ResponseKeyType::Path->value     => $requestedPath,
             ResponseKeyType::Files->value    => $deletedFiles,
             ResponseKeyType::Count->value    => count($deletedFiles),
-        ));
+        ]);
     }
 
     /**
@@ -226,11 +227,11 @@ trait AdminErrorAjaxTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
-        $riseupResult = array('files' => false, 'database' => false, 'error' => '');
-        $quploadResult = array('cleared' => false, 'error' => '');
+        $riseupResult = ['files' => false, 'database' => false, 'error' => ''];
+        $quploadResult = ['cleared' => false, 'error' => ''];
 
         // Clear Riseup Asia log files
         try {
@@ -276,10 +277,10 @@ trait AdminErrorAjaxTrait {
             $quploadResult['error'] = 'QUpload plugin not active';
         }
 
-        wp_send_json_success(array(
+        wp_send_json_success([
             ResponseKeyType::Message->value => 'All logs cleared for both plugins',
             'riseup'  => $riseupResult,
             'qupload' => $quploadResult,
-        ));
+        ]);
     }
 }

@@ -37,7 +37,7 @@ trait CleanerStorageTrait {
     }
 
     private function buildEmptyStorageStats(): array {
-        return array(
+        return [
             ResponseKeyType::TotalSnapshots->value     => 0,
             ResponseKeyType::TotalSizeBytes->value     => 0,
             ResponseKeyType::TotalSizeFormatted->value => '0 B',
@@ -45,7 +45,7 @@ trait CleanerStorageTrait {
             ResponseKeyType::NewestTimestamp->value    => null,
             ResponseKeyType::DiskFreeBytes->value      => 0,
             ResponseKeyType::DiskFreeFormatted->value  => '0 B',
-        );
+        ];
     }
 
     private function populateDbStats(array &$stats): void {
@@ -57,7 +57,7 @@ trait CleanerStorageTrait {
                 MAX(CreatedAt) as newest
             FROM ' . TableType::Snapshots->value .
             ' WHERE Status = ?',
-            array(SnapshotStatusType::Complete->value)
+            [SnapshotStatusType::Complete->value]
         );
 
         if ($dbStats) {
@@ -109,15 +109,15 @@ trait CleanerStorageTrait {
     }
 
     private function buildEmptyEstimate(): array {
-        return array(
+        return [
             ResponseKeyType::SnapshotsCount->value => 0,
             ResponseKeyType::Bytes->value          => 0,
             ResponseKeyType::BytesFormatted->value => '0 B',
-        );
+        ];
     }
 
     private function getRetentionCandidates(array $settings): array {
-        $snapshots = array();
+        $snapshots = [];
 
         if ($settings[SettingsKeyType::RetentionType->value] === RetentionType::Days->value) {
             $snapshots = $this->getSnapshotsOlderThan($settings[SettingsKeyType::RetentionDays->value]);

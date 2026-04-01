@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use QUpload\Enums\PluginConfigType;
+use QUpload\Enums\PhpNativeType;
 
 class PathHelper {
     private static ?string $baseDir = null;
@@ -78,7 +79,7 @@ class PathHelper {
         $uploadDir = wp_upload_dir();
         $basedir = '';
 
-        if (is_array($uploadDir) && isset($uploadDir['basedir']) && is_string($uploadDir['basedir'])) {
+        if (gettype($uploadDir) === PhpNativeType::PhpArray->value && isset($uploadDir['basedir']) && gettype($uploadDir['basedir']) === PhpNativeType::PhpString->value) {
             $basedir = trim($uploadDir['basedir']);
         }
 

@@ -33,7 +33,7 @@ trait UpdateResolverIntegrityTrait {
         $isFileMissing = !file_exists($filePath);
 
         if ($isFileMissing) {
-            $this->fileLogger->error('Checksum verification failed — file not found', array('file' => $filePath));
+            $this->fileLogger->error('Checksum verification failed — file not found', ['file' => $filePath]);
 
             return new WP_Error(
                 WpErrorCodeType::FileNotFound->value,
@@ -45,20 +45,20 @@ trait UpdateResolverIntegrityTrait {
         $isHashMismatch = !hash_equals(strtolower($expectedHash), strtolower($actualHash));
 
         if ($isHashMismatch) {
-            $this->fileLogger->error('Checksum mismatch', array(
+            $this->fileLogger->error('Checksum mismatch', [
                 'expected' => $expectedHash,
                 'actual' => $actualHash,
                 'file' => $filePath,
-            ));
+            ]);
 
             return new WP_Error(
                 WpErrorCodeType::ChecksumMismatch->value,
                 'SHA-256 checksum verification failed — package may be corrupted or tampered with',
-                array('expected' => $expectedHash, 'actual' => $actualHash),
+                ['expected' => $expectedHash, 'actual' => $actualHash],
             );
         }
 
-        $this->fileLogger->info('Checksum verified', array('hash' => $actualHash));
+        $this->fileLogger->info('Checksum verified', ['hash' => $actualHash]);
 
         return true;
     }
@@ -75,11 +75,11 @@ trait UpdateResolverIntegrityTrait {
         string $packageUrl,
         ?string $expectedHash = null,
     ): string|WP_Error {
-        $this->fileLogger->info('Downloading update package', array('url' => $packageUrl));
+        $this->fileLogger->info('Downloading update package', ['url' => $packageUrl]);
 
         $tmpFile = download_url($packageUrl, 300);
         if (is_wp_error($tmpFile)) {
-            $this->fileLogger->error('Package download failed', array('error' => $tmpFile->get_error_message()));
+            $this->fileLogger->error('Package download failed', ['error' => $tmpFile->get_error_message()]);
 
             return $tmpFile;
         }

@@ -28,10 +28,10 @@ class ResultHelper
      * @param array $extra Additional key => value pairs merged into the result.
      * @return array{success: true, ...}
      */
-    public static function ok(array $extra = array()): array
+    public static function ok(array $extra = []): array
     {
         return array_merge(
-            array(ResponseKeyType::Success->value => true),
+            [ResponseKeyType::Success->value => true],
             $extra,
         );
     }
@@ -42,10 +42,10 @@ class ResultHelper
      * @param array $extra Additional key => value pairs merged into the result.
      * @return array{success: false, ...}
      */
-    public static function failed(array $extra = array()): array
+    public static function failed(array $extra = []): array
     {
         return array_merge(
-            array(ResponseKeyType::Success->value => false),
+            [ResponseKeyType::Success->value => false],
             $extra,
         );
     }
@@ -57,13 +57,13 @@ class ResultHelper
      * @param array  $extra   Additional key => value pairs merged into the result.
      * @return array{success: false, error: string, ...}
      */
-    public static function error(string $message, array $extra = array()): array
+    public static function error(string $message, array $extra = []): array
     {
         return array_merge(
-            array(
+            [
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $message,
-            ),
+            ],
             $extra,
         );
     }
@@ -76,14 +76,14 @@ class ResultHelper
      * @param array  $extra   Additional key => value pairs merged into the result.
      * @return array{success: false, error: string, code: string, ...}
      */
-    public static function errorWithCode(string $message, string $code, array $extra = array()): array
+    public static function errorWithCode(string $message, string $code, array $extra = []): array
     {
         return array_merge(
-            array(
+            [
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $message,
                 ResponseKeyType::Code->value    => $code,
-            ),
+            ],
             $extra,
         );
     }
@@ -95,7 +95,7 @@ class ResultHelper
      * @param array     $extra     Additional key => value pairs merged into the result.
      * @return array{success: false, error: string, ...}
      */
-    public static function errorFromException(Throwable $exception, array $extra = array()): array
+    public static function errorFromException(Throwable $exception, array $extra = []): array
     {
         return self::error($exception->getMessage(), $extra);
     }

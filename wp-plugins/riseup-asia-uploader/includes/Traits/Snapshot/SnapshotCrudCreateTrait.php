@@ -44,7 +44,7 @@ trait SnapshotCrudCreateTrait {
             $scope = isset($body[ResponseKeyType::Scope->value]) ? sanitize_key($body[ResponseKeyType::Scope->value]) : SnapshotScopeType::All->value;
 
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::Scope->value => $scope, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value));
+                [ResponseKeyType::Scope->value => $scope, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value]);
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $isPerTable = (($manager->getSettings()[ResponseKeyType::Mode->value] ?? SnapshotWorkerModeType::PerTable->value) === SnapshotWorkerModeType::PerTable->value);
@@ -69,13 +69,13 @@ trait SnapshotCrudCreateTrait {
     ): array {
         $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
 
-        return $orchestrator->executeFullBackup(array(
+        return $orchestrator->executeFullBackup([
             ResponseKeyType::Title->value          => $body[ResponseKeyType::Title->value] ?? null,
             ResponseKeyType::Scope->value          => $scope,
             ResponseKeyType::IncludePlugins->value  => $body[ResponseKeyType::IncludePlugins->value] ?? null,
             ResponseKeyType::PluginSelection->value => $body[ResponseKeyType::PluginSelection->value] ?? null,
             ResponseKeyType::Compression->value     => $body[ResponseKeyType::Compression->value] ?? null,
-        ));
+        ]);
     }
 
     /**
@@ -86,13 +86,13 @@ trait SnapshotCrudCreateTrait {
         string $scope,
         $manager,
     ): array {
-        $this->fileLogger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
+        $this->fileLogger->info('Creating snapshot via API (legacy mode)', ['scope' => $scope]);
 
-        return $manager->createSnapshot(array(
+        return $manager->createSnapshot([
             ResponseKeyType::Scope->value   => $scope,
             ResponseKeyType::Trigger->value => SnapshotTriggerType::Api->value,
             ResponseKeyType::Tables->value  => isset($body[ResponseKeyType::Tables->value]) ? array_map('sanitize_text_field', (array) $body[ResponseKeyType::Tables->value]) : array(),
-        ));
+        ]);
     }
 
     /**
@@ -107,7 +107,7 @@ trait SnapshotCrudCreateTrait {
         $this->logger->logPluginAction(
             $action, LogCategoryType::Snapshot->value,
             $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-            array(ResponseKeyType::Scope->value => $scope, ResponseKeyType::Mode->value => $mode, ResponseKeyType::Phase->value => SnapshotPhaseType::Complete->value),
+            [ResponseKeyType::Scope->value => $scope, ResponseKeyType::Mode->value => $mode, ResponseKeyType::Phase->value => SnapshotPhaseType::Complete->value],
             $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown error')
         );
     }

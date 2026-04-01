@@ -58,11 +58,11 @@ trait AnalyzerQueryTrait {
 
     private function filterContentTables(array $tables): array {
         $prefix = $this->wpdb->prefix;
-        $contentSuffixes = array(
+        $contentSuffixes = [
             'posts', 'postmeta', 'terms', 'term_taxonomy',
             'term_relationships', 'comments', 'commentmeta',
             'options', 'users', 'usermeta',
-        );
+        ];
 
         $contentTables = array_map(function($s) use ($prefix) {
             return $prefix . $s;
@@ -81,13 +81,13 @@ trait AnalyzerQueryTrait {
         $rows = $this->queryForeignKeys($dbName);
 
         if (empty($rows)) {
-            $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $dbName));
+            $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', ['database' => $dbName]);
 
-            return array();
+            return [];
         }
 
         $deps = $this->mapDependencyRows($rows);
-        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $dbName));
+        $this->log(LogLevelType::Info->value, 'Dependencies detected', ['count' => count($deps), 'database' => $dbName]);
 
         return $deps;
     }
@@ -102,19 +102,19 @@ trait AnalyzerQueryTrait {
             $dbName,
         );
 
-        return $this->wpdb->get_results($sql, ARRAY_A) ?: array();
+        return $this->wpdb->get_results($sql, ARRAY_A) ?: [];
     }
 
     private function mapDependencyRows(array $rows): array {
-        $deps = array();
+        $deps = [];
 
         foreach ($rows as $row) {
-            $deps[] = array(
+            $deps[] = [
                 ResponseKeyType::ParentTable->value => $row['parent_table'],
                 ResponseKeyType::ChildTable->value  => $row['child_table'],
                 ResponseKeyType::FkColumn->value    => $row['fk_column'],
                 ResponseKeyType::RefColumn->value   => $row['ref_column'],
-            );
+            ];
         }
 
         return $deps;
@@ -138,13 +138,13 @@ trait AnalyzerQueryTrait {
 
         $sorted = $this->topologicalSort($tables, $scopedDeps);
 
-        return array(
+        return [
             ResponseKeyType::Tables->value       => $tables,
             ResponseKeyType::Dependencies->value  => $scopedDeps,
             ResponseKeyType::SeedOrder->value     => $sorted,
             ResponseKeyType::TableCount->value    => count($tables),
             ResponseKeyType::DepCount->value      => count($scopedDeps),
-        );
+        ];
     }
 
     /**
@@ -153,7 +153,7 @@ trait AnalyzerQueryTrait {
     private function log(
         $level,
         $message,
-        $context = array(),
+        $context = [],
     ) {
         $full = '[SNAPSHOT] [DEPENDENCY] ' . $message;
         if (!empty($context)) {

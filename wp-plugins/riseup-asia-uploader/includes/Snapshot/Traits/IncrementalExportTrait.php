@@ -46,22 +46,22 @@ trait IncrementalExportTrait {
     }
 
     private function buildDeltaExportSuccess(int $exported, string $filepath): array {
-        return array(
+        return [
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Rows->value     => $exported,
             ResponseKeyType::FileSize->value => filesize($filepath),
             ResponseKeyType::Checksum->value => md5_file($filepath),
-        );
+        ];
     }
 
     private function buildDeltaExportFailure(Throwable $e): array {
-        return array(
+        return [
             ResponseKeyType::Success->value  => false,
             ResponseKeyType::Error->value    => $e->getMessage(),
             ResponseKeyType::Rows->value     => 0,
             ResponseKeyType::FileSize->value => 0,
             ResponseKeyType::Checksum->value => '',
-        );
+        ];
     }
 
     private function createIncrementalSqliteTable(string $filepath, string $table): PDO {
@@ -100,7 +100,7 @@ trait IncrementalExportTrait {
 
         $stmt = $sqlite->prepare("INSERT OR REPLACE INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
 
-        return array(ResponseKeyType::Stmt->value => $stmt, ResponseKeyType::Columns->value => $columnNames);
+        return [ResponseKeyType::Stmt->value => $stmt, ResponseKeyType::Columns->value => $columnNames];
     }
 
     private function executeDeltaBatchLoop(PDOStatement $stmt, string $table, string $pkColumn, int $lastMaxId): int {

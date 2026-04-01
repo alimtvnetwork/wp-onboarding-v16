@@ -38,18 +38,18 @@ trait MachineApprovalTrait
 
         if ($isMachineEmpty) {
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Machine name is required in request body',
                     'code'                          => 'machine_name_missing',
-                ),
+                ],
                 HttpStatusType::BadRequest->value,
             );
         }
 
         $settingsKey = PluginConfigType::SettingsGroup->value;
-        $settings = get_option($settingsKey, array());
-        $approvedMachines = $settings['approved_machines'] ?? array();
+        $settings = get_option($settingsKey, []);
+        $approvedMachines = $settings['approved_machines'] ?? [];
 
         // Check if already approved (case-insensitive)
         $lowerMachine = strtolower($machineName);
@@ -64,13 +64,13 @@ trait MachineApprovalTrait
 
         if ($isAlreadyApproved) {
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
                     ResponseKeyType::Message->value => "Machine '$machineName' is already approved",
                     'machine'                       => $machineName,
                     'approved_machines'              => $approvedMachines,
                     'already_approved'               => true,
-                ),
+                ],
                 HttpStatusType::Ok->value,
             );
         }
@@ -79,18 +79,18 @@ trait MachineApprovalTrait
         $settings['approved_machines'] = $approvedMachines;
         update_option($settingsKey, $settings);
 
-        $this->fileLogger->info('Machine approved remotely', array(
+        $this->fileLogger->info('Machine approved remotely', [
             'machine'           => $machineName,
             'approved_machines' => $approvedMachines,
-        ));
+        ]);
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => "Machine '$machineName' approved successfully",
                 'machine'                       => $machineName,
                 'approved_machines'              => $approvedMachines,
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }

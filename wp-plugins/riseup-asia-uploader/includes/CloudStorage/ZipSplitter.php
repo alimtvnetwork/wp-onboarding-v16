@@ -95,12 +95,12 @@ class ZipSplitter
             return ResultHelper::error('Failed to write manifest.json');
         }
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             'chunks'       => $chunks,
             'manifestPath' => $manifestPath,
             'totalSize'    => $totalSize,
             'chunkCount'   => count($chunks),
-        ));
+        ]);
     }
 
     /**
@@ -117,10 +117,10 @@ class ZipSplitter
         $isOpenFailed = ($handle === false);
 
         if ($isOpenFailed) {
-            return array();
+            return [];
         }
 
-        $chunks = array();
+        $chunks = [];
         $chunkIndex = 0;
         $bytesRemaining = $totalSize;
 
@@ -133,7 +133,7 @@ class ZipSplitter
             if ($isChunkFailed) {
                 fclose($handle);
 
-                return array();
+                return [];
             }
 
             $chunks[] = $chunkResult;
@@ -176,11 +176,11 @@ class ZipSplitter
 
         $sha256 = hash('sha256', $data);
 
-        return array(
+        return [
             'file'   => $chunkFileName,
             'size'   => $written,
             'sha256' => $sha256,
-        );
+        ];
     }
 
     /**
@@ -202,7 +202,7 @@ class ZipSplitter
         int $totalSize,
         array $chunks,
     ): ?string {
-        $manifest = array(
+        $manifest = [
             'type'      => strtolower($type->value),
             'sequence'  => $sequence,
             'label'     => $label,
@@ -210,7 +210,7 @@ class ZipSplitter
             'totalSize' => $totalSize,
             'chunkSize' => $this->chunkSize,
             'chunks'    => $chunks,
-        );
+        ];
 
         $json = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         $manifestPath = $outputDir . DIRECTORY_SEPARATOR . self::MANIFEST_FILE;
