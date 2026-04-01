@@ -21,7 +21,7 @@ func (s *Service) runCloudUploadStage(pctx *publishContext) {
 		return
 	}
 
-	s.broadcastProgress(pctx.progress(publishstep.CloudUpload, 12, "Uploading backup to cloud storage..."))
+	s.broadcastProgress(pctx.progress(publishstep.CloudUpload, progressCloudUpload.Start, "Uploading backup to cloud storage..."))
 	s.logCloudUploadInit(pctx, accountIds)
 
 	s.uploadToEachAccount(pctx, accountIds)
