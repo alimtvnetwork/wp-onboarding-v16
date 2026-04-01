@@ -177,7 +177,7 @@ func (s *Service) failStage(pctx *publishContext, step publishstep.Variant, stag
 		Message:  fmt.Sprintf("%s failed: %s", step.Value(), stage.Message),
 	}
 	s.broadcastDetailedLog(failLog)
-	s.broadcastProgress(pctx.progress(publishstep.Failed, 30, stage.Message))
+	s.broadcastProgress(pctx.progress(publishstep.Failed, progressPackage.End, stage.Message))
 
 	return apperror.New(apperror.ErrInternal, stage.Message)
 }

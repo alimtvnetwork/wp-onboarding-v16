@@ -46,7 +46,7 @@ func (s *Service) handleRollback(input rollbackInput) {
 
 // executeRollbackSteps deactivates the broken plugin and optionally re-uploads the backup.
 func (s *Service) executeRollbackSteps(input rollbackInput) *apperror.AppError {
-	s.broadcastProgress(input.Pctx.progress(publishstep.Rollback, 85, "Activation failed — rolling back..."))
+	s.broadcastProgress(input.Pctx.progress(publishstep.Rollback, progressRollback.Start, "Activation failed — rolling back..."))
 	s.broadcastRollbackStartLog(input.Pctx, input.ActivateStage)
 	s.rollbackDeactivate(input.Pctx)
 

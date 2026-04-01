@@ -10,7 +10,7 @@ import (
 // runRemoteBackupStage calls the remote WordPress backup endpoint before upload.
 // On failure, logs a warning but does not block the pipeline.
 func (s *Service) runRemoteBackupStage(pctx *publishContext) {
-	s.broadcastProgress(pctx.progress(publishstep.RemoteBackup, 8, "Creating remote backup on WordPress site..."))
+	s.broadcastProgress(pctx.progress(publishstep.RemoteBackup, progressRemoteBackup.Start, "Creating remote backup on WordPress site..."))
 	s.logRemoteBackupInit(pctx)
 
 	backupResult := pctx.WPClient.CreateRemoteBackup(pctx.Mapping.RemoteSlug)

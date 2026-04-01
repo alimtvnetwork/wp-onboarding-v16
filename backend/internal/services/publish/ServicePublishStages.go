@@ -80,7 +80,7 @@ func (s *Service) executePackageStage(pctx *publishContext) PackageStageResult {
 	var buildResult *PackageBuildResult
 
 	stage := s.runStage("package", func() error {
-		s.broadcastProgress(pctx.progress(publishstep.Packaging, 30, "Building package..."))
+		s.broadcastProgress(pctx.progress(publishstep.Packaging, progressPackage.Start, "Building package..."))
 
 		result, appErr := s.buildPluginPackage(pctx)
 		if appErr != nil {

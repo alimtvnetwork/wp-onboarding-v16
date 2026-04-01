@@ -145,7 +145,7 @@ func (s *Service) executeActivateStage(pctx *publishContext, isAlreadyActivated 
 	activateStartTime := time.Now()
 
 	return s.runStageWithSession(pctx.SessionId, "activate", func() error {
-		s.broadcastProgress(pctx.progress(publishstep.Activating, 80, "Activating plugin..."))
+		s.broadcastProgress(pctx.progress(publishstep.Activating, progressActivate.Start, "Activating plugin..."))
 
 		if isAlreadyActivated {
 			s.logActivateSkipped(pctx)

@@ -27,7 +27,7 @@ func (s *Service) broadcastUploadComplete(pctx *publishContext, uploadStage Stag
 // reportUploadFailure records and broadcasts an upload failure.
 func (s *Service) reportUploadFailure(pctx *publishContext, uploadStage Stage) *apperror.AppError {
 	pctx.Result.ErrorMessage = uploadStage.Message
-	s.broadcastProgress(pctx.progress(publishstep.Failed, 60, uploadStage.Message))
+	s.broadcastProgress(pctx.progress(publishstep.Failed, progressUpload.End, uploadStage.Message))
 
 	return apperror.New(apperror.ErrWPUploadFailed, uploadStage.Message)
 }

@@ -95,8 +95,8 @@ func (s *Service) logCloudUploadInit(pctx *publishContext, accountIds []int) {
 
 // broadcastCloudUploadAccountProgress sends per-account progress.
 func (s *Service) broadcastCloudUploadAccountProgress(pctx *publishContext, accountId, current, total int) {
-	msg := fmt.Sprintf("Uploading to cloud storage account %d (%d/%d)", accountId, current, total)
-	pct := 12 + (current * 5 / total)
+	fraction := float64(current) / float64(total)
+	pct := progressCloudUpload.lerp(fraction)
 
 	s.broadcastProgress(pctx.progress(publishstep.CloudUpload, pct, msg))
 }
