@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 /**
  * Stack trace frame construction utilities for error diagnostics.
@@ -22,28 +23,28 @@ class FrameBuilder
      * @return array{file: string, fileBase: string, line: int, function: string, class: string}
      */
     public static function buildSingleFrame(array $frame): array {
-        return array(
+        return [
             'file'     => $frame['file'] ?? self::INTERNAL_LABEL,
             'fileBase' => isset($frame['file']) ? basename($frame['file']) : self::INTERNAL_LABEL,
             'line'     => $frame['line'] ?? 0,
             'function' => $frame['function'] ?? '',
             'class'    => $frame['class'] ?? '',
-        );
+        ];
     }
 
     /**
      * @return array<int, array{file: string, fileBase: string, line: int, function: string, class: string}>
      */
     public static function exceptionToFrames(Throwable $exception): array {
-        $frames = array();
+        $frames = [];
 
-        $frames[] = array(
+        $frames[] = [
             'file'     => $exception->getFile(),
             'fileBase' => basename($exception->getFile()),
             'line'     => $exception->getLine(),
             'function' => '',
             'class'    => '',
-        );
+        ];
 
         foreach ($exception->getTrace() as $frame) {
             $frames[] = self::buildSingleFrame($frame);
@@ -56,7 +57,7 @@ class FrameBuilder
      * @return array<int, array{file: string, fileBase: string, line: int, function: string, class: string}>
      */
     public static function backtraceToFrames(array $backtrace): array {
-        $frames = array();
+        $frames = [];
 
         foreach ($backtrace as $frame) {
             $frames[] = self::buildSingleFrame($frame);
@@ -75,24 +76,24 @@ class FrameBuilder
             $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
         }
 
-        return array(
+        return [
             ResponseKeyType::TraceLines->value => self::buildTraceLines($error, $backtrace),
             'frames'      => self::buildStructuredFrames($error, $backtrace),
-        );
+        ];
     }
 
     /**
      * @return string[]
      */
     public static function buildTraceLines(array $error, ?array $backtrace): array {
-        $traceLines = array();
+        $traceLines = [];
         $traceLines[] = sprintf(
             "#0 %s(%d): Fatal error occurred",
             $error['file'],
             $error['line'],
         );
 
-        if (is_array($backtrace)) {
+        if (gettype($backtrace) === PhpNativeType::PhpArray->value) {
             foreach ($backtrace as $i => $frame) {
                 $file  = $frame['file'] ?? self::INTERNAL_LABEL;
                 $line  = $frame['line'] ?? 0;
@@ -115,29 +116,29 @@ class FrameBuilder
     }
 
     public static function buildStructuredFrames(array $error, ?array $backtrace): array {
-        $frames = array(
-            array(
+        $frames = [
+            [
                 'file'     => $error['file'],
                 'fileBase' => basename($error['file']),
                 'line'     => $error['line'],
                 'function' => 'fatal_error',
                 'class'    => '',
-            ),
-        );
+            ],
+        ];
 
-        if (is_array($backtrace)) {
+        if (gettype($backtrace) === PhpNativeType::PhpArray->value) {
             foreach ($backtrace as $frame) {
                 $frames[] = self::buildSingleFrame($frame);
             }
         }
 
-        $frames[] = array(
+        $frames[] = [
             'file'     => self::INTERNAL_LABEL,
             'fileBase' => self::INTERNAL_LABEL,
             'line'     => 0,
             'function' => 'shutdown_handler',
             'class'    => 'PHP',
-        );
+        ];
 
         return $frames;
     }
@@ -147,7 +148,7 @@ class FrameBuilder
         array $traceLines,
         array $frames,
     ): array {
-        return array(
+        return [
             'type'             => $error['type'],
             'typeName'         => FatalErrorHandler::errorTypeToString($error['type']),
             'message'          => $error['message'],
@@ -163,6 +164,6 @@ class FrameBuilder
             'memoryLimit'      => ini_get('memory_limit'),
             'requestUri'       => $_SERVER['REQUEST_URI'] ?? '',
             'requestMethod'    => $_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN',
-        );
+        ];
     }
 }

@@ -78,17 +78,17 @@ class RestoreEngine {
         $this->batchSize = SnapshotConfigType::BatchSize->value;
     }
 
-    public function execute(string $snapshotDir, array $options = array()): array {
+    public function execute(string $snapshotDir, array $options = []): array {
         $prereqError = $this->validateRestorePrereqs($snapshotDir, $options);
 
         if ($prereqError) {
             return $prereqError;
         }
 
-        $this->log(LogLevelType::Info->value, 'Starting per-table restore', array(
+        $this->log(LogLevelType::Info->value, 'Starting per-table restore', [
             ResponseKeyType::Directory->value => basename($snapshotDir),
             'mode' => $options['mode'] ?? RestoreModeType::Full->value,
-        ));
+        ]);
 
         try {
             return $this->executeRestoreWorkflow($snapshotDir, $options);
@@ -167,25 +167,25 @@ class RestoreEngine {
     }
 
     private function combineRestoreResults(array $master, array $inc): array {
-        return array(
+        return [
             'master' => $master,
             'inc' => $inc,
             ResponseKeyType::TotalRows->value => $master[ResponseKeyType::TotalRows->value] + $inc[ResponseKeyType::TotalRows->value],
             ResponseKeyType::Errors->value => array_merge($master[ResponseKeyType::Errors->value], $inc[ResponseKeyType::Errors->value]),
-        );
+        ];
     }
 
     private function handleRestoreFailure(Throwable $e): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-        $this->log(LogLevelType::Error->value, 'Restore engine failed', array(
+        $this->log(LogLevelType::Error->value, 'Restore engine failed', [
             ResponseKeyType::Error->value => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
-        ));
+        ]);
 
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value => $e->getMessage(),
             ResponseKeyType::Phase->value => 'restore',
-        );
+        ];
     }
 }

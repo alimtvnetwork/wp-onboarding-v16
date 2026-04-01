@@ -38,11 +38,11 @@ trait RestoreIncrementalTrait {
         $isSkipped = ($shouldApply === false);
 
         if ($isSkipped) {
-            return array(
+            return [
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,
-                ResponseKeyType::Errors->value     => array(),
-            );
+                ResponseKeyType::Errors->value     => [],
+            ];
         }
 
         return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
@@ -63,18 +63,18 @@ trait RestoreIncrementalTrait {
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($incrementals)) {
-            return array(
+            return [
                 ResponseKeyType::Applied->value   => 0,
                 ResponseKeyType::TotalRows->value  => 0,
-                ResponseKeyType::Errors->value     => array(),
-            );
+                ResponseKeyType::Errors->value     => [],
+            ];
         }
 
-        $this->log(LogLevelType::Info->value, 'Applying incrementals', array(ResponseKeyType::Count->value => count($incrementals)));
+        $this->log(LogLevelType::Info->value, 'Applying incrementals', [ResponseKeyType::Count->value => count($incrementals)]);
 
         $applied = 0;
         $totalRows = 0;
-        $errors = array();
+        $errors = [];
 
         foreach ($incrementals as $inc) {
             $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
@@ -87,11 +87,11 @@ trait RestoreIncrementalTrait {
             }
         }
 
-        return array(
+        return [
             ResponseKeyType::Applied->value   => $applied,
             ResponseKeyType::TotalRows->value  => $totalRows,
             ResponseKeyType::Errors->value     => $errors,
-        );
+        ];
     }
 
     private function applySingleIncremental(
@@ -102,19 +102,19 @@ trait RestoreIncrementalTrait {
         $incDir = $snapshotDir . '/' . rtrim($inc['relativePath'], '/');
 
         if (PathHelper::isDirMissing($incDir)) {
-            $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folderName']));
+            $this->log(LogLevelType::Warn->value, 'Incremental directory missing', ['folder' => $inc['folderName']]);
 
-            return array(
+            return [
                 ResponseKeyType::Rows->value   => 0,
-                ResponseKeyType::Errors->value => array('Incremental directory missing: ' . $inc['folderName']),
-            );
+                ResponseKeyType::Errors->value => ['Incremental directory missing: ' . $inc['folderName']],
+            ];
         }
 
         $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folderName']);
 
         $sqliteFiles = glob($incDir . '/*.sqlite');
         $incRows = 0;
-        $errors = array();
+        $errors = [];
 
         foreach ($sqliteFiles as $sqliteFile) {
             $table = basename($sqliteFile, '.sqlite');
@@ -143,9 +143,9 @@ trait RestoreIncrementalTrait {
             }
         }
 
-        return array(
+        return [
             ResponseKeyType::Rows->value   => $incRows,
             ResponseKeyType::Errors->value => $errors,
-        );
+        ];
     }
 }

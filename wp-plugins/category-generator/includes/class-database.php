@@ -76,7 +76,7 @@ class CG_Database {
         if (!class_exists('SQLite3')) {
             $this->db_init_error = __('SQLite3 PHP extension is not enabled on this server. Category Generator requires SQLite to operate.', 'category-generator');
             if (is_admin()) {
-                add_action('admin_notices', array($this, 'render_db_error_notice'));
+                add_action('admin_notices', [$this, 'render_db_error_notice']);
             }
             return;
         }
@@ -112,7 +112,7 @@ class CG_Database {
         }
 
         if (is_admin()) {
-            add_action('admin_notices', array($this, 'render_db_error_notice'));
+            add_action('admin_notices', [$this, 'render_db_error_notice']);
         }
     }
 
@@ -379,7 +379,7 @@ class CG_Database {
         try {
             // Check if is_faq column exists
             $result = $this->db->query("PRAGMA table_info(html_templates)");
-            $columns = array();
+            $columns = [];
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $columns[] = $row['name'];
             }
@@ -405,7 +405,7 @@ class CG_Database {
         try {
             // Check if variation columns exist
             $result = $this->db->query("PRAGMA table_info(meta_templates)");
-            $columns = array();
+            $columns = [];
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $columns[] = $row['name'];
             }
@@ -458,8 +458,8 @@ class CG_Database {
      * Get default HTML templates
      */
     private function get_default_html_templates() {
-        return array(
-            array(
+        return [
+            [
                 'name' => 'Professional Services - Full SEO',
                 'description' => 'Comprehensive 6-block SEO template with headers, CTAs, and schema-ready structure',
                 'content' => '<!-- start block 1 -->
@@ -527,8 +527,8 @@ class CG_Database {
   In competitive precincts across {area}, partnership consistently outweighs transactional vendor relationships. Ready to join leading {area} businesses? Contact the best {title} provider in {area} and begin your partnership today.
 </div>
 <!-- end block 6 -->'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Simple Service Description',
                 'description' => 'Clean, minimal template for service categories',
                 'content' => '<div class="category-intro">
@@ -540,8 +540,8 @@ class CG_Database {
         <li>Free quotes and consultations</li>
     </ul>
 </div>'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Local Business Focus',
                 'description' => 'Template emphasizing local presence and community',
                 'content' => '<div class="local-service-content">
@@ -558,8 +558,8 @@ class CG_Database {
     
     <p>Contact us today for your {title} needs in {area}. We\'re proud to serve this community!</p>
 </div>'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Benefits-Focused',
                 'description' => 'Template highlighting key benefits and features',
                 'content' => '<div class="benefits-content">
@@ -585,8 +585,8 @@ class CG_Database {
         <p>Our {title} professionals have years of experience serving {area} and surrounding suburbs.</p>
     </div>
 </div>'
-            ),
-            array(
+            ],
+            [
                 'name' => 'FAQ Style',
                 'description' => 'Template structured as frequently asked questions',
                 'content' => '<div class="faq-content">
@@ -612,8 +612,8 @@ class CG_Database {
         <p>Yes! All our {title} professionals are fully licensed, insured, and background-checked for your peace of mind.</p>
     </div>
 </div>'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Commercial Cleaning Maribyrnong (Sample)',
                 'description' => 'Full production template for commercial cleaning with all SEO elements',
                 'content' => '<!-- start block 1 -->
@@ -735,84 +735,84 @@ class CG_Database {
 </div>
 
 <!-- end block 6 -->'
-            )
-        );
+            ]
+        ];
     }
     
     /**
      * Get default meta templates
      */
     private function get_default_meta_templates() {
-        return array(
-            array(
+        return [
+            [
                 'name' => 'Professional Service Standard',
                 'meta_title' => '{title} {area} | Professional Services | {business_name}',
                 'meta_description' => 'Keep your {area} business spotless with professional {title}. Reliable, flexible, and compliant services for offices, retail, and commercial spaces.',
                 'slug' => '{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Local Service Focus',
                 'meta_title' => 'Best {title} in {area} | Local Experts | Free Quote',
                 'meta_description' => 'Looking for trusted {title} in {area}? Our experienced local team delivers quality results. Fully licensed, insured, and ready to serve. Call today!',
                 'slug' => '{title}-in-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Commercial Cleaning Style',
                 'meta_title' => '{title} {area} | Office & Commercial | {business_name}',
                 'meta_description' => 'Keep your {area} business spotless with professional {title}. Reliable, flexible, and compliant services for offices, retail.',
                 'slug' => '{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Service + Location',
                 'meta_title' => '{title} Services in {area} | Trusted Professionals',
                 'meta_description' => 'Professional {title} services throughout {area} and surrounding suburbs. Quality workmanship, competitive prices, and exceptional customer service.',
                 'slug' => '{title}-services-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Action-Oriented',
                 'meta_title' => 'Get Expert {title} in {area} Today | Book Online',
                 'meta_description' => 'Need {title} in {area}? Book online for fast, reliable service. Our certified professionals deliver outstanding results every time. Free estimates available.',
                 'slug' => 'expert-{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Trust & Quality',
                 'meta_title' => 'Trusted {title} Experts | {area} | 5-Star Rated',
                 'meta_description' => '{area}\'s most trusted {title} provider. 5-star rated, fully insured, and committed to excellence. Serving homes and businesses throughout {area}.',
                 'slug' => 'trusted-{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Price-Focused',
                 'meta_title' => 'Affordable {title} {area} | Quality at Best Prices',
                 'meta_description' => 'Quality {title} in {area} at prices you can afford. No hidden fees, transparent pricing, and satisfaction guaranteed. Request your free quote now.',
                 'slug' => 'affordable-{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Emergency Service',
                 'meta_title' => '24/7 {title} {area} | Emergency Service Available',
                 'meta_description' => 'Emergency {title} available 24/7 in {area}. Fast response times, professional service, and reliable results when you need them most. Call now!',
                 'slug' => 'emergency-{title}-{area}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Area-First SEO',
                 'meta_title' => '{area} {title} | Local Professionals Near You',
                 'meta_description' => 'Find the best {title} professionals in {area}. Local experts who understand your needs. Licensed, insured, and ready to help. Get started today!',
                 'slug' => '{area}-{title}'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Residential Focus',
                 'meta_title' => 'Home {title} {area} | Family-Owned Business',
                 'meta_description' => 'Family-owned {title} serving {area} homes for over 10 years. We treat your home like our own. Trusted by thousands of {area} families.',
                 'slug' => 'home-{title}-{area}'
-            )
-        );
+            ]
+        ];
     }
     
     /**
      * Get default schema templates
      */
     private function get_default_schema_templates() {
-        return array(
-            array(
+        return [
+            [
                 'name' => 'Local Business Standard',
                 'type' => 'LocalBusiness',
                 'content' => '{
@@ -863,8 +863,8 @@ class CG_Database {
   "image": "{image_url}",
   "logo": "{logo_url}"
 }'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Service Provider',
                 'type' => 'ProfessionalService',
                 'content' => '{
@@ -894,8 +894,8 @@ class CG_Database {
     "bestRating": "5"
   }
 }'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Service with FAQ',
                 'type' => 'Service',
                 'content' => '{
@@ -933,8 +933,8 @@ class CG_Database {
     ]
   }
 }'
-            )
-        );
+            ]
+        ];
     }
     
     // ==================== CRUD Operations ====================
@@ -967,14 +967,14 @@ class CG_Database {
     /**
      * Get category history with search/filter
      */
-    public function get_category_history($args = array()) {
-        $defaults = array(
+    public function get_category_history($args = []) {
+        $defaults = [
             'search' => '',
             'limit' => 50,
             'offset' => 0,
             'order_by' => 'created_at',
             'order' => 'DESC'
-        );
+        ];
         $args = array_merge($defaults, $args);
         
         $where = "1=1";
@@ -983,14 +983,14 @@ class CG_Database {
             $where .= " AND (category_name LIKE '%{$search}%' OR title LIKE '%{$search}%' OR area LIKE '%{$search}%')";
         }
         
-        $order = in_array(strtoupper($args['order']), array('ASC', 'DESC')) ? strtoupper($args['order']) : 'DESC';
-        $allowed_cols = array('created_at', 'category_name', 'title', 'area');
+        $order = in_array(strtoupper($args['order']), ['ASC', 'DESC']) ? strtoupper($args['order']) : 'DESC';
+        $allowed_cols = ['created_at', 'category_name', 'title', 'area'];
         $order_by = in_array($args['order_by'], $allowed_cols) ? $args['order_by'] : 'created_at';
         
         $sql = "SELECT * FROM category_history WHERE {$where} ORDER BY {$order_by} {$order} LIMIT {$args['limit']} OFFSET {$args['offset']}";
         
         $result = $this->db->query($sql);
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1076,7 +1076,7 @@ class CG_Database {
     
     public function get_faq_templates() {
         $result = $this->db->query("SELECT * FROM html_templates WHERE is_faq = 1 ORDER BY name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1087,7 +1087,7 @@ class CG_Database {
         $stmt = $this->db->prepare("SELECT * FROM html_templates WHERE template_group = :group ORDER BY name ASC");
         $stmt->bindValue(':group', $group, SQLITE3_TEXT);
         $result = $stmt->execute();
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1102,7 +1102,7 @@ class CG_Database {
     
     public function get_html_templates() {
         $result = $this->db->query("SELECT * FROM html_templates ORDER BY is_default DESC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1151,7 +1151,7 @@ class CG_Database {
     
     public function get_meta_templates() {
         $result = $this->db->query("SELECT * FROM meta_templates ORDER BY is_default DESC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1194,7 +1194,7 @@ class CG_Database {
     
     public function get_schema_templates() {
         $result = $this->db->query("SELECT * FROM schema_templates ORDER BY is_default DESC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1280,16 +1280,16 @@ class CG_Database {
             $result = $this->db->query("SELECT * FROM business_profile LIMIT 1");
         }
         $profile = $result->fetchArray(SQLITE3_ASSOC);
-        return $profile ?: array();
+        return $profile ?: [];
     }
     
     public function get_all_business_profiles() {
         $result = $this->db->query("SELECT * FROM business_profile ORDER BY business_name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
-        return $items ?: array(array('id' => 1, 'business_name' => ''));
+        return $items ?: [['id' => 1, 'business_name' => '']];
     }
     
     // ==================== Inner Templates ====================
@@ -1324,7 +1324,7 @@ class CG_Database {
     
     public function get_inner_templates() {
         $result = $this->db->query("SELECT * FROM inner_templates ORDER BY category ASC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1368,7 +1368,7 @@ class CG_Database {
     
     public function get_variables() {
         $result = $this->db->query("SELECT name, value FROM variables ORDER BY name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[$row['name']] = $row['value'];
         }
@@ -1386,7 +1386,7 @@ class CG_Database {
             $stmt = $this->db->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)");
         }
         $stmt->bindValue(':key', $key, SQLITE3_TEXT);
-        $stmt->bindValue(':value', is_array($value) ? json_encode($value) : $value, SQLITE3_TEXT);
+        $stmt->bindValue(':value', gettype($value) === 'array' ? json_encode($value) : $value, SQLITE3_TEXT);
         return $stmt->execute();
     }
     
@@ -1400,7 +1400,7 @@ class CG_Database {
     
     public function get_settings() {
         $result = $this->db->query("SELECT setting_key, setting_value FROM settings");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[$row['setting_key']] = $row['setting_value'];
         }
@@ -1424,7 +1424,7 @@ class CG_Database {
     
     public function get_import_export_history($limit = 50) {
         $result = $this->db->query("SELECT * FROM import_export_history ORDER BY created_at DESC LIMIT {$limit}");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1458,7 +1458,7 @@ class CG_Database {
     
     public function get_all_area_postals() {
         $result = $this->db->query("SELECT * FROM area_postal_mapping ORDER BY area ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1495,7 +1495,7 @@ class CG_Database {
     
     public function get_saved_titles() {
         $result = $this->db->query("SELECT * FROM saved_titles ORDER BY category ASC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1537,7 +1537,7 @@ class CG_Database {
     
     public function get_saved_areas() {
         $result = $this->db->query("SELECT * FROM saved_areas ORDER BY category ASC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1584,7 +1584,7 @@ class CG_Database {
             $where .= " AND parent_id = " . intval($parent_id);
         }
         $result = $this->db->query("SELECT * FROM template_categories WHERE {$where} ORDER BY level ASC, name ASC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1602,8 +1602,8 @@ class CG_Database {
     // ==================== Update History Item (for Inject) ====================
     
     public function update_category_history($id, $data) {
-        $sets = array();
-        $params = array(':id' => $id);
+        $sets = [];
+        $params = [':id' => $id];
         
         foreach ($data as $key => $value) {
             $sets[] = "{$key} = :{$key}";
@@ -1623,7 +1623,7 @@ class CG_Database {
     // ==================== Reset Database ====================
     
     public function reset_database() {
-        $tables = array(
+        $tables = [
             'category_history',
             'html_templates', 
             'meta_templates',
@@ -1638,7 +1638,7 @@ class CG_Database {
             'saved_areas',
             'template_categories',
             'category_snapshots'
-        );
+        ];
         
         foreach ($tables as $table) {
             $this->db->exec("DELETE FROM {$table}");
@@ -1678,7 +1678,7 @@ class CG_Database {
     public function get_snapshots($type = null) {
         $where = $type ? "WHERE type = '" . SQLite3::escapeString($type) . "'" : "";
         $result = $this->db->query("SELECT * FROM category_snapshots {$where} ORDER BY created_at DESC");
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1689,7 +1689,7 @@ class CG_Database {
         $stmt = $this->db->prepare("SELECT * FROM category_snapshots WHERE type = :type ORDER BY created_at DESC");
         $stmt->bindValue(':type', $type, SQLITE3_TEXT);
         $result = $stmt->execute();
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }
@@ -1698,7 +1698,7 @@ class CG_Database {
     
     public function get_recent_snapshots($limit = 10) {
         $result = $this->db->query("SELECT * FROM category_snapshots ORDER BY created_at DESC LIMIT " . intval($limit));
-        $items = array();
+        $items = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $items[] = $row;
         }

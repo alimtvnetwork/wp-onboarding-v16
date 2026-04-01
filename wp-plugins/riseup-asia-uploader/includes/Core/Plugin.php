@@ -136,10 +136,10 @@ class Plugin {
         $isVerbose = InitHelpers::isBootVerbose();
 
         if ($isVerbose) {
-            $this->fileLogger->debug('[BOOT] Constructor starting', array(
+            $this->fileLogger->debug('[BOOT] Constructor starting', [
                 'version' => PluginConfigType::Version->value,
                 'constant' => 'RISEUP_DEBUG_BOOT',
-            ));
+            ]);
         }
 
         SettingsMigrationHelper::migrateIfNeeded();
@@ -149,28 +149,28 @@ class Plugin {
         }
 
         // Register REST routes and lifecycle hooks BEFORE component init
-        add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
+        add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
         add_action(
             HookType::ActivatedPlugin->value,
-            array($this, 'onPluginActivated'),
+            [$this, 'onPluginActivated'],
             10,
             2,
         );
         add_action(
             HookType::DeactivatedPlugin->value,
-            array($this, 'onPluginDeactivated'),
+            [$this, 'onPluginDeactivated'],
             10,
             2,
         );
         add_action(
             HookType::DeletedPlugin->value,
-            array($this, 'onPluginDeleted'),
+            [$this, 'onPluginDeleted'],
             10,
             2,
         );
         add_filter(
             HookType::RestPostDispatch->value,
-            array($this, 'enrichErrorResponse'),
+            [$this, 'enrichErrorResponse'],
             10,
             3,
         );
@@ -186,13 +186,13 @@ class Plugin {
         $componentMs = InitHelpers::getTotalStartupTime();
         $elapsedMs = round((microtime(true) - $startMs) * 1000, 2);
 
-        $summary = array(
+        $summary = [
             'version'      => PluginConfigType::Version->value,
             'db_available' => $this->db !== null,
             'components'   => $total,
             'componentMs'  => $componentMs,
             'totalMs'      => $elapsedMs,
-        );
+        ];
 
         if ($isVerbose) {
             $summary['bootVerbose'] = true;

@@ -26,9 +26,9 @@ class InitHelpers {
     use InitStartupTrait;
 
     /** @var array<string, bool> */
-    private static $ensuredDirs = array();
+    private static $ensuredDirs = [];
     private static $isPdoWarningLogged = false;
-    private static $startupResults = array();
+    private static $startupResults = [];
 
     public static function initSqliteConnection(string $dbPath, FileLogger $logger): ?PDO {
         $prereqError = self::checkSqlitePrerequisites($dbPath, $logger);
@@ -66,7 +66,7 @@ class InitHelpers {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             self::applySqlitePragmas($pdo);
-            $logger->info('[INIT] SQLite connection established', array('path' => $dbPath));
+            $logger->info('[INIT] SQLite connection established', ['path' => $dbPath]);
 
             return $pdo;
         } catch (PDOException $e) {
@@ -121,8 +121,8 @@ class InitHelpers {
     }
 
     public static function reset(): void {
-        self::$ensuredDirs = array();
-        self::$startupResults = array();
+        self::$ensuredDirs = [];
+        self::$startupResults = [];
         self::$isPdoWarningLogged = false;
     }
 }

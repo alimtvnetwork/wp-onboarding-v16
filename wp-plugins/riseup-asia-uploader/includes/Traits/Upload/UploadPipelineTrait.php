@@ -80,15 +80,15 @@ trait UploadPipelineTrait
             return;
         }
 
-        $this->logger->logUploadInitiated($input['slug'], array(
+        $this->logger->logUploadInitiated($input['slug'], [
             'activate'       => $input['activate'],
             'uploadSource'   => $input['uploadSource'],
             'clientVersion'  => $input['clientPluginVersion'],
             'fileSize'       => strlen($input['zipContent']),
-        ), array(
+        ], [
             'pluginVersion' => $input['clientPluginVersion'] ?: PluginConfigType::Version->value,
             'uploadSource'  => $input['uploadSource'],
-        ));
+        ]);
     }
 
     private function buildUploadResponse(array $result, array $input): WP_REST_Response {
@@ -101,34 +101,34 @@ trait UploadPipelineTrait
         $isExternalUpload = ($result[ResponseKeyType::IsSelfUpdate->value] === false);
 
         if ($isExternalUpload) {
-            $this->logger->logUpload($result[ResponseKeyType::Slug->value], array(
+            $this->logger->logUpload($result[ResponseKeyType::Slug->value], [
                 ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
                 ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
                 'fileSize' => strlen($input['zipContent']),
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
-            ), array(
+            ], [
                 ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
                 'uploadSource' => $input['uploadSource'],
-            ));
+            ]);
         }
 
-        $this->fileLogger->info('Upload complete', array(
+        $this->fileLogger->info('Upload complete', [
             ResponseKeyType::Slug->value => $result[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value => $result[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value => $result[ResponseKeyType::Activated->value],
             ResponseKeyType::PluginVersion->value => $result[ResponseKeyType::PluginVersion->value],
             'uploadSource' => $input['uploadSource'],
-        ));
+        ]);
     }
 
     private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
-        $payload = array(
+        $payload = [
             ResponseKeyType::PluginSlug->value     => $result[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value       => $result[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value      => $result[ResponseKeyType::Activated->value],
             ResponseKeyType::PluginVersion->value  => $result[ResponseKeyType::PluginVersion->value],
             'uploadSource'                         => $input['uploadSource'],
-        );
+        ];
 
         // Phase 6: Include self-update success diagnostics
         $isSelfUpdate = ($result[ResponseKeyType::IsSelfUpdate->value] === true);

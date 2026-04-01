@@ -52,7 +52,7 @@ trait NativeTableExportConvertTrait {
     }
 
     private function convertMysqlDataTypes(string $sql): string {
-        $typeMap = array(
+        $typeMap = [
             '/\bTINYINT\s*\(\d+\)/i'      => 'INTEGER',
             '/\bSMALLINT\s*\(\d+\)/i'     => 'INTEGER',
             '/\bMEDIUMINT\s*\(\d+\)/i'    => 'INTEGER',
@@ -60,7 +60,7 @@ trait NativeTableExportConvertTrait {
             '/\bINT\s*\(\d+\)/i'          => 'INTEGER',
             '/\bDOUBLE\b/i'               => 'REAL',
             '/\bFLOAT\b/i'                => 'REAL',
-            '/\bDECIMAL\s*\([^)]+\)/i'    => 'REAL',
+            '/\bDECIMAL\s*\([^)]+\]/i'    => 'REAL',
             '/\bVARCHAR\s*\(\d+\)/i'      => 'TEXT',
             '/\bCHAR\s*\(\d+\)/i'         => 'TEXT',
             '/\bLONGTEXT\b/i'             => 'TEXT',
@@ -88,7 +88,7 @@ trait NativeTableExportConvertTrait {
         return $sql;
     }
 
-    private function getTablesForScope(string $scope, array $custom = array()): array {
+    private function getTablesForScope(string $scope, array $custom = []): array {
         $allTables = $this->wpdb->get_col("SHOW TABLES");
         $prefix = $this->wpdb->prefix;
 
@@ -110,12 +110,12 @@ trait NativeTableExportConvertTrait {
                     return $isCustomTable;
                 });
             default:
-                return array();
+                return [];
         }
     }
 
     private function getContentTables(array $allTables, string $prefix): array {
-        $contentTables = array(
+        $contentTables = [
             $prefix . 'posts',
             $prefix . 'postmeta',
             $prefix . 'comments',
@@ -124,7 +124,7 @@ trait NativeTableExportConvertTrait {
             $prefix . 'termmeta',
             $prefix . 'term_taxonomy',
             $prefix . 'term_relationships',
-        );
+        ];
 
         return array_filter($allTables, function($table) use ($contentTables) {
             $isContentTable = in_array($table, $contentTables);

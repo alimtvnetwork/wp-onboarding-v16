@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 class AdminMailer {
 
@@ -85,7 +86,7 @@ class AdminMailer {
         ];
 
         $stored = get_option(OptionNameType::ErrorNotification->value, []);
-        $isStoredEmpty = (is_array($stored) === false || count($stored) === 0);
+        $isStoredEmpty = (gettype($stored) === PhpNativeType::PhpArray->value === false || count($stored) === 0);
         if ($isStoredEmpty) {
             return $defaults;
         }
@@ -97,7 +98,7 @@ class AdminMailer {
      * Resolve the email recipient — custom email or fallback to admin_email.
      */
     private function resolveRecipient(array $settings): string {
-        $hasCustomEmail = (is_string($settings['email']) && strlen(trim($settings['email'])) > 0);
+        $hasCustomEmail = (gettype($settings['email']) === PhpNativeType::PhpString->value && strlen(trim($settings['email'])) > 0);
         if ($hasCustomEmail) {
             return trim($settings['email']);
         }

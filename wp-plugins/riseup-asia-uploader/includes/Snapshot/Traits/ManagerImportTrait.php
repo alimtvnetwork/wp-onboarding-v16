@@ -61,10 +61,10 @@ trait ManagerImportTrait {
     }
 
     private function logImportStart(string $uploadedPath): void {
-        $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
+        $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', [
             ResponseKeyType::Path->value => $uploadedPath,
             ResponseKeyType::Size->value => PathHelper::formatBytes(filesize($uploadedPath)),
-        ));
+        ]);
     }
 
     private function createImportTempDir(): ?string {
@@ -101,7 +101,7 @@ trait ManagerImportTrait {
         $manifest = $this->loadAndValidateManifest($tempDir);
         $sqlitePath = $this->validateSnapshotSqlite($manifest, $tempDir);
 
-        return array(ResponseKeyType::Manifest->value => $manifest, ResponseKeyType::SqlitePath->value => $sqlitePath);
+        return [ResponseKeyType::Manifest->value => $manifest, ResponseKeyType::SqlitePath->value => $sqlitePath];
     }
 
     private function extractZipToDir(string $uploadedPath, string $tempDir): void {
@@ -203,11 +203,11 @@ trait ManagerImportTrait {
         $sequence = $this->getNextImportSequence();
         $newFilename = sprintf('%03d_%s', $sequence, DateHelper::nowFilenameDatetime()) . '.sqlite';
 
-        return array(
+        return [
             ResponseKeyType::Sequence->value => $sequence,
             ResponseKeyType::Filename->value => $newFilename,
             ResponseKeyType::Path->value     => PathHelper::join($snapshotsDir, $newFilename),
-        );
+        ];
     }
 
     private function copyAndCreateRecord(array $manifest, string $sqlitePath, array $destPath): int {
@@ -234,18 +234,18 @@ trait ManagerImportTrait {
     }
 
     private function logImportSuccess(int $snapshotId, string $filename): void {
-        $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value   => $filename,
-        ));
+        ]);
     }
 
     private function buildImportSuccessResult(int $snapshotId, string $filename, array $manifest): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Filename->value   => $filename,
             ResponseKeyType::Tables->value     => count($manifest['snapshot'][ResponseKeyType::Tables->value]),
             ResponseKeyType::Rows->value       => $manifest['snapshot'][ResponseKeyType::TotalRows->value],
-        ));
+        ]);
     }
 }

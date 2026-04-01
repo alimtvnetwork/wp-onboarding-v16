@@ -77,7 +77,7 @@ trait PluginListTrait
             }
 
             $allPlugins    = get_plugins();
-            $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
+            $activePlugins = get_option(OptionNameType::ActivePlugins->value, []);
 
             foreach ($allPlugins as $pluginFile => $pluginData) {
                 $pluginSlug = dirname($pluginFile);
@@ -89,7 +89,7 @@ trait PluginListTrait
 
                     return EnvelopeBuilder::success()
                         ->autoDetectRequestedAt()
-                        ->setSingleResult(array(
+                        ->setSingleResult([
                             ResponseKeyType::Slug->value        => $pluginSlug,
                             ResponseKeyType::Name->value        => $pluginData['Name'],
                             ResponseKeyType::Version->value     => $pluginData['Version'],
@@ -97,7 +97,7 @@ trait PluginListTrait
                             ResponseKeyType::Description->value => $pluginData['Description'],
                             ResponseKeyType::Active->value      => in_array($pluginFile, $activePlugins, true),
                             ResponseKeyType::PluginFile->value  => $pluginFile,
-                        ))
+                        ])
                         ->toResponse();
                 }
             }
@@ -113,8 +113,8 @@ trait PluginListTrait
      */
     private function collectPluginList(): array {
         $allPlugins    = get_plugins();
-        $activePlugins = get_option(OptionNameType::ActivePlugins->value, array());
-        $plugins       = array();
+        $activePlugins = get_option(OptionNameType::ActivePlugins->value, []);
+        $plugins       = [];
 
         foreach ($allPlugins as $pluginFile => $pluginData) {
             $slug = dirname($pluginFile);
@@ -122,7 +122,7 @@ trait PluginListTrait
                 $slug = basename($pluginFile, '.php');
             }
 
-            $plugins[] = array(
+            $plugins[] = [
                 ResponseKeyType::Slug->value        => $slug,
                 ResponseKeyType::Name->value        => $pluginData['Name'],
                 ResponseKeyType::Version->value     => $pluginData['Version'],
@@ -130,7 +130,7 @@ trait PluginListTrait
                 ResponseKeyType::Description->value => $pluginData['Description'],
                 ResponseKeyType::Active->value      => in_array($pluginFile, $activePlugins, true),
                 ResponseKeyType::PluginFile->value  => $pluginFile,
-            );
+            ];
         }
 
         return $plugins;
@@ -182,12 +182,12 @@ trait PluginListTrait
         $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value    => true,
             ResponseKeyType::Plugin->value     => $slug,
             ResponseKeyType::TotalFiles->value => count($result[ResponseKeyType::Files->value]),
             ResponseKeyType::Files->value      => $result[ResponseKeyType::Files->value],
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 
     /**
@@ -265,7 +265,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 
-        return array(ResponseKeyType::RealPath->value => $realFilePath, ResponseKeyType::FilePath->value => $filePath);
+        return [ResponseKeyType::RealPath->value => $realFilePath, ResponseKeyType::FilePath->value => $filePath];
     }
 
     /**
@@ -282,10 +282,10 @@ trait PluginListTrait
             return $this->errorResponse('Failed to read file', HttpStatusType::ServerError->value);
         }
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value => true,
             ResponseKeyType::Path->value    => $relPath,
             ResponseKeyType::Content->value => $content,
-        ), HttpStatusType::Ok->value);
+        ], HttpStatusType::Ok->value);
     }
 }

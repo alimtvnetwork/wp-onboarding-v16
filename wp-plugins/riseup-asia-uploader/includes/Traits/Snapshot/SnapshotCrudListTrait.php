@@ -32,11 +32,11 @@ trait SnapshotCrudListTrait {
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $snapshots = $manager->listSnapshots($limit, $offset);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value            => true,
                 ResponseKeyType::Snapshots->value          => $snapshots[ResponseKeyType::Snapshots->value],
                 ResponseKeyType::Total->value              => $snapshots[ResponseKeyType::Total->value],
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         }, 'list_snapshots');
     }
 
@@ -61,10 +61,10 @@ trait SnapshotCrudListTrait {
                 return $this->errorResponse(ResponseMessageType::SnapshotNotFound->value, HttpStatusType::NotFound->value);
             }
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 'snapshot' => $snapshot,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         }, 'get_snapshot');
     }
 

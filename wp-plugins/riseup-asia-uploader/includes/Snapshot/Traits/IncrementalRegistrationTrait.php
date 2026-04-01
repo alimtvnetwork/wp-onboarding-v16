@@ -83,14 +83,14 @@ trait IncrementalRegistrationTrait {
         int $tablesChanged,
         int $totalNewRows,
     ): string {
-        return json_encode(array(
+        return json_encode([
             ResponseKeyType::Type->value           => SnapshotModeType::Incremental->value,
             'master'                               => basename($masterDir),
             'sequence'                             => $sequence,
             ResponseKeyType::Folder->value         => $folderName,
             ResponseKeyType::TablesChanged->value  => $tablesChanged,
             ResponseKeyType::TotalNewRows->value   => $totalNewRows,
-        ));
+        ]);
     }
 
     private function calculateDirectorySize(string $dir): int {
@@ -139,7 +139,7 @@ trait IncrementalRegistrationTrait {
         int $dirSize,
         string $now,
     ): array {
-        return array(
+        return [
             $sequence,
             $filename,
             $filepath,
@@ -152,7 +152,7 @@ trait IncrementalRegistrationTrait {
             SnapshotStatusType::Complete->value,
             $now,
             $now,
-        );
+        ];
     }
 
     private function invalidateParentZipExport(string $masterDir): void {
@@ -179,13 +179,13 @@ trait IncrementalRegistrationTrait {
         }
 
         $stmt = $pdo->prepare('SELECT Id FROM ' . TableType::Snapshots->value . ' WHERE Filepath = ? AND Status = ? LIMIT 1');
-        $stmt->execute(array($masterDir, SnapshotStatusType::Complete->value));
+        $stmt->execute([$masterDir, SnapshotStatusType::Complete->value]);
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $isParentMissing = ($parent === false || $parent === null);
 
         if ($isParentMissing) {
-            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('masterDir' => basename($masterDir)));
+            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', ['masterDir' => basename($masterDir)]);
 
             return null;
         }
@@ -202,9 +202,9 @@ trait IncrementalRegistrationTrait {
         }
 
         $invalidated = $exporter->invalidateZip((int) $parent['Id']);
-        $this->log(LogLevelType::Info->value, 'Parent ZIP export invalidated after incremental backup', array(
+        $this->log(LogLevelType::Info->value, 'Parent ZIP export invalidated after incremental backup', [
             'parentId'    => $parent['Id'],
             'invalidated' => $invalidated,
-        ));
+        ]);
     }
 }

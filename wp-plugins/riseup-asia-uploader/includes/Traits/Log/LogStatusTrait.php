@@ -35,16 +35,16 @@ trait LogStatusTrait
         $dbCounts = $this->getDatabaseCounts();
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
-                'logs' => array(
+                'logs' => [
                     'log_file'        => $logStatus,
                     'error_file'      => $errorStatus,
                     'stacktrace_file' => $stacktraceStatus,
                     'archive_count'   => $archiveCount,
-                ),
+                ],
                 'database' => $dbCounts,
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -54,24 +54,24 @@ trait LogStatusTrait
         $isFileExists = file_exists($filePath);
 
         if ($isFileExists === false) {
-            return array(
+            return [
                 'exists'        => false,
                 'size_bytes'    => 0,
                 'last_modified' => null,
                 'line_count'    => 0,
-            );
+            ];
         }
 
         $size = @filesize($filePath);
         $mtime = @filemtime($filePath);
         $lineCount = $this->countFileLines($filePath);
 
-        return array(
+        return [
             'exists'        => true,
             'size_bytes'    => ($size !== false) ? $size : 0,
             'last_modified' => ($mtime !== false) ? gmdate('Y-m-d\TH:i:s\Z', $mtime) : null,
             'line_count'    => $lineCount,
-        );
+        ];
     }
 
     /** Count lines in a file without loading entire contents. */
@@ -130,10 +130,10 @@ trait LogStatusTrait
 
     /** Get transaction and error session counts from the database. */
     private function getDatabaseCounts(): array {
-        $result = array(
+        $result = [
             'transaction_count'    => 0,
             'error_session_count'  => 0,
-        );
+        ];
 
         try {
             $db = Database::getInstance();

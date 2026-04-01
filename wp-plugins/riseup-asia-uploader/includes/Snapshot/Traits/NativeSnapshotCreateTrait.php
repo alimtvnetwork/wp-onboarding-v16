@@ -32,26 +32,26 @@ trait NativeSnapshotCreateTrait {
      * @return array The result of the snapshot creation.
      */
     public function createSnapshot(string $scope, string $trigger): array {
-        $this->log(LogLevelType::Info->value, 'Snapshot creation requested', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot creation requested', [
             'scope'   => $scope,
             'trigger' => $trigger,
-        ));
+        ]);
 
-        $isScopeInvalid = BooleanHelpers::isAbsentFromList($scope, array(
+        $isScopeInvalid = BooleanHelpers::isAbsentFromList($scope, [
             SnapshotScopeType::Full->value,
             SnapshotScopeType::Database->value,
             SnapshotScopeType::Plugins->value,
-        ));
+        ]);
 
         if ($isScopeInvalid) {
             return $this->error(SnapshotErrorType::InvalidScope, 'Invalid snapshot scope: ' . $scope);
         }
 
-        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, array(
+        $isTriggerInvalid = BooleanHelpers::isAbsentFromList($trigger, [
             SnapshotTriggerType::Manual->value,
             SnapshotTriggerType::Scheduled->value,
             SnapshotTriggerType::Api->value,
-        ));
+        ]);
 
         if ($isTriggerInvalid) {
             return $this->error(SnapshotErrorType::InvalidTrigger, 'Invalid snapshot trigger: ' . $trigger);

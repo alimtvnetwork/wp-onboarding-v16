@@ -74,7 +74,7 @@ class IncrementalBackup {
         $this->batchSize = SnapshotConfigType::BatchSize->value;
     }
 
-    public function execute(string $masterDir, array $options = array()): array {
+    public function execute(string $masterDir, array $options = []): array {
         $startTime = microtime(true);
         $title = $options[ResponseKeyType::Title->value] ?? ('Incremental ' . DateHelper::nowCompactDatetime());
 
@@ -87,7 +87,7 @@ class IncrementalBackup {
         $this->log(
             LogLevelType::Info->value,
             'Starting incremental backup',
-            array('masterDir' => basename($masterDir), ResponseKeyType::Title->value => $title),
+            ['masterDir' => basename($masterDir), ResponseKeyType::Title->value => $title],
         );
 
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);
@@ -130,27 +130,27 @@ class IncrementalBackup {
             $this->log(
                 LogLevelType::Error->value,
                 'Incremental backup failed',
-                array(
+                [
                     ResponseKeyType::Error->value => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
-                ),
+                ],
             );
 
             return ResultHelper::errorFromException(
                 $e,
-                array(ResponseKeyType::Phase->value => 'incremental'),
+                [ResponseKeyType::Phase->value => 'incremental'],
             );
         }
     }
 
     private function registerIncrementalInRoot(array $prepared, array $export): void {
-        $this->rootDb->registerIncremental($prepared['rootPdo'], array(
+        $this->rootDb->registerIncremental($prepared['rootPdo'], [
             'sequenceNum'                          => $prepared['sequence'],
             'folderName'                           => $prepared[ResponseKeyType::FolderName->value],
             ResponseKeyType::TablesChanged->value  => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value   => $export[ResponseKeyType::TotalNewRows->value],
             'relativePath'                         => 'incremental/' . $prepared[ResponseKeyType::FolderName->value] . '/',
-        ));
+        ]);
     }
 
     private function getSnapshotsBaseDir(): string {
@@ -168,7 +168,7 @@ class IncrementalBackup {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
         $hasContext = !empty($context);

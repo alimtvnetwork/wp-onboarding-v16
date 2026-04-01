@@ -41,7 +41,7 @@ trait WorkerJobProgressTrait {
 
         $tableProgress = $this->loadTableProgress($pdo);
 
-        return array(
+        return [
             ResponseKeyType::JobId->value          => (int) $job['Id'],
             ResponseKeyType::Status->value         => $job['Status'],
             ResponseKeyType::TotalTables->value    => $totalTables,
@@ -56,7 +56,7 @@ trait WorkerJobProgressTrait {
             ResponseKeyType::CompletedAt->value    => $job['CompletedAt'],
             ResponseKeyType::TableProgress->value  => $tableProgress,
             ResponseKeyType::Percent->value        => $totalTables > 0 ? round(((int) $job['TablesExported'] / $totalTables) * 100, 1) : 0,
-        );
+        ];
     }
 
     private function loadTableProgress(PDO $pdo): array {
@@ -68,7 +68,7 @@ trait WorkerJobProgressTrait {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'WorkerJobProgressTrait::loadTableProgress() failed:');
-            return array();
+            return [];
         }
     }
 }

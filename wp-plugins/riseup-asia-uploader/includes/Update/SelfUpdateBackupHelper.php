@@ -43,9 +43,9 @@ class SelfUpdateBackupHelper
         $pluginDir = PathHelper::getPluginDir();
 
         if (PathHelper::isDirMissing($pluginDir)) {
-            $this->fileLogger->error('Self-update backup failed: plugin directory not found', array(
+            $this->fileLogger->error('Self-update backup failed: plugin directory not found', [
                 'dir' => $pluginDir,
-            ));
+            ]);
 
             return false;
         }
@@ -59,23 +59,23 @@ class SelfUpdateBackupHelper
         $backupName = PluginConfigType::Slug->value . '-selfupdate-backup-' . DateHelper::nowCompact();
         $backupDir  = $upgradeDir . '/' . $backupName;
 
-        $this->fileLogger->info('Creating self-update backup', array(
+        $this->fileLogger->info('Creating self-update backup', [
             'source' => $pluginDir,
             'backup' => $backupDir,
-        ));
+        ]);
 
         $copied = $this->recursiveCopy($pluginDir, $backupDir);
 
         if ($copied === false) {
-            $this->fileLogger->error('Self-update backup copy failed', array(
+            $this->fileLogger->error('Self-update backup copy failed', [
                 'source' => $pluginDir,
                 'backup' => $backupDir,
-            ));
+            ]);
 
             return false;
         }
 
-        $this->fileLogger->info('Self-update backup created successfully', array('path' => $backupDir));
+        $this->fileLogger->info('Self-update backup created successfully', ['path' => $backupDir]);
 
         return $backupDir;
     }
@@ -92,19 +92,19 @@ class SelfUpdateBackupHelper
     public function rollback(string $backupDir): bool
     {
         if (PathHelper::isDirMissing($backupDir)) {
-            $this->fileLogger->error('Self-update rollback failed: backup directory not found', array(
+            $this->fileLogger->error('Self-update rollback failed: backup directory not found', [
                 'backupDir' => $backupDir,
-            ));
+            ]);
 
             return false;
         }
 
         $pluginDir = PathHelper::getPluginDir();
 
-        $this->fileLogger->warn('Rolling back self-update from backup', array(
+        $this->fileLogger->warn('Rolling back self-update from backup', [
             'backup' => $backupDir,
             'target' => $pluginDir,
-        ));
+        ]);
 
         // Remove the failed new version
         $this->recursiveDelete($pluginDir);
@@ -113,10 +113,10 @@ class SelfUpdateBackupHelper
         $restored = $this->recursiveCopy($backupDir, $pluginDir);
 
         if ($restored === false) {
-            $this->fileLogger->error('Self-update rollback restore failed — plugin may be in broken state', array(
+            $this->fileLogger->error('Self-update rollback restore failed — plugin may be in broken state', [
                 'backup' => $backupDir,
                 'target' => $pluginDir,
-            ));
+            ]);
 
             return false;
         }
@@ -141,7 +141,7 @@ class SelfUpdateBackupHelper
         }
 
         $this->recursiveDelete($backupDir);
-        $this->fileLogger->info('Self-update backup cleaned up', array('path' => $backupDir));
+        $this->fileLogger->info('Self-update backup cleaned up', ['path' => $backupDir]);
     }
 
     /**

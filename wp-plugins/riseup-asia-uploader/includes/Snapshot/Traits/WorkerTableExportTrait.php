@@ -51,14 +51,14 @@ trait WorkerTableExportTrait {
     }
 
     private function buildExportError(string $filename, Throwable $e): array {
-        return array(
+        return [
             ResponseKeyType::Success->value  => false,
             ResponseKeyType::Error->value    => $e->getMessage(),
             ResponseKeyType::Rows->value     => 0,
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::FileSize->value => 0,
             ResponseKeyType::Checksum->value => '',
-        );
+        ];
     }
 
     private function createSqliteAndSchema(string $filepath, string $table): PDO {
@@ -136,13 +136,13 @@ trait WorkerTableExportTrait {
         string $filepath,
         int $rows,
     ): array {
-        return array(
+        return [
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Rows->value     => $rows,
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::FileSize->value => filesize($filepath),
             ResponseKeyType::Checksum->value => md5_file($filepath),
-        );
+        ];
     }
 
     private function getCreateTableSql(string $table): ?string {

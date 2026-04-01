@@ -90,7 +90,7 @@ trait SchedulerTimingTrait {
     }
 
     private function getDayName(int $day): string {
-        $days = array(
+        $days = [
             1 => 'Monday',
             2 => 'Tuesday',
             3 => 'Wednesday',
@@ -98,7 +98,7 @@ trait SchedulerTimingTrait {
             5 => 'Friday',
             6 => 'Saturday',
             7 => 'Sunday',
-        );
+        ];
 
         return isset($days[$day]) ? $days[$day] : 'Monday';
     }

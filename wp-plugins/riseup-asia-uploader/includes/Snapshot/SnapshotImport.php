@@ -34,7 +34,7 @@ class SnapshotImport {
     private Database $db;
     private SnapshotManager $manager;
     private string $baseDir;
-    private array $validationErrors = array();
+    private array $validationErrors = [];
 
     public function __construct(
         FileLogger $logger,
@@ -54,10 +54,10 @@ class SnapshotImport {
             return $guardError;
         }
 
-        $this->log(LogLevelType::Info->value, 'Starting snapshot import', array(
+        $this->log(LogLevelType::Info->value, 'Starting snapshot import', [
             'path' => basename($uploadedPath),
             'size' => PathHelper::formatBytes(filesize($uploadedPath)),
-        ));
+        ]);
 
         $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
         $isDirCreationFailed = (PathHelper::makeDirectory($tempDir, false) === false);
@@ -123,7 +123,7 @@ class SnapshotImport {
         $this->logError($e, 'Snapshot import failed');
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         $context['error'] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
@@ -132,7 +132,7 @@ class SnapshotImport {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $method = strtolower($level);
 
@@ -142,9 +142,9 @@ class SnapshotImport {
     }
 
     private function fail(string $message): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value => $message,
-        );
+        ];
     }
 }

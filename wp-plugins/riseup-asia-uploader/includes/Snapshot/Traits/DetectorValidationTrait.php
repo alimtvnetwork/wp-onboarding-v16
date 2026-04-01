@@ -20,6 +20,7 @@ use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\StorageModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait DetectorValidationTrait {
     private function validateSettings(array $settings): array {
@@ -33,38 +34,38 @@ trait DetectorValidationTrait {
     }
 
     private function validateEnumFields(array &$settings): void {
-        $rules = array(
-            SettingsKeyType::PreferredProvider->value => array(
+        $rules = [
+            SettingsKeyType::PreferredProvider->value => [
                 SnapshotProviderType::Auto->value,
                 SnapshotProviderType::WpReset->value,
                 SnapshotProviderType::Updraft->value,
                 SnapshotProviderType::Native->value,
-            ),
-            SettingsKeyType::ScheduleFrequency->value => array(
+            ],
+            SettingsKeyType::ScheduleFrequency->value => [
                 SnapshotFrequencyType::Manual->value,
                 SnapshotFrequencyType::Hourly->value,
                 SnapshotFrequencyType::Daily->value,
                 SnapshotFrequencyType::Weekly->value,
                 SnapshotFrequencyType::Monthly->value,
-            ),
-            SettingsKeyType::DefaultScope->value => array(
+            ],
+            SettingsKeyType::DefaultScope->value => [
                 SnapshotScopeType::All->value,
                 SnapshotScopeType::WordPress->value,
                 SnapshotScopeType::Content->value,
                 SnapshotScopeType::Custom->value,
-            ),
-            SettingsKeyType::RetentionType->value => array(
+            ],
+            SettingsKeyType::RetentionType->value => [
                 RetentionType::Days->value,
                 RetentionType::Count->value,
                 RetentionType::None->value,
-            ),
-        );
-        $defaults = array(
+            ],
+        ];
+        $defaults = [
             SettingsKeyType::PreferredProvider->value  => SnapshotProviderType::Auto->value,
             SettingsKeyType::ScheduleFrequency->value  => SnapshotFrequencyType::Daily->value,
             SettingsKeyType::DefaultScope->value       => SnapshotScopeType::WordPress->value,
             SettingsKeyType::RetentionType->value      => RetentionType::Days->value,
-        );
+        ];
 
         foreach ($rules as $key => $valid) {
             if (BooleanHelpers::isAbsentFromList($settings[$key], $valid)) {
@@ -101,10 +102,10 @@ trait DetectorValidationTrait {
             $settings[SettingsKeyType::ScheduleTime->value] = '03:00';
         }
 
-        $isCustomTablesInvalid = (is_array($settings[SettingsKeyType::CustomTables->value]) === false);
+        $isCustomTablesInvalid = (gettype($settings[SettingsKeyType::CustomTables->value]) === PhpNativeType::PhpArray->value === false);
 
         if ($isCustomTablesInvalid) {
-            $settings[SettingsKeyType::CustomTables->value] = array();
+            $settings[SettingsKeyType::CustomTables->value] = [];
         }
     }
 }

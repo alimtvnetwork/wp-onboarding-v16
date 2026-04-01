@@ -63,10 +63,10 @@ trait ImportValidationTrait {
             $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'Id', 'id')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
 
-            return $rows ?: array();
+            return $rows ?: [];
         } catch (PDOException $e) {
             InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbTables() failed:');
-            return array();
+            return [];
         }
     }
 
@@ -78,10 +78,10 @@ trait ImportValidationTrait {
             $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'SequenceNum', 'sequence_num')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
 
-            return $rows ?: array();
+            return $rows ?: [];
         } catch (PDOException $e) {
             InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbIncrementals() failed:');
-            return array();
+            return [];
         }
     }
 
@@ -93,10 +93,10 @@ trait ImportValidationTrait {
             $rows = $pdo->query("SELECT * FROM {$table} ORDER BY {$this->resolveRootCol($pdo, $table, 'Id', 'id')}")->fetchAll(PDO::FETCH_ASSOC);
             $pdo = null;
 
-            return $rows ?: array();
+            return $rows ?: [];
         } catch (PDOException $e) {
             InitHelpers::errorLog($e, 'ImportValidationTrait::readRootDbPlugins() failed:');
-            return array();
+            return [];
         }
     }
 

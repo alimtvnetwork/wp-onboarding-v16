@@ -23,7 +23,7 @@ trait FileCacheScanTrait {
         string $pluginDir,
         RiseupUploadIgnore $ignore,
     ): array {
-        $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
+        $this->logger->debug('FileCache: Building manifest', ['slug' => $pluginSlug]);
 
         $isDbUnavailable = ($this->db->isReady() === false);
 
@@ -34,18 +34,18 @@ trait FileCacheScanTrait {
         }
 
         $cachedEntries = $this->loadCachedEntries($pluginSlug);
-        $diskFiles = array();
+        $diskFiles = [];
         $this->scanDirectory($pluginDir, $pluginDir, $ignore, $diskFiles);
 
         $result = $this->reconcileManifest($pluginSlug, $pluginDir, $diskFiles, $cachedEntries);
 
-        $this->logger->info('FileCache: Manifest built', array(
+        $this->logger->info('FileCache: Manifest built', [
             'slug'     => $pluginSlug,
             ResponseKeyType::Total->value    => count($result[ResponseKeyType::Files->value]),
             ResponseKeyType::Cached->value   => $result[ResponseKeyType::Cached->value],
             ResponseKeyType::Computed->value => $result[ResponseKeyType::Computed->value],
             ResponseKeyType::Removed->value  => $result[ResponseKeyType::Removed->value],
-        ));
+        ]);
 
         return $result;
     }
@@ -56,10 +56,10 @@ trait FileCacheScanTrait {
         array $diskFiles,
         array $cachedEntries,
     ): array {
-        $files = array();
+        $files = [];
         $cachedCount = 0;
         $computedCount = 0;
-        $activePaths = array();
+        $activePaths = [];
 
         foreach ($diskFiles as $fileInfo) {
             $entry = $this->resolveFileEntry($pluginSlug, $pluginDir, $fileInfo, $cachedEntries);
@@ -70,12 +70,12 @@ trait FileCacheScanTrait {
 
         $removedCount = $this->pruneStaleEntries($pluginSlug, $cachedEntries, $activePaths);
 
-        return array(
+        return [
             ResponseKeyType::Files->value => $files,
             ResponseKeyType::Cached->value => $cachedCount,
             ResponseKeyType::Computed->value => $computedCount,
             ResponseKeyType::Removed->value => $removedCount,
-        );
+        ];
     }
 
     private function resolveFileEntry(
@@ -90,15 +90,15 @@ trait FileCacheScanTrait {
         if (isset($cachedEntries[$path])) {
             $cached = $cachedEntries[$path];
             if ($cached['ModifiedAt'] === $mtimeStr && (int) $cached['FileSize'] === $fileInfo['size']) {
-                return array(
-                    'file'   => array(
+                return [
+                    'file'   => [
                         'path' => $path,
                         'hash' => $cached['Md5Hash'],
                         'modifiedAt' => $mtimeStr,
                         'size' => (int) $cached['FileSize'],
-                    ),
+                    ],
                     'cached' => true,
-                );
+                ];
             }
         }
 
@@ -107,15 +107,15 @@ trait FileCacheScanTrait {
 
         $this->upsertCacheEntry($pluginSlug, $path, $hash, $mtimeStr, $fileInfo['size']);
 
-        return array(
-            'file'   => array(
+        return [
+            'file'   => [
                 'path' => $path,
                 'hash' => $hash,
                 'modifiedAt' => $mtimeStr,
                 'size' => $fileInfo['size'],
-            ),
+            ],
             'cached' => false,
-        );
+        ];
     }
 
     private function pruneStaleEntries(
@@ -170,35 +170,35 @@ trait FileCacheScanTrait {
     }
 
     private function buildFileInfo(string $relPath, string $fullPath): array {
-        return array(
+        return [
             'path'  => str_replace('\\', '/', $relPath),
             'mtime' => @filemtime($fullPath) ?: 0,
             'size'  => @filesize($fullPath) ?: 0,
-        );
+        ];
     }
 
     private function fullScan(string $pluginDir, RiseupUploadIgnore $ignore): array {
-        $diskFiles = array();
+        $diskFiles = [];
         $this->scanDirectory($pluginDir, $pluginDir, $ignore, $diskFiles);
 
-        $files = array();
+        $files = [];
         foreach ($diskFiles as $fileInfo) {
             $fullPath = $pluginDir . '/' . str_replace('/', DIRECTORY_SEPARATOR, $fileInfo['path']);
             $hash = @md5_file($fullPath);
 
-            $files[] = array(
+            $files[] = [
                 'path'       => $fileInfo['path'],
                 'hash'       => $hash ?: '',
                 'modifiedAt' => $fileInfo['mtime'] ? DateHelper::formatIso($fileInfo['mtime']) : null,
                 'size'       => $fileInfo['size'],
-            );
+            ];
         }
 
-        return array(
+        return [
             ResponseKeyType::Files->value    => $files,
             ResponseKeyType::Cached->value   => 0,
             ResponseKeyType::Computed->value => count($files),
             ResponseKeyType::Removed->value  => 0,
-        );
+        ];
     }
 }

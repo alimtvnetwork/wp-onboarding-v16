@@ -24,7 +24,7 @@ trait UserDeleteTrait {
     public function handleDeleteUser(WP_REST_Request $request): WP_REST_Response
     {
         $userId = (int) $request->get_param('id');
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'DELETE /users/{id}', 'userId' => $userId));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'DELETE /users/{id}', 'userId' => $userId]);
 
         return $this->safeExecute(function () use ($request, $userId) {
             $user = get_userdata($userId);
@@ -55,7 +55,7 @@ trait UserDeleteTrait {
             $deleted = wp_delete_user($userId, $reassignId);
 
             if (!$deleted) {
-                $this->fileLogger->error('User deletion failed', array('userId' => $userId));
+                $this->fileLogger->error('User deletion failed', ['userId' => $userId]);
 
                 return EnvelopeBuilder::error('User deletion failed', 500)
                     ->autoDetectRequestedAt()
@@ -63,16 +63,16 @@ trait UserDeleteTrait {
                     ->toResponse();
             }
 
-            $this->fileLogger->info('User deleted', array(
+            $this->fileLogger->info('User deleted', [
                 'userId'       => $userId,
                 'username'     => $user->user_login,
                 'reassignedTo' => $reassignId,
                 'by'           => wp_get_current_user()->user_login,
-            ));
+            ]);
 
-            $result = array(
+            $result = [
                 'Deleted' => true,
-            );
+            ];
 
             if ($hasReassign) {
                 $result['ReassignedTo'] = $reassignId;

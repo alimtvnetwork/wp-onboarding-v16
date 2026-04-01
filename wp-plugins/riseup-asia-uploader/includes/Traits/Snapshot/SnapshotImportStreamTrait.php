@@ -42,9 +42,9 @@ trait SnapshotImportStreamTrait {
 
         if ($exportId <= 0 || empty($token)) {
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Missing id or token parameter', ResponseKeyType::Code->value => SnapshotErrorType::ExportTokenInvalid->value,
-            ), HttpStatusType::BadRequest->value);
+            ], HttpStatusType::BadRequest->value);
         }
 
         $export = SnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
@@ -52,12 +52,12 @@ trait SnapshotImportStreamTrait {
 
         if ($isExportMissing) {
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Invalid or expired download token', ResponseKeyType::Code->value => SnapshotErrorType::ExportTokenInvalid->value,
-            ), HttpStatusType::Forbidden->value);
+            ], HttpStatusType::Forbidden->value);
         }
 
-        return array('exportId' => $exportId, 'export' => $export);
+        return ['exportId' => $exportId, 'export' => $export];
     }
 
     private function sendZipHeaders(string $filename, int $filesize) {
@@ -74,7 +74,7 @@ trait SnapshotImportStreamTrait {
         $filesize = filesize($filepath);
 
         $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-            array('exportId' => $exportId, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $filesize, ResponseKeyType::Phase->value => 'streaming'));
+            ['exportId' => $exportId, ResponseKeyType::Filename->value => $filename, ResponseKeyType::Size->value => $filesize, ResponseKeyType::Phase->value => 'streaming']);
 
         $this->sendZipHeaders($filename, $filesize);
 
@@ -107,14 +107,14 @@ trait SnapshotImportStreamTrait {
 
             $tmpFile = $files['file']['tmp_name'];
             $originalName = $files['file']['name'] ?? 'unknown';
-            $this->fileLogger->info('Importing snapshot from uploaded ZIP', array(
+            $this->fileLogger->info('Importing snapshot from uploaded ZIP', [
                 'originalName' => $originalName,
                 ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value],
-            ));
+            ]);
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
-                array(ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value], ResponseKeyType::Phase->value => 'initiated')
+                [ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Size->value => $files['file'][ResponseKeyType::Size->value], ResponseKeyType::Phase->value => 'initiated']
             );
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -124,7 +124,7 @@ trait SnapshotImportStreamTrait {
             $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, LogCategoryType::Snapshot->value,
                 $result[ResponseKeyType::Success->value] ? StatusType::Success->value : StatusType::Failed->value,
-                array(ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Phase->value => 'complete'),
+                [ResponseKeyType::Filename->value => $originalName, ResponseKeyType::Phase->value => 'complete'],
                 $result[ResponseKeyType::Success->value] ? null : ($result[ResponseKeyType::Error->value] ?? 'Import failed')
             );
 

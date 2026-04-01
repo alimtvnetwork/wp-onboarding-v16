@@ -45,7 +45,7 @@ trait FileSystemDirTrait {
             return false;
         }
 
-        $files = array_diff(scandir($dir), array('.', '..'));
+        $files = array_diff(scandir($dir), ['.', '..']);
 
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
@@ -68,7 +68,7 @@ trait FileSystemDirTrait {
             wp_mkdir_p($dst);
         }
 
-        $files = array_diff(scandir($src), array('.', '..'));
+        $files = array_diff(scandir($src), ['.', '..']);
 
         foreach ($files as $file) {
             $srcPath = $src . '/' . $file;

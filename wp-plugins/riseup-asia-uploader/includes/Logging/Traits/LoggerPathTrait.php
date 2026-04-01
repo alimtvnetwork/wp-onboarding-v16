@@ -16,6 +16,7 @@ use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait LoggerPathTrait {
     /** Initialize log file paths (lazy initialization). */
@@ -98,11 +99,11 @@ trait LoggerPathTrait {
 
     /** Get rotation configuration for remote monitoring. */
     public function getRotationConfig(): array {
-        return array(
+        return [
             'max_log_size_bytes' => $this->maxLogSizeBytes,
             'max_rotations'     => $this->maxRotations,
             'archive_enabled'   => $this->archiveEnabled,
-        );
+        ];
     }
 
     /**
@@ -111,16 +112,16 @@ trait LoggerPathTrait {
      * @return array<int, string>
      */
     private function collectLogFiles(): array {
-        $knownFiles = array(
+        $knownFiles = [
             $this->logFile,
             $this->errorFile,
             $this->stacktraceFile,
             $this->logsDir . PathLogFileType::FatalError->value,
-        );
+        ];
 
         $directoryFiles = $this->collectDirectoryLogFiles();
         $allFiles = array_merge($knownFiles, $directoryFiles);
-        $filteredFiles = array_filter($allFiles, fn($file) => is_string($file) && $file !== '');
+        $filteredFiles = array_filter($allFiles, fn($file) => gettype($file) === PhpNativeType::PhpString->value && $file !== '');
 
         return array_values(array_unique($filteredFiles));
     }
@@ -132,7 +133,7 @@ trait LoggerPathTrait {
         $isLogsDirMissing = ($this->logsDir === null || $this->logsDir === '' || is_dir($this->logsDir) === false);
 
         if ($isLogsDirMissing) {
-            return array();
+            return [];
         }
 
         $entries = @scandir($this->logsDir);
@@ -141,10 +142,10 @@ trait LoggerPathTrait {
         if ($isReadFailed) {
             InitHelpers::errorLogWithPrefix('Failed to read logs directory: ' . $this->logsDir);
 
-            return array();
+            return [];
         }
 
-        $files = array();
+        $files = [];
 
         foreach ($entries as $entry) {
             $isDotEntry = ($entry === '.' || $entry === '..');
@@ -200,12 +201,12 @@ trait LoggerPathTrait {
         $isInitFailed = ($this->isInitialized === false && $this->initializePaths() === false);
 
         if ($isInitFailed) {
-            return array('deleted' => array(), 'failed' => array());
+            return ['deleted' => [], 'failed' => []];
         }
 
         $files = $this->collectLogFiles();
-        $deletedFiles = array();
-        $failedFiles = array();
+        $deletedFiles = [];
+        $failedFiles = [];
 
         foreach ($files as $file) {
             clearstatcache(true, $file);
@@ -224,10 +225,10 @@ trait LoggerPathTrait {
             }
         }
 
-        $this->dedupHashes = array();
+        $this->dedupHashes = [];
         $this->clearPersistentDedupRegistry();
 
-        return array('deleted' => $deletedFiles, 'failed' => $failedFiles);
+        return ['deleted' => $deletedFiles, 'failed' => $failedFiles];
     }
 
     /**
@@ -243,11 +244,11 @@ trait LoggerPathTrait {
             return false;
         }
 
-        $fileMap = array(
+        $fileMap = [
             'log'        => $this->logFile,
             'error'      => $this->errorFile,
             'stacktrace' => $this->stacktraceFile,
-        );
+        ];
 
         $file = $fileMap[$type] ?? null;
         $isFileMissing = ($file === null || !file_exists($file));

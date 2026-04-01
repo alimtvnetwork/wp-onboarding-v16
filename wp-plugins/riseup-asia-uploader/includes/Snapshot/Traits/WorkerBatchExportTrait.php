@@ -28,7 +28,7 @@ trait WorkerBatchExportTrait {
     ): array {
         $totalRows = 0;
         $exportedTables = 0;
-        $errors = array();
+        $errors = [];
         $batches = array_chunk($seedOrder, $this->poolSize);
 
         foreach ($batches as $batchIndex => $batchTables) {
@@ -40,11 +40,11 @@ trait WorkerBatchExportTrait {
             $errors = array_merge($errors, $result[ResponseKeyType::Errors->value]);
         }
 
-        return array(
+        return [
             ResponseKeyType::TotalRows->value     => $totalRows,
             ResponseKeyType::ExportedTables->value => $exportedTables,
             ResponseKeyType::Errors->value         => $errors,
-        );
+        ];
     }
 
     private function logBatchProgress(int $batchIndex, array $batches, array $batchTables): void {
@@ -63,7 +63,7 @@ trait WorkerBatchExportTrait {
     ): array {
         $rows = 0;
         $exported = 0;
-        $errors = array();
+        $errors = [];
 
         foreach ($tables as $table) {
             $this->updateProgress($table, SnapshotStatusType::Running->value);
@@ -79,11 +79,11 @@ trait WorkerBatchExportTrait {
             }
         }
 
-        return array(
+        return [
             ResponseKeyType::Rows->value     => $rows,
             ResponseKeyType::Exported->value => $exported,
             ResponseKeyType::Errors->value   => $errors,
-        );
+        ];
     }
 
     private function handleSuccessfulTableExport(string $table, array $result, ?PDO $rootPdo): void {
@@ -127,17 +127,17 @@ trait WorkerBatchExportTrait {
     }
 
     private function logAsyncJobSetup(array $prepared, array $seedOrder, int $jobId, float $duration): void {
-        $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', [
             ResponseKeyType::JobId->value       => $jobId,
             ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::TotalTables->value => count($seedOrder),
             ResponseKeyType::PoolSize->value    => $this->poolSize,
             'setupTime'                         => round($duration, 2) . 's',
-        ));
+        ]);
     }
 
     private function buildAsyncResultArray(array $prepared, array $seedOrder, int $jobId, float $duration): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Directory->value   => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::Path->value        => $prepared[ResponseKeyType::SnapshotDir->value],
             ResponseKeyType::JobId->value       => $jobId,
@@ -145,10 +145,10 @@ trait WorkerBatchExportTrait {
             ResponseKeyType::PoolSize->value    => $this->poolSize,
             ResponseKeyType::Tables->value      => 0,
             ResponseKeyType::TotalRows->value   => 0,
-            ResponseKeyType::Errors->value      => array(),
+            ResponseKeyType::Errors->value      => [],
             ResponseKeyType::Duration->value    => $duration,
             ResponseKeyType::Status->value      => SnapshotJobStatusType::Queued->value,
-        ));
+        ]);
     }
 
     private function buildSyncSnapshotResult(
@@ -156,13 +156,13 @@ trait WorkerBatchExportTrait {
         array $export,
         float $startTime,
     ): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Directory->value  => $prepared[ResponseKeyType::DirName->value],
             ResponseKeyType::Path->value       => $prepared[ResponseKeyType::SnapshotDir->value],
             ResponseKeyType::Tables->value     => $export[ResponseKeyType::ExportedTables->value],
             ResponseKeyType::TotalRows->value  => $export[ResponseKeyType::TotalRows->value],
             ResponseKeyType::Errors->value     => $export[ResponseKeyType::Errors->value],
             ResponseKeyType::Duration->value   => microtime(true) - $startTime,
-        ));
+        ]);
     }
 }

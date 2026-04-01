@@ -43,7 +43,7 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
     }
 
     public function getCapabilities(): array {
-        return array(
+        return [
             'fullSite' => false,
             'databaseOnly' => true,
             'selective' => true,
@@ -51,6 +51,6 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
             'restore' => true,
             'export' => true,
             'import' => true,
-        );
+        ];
     }
 }

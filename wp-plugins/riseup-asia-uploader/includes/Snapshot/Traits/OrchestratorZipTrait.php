@@ -56,17 +56,17 @@ trait OrchestratorZipTrait {
     }
 
     private function buildZipOpenError(): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => 'Failed to create ZIP',
-        );
+        ];
     }
 
     private function buildZipExceptionError(Throwable $e): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => $e->getMessage(),
-        );
+        ];
     }
 
     private function addDirectoryToZip(ZipArchive $zip, string $dir): int {
@@ -111,27 +111,27 @@ trait OrchestratorZipTrait {
     }
 
     private function buildEmptyZipError(): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => 'ZIP export is empty',
-        );
+        ];
     }
 
     private function logZipCreated(string $filename, int $files, int $size): void {
-        $this->log(LogLevelType::Info->value, 'ZIP export created', array(
+        $this->log(LogLevelType::Info->value, 'ZIP export created', [
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::Files->value    => $files,
             ResponseKeyType::Size->value     => $this->formatBytes($size),
-        ));
+        ]);
     }
 
     private function buildValidatedZipResult(string $path, string $filename, int $size, int $files): array {
-        return array(
+        return [
             ResponseKeyType::Success->value  => true,
             ResponseKeyType::Path->value     => $path,
             ResponseKeyType::Filename->value => $filename,
             ResponseKeyType::Size->value     => $size,
             ResponseKeyType::Files->value    => $files,
-        );
+        ];
     }
 }

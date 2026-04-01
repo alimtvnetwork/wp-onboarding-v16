@@ -20,6 +20,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait LoggerWriteTrait {
     /** Write to log file. */
@@ -133,7 +134,7 @@ trait LoggerWriteTrait {
 
         $maxIndex = 0;
         $entries = @scandir($archiveDir);
-        $hasEntries = is_array($entries);
+        $hasEntries = gettype($entries) === PhpNativeType::PhpArray->value;
 
         if ($hasEntries) {
             foreach ($entries as $entry) {
@@ -193,10 +194,10 @@ trait LoggerWriteTrait {
         $isReadFailed = ($entries === false);
 
         if ($isReadFailed) {
-            return array();
+            return [];
         }
 
-        $folders = array();
+        $folders = [];
 
         foreach ($entries as $entry) {
             $isDotEntry = ($entry === '.' || $entry === '..');
@@ -259,7 +260,7 @@ trait LoggerWriteTrait {
         string $message,
         string $file,
         int $line,
-        array $context = array(),
+        array $context = [],
         string $stackTrace = '',
     ): void {
         try {
@@ -322,7 +323,7 @@ trait LoggerWriteTrait {
         $stmt = $pdo->prepare(
             'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (Level, Message, File, Line, ContextJson, StackTrace, PluginVersion, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute(array(
+        $stmt->execute([
             $level,
             $message,
             $file,
@@ -331,7 +332,7 @@ trait LoggerWriteTrait {
             $stackTrace ?: null,
             $pluginVersion,
             $now,
-        ));
+        ]);
 
         $pdo->exec("INSERT OR REPLACE INTO " . self::TABLE_FLASH_STATE . " (Key, Value, UpdatedAt) VALUES ('" . self::KEY_HAS_UNSEEN_ERRORS . "', '1', '{$now}')");
     }

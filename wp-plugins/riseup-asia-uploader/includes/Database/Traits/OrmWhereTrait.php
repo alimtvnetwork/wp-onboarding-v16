@@ -113,7 +113,7 @@ trait OrmWhereTrait {
             return $this;
         }
 
-        $placeholders = array();
+        $placeholders = [];
 
         foreach ($values as $value) {
             $paramName = $this->generateParamName($column);
@@ -136,7 +136,7 @@ trait OrmWhereTrait {
             return $this;
         }
 
-        $placeholders = array();
+        $placeholders = [];
 
         foreach ($values as $value) {
             $paramName = $this->generateParamName($column);
@@ -154,7 +154,7 @@ trait OrmWhereTrait {
      *
      * @return $this
      */
-    public function whereRaw(string $clause, array $params = array()) {
+    public function whereRaw(string $clause, array $params = []) {
         $this->whereClauses[] = $clause;
         $this->whereParams = array_merge($this->whereParams, $params);
 

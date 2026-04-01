@@ -34,10 +34,10 @@ trait DatabaseQueryLogTrait {
         string $userLogin = '',
         ?int $userId = null,
         string $ipAddress = '',
-        array $details = array(),
+        array $details = [],
         string $status = 'success',
         ?string $errorMsg = null,
-        array $enhanced = array(),
+        array $enhanced = [],
     ): int|false {
         $isDbUnready = ($this->isReady() === false);
 
@@ -67,7 +67,7 @@ trait DatabaseQueryLogTrait {
             $this->applyEnhancedFields($record, $enhanced);
 
             $result = $record->save();
-            $this->fileLogger->info('Transaction logged', array('id' => $result));
+            $this->fileLogger->info('Transaction logged', ['id' => $result]);
 
             return $result;
         } catch (Throwable $e) {
@@ -123,13 +123,13 @@ trait DatabaseQueryLogTrait {
     }
 
     private function applyStringEnhancedFields($record, array $enhanced): void {
-        $fieldMap = array(
+        $fieldMap = [
             'pluginFile'    => 'PluginFile',
             'triggeredBy'   => 'TriggeredBy',
             'sourceMachine' => 'SourceMachine',
             'pluginVersion' => 'PluginVersion',
             'uploadSource'  => 'UploadSource',
-        );
+        ];
 
         foreach ($fieldMap as $paramKey => $dbColumn) {
             $hasField = !empty($enhanced[$paramKey] ?? null);
@@ -160,7 +160,7 @@ trait DatabaseQueryLogTrait {
             $params['userLogin'] ?? '',
             $params['userId'] ?? null,
             $params['ipAddress'] ?? '',
-            $params['details'] ?? array(),
+            $params['details'] ?? [],
             $params['status'] ?? StatusType::Success->value,
             $params['errorMsg'] ?? null,
             $this->buildEnhancedArray($params),
@@ -168,14 +168,14 @@ trait DatabaseQueryLogTrait {
     }
 
     private function buildEnhancedArray(array $params): array {
-        return array(
+        return [
             'pluginFile'    => $params['pluginFile'] ?? null,
             'wasActive'     => $params['wasActive'] ?? null,
             'triggeredBy'   => $params['triggeredBy'] ?? null,
             'agentSiteId'   => $params['agentSiteId'] ?? null,
             'pluginVersion' => $params['pluginVersion'] ?? null,
             'uploadSource'  => $params['uploadSource'] ?? null,
-        );
+        ];
     }
 
     public function getTransaction(int $id): ?array {

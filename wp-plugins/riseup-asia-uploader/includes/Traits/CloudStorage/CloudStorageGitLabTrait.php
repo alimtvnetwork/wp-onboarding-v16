@@ -36,12 +36,12 @@ trait CloudStorageGitLabTrait {
         $body    = $this->gitlabApiRequest('GET', $apiBase, '/user', $token);
         $username = $body['username'] ?? '';
 
-        return array(
+        return [
             ResponseKeyType::Success->value          => true,
             ResponseKeyType::ConnectionStatus->value => 'Connected',
             ResponseKeyType::Username->value         => $username,
             ResponseKeyType::Message->value          => sprintf('Successfully authenticated as %s', $username),
-        );
+        ];
     }
 
     /** Ensure the target project exists; create if missing. */
@@ -56,15 +56,15 @@ trait CloudStorageGitLabTrait {
         $projectExists = ($statusCode === HttpStatusType::Ok->value);
 
         if ($projectExists) {
-            return array('exists' => true, 'created' => false);
+            return ['exists' => true, 'created' => false];
         }
 
-        $createBody = array(
+        $createBody = [
             'name'                   => $projectName,
             'description'            => 'WordPress site backups managed by Riseup Asia Uploader',
             'visibility'             => 'private',
             'initialize_with_readme' => true,
-        );
+        ];
 
         $namespaceId = $this->gitlabResolveNamespaceId($apiBase, $token, $namespace);
         $hasNamespaceId = ($namespaceId > 0);
@@ -75,7 +75,7 @@ trait CloudStorageGitLabTrait {
 
         $this->gitlabApiRequest('POST', $apiBase, '/projects', $token, $createBody);
 
-        return array('exists' => true, 'created' => true);
+        return ['exists' => true, 'created' => true];
     }
 
     /** Upload a file via the Repository Files API. */
@@ -93,12 +93,12 @@ trait CloudStorageGitLabTrait {
         $content         = file_get_contents($localPath);
         $fileSize        = filesize($localPath);
 
-        $fileBody = array(
+        $fileBody = [
             'branch'         => 'main',
             'commit_message' => sprintf('Backup: %s', basename($remotePath)),
             'content'        => base64_encode($content),
             'encoding'       => 'base64',
-        );
+        ];
 
         $existsStatus = $this->gitlabApiStatusCode(
             'HEAD',
@@ -115,11 +115,11 @@ trait CloudStorageGitLabTrait {
         $baseUrl  = rtrim($account['BaseUrl'] ?? self::GITLAB_DEFAULT_BASE, '/');
         $webUrl   = sprintf('%s/%s/-/blob/main/%s', $baseUrl, $namespace . '/' . $projectName, $remotePath);
 
-        return array(
+        return [
             ResponseKeyType::RemotePath->value => $remotePath,
             ResponseKeyType::RemoteUrl->value  => $webUrl,
             ResponseKeyType::Bytes->value      => $fileSize,
-        );
+        ];
     }
 
     /** List files in a repository directory. */
@@ -131,7 +131,7 @@ trait CloudStorageGitLabTrait {
         $projectName = $account['RepoName'] ?? 'wp-backups';
         $projectPath = urlencode($namespace . '/' . $projectName);
 
-        $files = array();
+        $files = [];
 
         foreach ($body as $item) {
             $isBlob = (($item['type'] ?? '') === 'blob');
@@ -143,12 +143,12 @@ trait CloudStorageGitLabTrait {
 
                 $fileMeta = $this->gitlabApiRequest('GET', $apiBase, $fileMetaPath, $token);
 
-                $files[] = array(
+                $files[] = [
                     'Name'      => $item['name'] ?? '',
                     'Path'      => $filePath,
                     'Size'      => (int) ($fileMeta['size'] ?? 0),
                     'RemoteUrl' => '',
-                );
+                ];
             }
         }
 
@@ -166,7 +166,7 @@ trait CloudStorageGitLabTrait {
     private function gitlabListDirectories(array $account, string $token, string $dir): array
     {
         $body = $this->gitlabListTree($account, $token, $dir);
-        $dirs = array();
+        $dirs = [];
 
         foreach ($body as $item) {
             $isTree = (($item['type'] ?? '') === 'tree');
@@ -199,7 +199,7 @@ trait CloudStorageGitLabTrait {
         $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            return array();
+            return [];
         }
 
         return $this->gitlabApiRequest('GET', $apiBase, $treePath, $token);
@@ -223,10 +223,10 @@ trait CloudStorageGitLabTrait {
             return false;
         }
 
-        $this->gitlabApiRequest('DELETE', $apiBase, $fileUrl, $token, array(
+        $this->gitlabApiRequest('DELETE', $apiBase, $fileUrl, $token, [
             'branch'         => 'main',
             'commit_message' => sprintf('Remove old backup: %s', basename($remotePath)),
-        ));
+        ]);
 
         return true;
     }
@@ -257,28 +257,28 @@ trait CloudStorageGitLabTrait {
         }
 
         // 2. Build delete actions for the Commits API
-        $actions = array();
+        $actions = [];
 
         foreach ($filePaths as $filePath) {
-            $actions[] = array(
+            $actions[] = [
                 'action'    => 'delete',
                 'file_path' => $filePath,
-            );
+            ];
         }
 
         // 3. Create a single commit with all delete actions
         $commitUrl = sprintf('/projects/%s/repository/commits', $projectPath);
 
-        $this->gitlabApiRequest('POST', $apiBase, $commitUrl, $token, array(
+        $this->gitlabApiRequest('POST', $apiBase, $commitUrl, $token, [
             'branch'         => 'main',
             'commit_message' => sprintf('cleanup: remove folder %s', $path),
             'actions'        => $actions,
-        ));
+        ]);
 
-        $this->fileLogger->info('[CLOUD-GITLAB] Deleted folder', array(
+        $this->fileLogger->info('[CLOUD-GITLAB] Deleted folder', [
             'path'      => $path,
             'fileCount' => count($filePaths),
-        ));
+        ]);
     }
 
     /**
@@ -306,11 +306,11 @@ trait CloudStorageGitLabTrait {
         $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            return array();
+            return [];
         }
 
         $body  = $this->gitlabApiRequest('GET', $apiBase, $treePath, $token);
-        $paths = array();
+        $paths = [];
 
         foreach ($body as $item) {
             $isBlob = (($item['type'] ?? '') === 'blob');
@@ -368,7 +368,7 @@ trait CloudStorageGitLabTrait {
         }
 
         $statusCode    = (int) wp_remote_retrieve_response_code($response);
-        $decoded       = json_decode(wp_remote_retrieve_body($response), true) ?? array();
+        $decoded       = json_decode(wp_remote_retrieve_body($response), true) ?? [];
         $isClientError = ($statusCode >= 400);
 
         if ($isClientError) {

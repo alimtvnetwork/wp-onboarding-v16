@@ -43,28 +43,28 @@ class SnapshotCleaner {
         $this->db = $db;
     }
 
-    public function execute(array $options = array()): array {
+    public function execute(array $options = []): array {
         $start = microtime(true);
         $isDryRun = !empty($options[ResponseKeyType::DryRun->value] ?? null);
 
-        $results = ResultHelper::ok(array(
-            ResponseKeyType::Retention->value       => array(
+        $results = ResultHelper::ok([
+            ResponseKeyType::Retention->value       => [
                 ResponseKeyType::Deleted->value       => 0,
                 ResponseKeyType::SkippedMaster->value => 0,
-                ResponseKeyType::Details->value       => array(),
-            ),
-            ResponseKeyType::Orphans->value         => array(
+                ResponseKeyType::Details->value       => [],
+            ],
+            ResponseKeyType::Orphans->value         => [
                 ResponseKeyType::Removed->value => 0,
-                ResponseKeyType::Files->value   => array(),
-            ),
-            ResponseKeyType::Stuck->value           => array(
+                ResponseKeyType::Files->value   => [],
+            ],
+            ResponseKeyType::Stuck->value           => [
                 ResponseKeyType::Cleaned->value => 0,
-                ResponseKeyType::Ids->value     => array(),
-            ),
-            ResponseKeyType::Errors->value          => array(),
+                ResponseKeyType::Ids->value     => [],
+            ],
+            ResponseKeyType::Errors->value          => [],
             ResponseKeyType::DryRun->value          => $isDryRun,
             ResponseKeyType::SpaceFreedBytes->value => 0,
-        ));
+        ]);
 
         $settings = $this->loadSettings($options);
 
@@ -79,12 +79,12 @@ class SnapshotCleaner {
             + $results[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value]
             + $results[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value];
 
-        $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
+        $this->log(LogLevelType::Info->value, 'Cleanup complete', [
             'deletedTotal' => $totalDeleted,
             'spaceFreed'   => PathHelper::formatBytes($results[ResponseKeyType::SpaceFreedBytes->value]),
             ResponseKeyType::Duration->value => $results[ResponseKeyType::Duration->value],
             ResponseKeyType::DryRun->value   => $isDryRun,
-        ));
+        ]);
 
         $hasDeletions = $totalDeleted > 0;
         $shouldAudit = !$isDryRun && $hasDeletions;
@@ -99,13 +99,13 @@ class SnapshotCleaner {
     public function runCleanup(array $settings): array {
         $result = $this->execute($settings);
 
-        return array(
+        return [
             ResponseKeyType::DeletedByPolicy->value => $result[ResponseKeyType::Retention->value][ResponseKeyType::Deleted->value] ?? 0,
             ResponseKeyType::DeletedOrphans->value   => $result[ResponseKeyType::Orphans->value][ResponseKeyType::Removed->value] ?? 0,
             ResponseKeyType::DeletedFailed->value    => $result[ResponseKeyType::Stuck->value][ResponseKeyType::Cleaned->value] ?? 0,
             ResponseKeyType::SpaceFreedBytes->value  => $result[ResponseKeyType::SpaceFreedBytes->value] ?? 0,
-            ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? array(),
-        );
+            ResponseKeyType::Errors->value           => $result[ResponseKeyType::Errors->value] ?? [],
+        ];
     }
 
     private function executeRetentionPhase(

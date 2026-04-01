@@ -43,10 +43,10 @@ trait AgentRemoteActionTrait {
             return $resolved;
         }
 
-        $this->updateAgent($agent->id, array(
+        $this->updateAgent($agent->id, [
             'redirect_resolved'    => $resolved,
             'redirect_resolved_at' => DateHelper::nowUtc(),
-        ));
+        ]);
 
         return $resolved;
     }
@@ -77,10 +77,10 @@ trait AgentRemoteActionTrait {
             $url = $next;
         }
 
-        $this->fileLogger->warning('Max redirects reached', array(
+        $this->fileLogger->warning('Max redirects reached', [
             'url'          => $url,
             'maxRedirects' => $maxRedirects,
-        ));
+        ]);
 
         return $url;
     }
@@ -100,10 +100,10 @@ trait AgentRemoteActionTrait {
             return null;
         }
 
-        $this->fileLogger->debug('Redirect detected', array(
+        $this->fileLogger->debug('Redirect detected', [
             'url'    => $url,
             'status' => $status,
-        ));
+        ]);
 
         $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
         $hasNoLocation = empty($location);
@@ -116,7 +116,7 @@ trait AgentRemoteActionTrait {
     }
 
     public function testConnection(int $agentId): array {
-        $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
+        $this->fileLogger->info('Testing agent connection', ['id' => $agentId]);
 
         $result = $this->apiRequest(
             $agentId,
@@ -132,10 +132,10 @@ trait AgentRemoteActionTrait {
     }
 
     private function handleTestConnectionFailure(int $agentId, WP_Error $error): array {
-        $this->updateAgent($agentId, array(
+        $this->updateAgent($agentId, [
             AgentFieldType::Status->value    => AgentStatusType::Error->value,
             AgentFieldType::LastError->value  => $error->get_error_message(),
-        ));
+        ]);
 
         $this->logAction(
             $agentId,
@@ -146,17 +146,17 @@ trait AgentRemoteActionTrait {
             $error->get_error_message(),
         );
 
-        return ResultHelper::failed(array(
+        return ResultHelper::failed([
             ResponseKeyType::Message->value => $error->get_error_message(),
-        ));
+        ]);
     }
 
     private function handleTestConnectionSuccess(int $agentId, array $result): array {
-        $this->updateAgent($agentId, array(
+        $this->updateAgent($agentId, [
             AgentFieldType::Status->value    => AgentStatusType::Connected->value,
             AgentFieldType::LastSync->value   => DateHelper::nowUtc(),
             AgentFieldType::LastError->value  => null,
-        ));
+        ]);
 
         $this->logAction(
             $agentId,
@@ -165,14 +165,14 @@ trait AgentRemoteActionTrait {
             StatusType::Success->value,
         );
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Message->value => ResponseMessageType::ConnectionSuccessful->value,
             ResponseKeyType::Data->value    => $result,
-        ));
+        ]);
     }
 
     public function syncPlugins(int $agentId): array|WP_Error {
-        $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
+        $this->fileLogger->info('Syncing plugins from agent', ['id' => $agentId]);
 
         $result = $this->apiRequest(
             $agentId,
@@ -193,10 +193,10 @@ trait AgentRemoteActionTrait {
             return $result;
         }
 
-        $this->updateAgent($agentId, array(
+        $this->updateAgent($agentId, [
             AgentFieldType::Status->value   => AgentStatusType::Connected->value,
             AgentFieldType::LastSync->value  => DateHelper::nowUtc(),
-        ));
+        ]);
 
         $plugins = isset($result[ResponseKeyType::Plugins->value])
             ? $result[ResponseKeyType::Plugins->value]
@@ -207,7 +207,7 @@ trait AgentRemoteActionTrait {
             ActionType::AgentSync->value,
             null,
             StatusType::Success->value,
-            array(ResponseKeyType::Count->value => count($plugins)),
+            [ResponseKeyType::Count->value => count($plugins)],
         );
 
         return $plugins;
@@ -219,7 +219,7 @@ trait AgentRemoteActionTrait {
      * @since 2.1.0
      */
     public function getAgentPlugins(int $agentId): array|WP_Error {
-        $this->fileLogger->info('Fetching plugins from agent (read-only)', array('id' => $agentId));
+        $this->fileLogger->info('Fetching plugins from agent (read-only)', ['id' => $agentId]);
 
         $result = $this->apiRequest(
             $agentId,
@@ -241,11 +241,11 @@ trait AgentRemoteActionTrait {
         string $action,
         string $slug,
     ): array|WP_Error {
-        $this->fileLogger->info('Executing plugin action on agent', array(
+        $this->fileLogger->info('Executing plugin action on agent', [
             'agent_id' => $agentId,
             'action'   => $action,
             'slug'     => $slug,
-        ));
+        ]);
 
         $endpoint = PluginConfigType::apiFullNamespace()
             . '/' . EndpointType::Plugins->value
@@ -278,9 +278,9 @@ trait AgentRemoteActionTrait {
             StatusType::Success->value,
         );
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::Message->value => ucfirst($action) . ' executed successfully',
             ResponseKeyType::Data->value    => $result,
-        ));
+        ]);
     }
 }

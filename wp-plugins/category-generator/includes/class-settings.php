@@ -40,56 +40,56 @@ class CG_Settings {
      * Get all AI providers configuration
      */
     public static function get_ai_providers() {
-        return array(
-            self::AI_OPENAI => array(
+        return [
+            self::AI_OPENAI => [
                 'name' => 'OpenAI (ChatGPT)',
                 'default_url' => 'https://api.openai.com/v1/chat/completions',
-                'models' => array(
+                'models' => [
                     'gpt-5' => 'GPT-5',
                     'gpt-4o' => 'GPT-4o',
                     'gpt-4o-mini' => 'GPT-4o Mini',
                     'gpt-4-turbo' => 'GPT-4 Turbo',
-                )
-            ),
-            self::AI_GEMINI => array(
+                ]
+            ],
+            self::AI_GEMINI => [
                 'name' => 'Google Gemini',
                 'default_url' => 'https://generativelanguage.googleapis.com/v1beta/models',
-                'models' => array(
+                'models' => [
                     'gemini-2.5-pro' => 'Gemini 2.5 Pro',
                     'gemini-2.5-flash' => 'Gemini 2.5 Flash',
                     'gemini-1.5-pro' => 'Gemini 1.5 Pro',
-                )
-            ),
-            self::AI_GROK => array(
+                ]
+            ],
+            self::AI_GROK => [
                 'name' => 'xAI Grok',
                 'default_url' => 'https://api.x.ai/v1/chat/completions',
-                'models' => array(
+                'models' => [
                     'grok-2' => 'Grok 2',
                     'grok-beta' => 'Grok Beta',
-                )
-            ),
-            self::AI_DEEPSEEK => array(
+                ]
+            ],
+            self::AI_DEEPSEEK => [
                 'name' => 'DeepSeek',
                 'default_url' => 'https://api.deepseek.com/v1/chat/completions',
-                'models' => array(
+                'models' => [
                     'deepseek-chat' => 'DeepSeek Chat',
                     'deepseek-coder' => 'DeepSeek Coder',
-                )
-            ),
-            self::AI_CLAUDE => array(
+                ]
+            ],
+            self::AI_CLAUDE => [
                 'name' => 'Anthropic Claude',
                 'default_url' => 'https://api.anthropic.com/v1/messages',
-                'models' => array(
+                'models' => [
                     'claude-sonnet-4-5' => 'Claude Sonnet 4.5',
                     'claude-3-5-sonnet' => 'Claude 3.5 Sonnet',
-                )
-            ),
-            self::AI_CUSTOM => array(
+                ]
+            ],
+            self::AI_CUSTOM => [
                 'name' => 'Custom Provider',
                 'default_url' => '',
-                'models' => array()
-            ),
-        );
+                'models' => []
+            ],
+        ];
     }
     
     /**
@@ -133,7 +133,7 @@ class CG_Settings {
      * Get default settings
      */
     public static function get_defaults() {
-        return array(
+        return [
             // HTML Class Names
             'wrapper_class' => 'riseup-category-generator',
             'header_class' => 'category-header',
@@ -167,19 +167,19 @@ class CG_Settings {
             // General
             'auto_save_templates' => true,
             'confirm_before_generate' => true,
-        );
+        ];
     }
     
     /**
      * Get CSS class settings
      */
     public function get_class_settings() {
-        return array(
+        return [
             'wrapper_class' => $this->get('wrapper_class', 'riseup-category-generator'),
             'header_class' => $this->get('header_class', 'category-header'),
             'paragraph_class' => $this->get('paragraph_class', 'seo-container-para'),
             'schema_wrapper_class' => $this->get('schema_wrapper_class', 'category-schema-wrapper'),
-        );
+        ];
     }
     
     /**
@@ -193,7 +193,7 @@ class CG_Settings {
         $providers = self::get_ai_providers();
         $provider_config = $providers[$provider] ?? $providers['openai'];
         
-        return array(
+        return [
             'provider' => $provider,
             'name' => $provider_config['name'],
             'url' => $this->get('ai_api_url') ?: $provider_config['default_url'],
@@ -201,7 +201,7 @@ class CG_Settings {
             'model' => $this->get('ai_model', 'gpt-4o-mini'),
             'html_model' => $this->get('ai_html_model', 'gpt-4o'),
             'meta_model' => $this->get('ai_meta_model', 'gpt-4o-mini'),
-        );
+        ];
     }
     
     /**
@@ -210,7 +210,7 @@ class CG_Settings {
     public function get_remote_apis() {
         $apis_json = $this->get('remote_template_apis', '[]');
         $apis = json_decode($apis_json, true);
-        return is_array($apis) ? $apis : array();
+        return gettype($apis) === 'array' ? $apis : [];
     }
     
     /**
@@ -218,14 +218,14 @@ class CG_Settings {
      */
     public function add_remote_api($api_config) {
         $apis = $this->get_remote_apis();
-        $apis[] = array(
+        $apis[] = [
             'id' => uniqid('api_'),
             'name' => $api_config['name'] ?? 'Unnamed API',
             'url' => $api_config['url'] ?? '',
             'api_key' => $api_config['api_key'] ?? '',
             'oauth_token' => $api_config['oauth_token'] ?? '',
             'enabled' => $api_config['enabled'] ?? true,
-        );
+        ];
         return $this->set('remote_template_apis', json_encode($apis));
     }
     
@@ -255,44 +255,44 @@ class CG_Settings {
         }
         
         if (!$api || empty($api['url'])) {
-            return array('success' => false, 'message' => 'API not found or URL is empty');
+            return ['success' => false, 'message' => 'API not found or URL is empty'];
         }
         
-        $headers = array();
+        $headers = [];
         if (!empty($api['api_key'])) {
             $headers['Authorization'] = 'Bearer ' . $api['api_key'];
         }
         
-        $response = wp_remote_get($api['url'], array(
+        $response = wp_remote_get($api['url'], [
             'headers' => $headers,
             'timeout' => 30
-        ));
+        ]);
         
         if (is_wp_error($response)) {
-            return array('success' => false, 'message' => $response->get_error_message());
+            return ['success' => false, 'message' => $response->get_error_message()];
         }
         
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         
-        if (!$data || !is_array($data)) {
-            return array('success' => false, 'message' => 'Invalid response from API');
+        if (!$data || gettype($data) !== 'array') {
+            return ['success' => false, 'message' => 'Invalid response from API'];
         }
         
-        return array('success' => true, 'templates' => $data);
+        return ['success' => true, 'templates' => $data];
     }
     
     /**
      * Get Yoast data from WordPress if available
      */
     public function get_yoast_data() {
-        $data = array(
+        $data = [
             'is_active' => false,
             'company_name' => '',
             'company_logo' => '',
-            'social_profiles' => array(),
-            'address' => array(),
-        );
+            'social_profiles' => [],
+            'address' => [],
+        ];
         
         // Check if Yoast is active
         if (!class_exists('WPSEO_Options') && !defined('WPSEO_VERSION')) {
@@ -313,27 +313,27 @@ class CG_Settings {
         }
         
         // Fallback to options
-        $yoast_titles = get_option('wpseo_titles', array());
+        $yoast_titles = get_option('wpseo_titles', []);
         if (!empty($yoast_titles['company_name'])) {
             $data['company_name'] = $yoast_titles['company_name'];
         }
         
         // Social profiles
-        $yoast_social = get_option('wpseo_social', array());
+        $yoast_social = get_option('wpseo_social', []);
         if (!empty($yoast_social)) {
-            $data['social_profiles'] = array_filter(array(
+            $data['social_profiles'] = array_filter([
                 'facebook' => $yoast_social['facebook_site'] ?? '',
                 'twitter' => $yoast_social['twitter_site'] ?? '',
                 'instagram' => $yoast_social['instagram_url'] ?? '',
                 'linkedin' => $yoast_social['linkedin_url'] ?? '',
                 'youtube' => $yoast_social['youtube_url'] ?? '',
                 'pinterest' => $yoast_social['pinterest_url'] ?? '',
-            ));
+            ]);
         }
         
         // Local SEO address if available
         if (class_exists('WPSEO_Local_Core')) {
-            $data['address'] = array(
+            $data['address'] = [
                 'street' => get_option('wpseo_local_address', ''),
                 'city' => get_option('wpseo_local_city', ''),
                 'state' => get_option('wpseo_local_state', ''),
@@ -341,7 +341,7 @@ class CG_Settings {
                 'country' => get_option('wpseo_local_country', ''),
                 'phone' => get_option('wpseo_local_phone', ''),
                 'email' => get_option('wpseo_local_email', ''),
-            );
+            ];
         }
         
         return $data;

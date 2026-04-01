@@ -60,7 +60,7 @@ trait ManagerExportTrait {
         $zip = new ZipArchive();
 
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array(ResponseKeyType::Path->value => $zipPath));
+            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', [ResponseKeyType::Path->value => $zipPath]);
 
             return ResultHelper::error(ResponseMessageType::ZipCreateFailed->value);
         }
@@ -71,26 +71,26 @@ trait ManagerExportTrait {
         $zip->close();
 
         $size = filesize($zipPath);
-        $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', [
             ResponseKeyType::SnapshotId->value => $snapshotId,
             'zipPath'                          => $zipPath,
             ResponseKeyType::Size->value       => PathHelper::formatBytes($size),
-        ));
+        ]);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::FilePath->value => $zipPath,
             ResponseKeyType::Filename->value => basename($zipPath),
             ResponseKeyType::Size->value     => $size,
-        ));
+        ]);
     }
 
     private function createExportManifest(array $snapshot): array {
-        return array(
+        return [
             ResponseKeyType::Version->value => PluginConfigType::Version->value,
             ResponseKeyType::FormatVersion->value => '1.0',
             ResponseKeyType::CreatedAt->value => DateHelper::nowIso(),
             ResponseKeyType::ExportedAt->value => DateHelper::nowIso(),
-            ResponseKeyType::Snapshot->value => array(
+            ResponseKeyType::Snapshot->value => [
                 ResponseKeyType::Id->value => $snapshot['Id'],
                 ResponseKeyType::Sequence->value => $snapshot['Sequence'],
                 ResponseKeyType::Filename->value => $snapshot['Filename'],
@@ -100,13 +100,13 @@ trait ManagerExportTrait {
                 ResponseKeyType::TotalRows->value => $snapshot['TotalRows'],
                 ResponseKeyType::FileSize->value => $snapshot['FileSize'],
                 ResponseKeyType::CreatedAt->value => $snapshot['CreatedAt'],
-            ),
-            ResponseKeyType::Source->value => array(
+            ],
+            ResponseKeyType::Source->value => [
                 ResponseKeyType::WpVersion->value => get_bloginfo('version'),
                 ResponseKeyType::PhpVersion->value => PHP_VERSION,
                 ResponseKeyType::SiteUrl->value => get_site_url(),
                 ResponseKeyType::DbPrefix->value => $this->wpdb->prefix,
-            ),
-        );
+            ],
+        ];
     }
 }

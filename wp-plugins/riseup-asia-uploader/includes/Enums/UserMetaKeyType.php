@@ -58,7 +58,7 @@ enum UserMetaKeyType: string
     /** @return self[] */
     public static function socialCases(): array
     {
-        return array(
+        return [
             self::Facebook,
             self::Instagram,
             self::LinkedIn,
@@ -70,13 +70,13 @@ enum UserMetaKeyType: string
             self::X,
             self::YouTube,
             self::Mastodon,
-        );
+        ];
     }
 
     /** @return self[] */
     public static function yoastCases(): array
     {
-        return array(
+        return [
             self::YoastHonorificPrefix,
             self::YoastHonorificSuffix,
             self::YoastBirthDate,
@@ -89,7 +89,7 @@ enum UserMetaKeyType: string
             self::YoastAuthorTitle,
             self::YoastAuthorMetaDescription,
             self::YoastPronouns,
-        );
+        ];
     }
 
     /**

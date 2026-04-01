@@ -45,13 +45,13 @@ trait DatabaseMigrationsV1V3Trait {
 
     private function createTransactionIndexes(): void {
         $table   = TableType::Transactions->value;
-        $indexes = array(
+        $indexes = [
             'IdxTransactions_Action'    => 'Action',
             'IdxTransactions_PluginSlug' => 'PluginSlug',
             'IdxTransactions_UserLogin' => 'UserLogin',
             'IdxTransactions_Status'    => 'Status',
             'IdxTransactions_CreatedAt' => 'CreatedAt',
-        );
+        ];
 
         foreach ($indexes as $name => $column) {
             $this->pdo->exec("CREATE INDEX IF NOT EXISTS {$name} ON {$table} ({$column})");
@@ -108,12 +108,12 @@ trait DatabaseMigrationsV1V3Trait {
 
         $this->fileLogger->info('Applying migration v3: enhanced transaction fields');
         $table   = TableType::Transactions->value;
-        $columns = array(
+        $columns = [
             'PluginFile'  => 'TEXT',
             'WasActive'   => 'INTEGER',
             'TriggeredBy' => 'TEXT',
             'AgentSiteId' => 'INTEGER',
-        );
+        ];
 
         foreach ($columns as $column => $type) {
             try {

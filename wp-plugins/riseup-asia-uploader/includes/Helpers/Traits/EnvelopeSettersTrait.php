@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 trait EnvelopeSettersTrait {
     public function setResults(array $results): static { $this->results = $results; return $this; }
-    public function setSingleResult(array $item): static { $this->results = array($item); return $this; }
+    public function setSingleResult(array $item): static { $this->results = [$item]; return $this; }
     public function setRequestedAt(string $path): static { $this->requestedAt = $path; return $this; }
 
     public function autoDetectRequestedAt(): static {
@@ -39,18 +39,18 @@ trait EnvelopeSettersTrait {
     public function setNavigation(
         ?string $nextPage = null,
         ?string $prevPage = null,
-        array $closerLinks = array(),
+        array $closerLinks = [],
     ): static {
-        $this->navigation = array(
+        $this->navigation = [
             'NextPage'    => $nextPage,
             'PrevPage'    => $prevPage,
             'CloserLinks' => $closerLinks,
-        );
+        ];
         return $this;
     }
 
-    public function setMethodsStack(array $backendStack, array $frontendStack = array()): static {
-        $this->methodsStack = array('Backend' => $backendStack, 'Frontend' => $frontendStack);
+    public function setMethodsStack(array $backendStack, array $frontendStack = []): static {
+        $this->methodsStack = ['Backend' => $backendStack, 'Frontend' => $frontendStack];
         return $this;
     }
 

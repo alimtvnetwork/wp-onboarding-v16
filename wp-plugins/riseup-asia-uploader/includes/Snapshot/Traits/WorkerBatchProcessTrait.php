@@ -50,7 +50,7 @@ trait WorkerBatchProcessTrait {
             $isJobMissing = ($job === null || $job === false);
 
             if ($isJobMissing) {
-                $this->log(LogLevelType::Error->value, 'Job not found', array('jobId' => $jobId));
+                $this->log(LogLevelType::Error->value, 'Job not found', ['jobId' => $jobId]);
 
                 return;
             }
@@ -63,11 +63,11 @@ trait WorkerBatchProcessTrait {
     }
 
     private function handleBatchException(PDO $pdo, int $jobId, Throwable $e): void {
-        $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
+        $this->log(LogLevelType::Error->value, 'Worker batch failed', [
             'jobId'                         => $jobId,
             ResponseKeyType::Error->value   => $e->getMessage(),
             'trace'                         => $e->getTraceAsString(),
-        ));
+        ]);
         $this->updateJobStatus($pdo, $jobId, SnapshotJobStatusType::Failed->value, $e->getMessage());
     }
 

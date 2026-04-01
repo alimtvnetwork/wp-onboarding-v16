@@ -18,6 +18,7 @@ use WP_REST_Response;
 
 use QUpload\Enums\HttpStatusType;
 use QUpload\Helpers\EnvelopeBuilder;
+use QUpload\Enums\PhpNativeType;
 
 trait ResponseTrait
 {
@@ -194,7 +195,7 @@ trait ResponseTrait
     private function getExceptionCode(Throwable $exception): string {
         $code = $exception->getCode();
 
-        if (is_int($code) && $code > 0) {
+        if (gettype($code) === PhpNativeType::PhpInteger->value && $code > 0) {
             return 'E' . $code;
         }
 

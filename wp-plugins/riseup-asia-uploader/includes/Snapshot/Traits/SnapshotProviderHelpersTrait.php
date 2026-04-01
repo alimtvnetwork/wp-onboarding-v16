@@ -24,7 +24,7 @@ trait SnapshotProviderHelpersTrait {
     protected function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $prefix = '[SNAPSHOT] [' . strtoupper($this->providerId) . ']';
         $fullMessage = $prefix . ' ' . $message;
@@ -50,13 +50,13 @@ trait SnapshotProviderHelpersTrait {
         $this->logger->info($message);
     }
 
-    protected function logError(Throwable $e, string $message, array $context = array()): void {
+    protected function logError(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
     }
 
-    protected function logWarn(Throwable $e, string $message, array $context = array()): void {
+    protected function logWarn(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Warn->value, $message, $context);
@@ -75,7 +75,7 @@ trait SnapshotProviderHelpersTrait {
             return false;
         }
 
-        $this->log(LogLevelType::Debug->value, 'Snapshots directory ensured', array('path' => $dir));
+        $this->log(LogLevelType::Debug->value, 'Snapshots directory ensured', ['path' => $dir]);
 
         return true;
     }

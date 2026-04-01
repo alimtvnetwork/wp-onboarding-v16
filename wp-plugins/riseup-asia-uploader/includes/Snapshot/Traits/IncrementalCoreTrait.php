@@ -49,20 +49,20 @@ trait IncrementalCoreTrait {
 
         $this->logIncrementalDirCreated($sequence, $folderName);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             'rootPdo'                            => $rootPdo,
             'masterTables'                       => $this->getMasterTableInventory($rootPdo),
             ResponseKeyType::Sequence->value     => $sequence,
             ResponseKeyType::FolderName->value   => $folderName,
             'incrementalDir'                     => $incrementalDir,
-        ));
+        ]);
     }
 
     private function logIncrementalDirCreated(int $sequence, string $folderName): void {
-        $this->log(LogLevelType::Info->value, 'Incremental directory created', array(
+        $this->log(LogLevelType::Info->value, 'Incremental directory created', [
             ResponseKeyType::Sequence->value   => $sequence,
             ResponseKeyType::FolderName->value => $folderName,
-        ));
+        ]);
     }
 
     private function exportChangedTables(
@@ -73,8 +73,8 @@ trait IncrementalCoreTrait {
     ): array {
         $tablesChanged = 0;
         $totalNewRows = 0;
-        $errors = array();
-        $exportedTables = array();
+        $errors = [];
+        $exportedTables = [];
 
         foreach ($masterTables as $tableName => $info) {
             $result = $this->exportTableDelta($tableName, $info, $incDir, $rootPdo, $sequence);
@@ -92,12 +92,12 @@ trait IncrementalCoreTrait {
             }
         }
 
-        return array(
+        return [
             ResponseKeyType::TablesChanged->value  => $tablesChanged,
             ResponseKeyType::TotalNewRows->value   => $totalNewRows,
             ResponseKeyType::Errors->value         => $errors,
             ResponseKeyType::ExportedTables->value => $exportedTables,
-        );
+        ];
     }
 
     private function finalizeIncremental(
@@ -138,14 +138,14 @@ trait IncrementalCoreTrait {
     }
 
     private function logIncrementalComplete(int $snapshotId, int $sequence, array $export, float $duration): void {
-        $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
+        $this->log(LogLevelType::Info->value, 'Incremental backup complete', [
             ResponseKeyType::SnapshotId->value   => $snapshotId,
             ResponseKeyType::Sequence->value     => $sequence,
             ResponseKeyType::TablesChanged->value => $export[ResponseKeyType::TablesChanged->value],
             ResponseKeyType::TotalNewRows->value  => $export[ResponseKeyType::TotalNewRows->value],
             ResponseKeyType::Errors->value        => count($export[ResponseKeyType::Errors->value]),
             ResponseKeyType::Duration->value      => round($duration, 2) . 's',
-        ));
+        ]);
     }
 
     private function buildIncrementalResult(
@@ -156,7 +156,7 @@ trait IncrementalCoreTrait {
         array $export,
         float $duration,
     ): array {
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::SnapshotId->value     => $snapshotId,
             ResponseKeyType::Sequence->value       => $sequence,
             ResponseKeyType::FolderName->value     => $folderName,
@@ -166,6 +166,6 @@ trait IncrementalCoreTrait {
             ResponseKeyType::Tables->value         => $export[ResponseKeyType::ExportedTables->value],
             ResponseKeyType::Errors->value         => $export[ResponseKeyType::Errors->value],
             ResponseKeyType::Duration->value       => $duration,
-        ));
+        ]);
     }
 }

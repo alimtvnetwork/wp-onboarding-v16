@@ -32,21 +32,21 @@ enum CloudStorageAccountFieldType: string
     /** Fields required for GitHub/GitLab account creation. */
     public static function gitRequiredFields(): array
     {
-        return array(
+        return [
             self::Provider,
             self::AccountLabel,
             self::AccessToken,
-        );
+        ];
     }
 
     /** Fields required for Google Drive account creation. */
     public static function googleDriveRequiredFields(): array
     {
-        return array(
+        return [
             self::Provider,
             self::AccountLabel,
             self::AccessToken,
             self::RefreshToken,
-        );
+        ];
     }
 }

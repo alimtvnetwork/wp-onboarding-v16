@@ -36,7 +36,7 @@ trait UploadInstallExtractTrait
         $isUpdate,
         $targetDir,
     ) {
-        $this->fileLogger->info($isUpdate ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
+        $this->fileLogger->info($isUpdate ? 'Updating existing plugin' : 'Installing new plugin', ['slug' => $slug]);
 
         $isFreshInstall = ($isUpdate === false);
 
@@ -72,13 +72,13 @@ trait UploadInstallExtractTrait
             : null;
 
         // Log upload activity
-        $this->fileLogger->info('Plugin upload processing started', array(
+        $this->fileLogger->info('Plugin upload processing started', [
             'slug' => $context[ResponseKeyType::Slug->value],
             'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
             'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
             'activate' => $input['activate'],
             'previousVersion' => $previousVersion,
-        ));
+        ]);
 
         // Create backup before replacement for ALL updates (self and non-self)
         $backupDir = null;
@@ -96,11 +96,11 @@ trait UploadInstallExtractTrait
             }
 
             if ($backupDir !== false) {
-                $this->fileLogger->info('Pre-upload backup created', array(
+                $this->fileLogger->info('Pre-upload backup created', [
                     'slug' => $context[ResponseKeyType::Slug->value],
                     'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
                     'backupDir' => $backupDir,
-                ));
+                ]);
             }
         }
 
@@ -131,10 +131,10 @@ trait UploadInstallExtractTrait
             $isNonSelfFailure = !$context[ResponseKeyType::IsSelfUpdate->value] && $backupDir !== null;
 
             if ($isNonSelfFailure) {
-                $this->fileLogger->warn('Upload failed — rolling back to previous version', array(
+                $this->fileLogger->warn('Upload failed — rolling back to previous version', [
                     'slug' => $context[ResponseKeyType::Slug->value],
                     'previousVersion' => $previousVersion,
-                ));
+                ]);
 
                 $rollbackHelper = new SelfUpdateBackupHelper($this->fileLogger);
                 $isRolledBack = $rollbackHelper->rollback($backupDir);
@@ -144,7 +144,7 @@ trait UploadInstallExtractTrait
 
                     if ($pluginFile) {
                         activate_plugin($pluginFile);
-                        $this->fileLogger->info('Rolled-back plugin re-activated', array('slug' => $context[ResponseKeyType::Slug->value]));
+                        $this->fileLogger->info('Rolled-back plugin re-activated', ['slug' => $context[ResponseKeyType::Slug->value]]);
                     }
                 }
 
@@ -153,14 +153,14 @@ trait UploadInstallExtractTrait
                     : null;
 
                 if ($isRolledBack) {
-                    $this->fileLogger->info('Rollback complete — previous version restored', array(
+                    $this->fileLogger->info('Rollback complete — previous version restored', [
                         'slug' => $context[ResponseKeyType::Slug->value],
                         'restoredVersion' => $restoredVersion,
-                    ));
+                    ]);
                 } else {
-                    $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', array(
+                    $this->fileLogger->error('Rollback FAILED — plugin may be in a broken state', [
                         'slug' => $context[ResponseKeyType::Slug->value],
-                    ));
+                    ]);
                 }
 
                 // Inject rollback metadata into the error response
@@ -179,13 +179,13 @@ trait UploadInstallExtractTrait
             $backupHelper->cleanup($backupDir);
         }
 
-        $this->fileLogger->info('Plugin upload completed successfully', array(
+        $this->fileLogger->info('Plugin upload completed successfully', [
             'slug' => $context[ResponseKeyType::Slug->value],
             'version' => $stepResult[ResponseKeyType::PluginVersion->value] ?? '',
             'isUpdate' => $context[ResponseKeyType::IsUpdate->value],
             'isSelfUpdate' => $context[ResponseKeyType::IsSelfUpdate->value],
             'activated' => $stepResult[ResponseKeyType::Activated->value] ?? false,
-        ));
+        ]);
 
         return $stepResult;
     }
@@ -210,11 +210,11 @@ trait UploadInstallExtractTrait
             $detail,
         );
 
-        $this->fileLogger->error($message, array(
+        $this->fileLogger->error($message, [
             'slug' => $slug,
             'phase' => $phase,
             'source' => 'external-plugin',
-        ));
+        ]);
     }
 
     /** Prepare extraction context from input and ZIP result. */
@@ -231,13 +231,13 @@ trait UploadInstallExtractTrait
             $this->preLogSelfUpdate($slug, $input['uploadSource'], $input['clientPluginVersion'], strlen($input['zipContent']));
         }
 
-        return array(
+        return [
             ResponseKeyType::TempFile->value => $zipResult[ResponseKeyType::TempFile->value],
             ResponseKeyType::Slug->value => $slug,
             'targetDir' => $targetDir,
             ResponseKeyType::IsUpdate->value => $isUpdate,
             ResponseKeyType::IsSelfUpdate->value => $isSelfUpdate,
-        );
+        ];
     }
 
     /** Execute extraction, validation, activation, and version detection. */
@@ -261,10 +261,10 @@ trait UploadInstallExtractTrait
             if ($isValid === false) {
                 $diagnostics = $validator->getDiagnostics();
 
-                $this->fileLogger->error('Self-update validation failed — triggering rollback', array(
+                $this->fileLogger->error('Self-update validation failed — triggering rollback', [
                     'slug'        => $ctx[ResponseKeyType::Slug->value],
                     'diagnostics' => $diagnostics,
-                ));
+                ]);
 
                 $rollbackResponse = $this->performRollbackAndBuildResponse(
                     $backupDir,
@@ -297,10 +297,10 @@ trait UploadInstallExtractTrait
             if ($isHealthy === false) {
                 $diagnostics = $healthCheck->getDiagnostics();
 
-                $this->fileLogger->error('Post-activation health check failed — triggering rollback', array(
+                $this->fileLogger->error('Post-activation health check failed — triggering rollback', [
                     'slug'        => $ctx[ResponseKeyType::Slug->value],
                     'diagnostics' => $diagnostics,
-                ));
+                ]);
 
                 // Deactivate the broken new version before rollback
                 deactivate_plugins($pluginFile);
@@ -318,13 +318,13 @@ trait UploadInstallExtractTrait
 
         $versionInfo = $this->detectInstalledVersion($pluginFile, $ctx[ResponseKeyType::Slug->value], $ctx[ResponseKeyType::IsSelfUpdate->value], $input['clientPluginVersion']);
 
-        return array(
+        return [
             ResponseKeyType::Slug->value => $ctx[ResponseKeyType::Slug->value],
             ResponseKeyType::IsUpdate->value => $ctx[ResponseKeyType::IsUpdate->value],
             ResponseKeyType::Activated->value => $activation['activated'],
             ResponseKeyType::PluginVersion->value => $versionInfo[ResponseKeyType::Version->value],
             ResponseKeyType::IsSelfUpdate->value => $ctx[ResponseKeyType::IsSelfUpdate->value],
-        );
+        ];
     }
 
     /**
@@ -336,10 +336,10 @@ trait UploadInstallExtractTrait
             return $errorResponse;
         }
 
-        $this->fileLogger->warn('Triggering self-update rollback', array(
+        $this->fileLogger->warn('Triggering self-update rollback', [
             'reason'     => $reason->value,
             'reasonLabel' => $reason->label(),
-        ));
+        ]);
 
         $backupHelper = new SelfUpdateBackupHelper($this->fileLogger);
         $rollbackSuccess = $backupHelper->rollback($backupDir);
@@ -381,9 +381,9 @@ trait UploadInstallExtractTrait
             if ($rolledBack) {
                 $outcome = SelfUpdateStatusType::RolledBack;
 
-                $this->fileLogger->info('Self-update rollback succeeded', array(
+                $this->fileLogger->info('Self-update rollback succeeded', [
                     'restoredVersion' => $restoredVersion,
-                ));
+                ]);
 
                 // Re-activate the restored version
                 $pluginFile = $this->findPluginFile($slug);
@@ -403,16 +403,16 @@ trait UploadInstallExtractTrait
 
         return EnvelopeBuilder::error($reason->label(), HttpStatusType::ServerError->value)
             ->setRequestedAt($requestedAt)
-            ->setSingleResult(array(
+            ->setSingleResult([
                 ResponseKeyType::SelfUpdateStatus->value => $outcome->value,
                 ResponseKeyType::RollbackReason->value   => $reason->value,
-                'rollback' => array(
+                'rollback' => [
                     ResponseKeyType::RollbackAttempted->value => ($backupDir !== null),
                     ResponseKeyType::RollbackSuccess->value   => $rolledBack,
                     ResponseKeyType::RestoredVersion->value   => $restoredVersion,
-                ),
+                ],
                 $diagnosticsKey => $diagnostics,
-            ))
+            ])
             ->toResponse();
     }
 
@@ -459,18 +459,18 @@ trait UploadInstallExtractTrait
         $isFileExists = file_exists($tempFile);
 
         if ($isFileExists === false) {
-            $this->fileLogger->error('Temp ZIP file does not exist', array('path' => $tempFile));
+            $this->fileLogger->error('Temp ZIP file does not exist', ['path' => $tempFile]);
             $this->deleteDirectory($tempExtractDir);
 
             return $this->errorResponse('Failed to open ZIP for extraction — file does not exist', HttpStatusType::ServerError->value);
         }
 
         $tempFileSize = @filesize($tempFile);
-        $this->fileLogger->info('Opening ZIP file', array(
+        $this->fileLogger->info('Opening ZIP file', [
             'path'   => $tempFile,
             'size'   => $tempFileSize,
             'exists' => true,
-        ));
+        ]);
 
         $zip = new ZipArchive();
         $openResult = $zip->open($tempFile);
@@ -479,12 +479,12 @@ trait UploadInstallExtractTrait
         if ($isOpened === false) {
             $errorMsg = $this->zipErrorMessage($openResult);
 
-            $this->fileLogger->error('ZipArchive::open() failed', array(
+            $this->fileLogger->error('ZipArchive::open() failed', [
                 'path'      => $tempFile,
                 'errorCode' => $openResult,
                 'errorMsg'  => $errorMsg,
                 'fileSize'  => $tempFileSize,
-            ));
+            ]);
 
             @unlink($tempFile);
             $this->deleteDirectory($tempExtractDir);
@@ -515,7 +515,7 @@ trait UploadInstallExtractTrait
             return 'OK';
         }
 
-        $messages = array(
+        $messages = [
             ZipArchive::ER_EXISTS   => 'File already exists',
             ZipArchive::ER_INCONS   => 'Inconsistent ZIP archive',
             ZipArchive::ER_INVAL    => 'Invalid argument',
@@ -525,7 +525,7 @@ trait UploadInstallExtractTrait
             ZipArchive::ER_OPEN     => 'Cannot open file',
             ZipArchive::ER_READ     => 'Read error',
             ZipArchive::ER_SEEK     => 'Seek error',
-        );
+        ];
 
         return $messages[$code] ?? 'Unknown error (code: ' . $code . ')';
     }

@@ -43,8 +43,8 @@ trait AdminErrorRenderTrait {
 
     /** Get safe default values for the error page. */
     private function getErrorPageDefaults(): array {
-        return array(
-            'errors'          => array(),
+        return [
+            'errors'          => [],
             'total'           => 0,
             'totalPages'      => 1,
             'page'            => 1,
@@ -55,7 +55,7 @@ trait AdminErrorRenderTrait {
             'filterLevel'     => isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '',
             'filterSearch'    => isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '',
             'dbErrorMessage'  => '',
-        );
+        ];
     }
 
     /** Fetch errors for the admin page with pagination and filters. */
@@ -100,8 +100,8 @@ trait AdminErrorRenderTrait {
 
     /** Build WHERE clause and params from filter defaults. */
     private function buildErrorFilters(array $defaults): array {
-        $where = array();
-        $params = array();
+        $where = [];
+        $params = [];
 
         $hasLevelFilter = !empty($defaults['filterLevel']);
 
@@ -120,7 +120,7 @@ trait AdminErrorRenderTrait {
         $hasWhereClause = !empty($where);
         $whereSql = $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        return array('whereSql' => $whereSql, 'params' => $params);
+        return ['whereSql' => $whereSql, 'params' => $params];
     }
 
     /** Count total filtered error sessions. */
@@ -139,7 +139,7 @@ trait AdminErrorRenderTrait {
         int $offset,
     ): array {
         $stmt = $pdo->prepare("SELECT * FROM " . TableType::ErrorSessions->value . " {$filter['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?");
-        $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
+        $stmt->execute(array_merge($filter['params'], [$perPage, $offset]));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -157,7 +157,7 @@ trait AdminErrorRenderTrait {
         $unseenCount = $this->getUnseenErrorCount();
         $latestErrorTime = $this->resolveLatestErrorTime($errors, $hasUnseen);
 
-        return array(
+        return [
             'errors'          => $errors,
             'total'           => $total,
             'totalPages'      => $totalPages,
@@ -169,7 +169,7 @@ trait AdminErrorRenderTrait {
             'filterLevel'     => $defaults['filterLevel'],
             'filterSearch'    => $defaults['filterSearch'],
             'dbErrorMessage'  => '',
-        );
+        ];
     }
 
     /** Resolve the latest error time string. */

@@ -27,7 +27,7 @@ trait ErrorLogHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error logs endpoint called');
             $settings = $this->resolveLogSettings($request);
-            $result = array(ResponseKeyType::Version->value => PluginConfigType::Version->value, ResponseKeyType::Settings->value => $settings);
+            $result = [ResponseKeyType::Version->value => PluginConfigType::Version->value, ResponseKeyType::Settings->value => $settings];
 
             if ($settings['include_error_log']) {
                 $result[ResponseKeyType::ErrorLog->value] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);
@@ -48,16 +48,16 @@ trait ErrorLogHandlerTrait {
     /** Resolve log retrieval settings from admin defaults and query param overrides. */
     private function resolveLogSettings(WP_REST_Request $request): array {
         $settings     = Admin::get_settings();
-        $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
+        $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : [];
 
-        $resolved = array(
+        $resolved = [
             'include_error_log'  => isset($logSettings['include_error_log']) ? (bool) $logSettings['include_error_log'] : true,
             'include_full_log'   => isset($logSettings['include_full_log']) ? (bool) $logSettings['include_full_log'] : false,
             'include_stacktrace' => isset($logSettings['include_stacktrace']) ? (bool) $logSettings['include_stacktrace'] : true,
             'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : PaginationConfigType::logRetrievalMaxLines(),
-        );
+        ];
 
-        foreach (array('include_error_log', 'include_full_log', 'include_stacktrace') as $key) {
+        foreach (['include_error_log', 'include_full_log', 'include_stacktrace'] as $key) {
             if ($request->get_param($key) !== null) {
                 $resolved[$key] = (bool) $request->get_param($key);
             }
@@ -72,10 +72,10 @@ trait ErrorLogHandlerTrait {
 
     /** Read the last N lines of a log file. */
     private function readLogTail(string $filePath, int $maxLines): array {
-        $result = array(
+        $result = [
             ResponseKeyType::Exists->value => false, 'file' => basename($filePath), ResponseKeyType::Path->value => $filePath,
             ResponseKeyType::Content->value => '', ResponseKeyType::Lines->value => 0, ResponseKeyType::TotalSize->value => 0, ResponseKeyType::Truncated->value => false,
-        );
+        ];
 
         $isFileUnreadable = PathHelper::isFileUnreadable($filePath);
 

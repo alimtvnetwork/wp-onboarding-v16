@@ -18,6 +18,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_User_Query;
 use RiseupAsia\Enums\UserMetaKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait UserExportCsvTrait {
 
@@ -26,16 +27,16 @@ trait UserExportCsvTrait {
      */
     public function handleExportUsers(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'GET /users/export'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'GET /users/export']);
 
         return $this->safeExecute(function () use ($request) {
             $role = $request->get_param('role') ?: '';
 
-            $queryArgs = array(
+            $queryArgs = [
                 'number'  => -1,
                 'orderby' => 'ID',
                 'order'   => 'ASC',
-            );
+            ];
 
             $hasRole = !empty($role);
 
@@ -61,10 +62,10 @@ trait UserExportCsvTrait {
             $csvContent = stream_get_contents($output);
             fclose($output);
 
-            $this->fileLogger->info('Users exported as CSV', array(
+            $this->fileLogger->info('Users exported as CSV', [
                 'count' => count($users),
                 'by'    => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             $response = new WP_REST_Response($csvContent, 200);
             $response->header('Content-Type', 'text/csv; charset=utf-8');
@@ -81,11 +82,11 @@ trait UserExportCsvTrait {
      */
     private function buildCsvHeaders(bool $includeYoast): array
     {
-        $headers = array(
+        $headers = [
             'Id', 'Username', 'Email', 'PasswordHash',
             'FirstName', 'LastName', 'DisplayName', 'Nickname',
             'Website', 'Bio', 'Role', 'RegisteredAt',
-        );
+        ];
 
         foreach (UserMetaKeyType::socialCases() as $meta) {
             $headers[] = 'Social.' . $meta->jsonKey();
@@ -110,7 +111,7 @@ trait UserExportCsvTrait {
         $roles = $user->roles;
         $primaryRole = !empty($roles) ? reset($roles) : 'subscriber';
 
-        $row = array(
+        $row = [
             $user->ID,
             $user->user_login,
             $user->user_email,
@@ -123,17 +124,17 @@ trait UserExportCsvTrait {
             get_user_meta($user->ID, 'description', true) ?: '',
             $primaryRole,
             $user->user_registered,
-        );
+        ];
 
         foreach (UserMetaKeyType::socialCases() as $meta) {
             $value = get_user_meta($user->ID, $meta->value, true);
-            $row[] = is_string($value) ? $value : '';
+            $row[] = gettype($value) === PhpNativeType::PhpString->value ? $value : '';
         }
 
         if ($includeYoast) {
             foreach (UserMetaKeyType::yoastCases() as $meta) {
                 $value = get_user_meta($user->ID, $meta->value, true);
-                $row[] = is_string($value) ? $value : '';
+                $row[] = gettype($value) === PhpNativeType::PhpString->value ? $value : '';
             }
         }
 

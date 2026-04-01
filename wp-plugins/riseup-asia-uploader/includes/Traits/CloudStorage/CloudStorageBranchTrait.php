@@ -33,7 +33,7 @@ trait CloudStorageBranchTrait {
         return match(true) {
             $provider->isGitHub() => $this->githubListBranches($account, $token),
             $provider->isGitLab() => $this->gitlabListBranches($account, $token),
-            default               => array(),
+            default               => [],
         };
     }
 
@@ -114,12 +114,12 @@ trait CloudStorageBranchTrait {
         $branches = $this->githubApiRequest('GET', $path, $token);
 
         return array_map(
-            fn(array $branch) => array(
+            fn(array $branch) => [
                 'Name'           => $branch['name'] ?? '',
                 'IsDefault'      => ($branch['name'] ?? '') === ($account['DefaultBranch'] ?? 'main'),
                 'LastCommitSha'  => $branch['commit']['sha'] ?? '',
                 'LastCommitDate' => '',
-            ),
+            ],
             $branches,
         );
     }
@@ -134,10 +134,10 @@ trait CloudStorageBranchTrait {
         $repo  = $account['RepoName'] ?? '';
         $path  = sprintf('/repos/%s/%s/git/refs', urlencode($owner), urlencode($repo));
 
-        $this->githubApiRequest('POST', $path, $token, array(
+        $this->githubApiRequest('POST', $path, $token, [
             'ref' => 'refs/heads/' . $branchName,
             'sha' => $sha,
-        ));
+        ]);
     }
 
     private function githubDeleteBranch(
@@ -154,7 +154,7 @@ trait CloudStorageBranchTrait {
         $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            $this->fileLogger->debug('[CLOUD-BRANCH] GitHub branch already deleted', array('branch' => $branchName));
+            $this->fileLogger->debug('[CLOUD-BRANCH] GitHub branch already deleted', ['branch' => $branchName]);
         }
     }
 
@@ -183,12 +183,12 @@ trait CloudStorageBranchTrait {
         $branches = $this->gitlabApiRequest('GET', $path, $token, null, $account);
 
         return array_map(
-            fn(array $branch) => array(
+            fn(array $branch) => [
                 'Name'           => $branch['name'] ?? '',
                 'IsDefault'      => $branch['default'] ?? false,
                 'LastCommitSha'  => $branch['commit']['id'] ?? '',
                 'LastCommitDate' => $branch['commit']['committed_date'] ?? '',
-            ),
+            ],
             $branches,
         );
     }
@@ -202,10 +202,10 @@ trait CloudStorageBranchTrait {
         $projectId = $this->gitlabProjectId($account);
         $path      = sprintf('/projects/%s/repository/branches', urlencode($projectId));
 
-        $this->gitlabApiRequest('POST', $path, $token, array(
+        $this->gitlabApiRequest('POST', $path, $token, [
             'branch' => $branchName,
             'ref'    => $sha,
-        ), $account);
+        ], $account);
     }
 
     private function gitlabDeleteBranch(
@@ -221,7 +221,7 @@ trait CloudStorageBranchTrait {
         $isNotFound = ($statusCode === HttpStatusType::NotFound->value);
 
         if ($isNotFound) {
-            $this->fileLogger->debug('[CLOUD-BRANCH] GitLab branch already deleted', array('branch' => $branchName));
+            $this->fileLogger->debug('[CLOUD-BRANCH] GitLab branch already deleted', ['branch' => $branchName]);
         }
     }
 

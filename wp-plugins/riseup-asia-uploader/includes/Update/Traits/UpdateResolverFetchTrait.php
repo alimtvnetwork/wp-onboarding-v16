@@ -47,10 +47,10 @@ trait UpdateResolverFetchTrait {
 
         $updateInfo = $this->parseUpdateResponseBody($response, $updateUrl);
 
-        $this->saveSettings(array(
+        $this->saveSettings([
             'update_info' => $updateInfo, 'new_version' => $updateInfo['version'],
             'package_url' => $updateInfo['package'], 'last_check' => current_time('mysql', true), 'last_error' => '',
-        ));
+        ]);
 
         $this->fileLogger->info('Update info fetched', $updateInfo);
 
@@ -60,7 +60,7 @@ trait UpdateResolverFetchTrait {
     private function resolveUpdateUrl(array $settings, bool $forceCheck): string {
         $updateUrl = $this->getUpdateUrl($forceCheck);
         if (is_wp_error($updateUrl)) {
-            $this->fileLogger->warn('Falling back to master URL', array('error' => $updateUrl->get_error_message()));
+            $this->fileLogger->warn('Falling back to master URL', ['error' => $updateUrl->get_error_message()]);
 
             return $settings['master_url'];
         }
@@ -71,7 +71,7 @@ trait UpdateResolverFetchTrait {
     private function fetchUpdateResponse(string $url) {
         $response = wp_remote_get($url, HttpConfigType::defaultGetOptions());
         if (is_wp_error($response)) {
-            $this->fileLogger->error('Failed to fetch update info', array('error' => $response->get_error_message()));
+            $this->fileLogger->error('Failed to fetch update info', ['error' => $response->get_error_message()]);
         }
 
         return $response;
@@ -91,7 +91,7 @@ trait UpdateResolverFetchTrait {
             return $this->fetchUpdateInfo(true);
         }
 
-        $this->saveSettings(array('last_error' => $error->get_error_message(), 'last_check' => current_time('mysql', true)));
+        $this->saveSettings(['last_error' => $error->get_error_message(), 'last_check' => current_time('mysql', true)]);
 
         return $error;
     }
@@ -102,7 +102,7 @@ trait UpdateResolverFetchTrait {
         int $statusCode,
     ) {
         $errorMsg = "HTTP $statusCode from update server";
-        $this->fileLogger->error('Update server error', array('status' => $statusCode));
+        $this->fileLogger->error('Update server error', ['status' => $statusCode]);
 
         $isRetryable = ($forceCheck === false) && !empty($settings['resolved_url'] ?? null);
 
@@ -113,7 +113,7 @@ trait UpdateResolverFetchTrait {
             return $this->fetchUpdateInfo(true);
         }
 
-        $this->saveSettings(array('last_error' => $errorMsg, 'last_check' => current_time('mysql', true)));
+        $this->saveSettings(['last_error' => $errorMsg, 'last_check' => current_time('mysql', true)]);
 
         return new WP_Error(WpErrorCodeType::HttpError->value, $errorMsg);
     }
@@ -124,21 +124,21 @@ trait UpdateResolverFetchTrait {
         $isJsonResponse = (strpos($contentType, ContentTypeValueType::Json->value) !== false);
 
         if (!$isJsonResponse) {
-            return array('version' => '', 'package' => $updateUrl);
+            return ['version' => '', 'package' => $updateUrl];
         }
 
         $data = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->fileLogger->error('Invalid JSON from update server');
 
-            return array('version' => '', 'package' => $updateUrl);
+            return ['version' => '', 'package' => $updateUrl];
         }
 
-        return array(
+        return [
             'version' => $data['version'] ?? '', 'package' => $data['package'] ?? '',
             'sha256' => $data['sha256'] ?? '',
             'tested' => $data['tested'] ?? '', 'requires' => $data['requires'] ?? '',
             'requires_php' => $data['requires_php'] ?? '', 'changelog' => $data['changelog'] ?? '',
-        );
+        ];
     }
 }

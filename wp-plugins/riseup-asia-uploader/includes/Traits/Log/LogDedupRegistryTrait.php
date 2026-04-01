@@ -18,6 +18,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait LogDedupRegistryTrait
 {
@@ -45,37 +46,37 @@ trait LogDedupRegistryTrait
 
         if ($isFileExists === false) {
             return new WP_REST_Response(
-                array(
+                [
                     ResponseKeyType::Success->value => true,
-                    ResponseKeyType::DedupRegistry->value => array(
+                    ResponseKeyType::DedupRegistry->value => [
                         ResponseKeyType::Exists->value        => false,
                         ResponseKeyType::Version->value       => null,
                         ResponseKeyType::EntryCount->value    => 0,
                         ResponseKeyType::FileSizeBytes->value => 0,
-                        ResponseKeyType::Entries->value       => array(),
+                        ResponseKeyType::Entries->value       => [],
                         'InfoCount'                           => 0,
                         'DebugCount'                          => 0,
-                        'InfoEntries'                         => array(),
-                        'DebugEntries'                        => array(),
-                    ),
-                ),
+                        'InfoEntries'                         => [],
+                        'DebugEntries'                        => [],
+                    ],
+                ],
                 HttpStatusType::Ok->value,
             );
         }
 
         $contents = @file_get_contents($registryPath);
         $data = ($contents !== false) ? json_decode($contents, true) : null;
-        $isValidData = is_array($data);
+        $isValidData = gettype($data) === PhpNativeType::PhpArray->value;
 
         $version = $isValidData ? ($data['version'] ?? null) : null;
-        $hashes = ($isValidData && isset($data['hashes']) && is_array($data['hashes'])) ? $data['hashes'] : array();
+        $hashes = ($isValidData && isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value) ? $data['hashes'] : [];
         $entryCount = count($hashes);
         $fileSize = @filesize($registryPath);
 
         $infoCount = 0;
         $debugCount = 0;
-        $infoEntries = array();
-        $debugEntries = array();
+        $infoEntries = [];
+        $debugEntries = [];
 
         foreach ($hashes as $hash => $level) {
             if ($level === 'info') {
@@ -88,9 +89,9 @@ trait LogDedupRegistryTrait
         }
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
-                ResponseKeyType::DedupRegistry->value => array(
+                ResponseKeyType::DedupRegistry->value => [
                     ResponseKeyType::Exists->value        => true,
                     ResponseKeyType::Version->value       => $version,
                     ResponseKeyType::EntryCount->value    => $entryCount,
@@ -100,8 +101,8 @@ trait LogDedupRegistryTrait
                     'DebugCount'                          => $debugCount,
                     'InfoEntries'                         => $infoEntries,
                     'DebugEntries'                        => $debugEntries,
-                ),
-            ),
+                ],
+            ],
             HttpStatusType::Ok->value,
         );
     }
@@ -119,7 +120,7 @@ trait LogDedupRegistryTrait
         if ($isFileExists) {
             $contents = @file_get_contents($registryPath);
             $data = ($contents !== false) ? json_decode($contents, true) : null;
-            $hasHashes = is_array($data) && isset($data['hashes']) && is_array($data['hashes']);
+            $hasHashes = gettype($data) === PhpNativeType::PhpArray->value && isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value;
 
             if ($hasHashes) {
                 $previousCount = count($data['hashes']);
@@ -129,11 +130,11 @@ trait LogDedupRegistryTrait
         $this->fileLogger->clearPersistentDedupRegistry();
 
         return new WP_REST_Response(
-            array(
+            [
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Dedup registry cleared',
                 'PreviousEntryCount'            => $previousCount,
-            ),
+            ],
             HttpStatusType::Ok->value,
         );
     }

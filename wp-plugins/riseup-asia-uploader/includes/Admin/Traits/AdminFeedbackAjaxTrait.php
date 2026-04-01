@@ -22,6 +22,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Logging\FileLogger;
 use Throwable;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait AdminFeedbackAjaxTrait {
 
@@ -37,17 +38,17 @@ trait AdminFeedbackAjaxTrait {
         check_ajax_referer(NonceType::Feedback->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $settings = $this->getSupportSettings();
-        $hasSupportEmail = (is_string($settings['support_email']) && strlen(trim($settings['support_email'])) > 0);
+        $hasSupportEmail = (gettype($settings['support_email']) === PhpNativeType::PhpString->value && strlen(trim($settings['support_email'])) > 0);
 
-        wp_send_json_success(array(
+        wp_send_json_success([
             'ready'        => $hasSupportEmail,
             'fallback_url' => $settings['fallback_url'] ?? '',
             'settings_url' => admin_url('admin.php?page=' . \RiseupAsia\Enums\AdminPageType::Settings->value),
-        ));
+        ]);
     }
 
     /**
@@ -57,7 +58,7 @@ trait AdminFeedbackAjaxTrait {
         check_ajax_referer(NonceType::Feedback->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $logger = FileLogger::getInstance();
@@ -69,18 +70,18 @@ trait AdminFeedbackAjaxTrait {
 
             $isSubjectEmpty = (strlen(trim($subject)) === 0);
             if ($isSubjectEmpty) {
-                wp_send_json_error(array(ResponseKeyType::Message->value => 'Subject is required.'));
+                wp_send_json_error([ResponseKeyType::Message->value => 'Subject is required.']);
             }
 
             $isBodyTooShort = (strlen(trim($body)) < 20);
             if ($isBodyTooShort) {
-                wp_send_json_error(array(ResponseKeyType::Message->value => 'Description must be at least 20 characters.'));
+                wp_send_json_error([ResponseKeyType::Message->value => 'Description must be at least 20 characters.']);
             }
 
             $settings = $this->getSupportSettings();
-            $hasSupportEmail = (is_string($settings['support_email']) && strlen(trim($settings['support_email'])) > 0);
+            $hasSupportEmail = (gettype($settings['support_email']) === PhpNativeType::PhpString->value && strlen(trim($settings['support_email'])) > 0);
             if (!$hasSupportEmail) {
-                wp_send_json_error(array(ResponseKeyType::Message->value => 'Support email not configured. Please configure it in Settings.'));
+                wp_send_json_error([ResponseKeyType::Message->value => 'Support email not configured. Please configure it in Settings.']);
             }
 
             // Build email body
@@ -103,7 +104,7 @@ trait AdminFeedbackAjaxTrait {
             $siteName = get_bloginfo('name');
             $emailSubject = PluginConfigType::LogPrefix->value . ' Feedback: ' . $subject . ' — ' . $siteName;
 
-            $headers = array('Content-Type: text/plain; charset=UTF-8');
+            $headers = ['Content-Type: text/plain; charset=UTF-8'];
             $recipient = trim($settings['support_email']);
 
             $wasSent = wp_mail($recipient, $emailSubject, $emailBody, $headers, $attachments);
@@ -116,18 +117,18 @@ trait AdminFeedbackAjaxTrait {
             }
 
             if (!$wasSent) {
-                $logger->error('Feedback email failed to send', array('to' => $recipient, 'subject' => $emailSubject));
-                wp_send_json_error(array(
+                $logger->error('Feedback email failed to send', ['to' => $recipient, 'subject' => $emailSubject]);
+                wp_send_json_error([
                     ResponseKeyType::Message->value => 'Failed to send email. Please ensure your WordPress site has email sending configured (e.g., GoSMTP, WP Mail SMTP).',
-                ));
+                ]);
             }
 
-            $logger->info('Feedback email sent successfully', array('to' => $recipient, 'subject' => $emailSubject));
-            wp_send_json_success(array(ResponseKeyType::Message->value => 'Feedback sent successfully!'));
+            $logger->info('Feedback email sent successfully', ['to' => $recipient, 'subject' => $emailSubject]);
+            wp_send_json_success([ResponseKeyType::Message->value => 'Feedback sent successfully!']);
 
         } catch (Throwable $e) {
             $logger->error('Feedback send error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            wp_send_json_error(array(ResponseKeyType::Message->value => 'Error sending feedback: ' . $e->getMessage()));
+            wp_send_json_error([ResponseKeyType::Message->value => 'Error sending feedback: ' . $e->getMessage()]);
         }
     }
 
@@ -135,7 +136,7 @@ trait AdminFeedbackAjaxTrait {
      * Build the email body for feedback.
      */
     private function buildFeedbackBody(string $subject, string $body, bool $includeSystemInfo): string {
-        $lines = array();
+        $lines = [];
         $lines[] = 'Subject: ' . $subject;
         $lines[] = str_repeat('=', 50);
         $lines[] = '';
@@ -168,7 +169,7 @@ trait AdminFeedbackAjaxTrait {
      * @return string[] Array of file paths for wp_mail attachments.
      */
     private function processFeedbackAttachments(FileLogger $logger): array {
-        $attachments = array();
+        $attachments = [];
 
         $hasFiles = (!empty($_FILES['screenshots']) && !empty($_FILES['screenshots']['name'][0]));
         if (!$hasFiles) {
@@ -181,13 +182,13 @@ trait AdminFeedbackAjaxTrait {
         for ($i = 0; $i < $fileCount; $i++) {
             $hasError = ($files['error'][$i] !== UPLOAD_ERR_OK);
             if ($hasError) {
-                $logger->warning('Feedback attachment upload error', array('index' => $i, 'error' => $files['error'][$i]));
+                $logger->warning('Feedback attachment upload error', ['index' => $i, 'error' => $files['error'][$i]]);
                 continue;
             }
 
             $isTooLarge = ($files['size'][$i] > self::FEEDBACK_MAX_FILE_SIZE);
             if ($isTooLarge) {
-                $logger->warning('Feedback attachment too large', array('index' => $i, 'size' => $files['size'][$i]));
+                $logger->warning('Feedback attachment too large', ['index' => $i, 'size' => $files['size'][$i]]);
                 continue;
             }
 
@@ -195,7 +196,7 @@ trait AdminFeedbackAjaxTrait {
             $extension = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
             $isInvalidExtension = (!in_array($extension, self::FEEDBACK_ALLOWED_EXTENSIONS, true));
             if ($isInvalidExtension) {
-                $logger->warning('Feedback attachment invalid extension', array('index' => $i, 'ext' => $extension));
+                $logger->warning('Feedback attachment invalid extension', ['index' => $i, 'ext' => $extension]);
                 continue;
             }
 
@@ -204,7 +205,7 @@ trait AdminFeedbackAjaxTrait {
             $mimeType = $finfo->file($files['tmp_name'][$i]);
             $isInvalidMime = (!in_array($mimeType, self::FEEDBACK_ALLOWED_TYPES, true));
             if ($isInvalidMime) {
-                $logger->warning('Feedback attachment invalid MIME', array('index' => $i, 'mime' => $mimeType));
+                $logger->warning('Feedback attachment invalid MIME', ['index' => $i, 'mime' => $mimeType]);
                 continue;
             }
 
@@ -217,7 +218,7 @@ trait AdminFeedbackAjaxTrait {
             if ($isMoved) {
                 $attachments[] = $tmpPath;
             } else {
-                $logger->warning('Feedback attachment move failed', array('index' => $i));
+                $logger->warning('Feedback attachment move failed', ['index' => $i]);
             }
         }
 
@@ -234,7 +235,7 @@ trait AdminFeedbackAjaxTrait {
         $errorFile      = $logger->getErrorFile();
         $stacktraceFile = $logger->getStacktraceFile();
 
-        $logFiles = array();
+        $logFiles = [];
         if (is_file($logFile))        { $logFiles['log.txt']        = $logFile; }
         if (is_file($errorFile))      { $logFiles['error.txt']      = $errorFile; }
         if (is_file($stacktraceFile)) { $logFiles['stacktrace.txt'] = $stacktraceFile; }
@@ -251,7 +252,7 @@ trait AdminFeedbackAjaxTrait {
         $opened = $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
         if ($opened !== true) {
-            $logger->error('Failed to create log ZIP archive', array('path' => $zipPath));
+            $logger->error('Failed to create log ZIP archive', ['path' => $zipPath]);
             return null;
         }
 
@@ -261,11 +262,11 @@ trait AdminFeedbackAjaxTrait {
 
         $zip->close();
 
-        $logger->info('Log ZIP archive created for feedback', array(
+        $logger->info('Log ZIP archive created for feedback', [
             'path'  => $zipPath,
             'files' => array_keys($logFiles),
             'size'  => filesize($zipPath),
-        ));
+        ]);
 
         return $zipPath;
     }
@@ -276,13 +277,13 @@ trait AdminFeedbackAjaxTrait {
      * @return array{support_email: string, fallback_url: string}
      */
     private function getSupportSettings(): array {
-        $defaults = array(
+        $defaults = [
             'support_email' => '',
             'fallback_url'  => '',
-        );
+        ];
 
-        $stored = get_option(OptionNameType::SupportSettings->value, array());
-        $isStoredEmpty = (!is_array($stored) || count($stored) === 0);
+        $stored = get_option(OptionNameType::SupportSettings->value, []);
+        $isStoredEmpty = (gettype($stored) !== PhpNativeType::PhpArray->value || count($stored) === 0);
         if ($isStoredEmpty) {
             return $defaults;
         }

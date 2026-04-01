@@ -27,12 +27,12 @@ trait AgentRemoteCoreTrait {
     private function normalizeUrl(string $url): string {
         $url = rtrim($url, '/');
 
-        $suffixes = array(
+        $suffixes = [
             '/wp-admin',
             '/wp-login.php',
             '/wp-json',
             '/xmlrpc.php',
-        );
+        ];
 
         foreach ($suffixes as $suffix) {
             if (substr($url, -strlen($suffix)) === $suffix) {
@@ -58,7 +58,7 @@ trait AgentRemoteCoreTrait {
         int $agentId,
         string $method,
         string $endpoint,
-        array $body = array(),
+        array $body = [],
     ): array|WP_Error {
         $agent = $this->getAgentModel($agentId, true);
 
@@ -69,11 +69,11 @@ trait AgentRemoteCoreTrait {
         $url = $this->resolveAgentBaseUrl($agent, $endpoint);
         $args = $this->buildAgentRequestArgs($agent, $method, $body);
 
-        $this->fileLogger->debug('Agent API request', array(
+        $this->fileLogger->debug('Agent API request', [
             'agentId' => $agentId,
             'method' => $method,
             'url' => $url,
-        ));
+        ]);
 
         $response = wp_remote_request($url, $args);
 
@@ -103,11 +103,11 @@ trait AgentRemoteCoreTrait {
         $args = HttpConfigType::authenticatedOptions($method, $this->buildAuthHeader($agent));
 
         $hasBody = !empty($body);
-        $isBodyMethod = in_array($method, array(
+        $isBodyMethod = in_array($method, [
             HttpMethodType::Post->value,
             HttpMethodType::Put->value,
             HttpMethodType::Patch->value,
-        ));
+        ]);
 
         if ($hasBody && $isBodyMethod) {
             $args['body'] = json_encode($body);
@@ -141,7 +141,7 @@ trait AgentRemoteCoreTrait {
             return new WP_Error(
                 WpErrorCodeType::ApiError->value,
                 $errorMsg,
-                array('status' => $statusCode, 'response' => $bodyJson),
+                ['status' => $statusCode, 'response' => $bodyJson],
             );
         }
 

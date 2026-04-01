@@ -109,14 +109,14 @@ class FatalErrorHandler
         array $traceLines,
         array $frames,
     ): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => array(
+            ResponseKeyType::Error->value   => [
                 'code'    => self::ERROR_CODE_FATAL,
                 'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
                 'details' => FrameBuilder::buildFatalDetails($error, $traceLines, $frames),
-            ),
-        );
+            ],
+        ];
     }
 
     private static function logToFile(array $error): void {
@@ -167,19 +167,19 @@ class FatalErrorHandler
     }
 
     private static function buildFallback(array $error): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
-            ResponseKeyType::Error->value   => array(
+            ResponseKeyType::Error->value   => [
                 'code'    => self::ERROR_CODE_ENCODING_FAILED,
                 'message' => 'Fatal error occurred and JSON encoding also failed',
-                'details' => array(
+                'details' => [
                     'originalMessage' => substr($error['message'], 0, self::MESSAGE_TRUNCATE_LENGTH),
                     'file'            => basename($error['file']),
                     'line'            => $error['line'],
                     'jsonError'       => json_last_error_msg(),
-                ),
-            ),
-        );
+                ],
+            ],
+        ];
     }
 }
 

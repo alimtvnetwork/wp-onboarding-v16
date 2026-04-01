@@ -45,7 +45,7 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
             defined('UPDRAFTPLUS_VERSION') &&
             (strpos(UPDRAFTPLUS_VERSION, 'premium') !== false);
 
-        return array(
+        return [
             'fullSite' => true,
             'databaseOnly' => true,
             'selective' => $isPremium,
@@ -53,6 +53,6 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
             'restore' => true,
             'export' => true,
             'import' => true,
-        );
+        ];
     }
 }

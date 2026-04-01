@@ -75,7 +75,7 @@ trait PluginLifecycleEnableTrait {
     private function buildAlreadyActiveResponse(string $slug): WP_REST_Response {
         return EnvelopeBuilder::success('Plugin was already active')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Activated->value => true))
+            ->setSingleResult([ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Activated->value => true])
             ->toResponse();
     }
 
@@ -83,7 +83,7 @@ trait PluginLifecycleEnableTrait {
     private function buildAlreadyInactiveResponse(string $slug): WP_REST_Response {
         return EnvelopeBuilder::success('Plugin was already inactive')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true))
+            ->setSingleResult([ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true])
             ->toResponse();
     }
 
@@ -93,7 +93,7 @@ trait PluginLifecycleEnableTrait {
             $result = activate_plugin($pluginFile);
 
             if (is_wp_error($result)) {
-                $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('error' => $result->get_error_message()));
+                $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, ['error' => $result->get_error_message()]);
 
                 return $this->errorResponse(ResponseMessageType::ActivationFailed->value . ': ' . $result->get_error_message(), HttpStatusType::ServerError->value);
             }
@@ -107,7 +107,7 @@ trait PluginLifecycleEnableTrait {
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Activated->value => true))
+            ->setSingleResult([ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Activated->value => true])
             ->toResponse();
     }
 
@@ -122,7 +122,7 @@ trait PluginLifecycleEnableTrait {
         }
 
         if (is_plugin_active($pluginFile)) {
-            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('error' => 'Plugin remained active'));
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, ['error' => 'Plugin remained active']);
 
             return $this->errorResponse(ResponseMessageType::DeactivationFailed->value . ': Plugin remained active', HttpStatusType::ServerError->value);
         }
@@ -131,7 +131,7 @@ trait PluginLifecycleEnableTrait {
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true))
+            ->setSingleResult([ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deactivated->value => true])
             ->toResponse();
     }
 }

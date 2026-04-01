@@ -17,11 +17,11 @@ use RiseupAsia\Helpers\DateHelper;
 
 trait EnvelopeBuildTrait {
     public function build() {
-        $envelope = array(
+        $envelope = [
             'Status'     => $this->buildStatusBlock(),
             'Attributes' => $this->buildAttributesBlock(),
             'Results'    => $this->results,
-        );
+        ];
 
         $this->appendOptionalSections($envelope);
 
@@ -29,19 +29,19 @@ trait EnvelopeBuildTrait {
     }
 
     private function buildStatusBlock(): array {
-        return array(
+        return [
             'IsSuccess' => $this->isSuccess,
             'IsFailed'  => !$this->isSuccess,
             'Code'      => $this->code,
             'Message'   => $this->message,
             'Timestamp' => DateHelper::nowUtc(),
-        );
+        ];
     }
 
     private function buildAttributesBlock(): array {
         $resultCount = count($this->results);
 
-        return array(
+        return [
             'RequestedAt' => $this->requestedAt,
             'RequestDelegatedAt' => $this->delegatedAt,
             'HasAnyErrors' => $this->hasErrors,
@@ -51,7 +51,7 @@ trait EnvelopeBuildTrait {
             'PerPage' => $this->perPage,
             'TotalPages' => $this->totalPages,
             'CurrentPage' => $this->currentPage,
-        );
+        ];
     }
 
     private function appendOptionalSections(array &$envelope) {

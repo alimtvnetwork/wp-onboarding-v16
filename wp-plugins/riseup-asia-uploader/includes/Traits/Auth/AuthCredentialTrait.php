@@ -78,7 +78,7 @@ trait AuthCredentialTrait
         $isAuthFailed = (is_wp_error($user) || $user === false);
 
         if ($isAuthFailed) {
-            return $this->buildAuthError('Invalid credentials', array('username' => $username));
+            return $this->buildAuthError('Invalid credentials', ['username' => $username]);
         }
 
         wp_set_current_user($user->ID);
@@ -96,27 +96,27 @@ trait AuthCredentialTrait
         return $this->buildAuthError('Invalid Authorization header format');
     }
 
-    private function buildAuthError(string $reason, array $context = array()): WP_Error {
+    private function buildAuthError(string $reason, array $context = []): WP_Error {
         $this->fileLogger->warn($reason, $context);
         $this->logAuthFailureSafely($reason, $context);
 
-        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array('status' => HttpStatusType::Unauthorized->value));
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, ['status' => HttpStatusType::Unauthorized->value]);
     }
 
     private function buildMissingAuthError(WP_REST_Request $request): WP_Error {
-        $context = array(
+        $context = [
             'reason' => 'Missing Authorization header',
             'method' => $request->get_method(),
             'endpoint' => $request->get_route(),
-        );
+        ];
 
         $this->fileLogger->warn('Missing Authorization header', $context);
         $this->logAuthFailureSafely('Missing Authorization header', $context);
 
-        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, array(
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Unauthorized->value, [
             'status' => HttpStatusType::Unauthorized->value,
-            'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
-        ));
+            'headers' => ['WWW-Authenticate' => 'Basic realm="WordPress Application Password"'],
+        ]);
     }
 
     private function checkAuthenticatedOnly(WP_REST_Request $request): true|WP_Error {
@@ -162,18 +162,18 @@ trait AuthCredentialTrait
             return true;
         }
 
-        $context = array(
+        $context = [
             'username' => $user->user_login,
             'required_cap' => $capability,
-        );
+        ];
 
         $this->fileLogger->warn('Insufficient permissions', $context);
         $this->logAuthFailureSafely('Insufficient permissions', $context);
 
-        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Forbidden->value, array('status' => HttpStatusType::Forbidden->value));
+        return new WP_Error(WpErrorCodeType::RestForbidden->value, ResponseMessageType::Forbidden->value, ['status' => HttpStatusType::Forbidden->value]);
     }
 
-    private function logAuthFailureSafely(string $reason, array $context = array()): void {
+    private function logAuthFailureSafely(string $reason, array $context = []): void {
         if ($this->logger !== null) {
             $this->logger->logAuthFailure($reason, $context);
         }

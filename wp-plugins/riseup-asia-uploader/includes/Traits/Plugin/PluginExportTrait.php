@@ -39,15 +39,15 @@ trait PluginExportTrait
                 return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
             }
 
-            $this->logger->logPluginAction(ActionType::ExportSelf->value, PluginConfigType::Slug->value, StatusType::Success->value, array(
+            $this->logger->logPluginAction(ActionType::ExportSelf->value, PluginConfigType::Slug->value, StatusType::Success->value, [
                 'size' => strlen($zipContent),
-            ));
+            ]);
 
-            return new WP_REST_Response(ResultHelper::ok(array(
+            return new WP_REST_Response(ResultHelper::ok([
                 ResponseKeyType::PluginZip->value => base64_encode($zipContent),
                 ResponseKeyType::Slug->value      => PluginConfigType::Slug->value,
                 ResponseKeyType::Version->value   => PluginConfigType::Version->value,
-            )), HttpStatusType::Ok->value);
+            ]), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
 
@@ -111,14 +111,14 @@ trait PluginExportTrait
             return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
         }
 
-        $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, array(
+        $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, [
             'size' => strlen($zipContent),
-        ));
+        ]);
 
-        return new WP_REST_Response(ResultHelper::ok(array(
+        return new WP_REST_Response(ResultHelper::ok([
             ResponseKeyType::PluginZip->value => base64_encode($zipContent),
             ResponseKeyType::Slug->value      => $slug,
             ResponseKeyType::Size->value      => strlen($zipContent),
-        )), HttpStatusType::Ok->value);
+        ]), HttpStatusType::Ok->value);
     }
 }

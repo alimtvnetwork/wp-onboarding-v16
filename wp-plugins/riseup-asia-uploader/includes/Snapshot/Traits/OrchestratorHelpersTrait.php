@@ -23,30 +23,30 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait OrchestratorHelpersTrait {
     private function buildPhaseError(string $phase, array $result): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => 'Table export failed: ' . ($result[ResponseKeyType::Error->value] ?? 'Unknown error'),
             ResponseKeyType::Phase->value   => $phase,
-        );
+        ];
     }
 
     private function buildExceptionResult(Exception $e, string $phase): array {
         $this->logError($e, ucfirst(str_replace('_', ' ', $phase)) . ' failed');
 
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => $e->getMessage(),
             ResponseKeyType::Phase->value   => $phase,
-        );
+        ];
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);
     }
 
-    private function logWarn(Throwable $e, string $message, array $context = array()): void {
+    private function logWarn(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Warn->value, $message, $context);
@@ -88,7 +88,7 @@ trait OrchestratorHelpersTrait {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $full = $this->formatOrchestratorLogMessage($message, $context);
         $isLoggerMissing = ($this->logger === null);

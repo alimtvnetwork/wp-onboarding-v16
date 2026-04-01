@@ -1,0 +1,98 @@
+# AI Instructions — Riseup Asia Uploader Plugin
+
+> **Plugin:** Riseup Asia Uploader
+> **Namespace:** `RiseupAsia\`
+> **PHP Requirement:** 8.1+
+> **Updated:** 2026-04-01
+
+---
+
+## Critical: QUpload Syntax Validator Compatibility
+
+This plugin is deployed via QUpload, which validates uploaded PHP files using `token_get_all($content, TOKEN_PARSE)`. Certain valid PHP patterns cause false-positive syntax errors that **block plugin activation**.
+
+### BLOCKED Patterns (Never Use)
+
+| Pattern | Why | Replacement |
+|---------|-----|-------------|
+| `is_array($var)` | Token `array` causes parse error | `gettype($var) === PhpNativeType::PhpArray->value` |
+| `is_string($var)` | Same issue | `gettype($var) === PhpNativeType::PhpString->value` |
+| `is_int($var)` | Same issue | `gettype($var) === PhpNativeType::PhpInteger->value` |
+| `is_float($var)` | Same issue | `gettype($var) === PhpNativeType::PhpDouble->value` |
+| `is_bool($var)` | Same issue | `gettype($var) === PhpNativeType::PhpBoolean->value` |
+| `is_object($var)` | Same issue | `gettype($var) === PhpNativeType::PhpObject->value` |
+| `is_null($var)` | Same issue | `gettype($var) === PhpNativeType::PhpNull->value` |
+| `array()` constructor | T_ARRAY token | Use `[]` short syntax |
+| `= array()` default | T_ARRAY token | Use `= []` |
+| Magic strings like `=== 'array'` | Not typed | Use `PhpNativeType::PhpArray->value` |
+
+### SAFE Patterns (OK to Use)
+
+| Pattern | Why Safe |
+|---------|----------|
+| `in_array()` | Tokenizes as T_STRING, not T_ARRAY |
+| `array_merge()` | Tokenizes as T_STRING |
+| `array_filter()` | Tokenizes as T_STRING |
+| `array_map()` | Tokenizes as T_STRING |
+| `array_key_exists()` | Tokenizes as T_STRING |
+| `array_splice()` | Tokenizes as T_STRING |
+
+### PhpNativeType Enum
+
+Located at `includes/Enums/PhpNativeType.php`:
+
+```php
+use RiseupAsia\Enums\PhpNativeType;
+
+// CORRECT
+gettype($var) === PhpNativeType::PhpArray->value
+gettype($var) !== PhpNativeType::PhpString->value
+```
+
+Always add the `use` import when using PhpNativeType.
+
+---
+
+## PHP Coding Rules
+
+### Exception Handling
+- **Always** catch `Throwable`, never `Exception`
+- **Always** log stack traces — never `$e->getMessage()` alone
+- Use `$this->fileLogger->logException($e, 'Context')` in plugin classes
+- Use `InitHelpers::errorLog($e, 'Context:')` when no FileLogger
+- Boot-time catch blocks **must re-throw** via `logCriticalException()`
+
+### Boolean Functions
+- **Always** use positive boolean names: `$isFound`, `$hasResult`
+- **Never** use negations: `$isNotFound`, `$isMissing`
+- **Never** use `!` in if conditions — use positive boolean helpers
+
+### Ternary Extraction
+- **Never** raw comparisons in ternary: `($val !== false) ? $val : $default`
+- **Always** extract to named boolean: `$isFound = ($val !== false); return $isFound ? ...`
+
+### Code Organization
+- Maximum **15 lines** per function body
+- Maximum **300 lines** per file
+- `DateHelper` for all dates — never raw `date()`/`gmdate()`
+- `ResponseKeyType` for structured array keys — never raw strings
+
+### WordPress Safety
+- Never call WordPress functions in constructors
+- Always use nonces, capability checks, sanitize input, escape output
+- Always use prepared statements with `$wpdb`
+- ABSPATH guard after namespace declaration (never before)
+
+### File Naming
+- Namespaced PHP: `PascalCase.php` matching class name
+- All abbreviations: PascalCase (`Wp` not `WP`, `Api` not `API`)
+
+---
+
+## Version Bumping
+
+Any code change must bump at least minor version. Do NOT modify `.release/` folder.
+
+---
+
+*These instructions are enforced for all AI editors and human developers working on this plugin.*

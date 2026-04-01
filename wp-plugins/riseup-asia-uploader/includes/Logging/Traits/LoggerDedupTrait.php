@@ -35,7 +35,7 @@ trait LoggerDedupTrait {
     /** Clear the deduplication hash map. */
     public function clearDedupHashes(): int {
         $count = count($this->dedupHashes);
-        $this->dedupHashes = array();
+        $this->dedupHashes = [];
 
         return $count;
     }

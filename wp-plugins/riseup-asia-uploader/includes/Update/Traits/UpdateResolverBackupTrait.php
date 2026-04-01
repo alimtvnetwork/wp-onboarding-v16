@@ -35,7 +35,7 @@ trait UpdateResolverBackupTrait {
         $isPluginDirMissing = !is_dir($pluginDir);
 
         if ($isPluginDirMissing) {
-            $this->fileLogger->error('Plugin directory not found for backup', array('dir' => $pluginDir));
+            $this->fileLogger->error('Plugin directory not found for backup', ['dir' => $pluginDir]);
 
             return new WP_Error(
                 WpErrorCodeType::FileNotFound->value,
@@ -53,7 +53,7 @@ trait UpdateResolverBackupTrait {
         $backupName = PluginConfigType::Slug->value . '-backup-' . DateHelper::nowCompact();
         $backupDir = $upgradeDir . '/' . $backupName;
 
-        $this->fileLogger->info('Creating pre-update backup', array('source' => $pluginDir, 'backup' => $backupDir));
+        $this->fileLogger->info('Creating pre-update backup', ['source' => $pluginDir, 'backup' => $backupDir]);
 
         $copied = $this->recursiveCopy($pluginDir, $backupDir);
 
@@ -66,7 +66,7 @@ trait UpdateResolverBackupTrait {
             );
         }
 
-        $this->fileLogger->info('Pre-update backup created', array('path' => $backupDir));
+        $this->fileLogger->info('Pre-update backup created', ['path' => $backupDir]);
 
         return $backupDir;
     }
@@ -82,7 +82,7 @@ trait UpdateResolverBackupTrait {
         $isBackupMissing = !is_dir($backupDir);
 
         if ($isBackupMissing) {
-            $this->fileLogger->error('Backup directory not found for rollback', array('dir' => $backupDir));
+            $this->fileLogger->error('Backup directory not found for rollback', ['dir' => $backupDir]);
 
             return new WP_Error(
                 WpErrorCodeType::FileNotFound->value,
@@ -92,7 +92,7 @@ trait UpdateResolverBackupTrait {
 
         $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
 
-        $this->fileLogger->warn('Rolling back plugin from backup', array('backup' => $backupDir, 'target' => $pluginDir));
+        $this->fileLogger->warn('Rolling back plugin from backup', ['backup' => $backupDir, 'target' => $pluginDir]);
 
         // Remove the failed update
         $this->recursiveDelete($pluginDir);
@@ -125,7 +125,7 @@ trait UpdateResolverBackupTrait {
 
         if ($isBackupExists) {
             $this->recursiveDelete($backupDir);
-            $this->fileLogger->info('Pre-update backup cleaned up', array('path' => $backupDir));
+            $this->fileLogger->info('Pre-update backup cleaned up', ['path' => $backupDir]);
         }
     }
 

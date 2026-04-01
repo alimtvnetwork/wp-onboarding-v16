@@ -175,10 +175,10 @@ class ZipReassembler
 
         fclose($outputHandle);
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             'outputPath' => $outputPath,
             'totalSize'  => $totalWritten,
             'chunkCount' => count($chunks),
-        ));
+        ]);
     }
 }

@@ -24,7 +24,7 @@ trait UpdateResolverUrlTrait {
 
     public function resolveUrl(string $url, ?int $maxRedirects = null): string|WP_Error {
         $maxRedirects ??= UpdateConfigType::MaxRedirects->value;
-        $this->fileLogger->info('Resolving URL through redirects', array('url' => $url));
+        $this->fileLogger->info('Resolving URL through redirects', ['url' => $url]);
 
         $currentUrl = $url;
 
@@ -39,7 +39,7 @@ trait UpdateResolverUrlTrait {
             $currentUrl = $result;
         }
 
-        $this->fileLogger->error('Max redirects exceeded', array('url' => $url, 'redirects' => $maxRedirects));
+        $this->fileLogger->error('Max redirects exceeded', ['url' => $url, 'redirects' => $maxRedirects]);
 
         return new WP_Error(WpErrorCodeType::MaxRedirects->value, 'Maximum redirect limit exceeded');
     }
@@ -48,7 +48,7 @@ trait UpdateResolverUrlTrait {
         $response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
 
         if (is_wp_error($response)) {
-            $this->fileLogger->error('URL resolution failed', array('url' => $url, 'error' => $response->get_error_message()));
+            $this->fileLogger->error('URL resolution failed', ['url' => $url, 'error' => $response->get_error_message()]);
 
             return $response;
         }
@@ -57,7 +57,7 @@ trait UpdateResolverUrlTrait {
         $httpStatus = HttpStatusType::tryFrom($status);
         $isRedirect = ($httpStatus !== null && $httpStatus->isRedirect());
 
-        $this->fileLogger->debug('Redirect check', array('url' => $url, 'status' => $status));
+        $this->fileLogger->debug('Redirect check', ['url' => $url, 'status' => $status]);
 
         if ($isRedirect === false) {
             return null;
@@ -65,7 +65,7 @@ trait UpdateResolverUrlTrait {
 
         $location = wp_remote_retrieve_header($response, HttpHeaderType::Location->value);
         if (empty($location)) {
-            $this->fileLogger->error('Redirect without Location header', array('url' => $url));
+            $this->fileLogger->error('Redirect without Location header', ['url' => $url]);
 
             return new WP_Error(WpErrorCodeType::NoLocation->value, 'Redirect response missing Location header');
         }
@@ -77,7 +77,7 @@ trait UpdateResolverUrlTrait {
             $location = $parsed['scheme'] . '://' . $parsed['host'] . $location;
         }
 
-        $this->fileLogger->debug('Following redirect', array('from' => $url, 'to' => $location));
+        $this->fileLogger->debug('Following redirect', ['from' => $url, 'to' => $location]);
 
         return $location;
     }
@@ -87,7 +87,7 @@ trait UpdateResolverUrlTrait {
         string $final,
         int $hops,
     ): string {
-        $this->fileLogger->info('URL resolved', array('original' => $original, 'final' => $final, 'hops' => $hops));
+        $this->fileLogger->info('URL resolved', ['original' => $original, 'final' => $final, 'hops' => $hops]);
 
         return $final;
     }
@@ -102,19 +102,19 @@ trait UpdateResolverUrlTrait {
         $isCacheUsable = ($forceResolve === false && $this->isCacheValid($settings));
 
         if ($isCacheUsable) {
-            $this->fileLogger->debug('Using cached resolved URL', array('url' => $settings['resolved_url']));
+            $this->fileLogger->debug('Using cached resolved URL', ['url' => $settings['resolved_url']]);
 
             return $settings['resolved_url'];
         }
 
         $resolved = $this->resolveUrl($settings['master_url']);
         if (is_wp_error($resolved)) {
-            $this->saveSettings(array('last_error' => $resolved->get_error_message(), 'last_check' => current_time('mysql', true)));
+            $this->saveSettings(['last_error' => $resolved->get_error_message(), 'last_check' => current_time('mysql', true)]);
 
             return $resolved;
         }
 
-        $this->saveSettings(array('resolved_url' => $resolved, 'resolved_at' => current_time('mysql', true), 'last_check' => current_time('mysql', true), 'last_error' => ''));
+        $this->saveSettings(['resolved_url' => $resolved, 'resolved_at' => current_time('mysql', true), 'last_check' => current_time('mysql', true), 'last_error' => '']);
 
         return $resolved;
     }
@@ -133,6 +133,6 @@ trait UpdateResolverUrlTrait {
     public function clearCache(): bool {
         $this->fileLogger->info('Clearing update URL cache');
 
-        return $this->saveSettings(array('resolved_url' => '', 'resolved_at' => ''));
+        return $this->saveSettings(['resolved_url' => '', 'resolved_at' => '']);
     }
 }

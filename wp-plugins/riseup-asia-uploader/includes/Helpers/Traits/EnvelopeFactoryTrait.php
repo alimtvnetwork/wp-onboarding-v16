@@ -39,12 +39,12 @@ trait EnvelopeFactoryTrait {
         $builder->message = $message;
         $builder->hasErrors = true;
 
-        $errors = array(
+        $errors = [
             'BackendMessage' => $message,
-            'DelegatedServiceErrorStack' => array(),
-            'Backend' => array(),
-            'Frontend' => array(),
-        );
+            'DelegatedServiceErrorStack' => [],
+            'Backend' => [],
+            'Frontend' => [],
+        ];
 
         if ($exception instanceof Throwable) {
             $errors = self::buildExceptionErrors($errors, $exception);
@@ -82,7 +82,7 @@ trait EnvelopeFactoryTrait {
     }
 
     private static function framesToLines(array $frames): array {
-        $lines = array();
+        $lines = [];
 
         foreach ($frames as $frame) {
             $file = isset($frame['fileBase']) ? $frame['fileBase'] : '';

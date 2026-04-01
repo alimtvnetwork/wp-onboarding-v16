@@ -52,7 +52,7 @@ class CG_Import_Export {
      * Get available export types
      */
     public static function get_export_types() {
-        return array(
+        return [
             self::TYPE_HTML_TEMPLATES => __('HTML Templates', 'category-generator'),
             self::TYPE_META_TEMPLATES => __('Meta Templates', 'category-generator'),
             self::TYPE_SCHEMA_TEMPLATES => __('Schema Templates', 'category-generator'),
@@ -62,7 +62,7 @@ class CG_Import_Export {
             self::TYPE_HISTORY => __('Category History', 'category-generator'),
             self::TYPE_SETTINGS => __('Settings', 'category-generator'),
             self::TYPE_ALL => __('Everything', 'category-generator'),
-        );
+        ];
     }
     
     /**
@@ -72,7 +72,7 @@ class CG_Import_Export {
      * @param string $format 'sqlite' or 'csv'
      * @return string|false Path to ZIP file or false on failure
      */
-    public function export($types = array(), $format = 'sqlite') {
+    public function export($types = [], $format = 'sqlite') {
         if (empty($types) || in_array(self::TYPE_ALL, $types)) {
             $types = array_keys(self::get_export_types());
             unset($types[array_search(self::TYPE_ALL, $types)]);
@@ -88,13 +88,13 @@ class CG_Import_Export {
         }
         
         // Add manifest
-        $manifest = array(
+        $manifest = [
             'version' => CG_PLUGIN_VERSION,
             'exported_at' => current_time('mysql'),
             'format' => $format,
             'types' => $types,
             'site_url' => get_site_url()
-        );
+        ];
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
         
         if ($format === 'sqlite') {
@@ -140,11 +140,11 @@ class CG_Import_Export {
             case self::TYPE_VARIABLES:
                 return $this->db->get_variables();
             case self::TYPE_HISTORY:
-                return $this->db->get_category_history(array('limit' => 99999));
+                return $this->db->get_category_history(['limit' => 99999]);
             case self::TYPE_SETTINGS:
                 return $this->db->get_settings();
             default:
-                return array();
+                return [];
         }
     }
     
@@ -165,11 +165,11 @@ class CG_Import_Export {
         foreach ($data as $row) {
             // Escape any newlines and special characters in values
             $escaped_row = array_map(function($value) {
-                if (is_string($value)) {
+                if (gettype($value) === 'string') {
                     // Handle multi-line content and special chars
                     return str_replace(
-                        array("\r\n", "\n", "\r"),
-                        array("\\n", "\\n", "\\n"),
+                        ["\r\n", "\n", "\r"],
+                        ["\\n", "\\n", "\\n"],
                         $value
                     );
                 }
@@ -193,20 +193,20 @@ class CG_Import_Export {
      * @param array $options Import options (update_existing, types, etc.)
      * @return array Import results
      */
-    public function import($file_path, $options = array()) {
-        $defaults = array(
+    public function import($file_path, $options = []) {
+        $defaults = [
             'update_existing' => false,
-            'types' => array(), // Empty means all
-        );
+            'types' => [], // Empty means all
+        ];
         $options = array_merge($defaults, $options);
         
-        $results = array(
+        $results = [
             'success' => true,
-            'imported' => array(),
-            'skipped' => array(),
-            'updated' => array(),
-            'errors' => array()
-        );
+            'imported' => [],
+            'skipped' => [],
+            'updated' => [],
+            'errors' => []
+        ];
         
         $file_ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
         
@@ -235,7 +235,7 @@ class CG_Import_Export {
         }
         
         // Log import
-        $this->log_import_export('import', $options['types'] ?: array('all'), $file_ext, $results);
+        $this->log_import_export('import', $options['types'] ?: ['all'], $file_ext, $results);
         
         return $results;
     }
@@ -244,13 +244,13 @@ class CG_Import_Export {
      * Import from ZIP file
      */
     private function import_from_zip($zip_path, $options) {
-        $results = array(
+        $results = [
             'success' => true,
-            'imported' => array(),
-            'skipped' => array(),
-            'updated' => array(),
-            'errors' => array()
-        );
+            'imported' => [],
+            'skipped' => [],
+            'updated' => [],
+            'errors' => []
+        ];
         
         $zip = new ZipArchive();
         if ($zip->open($zip_path) !== true) {
@@ -267,7 +267,7 @@ class CG_Import_Export {
         $zip->close();
         
         // Read manifest if exists
-        $manifest = array();
+        $manifest = [];
         if (file_exists($temp_dir . 'manifest.json')) {
             $manifest = json_decode(file_get_contents($temp_dir . 'manifest.json'), true);
         }
@@ -288,7 +288,7 @@ class CG_Import_Export {
                 continue;
             }
             
-            $sub_results = $this->import_from_csv($csv_file, array_merge($options, array('type' => $type)));
+            $sub_results = $this->import_from_csv($csv_file, array_merge($options, ['type' => $type]));
             $results = $this->merge_results($results, $sub_results);
         }
         
@@ -302,13 +302,13 @@ class CG_Import_Export {
      * Import from CSV file
      */
     private function import_from_csv($csv_path, $options) {
-        $results = array(
+        $results = [
             'success' => true,
-            'imported' => array(),
-            'skipped' => array(),
-            'updated' => array(),
-            'errors' => array()
-        );
+            'imported' => [],
+            'skipped' => [],
+            'updated' => [],
+            'errors' => []
+        ];
         
         $type = $options['type'] ?? pathinfo($csv_path, PATHINFO_FILENAME);
         
@@ -362,25 +362,25 @@ class CG_Import_Export {
      * Import from SQLite database
      */
     private function import_from_sqlite($db_path, $options) {
-        $results = array(
+        $results = [
             'success' => true,
-            'imported' => array(),
-            'skipped' => array(),
-            'updated' => array(),
-            'errors' => array()
-        );
+            'imported' => [],
+            'skipped' => [],
+            'updated' => [],
+            'errors' => []
+        ];
         
         try {
             $import_db = new SQLite3($db_path, SQLITE3_OPEN_READONLY);
             
-            $tables = array(
+            $tables = [
                 'html_templates' => self::TYPE_HTML_TEMPLATES,
                 'meta_templates' => self::TYPE_META_TEMPLATES,
                 'schema_templates' => self::TYPE_SCHEMA_TEMPLATES,
                 'inner_templates' => self::TYPE_INNER_TEMPLATES,
                 'business_profile' => self::TYPE_BUSINESS_PROFILES,
                 'variables' => self::TYPE_VARIABLES,
-            );
+            ];
             
             foreach ($tables as $table => $type) {
                 // Skip if not in requested types
@@ -423,13 +423,13 @@ class CG_Import_Export {
      * Import from XML file
      */
     private function import_from_xml($xml_path, $options) {
-        $results = array(
+        $results = [
             'success' => true,
-            'imported' => array(),
-            'skipped' => array(),
-            'updated' => array(),
-            'errors' => array()
-        );
+            'imported' => [],
+            'skipped' => [],
+            'updated' => [],
+            'errors' => []
+        ];
         
         libxml_use_internal_errors(true);
         $xml = simplexml_load_file($xml_path);
@@ -451,7 +451,7 @@ class CG_Import_Export {
             }
             
             foreach ($type_node->children() as $item) {
-                $data = array();
+                $data = [];
                 foreach ($item->children() as $field) {
                     $data[$field->getName()] = (string) $field;
                 }
@@ -479,7 +479,7 @@ class CG_Import_Export {
      * Import a single record
      */
     private function import_single_record($type, $data, $update_existing) {
-        $result = array('status' => 'error', 'message' => '');
+        $result = ['status' => 'error', 'message' => ''];
         
         // Remove ID to force new insert (unless updating)
         $original_id = $data['id'] ?? null;
@@ -621,29 +621,29 @@ class CG_Import_Export {
      * Merge two result arrays
      */
     private function merge_results($results1, $results2) {
-        return array(
+        return [
             'success' => $results1['success'] && $results2['success'],
             'imported' => array_merge($results1['imported'], $results2['imported']),
             'skipped' => array_merge($results1['skipped'], $results2['skipped']),
             'updated' => array_merge($results1['updated'], $results2['updated']),
             'errors' => array_merge($results1['errors'], $results2['errors'])
-        );
+        ];
     }
     
     /**
      * Log import/export operation
      */
     private function log_import_export($operation, $types, $format, $results = null) {
-        $this->db->log_import_export(array(
+        $this->db->log_import_export([
             'operation' => $operation,
             'types' => json_encode($types),
             'format' => $format,
-            'imported_count' => $results ? count($results['imported'] ?? array()) : 0,
-            'updated_count' => $results ? count($results['updated'] ?? array()) : 0,
-            'skipped_count' => $results ? count($results['skipped'] ?? array()) : 0,
-            'error_count' => $results ? count($results['errors'] ?? array()) : 0,
+            'imported_count' => $results ? count($results['imported'] ?? []) : 0,
+            'updated_count' => $results ? count($results['updated'] ?? []) : 0,
+            'skipped_count' => $results ? count($results['skipped'] ?? []) : 0,
+            'error_count' => $results ? count($results['errors'] ?? []) : 0,
             'user_id' => get_current_user_id(),
-        ));
+        ]);
     }
     
     /**
@@ -659,7 +659,7 @@ class CG_Import_Export {
     private function delete_directory($dir) {
         if (!is_dir($dir)) return;
         
-        $files = array_diff(scandir($dir), array('.', '..'));
+        $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             is_dir($path) ? $this->delete_directory($path) : unlink($path);

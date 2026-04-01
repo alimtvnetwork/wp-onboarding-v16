@@ -37,7 +37,7 @@ trait NativeSnapshotCrudTrait {
         if (PathHelper::fileExists($filepath)) {
             $isDeleteFailed = (PathHelper::deleteFile($filepath) === false);
             if ($isDeleteFailed) {
-                $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
+                $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', ['filepath' => $filepath]);
 
                 return ResultHelper::error('Failed to delete snapshot file');
             }
@@ -51,9 +51,9 @@ trait NativeSnapshotCrudTrait {
 
         $this->db->delete(
             TableType::Snapshots->value,
-            array('Id' => $snapshotId),
+            ['Id' => $snapshotId],
         );
-        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array(ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['Filename']));
+        $this->log(LogLevelType::Info->value, 'Snapshot deleted', [ResponseKeyType::SnapshotId->value => $snapshotId, ResponseKeyType::Filename->value => $snapshot['Filename']]);
 
         return ResultHelper::ok();
     }
@@ -95,15 +95,15 @@ trait NativeSnapshotCrudTrait {
         );
         $zip->close();
 
-        return ResultHelper::ok(array(
+        return ResultHelper::ok([
             ResponseKeyType::FilePath->value  => $zipPath,
             ResponseKeyType::Filename->value => basename($zipPath),
             ResponseKeyType::Size->value     => filesize($zipPath),
-        ));
+        ]);
     }
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
-        return array(
+        return [
             ResponseKeyType::Version->value     => PluginConfigType::Version->value,
             ResponseKeyType::CreatedAt->value   => DateHelper::nowIso(),
             ResponseKeyType::SnapshotId->value  => $snapshotId,
@@ -112,7 +112,7 @@ trait NativeSnapshotCrudTrait {
             ResponseKeyType::Tables->value      => json_decode($snapshot['TablesJson'], true),
             ResponseKeyType::TotalRows->value   => $snapshot['TotalRows'],
             ResponseKeyType::FileSize->value    => $snapshot['FileSize'],
-        );
+        ];
     }
 
     public function importSnapshot(string $filepath): array {
@@ -128,41 +128,41 @@ trait NativeSnapshotCrudTrait {
     }
 
     public function getSnapshot(int $snapshotId): ?array {
-        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?', array($snapshotId));
+        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?', [$snapshotId]);
     }
 
     public function listSnapshots(int $limit = 50, int $offset = 0): array { // PaginationConfigType::DefaultLimit
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Provider = ? ORDER BY CreatedAt DESC LIMIT ? OFFSET ?',
-            array(
+            [
                 $this->providerId,
                 $limit,
                 $offset,
-            )
+            ]
         );
         $total = $this->db->querySingle(
             'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE Provider = ?',
-            array($this->providerId),
+            [$this->providerId],
         );
 
-        return array(
-            ResponseKeyType::Snapshots->value => $snapshots ?: array(),
+        return [
+            ResponseKeyType::Snapshots->value => $snapshots ?: [],
             ResponseKeyType::Total->value     => $total ? (int)$total[ResponseKeyType::Count->value] : 0,
-        );
+        ];
     }
 
     public function getAvailableTables(): array {
-        $tables = array();
+        $tables = [];
         $allTables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
         foreach ($allTables as $tableInfo) {
             $isCoreTable = (strpos($tableInfo['Name'], $this->wpdb->prefix) === 0);
 
-            $tables[] = array(
+            $tables[] = [
                 ResponseKeyType::Name->value     => $tableInfo['Name'],
                 ResponseKeyType::Rows->value     => (int)$tableInfo['Rows'],
                 ResponseKeyType::Size->value     => (int)$tableInfo['Data_length'] + (int)$tableInfo['Index_length'],
                 ResponseKeyType::IsCore->value   => $isCoreTable,
-            );
+            ];
         }
 
         return $tables;

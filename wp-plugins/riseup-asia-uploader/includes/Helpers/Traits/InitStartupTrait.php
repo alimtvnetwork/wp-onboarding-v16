@@ -52,16 +52,16 @@ trait InitStartupTrait {
 
         $elapsedMs = round((microtime(true) - $start) * 1000, 2);
 
-        self::$startupResults[] = array(
+        self::$startupResults[] = [
             'name'                          => $name,
             ResponseKeyType::Success->value => $error === null,
             ResponseKeyType::Error->value   => $error,
             'timeMs'                        => $elapsedMs,
-        );
+        ];
 
         if ($isVerbose) {
             $status = $error === null ? 'OK' : "FAILED: $error";
-            FileLogger::getInstance()->debug("[BOOT] Component $name: $status", array('timeMs' => $elapsedMs));
+            FileLogger::getInstance()->debug("[BOOT] Component $name: $status", ['timeMs' => $elapsedMs]);
         }
 
         return $result;
@@ -88,18 +88,18 @@ trait InitStartupTrait {
         $time = self::getTotalStartupTime();
 
         if ($failed > 0) {
-            $logger->warn('[INIT] Startup complete with failures', array(
+            $logger->warn('[INIT] Startup complete with failures', [
                 'total'    => $total,
                 'failed'   => $failed,
                 'timeMs'   => $time,
                 'failures' => array_map(function (array $r): string {
                     return $r['name'] . ': ' . $r[ResponseKeyType::Error->value];
                 }, self::getFailedStartups()),
-            ));
+            ]);
 
             return;
         }
 
-        $logger->info('[INIT] All components started successfully', array('total' => $total, 'timeMs' => $time));
+        $logger->info('[INIT] All components started successfully', ['total' => $total, 'timeMs' => $time]);
     }
 }

@@ -48,7 +48,7 @@ trait StatusOpsTrait {
     }
 
     private function buildSpecError(string $message, string $path): WP_REST_Response {
-        $this->fileLogger->error($message, array('path' => $path));
+        $this->fileLogger->error($message, ['path' => $path]);
 
         return new WP_REST_Response(
             ResultHelper::error($message),
@@ -95,16 +95,16 @@ trait StatusOpsTrait {
     }
 
     private function buildOpcacheResult(): array {
-        $result = ResultHelper::ok(array(
+        $result = ResultHelper::ok([
             ResponseKeyType::OpcacheAvailable->value => function_exists('opcache_reset'),
             ResponseKeyType::OpcacheReset->value     => false,
             ResponseKeyType::FilesInvalidated->value => 0,
             ResponseKeyType::Timestamp->value        => DateHelper::nowIso(),
-        ));
+        ]);
 
         if (function_exists('opcache_reset')) {
             $result[ResponseKeyType::OpcacheReset->value] = opcache_reset();
-            $this->fileLogger->info('OPcache reset executed', array('result' => $result[ResponseKeyType::OpcacheReset->value]));
+            $this->fileLogger->info('OPcache reset executed', ['result' => $result[ResponseKeyType::OpcacheReset->value]]);
         }
 
         return $result;
@@ -114,10 +114,10 @@ trait StatusOpsTrait {
         if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
-        $filesToInvalidate = array(
+        $filesToInvalidate = [
             PathHelper::getPluginMainFile(),
             PathHelper::getConstantsFile(),
-        );
+        ];
         $invalidated = 0;
 
         foreach ($filesToInvalidate as $file) {

@@ -19,6 +19,8 @@
 | S-052 | 2026-03-16 | Medium | Lovable | open | Auto-invalidate cached ZIP when plugin source files change (hash-based) |
 | S-053 | 2026-03-16 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) — **needs spec first** |
 | S-054 | 2026-03-16 | Low | Lovable | open | Publish analytics / history reporting dashboard — **needs spec first** |
+| S-055 | 2026-04-01 | High | User | done | Scan and fix all QUpload-incompatible PHP patterns (is_array, array(), magic strings) across all plugins |
+| S-056 | 2026-04-01 | Medium | User | done | Create .ai-instructions files in plugin roots with PHP compatibility rules |
 
 ---
 
@@ -98,10 +100,10 @@
 | Metric | Count |
 |--------|-------|
 | Open | 9 |
-| Completed | 57 |
+| Completed | 59 |
 | Closed N/A | 1 |
 | Rejected | 1 |
-| **Total** | **68** |
+| **Total** | **70** |
 
 ---
 
@@ -112,7 +114,7 @@ All suggestions tracked in this single file: `.lovable/memory/suggestions/01-sug
 
 ### Adding a New Suggestion
 Add to "Active Suggestions (Open)" section with:
-- **ID:** S-NNN (sequential, next is **S-055**)
+- **ID:** S-NNN (sequential, next is **S-057**)
 - **Created:** date
 - **Source:** where the suggestion originated (e.g., "Lovable", "User", "Audit")
 - **Priority:** low / medium / high
@@ -130,4 +132,4 @@ Detailed completion notes for older suggestions: `.lovable/memory/suggestions/co
 
 ---
 
-*Update this file when suggestions are added, started, completed, or rejected. Next ID: S-055.*
+*Update this file when suggestions are added, started, completed, or rejected. Next ID: S-057.*

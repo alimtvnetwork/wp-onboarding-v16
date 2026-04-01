@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 class SqliteSchemaConverter {
-    private static $typeMap = array(
+    private static $typeMap = [
         '/\bTINYINT\s*\((\d+)\)/i'    => 'INTEGER',
         '/\bSMALLINT\s*\((\d+)\)/i'   => 'INTEGER',
         '/\bMEDIUMINT\s*\((\d+)\)/i'  => 'INTEGER',
@@ -20,7 +20,7 @@ class SqliteSchemaConverter {
         '/\bINT\s*\((\d+)\)/i'        => 'INTEGER',
         '/\bDOUBLE\b/i'             => 'REAL',
         '/\bFLOAT\b/i'              => 'REAL',
-        '/\bDECIMAL\s*\([^)]+\)/i'  => 'REAL',
+        '/\bDECIMAL\s*\([^)]+\]/i'  => 'REAL',
         '/\bVARCHAR\s*\((\d+)\)/i'    => 'TEXT',
         '/\bCHAR\s*\((\d+)\)/i'       => 'TEXT',
         '/\bLONGTEXT\b/i'           => 'TEXT',

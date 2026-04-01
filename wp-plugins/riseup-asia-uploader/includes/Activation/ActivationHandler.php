@@ -89,10 +89,10 @@ class ActivationHandler
             return null;
         }
 
-        return array(
+        return [
             'base' => $uploadDir['basedir'] . '/' . PluginConfigType::uploadsSubdir(),
             'logs' => $uploadDir['basedir'] . '/' . PluginConfigType::uploadsSubdir() . PathSubdirType::Logs->value,
-        );
+        ];
     }
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
@@ -106,11 +106,11 @@ class ActivationHandler
     }
 
     private static function resetLogFiles(string $logsDir): void {
-        $logFiles = array(
+        $logFiles = [
             $logsDir . PathLogFileType::Log->value,
             $logsDir . PathLogFileType::Error->value,
             $logsDir . PathLogFileType::Stacktrace->value,
-        );
+        ];
 
         foreach ($logFiles as $logFile) {
             if (PathHelper::isFileMissing($logFile)) {

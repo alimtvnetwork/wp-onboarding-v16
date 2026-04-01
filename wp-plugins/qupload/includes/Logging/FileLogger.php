@@ -19,6 +19,7 @@ use QUpload\Enums\PathLogFileType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Helpers\DateHelper;
 use QUpload\Helpers\PathHelper;
+use QUpload\Enums\PhpNativeType;
 
 class FileLogger {
     private const SEPARATOR_WIDTH = 80;
@@ -142,11 +143,11 @@ class FileLogger {
 
     /** Get rotation configuration for remote monitoring. */
     public function getRotationConfig(): array {
-        return array(
+        return [
             'max_log_size_bytes' => $this->maxLogSizeBytes,
             'max_rotations'     => $this->maxRotations,
             'archive_enabled'   => $this->archiveEnabled,
-        );
+        ];
     }
 
     // ── Log Cleanup ───────────────────────────────────────────────────
@@ -189,11 +190,11 @@ class FileLogger {
             $this->initializePaths();
         }
 
-        $fileMap = array(
+        $fileMap = [
             'log'        => $this->logFile,
             'error'      => $this->errorFile,
             'stacktrace' => $this->stacktraceFile,
-        );
+        ];
 
         $file = $fileMap[$type] ?? null;
         $isFileMissing = ($file === null || !file_exists($file));
@@ -425,7 +426,7 @@ class FileLogger {
 
         $maxIndex = 0;
         $entries = @scandir($archiveDir);
-        $hasEntries = is_array($entries);
+        $hasEntries = gettype($entries) === PhpNativeType::PhpArray->value;
 
         if ($hasEntries) {
             foreach ($entries as $entry) {
@@ -565,13 +566,13 @@ class FileLogger {
         }
 
         $settings = json_decode($contents, true);
-        $isDecodeFailed = !is_array($settings);
+        $isDecodeFailed = gettype($settings) !== PhpNativeType::PhpArray->value;
 
         if ($isDecodeFailed) {
             return;
         }
 
-        $hasLogging = isset($settings['logging']) && is_array($settings['logging']);
+        $hasLogging = isset($settings['logging']) && gettype($settings['logging']) === PhpNativeType::PhpArray->value;
 
         if ($hasLogging === false) {
             return;
@@ -661,7 +662,7 @@ class FileLogger {
         }
 
         $data = json_decode($contents, true);
-        $isDecodeFailed = (!is_array($data));
+        $isDecodeFailed = (gettype($data) !== PhpNativeType::PhpArray->value);
 
         if ($isDecodeFailed) {
             return;
@@ -678,7 +679,7 @@ class FileLogger {
             return;
         }
 
-        $hasHashes = isset($data['hashes']) && is_array($data['hashes']);
+        $hasHashes = isset($data['hashes']) && gettype($data['hashes']) === PhpNativeType::PhpArray->value;
         $this->persistentDedupHashes = $hasHashes ? $data['hashes'] : [];
     }
 

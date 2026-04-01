@@ -63,10 +63,10 @@ trait DatabaseMigrationsV9V11Trait {
 
         $this->fileLogger->info('Applying migration v10: plugin version and upload source columns');
         $table   = TableType::Transactions->value;
-        $columns = array(
+        $columns = [
             'PluginVersion' => 'TEXT',
             'UploadSource'  => 'TEXT',
-        );
+        ];
 
         foreach ($columns as $column => $type) {
             try {

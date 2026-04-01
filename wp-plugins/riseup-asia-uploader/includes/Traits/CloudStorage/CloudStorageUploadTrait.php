@@ -41,19 +41,19 @@ trait CloudStorageUploadTrait {
             $isNotFound = ($account === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $isFileMissing = PathHelper::isFileMissing($filePath);
 
             if ($isFileMissing) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Backup file not found: ' . $filePath,
-                ), HttpStatusType::BadRequest->value);
+                ], HttpStatusType::BadRequest->value);
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
@@ -70,37 +70,37 @@ trait CloudStorageUploadTrait {
             $duration = round(microtime(true) - $startTime, 2);
             $uploadResult[ResponseKeyType::Duration->value] = $duration;
 
-            $this->updateAccountLastUsed($accountId, array(ResponseKeyType::Success->value => true));
+            $this->updateAccountLastUsed($accountId, [ResponseKeyType::Success->value => true]);
 
             $rotationResult = $this->applyRotationIfEnabled($account, $token, $remotePath);
 
-            $this->logCloudStorageAction(ActionType::CloudStorageUpload, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageUpload, [
                 ResponseKeyType::AccountId->value  => $accountId,
                 ResponseKeyType::Provider->value   => $provider->value,
                 ResponseKeyType::RemotePath->value => $remotePath,
                 ResponseKeyType::Duration->value   => $duration,
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value         => true,
                 ResponseKeyType::UploadResult->value    => $uploadResult,
                 ResponseKeyType::RotationApplied->value => $rotationResult['applied'] ?? false,
                 ResponseKeyType::FilesDeleted->value    => $rotationResult['deleted'] ?? 0,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Cloud storage upload failed');
 
             if (isset($accountId)) {
-                $this->updateAccountLastUsed($accountId, array(
+                $this->updateAccountLastUsed($accountId, [
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => $e->getMessage(),
-                ));
+                ]);
             }
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -112,13 +112,13 @@ trait CloudStorageUploadTrait {
 
         $settings = $this->db->querySingle(
             "SELECT * FROM {$table} WHERE Provider = ?",
-            array($provider),
+            [$provider],
         );
 
         $isRotationDisabled = ($settings === false) || !((bool) ($settings['RotationEnabled'] ?? false));
 
         if ($isRotationDisabled) {
-            return array('applied' => false, 'deleted' => 0);
+            return ['applied' => false, 'deleted' => 0];
         }
 
         $backupDir      = dirname($remotePath);
@@ -126,9 +126,9 @@ trait CloudStorageUploadTrait {
 
         $result = $this->applyRotation($account, $token, $backupDir, $retentionCount);
 
-        return array(
+        return [
             'applied' => true,
             'deleted' => $result['deleted'] ?? 0,
-        );
+        ];
     }
 }

@@ -63,11 +63,11 @@ trait PluginLifecycleDeleteTrait {
 
     private function tryDeletePlugin(string $slug, string $pluginFile): WP_REST_Response {
         try {
-            $result = delete_plugins(array($pluginFile));
+            $result = delete_plugins([$pluginFile]);
             $error = $this->checkDeleteResult($result);
 
             if ($error) {
-                $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('error' => $error));
+                $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, ['error' => $error]);
 
                 return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::ServerError->value);
             }
@@ -81,7 +81,7 @@ trait PluginLifecycleDeleteTrait {
 
         return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDelete->route())
-            ->setSingleResult(array(ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deleted->value => true))
+            ->setSingleResult([ResponseKeyType::PluginSlug->value => $slug, ResponseKeyType::Deleted->value => true])
             ->toResponse();
     }
 

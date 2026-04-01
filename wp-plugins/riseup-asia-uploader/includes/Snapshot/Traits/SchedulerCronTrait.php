@@ -36,10 +36,10 @@ trait SchedulerCronTrait {
             $result = $work();
             $this->logCronResult($label, $result);
         } catch (Throwable $e) {
-            $this->logger->error("[SCHEDULER] Exception during {$label}", array(
+            $this->logger->error("[SCHEDULER] Exception during {$label}", [
                 ResponseKeyType::Error->value => $e->getMessage(),
                 ResponseKeyType::Trace->value => $e->getTraceAsString(),
-            ));
+            ]);
         }
     }
 
@@ -48,7 +48,7 @@ trait SchedulerCronTrait {
         $suffix = $isSuccess ? 'completed' : 'failed';
         $level = $isSuccess ? 'info' : 'error';
 
-        $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result[ResponseKeyType::LogDataKey->value] ?? array());
+        $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result[ResponseKeyType::LogDataKey->value] ?? []);
         $this->writeCronAuditTrail($result, $isSuccess);
     }
 
@@ -66,12 +66,12 @@ trait SchedulerCronTrait {
             '',
             null,
             '',
-            $result[ResponseKeyType::AuditData->value] ?? array(),
+            $result[ResponseKeyType::AuditData->value] ?? [],
             $isSuccess ? StatusType::Success->value : StatusType::Failed->value,
             $isSuccess ? null : ($result[ResponseKeyType::Error->value] ?? 'Unknown'),
-            array(
+            [
                 ResponseKeyType::TriggeredBy->value => $result[ResponseKeyType::TriggeredBy->value] ?? TriggerSourceType::Cron->value,
-            ),
+            ],
         );
     }
 
@@ -79,9 +79,9 @@ trait SchedulerCronTrait {
         array $result,
         string $action,
         string $triggeredBy,
-        array $auditData = array(),
+        array $auditData = [],
     ): array {
-        return array(
+        return [
             ResponseKeyType::Success->value     => $result[ResponseKeyType::Success->value] ?? false,
             ResponseKeyType::Error->value       => $result[ResponseKeyType::Error->value] ?? null,
             ResponseKeyType::Action->value      => $action,
@@ -89,14 +89,14 @@ trait SchedulerCronTrait {
             ResponseKeyType::AuditData->value   => $auditData,
             ResponseKeyType::LogDataKey->value  => $result,
             ResponseKeyType::SkipAudit->value   => false,
-        );
+        ];
     }
 
     private function createOrchestrator(): array {
         $manager = SnapshotFactory::manager($this->logger, $this->db);
         $orchestrator = SnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 
-        return array($manager, $orchestrator);
+        return [$manager, $orchestrator];
     }
 
     private function invokeBackup(object $orchestrator, array $args): array {
@@ -110,18 +110,18 @@ trait SchedulerCronTrait {
     }
 
     private function invokeIncrementalBackup(object $orchestrator, array $args): array {
-        return $orchestrator->executeIncrementalBackup(array(
+        return $orchestrator->executeIncrementalBackup([
             ResponseKeyType::Title->value            => $args[ResponseKeyType::Title->value] ?? 'Incremental Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::MasterSnapshotId->value => $args[ResponseKeyType::MasterSnapshotId->value] ?? null,
-        ));
+        ]);
     }
 
     private function invokeFullBackup(object $orchestrator, array $args): array {
-        return $orchestrator->executeFullBackup(array(
+        return $orchestrator->executeFullBackup([
             ResponseKeyType::Title->value   => $args[ResponseKeyType::Title->value] ?? 'Manual Backup ' . DateHelper::nowCompactDatetime(),
             ResponseKeyType::Scope->value   => $args[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             ResponseKeyType::Trigger->value => SnapshotTriggerType::Manual->value,
             ResponseKeyType::Async->value   => true,
-        ));
+        ]);
     }
 }

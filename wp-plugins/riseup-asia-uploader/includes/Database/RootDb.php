@@ -54,7 +54,7 @@ class RootDb {
     }
 
     public function create(string $filepath): PDO {
-        $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
+        $this->log(LogLevelType::Info->value, 'Creating a-root.db', ['path' => $filepath]);
 
         $dir = dirname($filepath);
 
@@ -75,7 +75,7 @@ class RootDb {
     private function log(
         string $level,
         string $message,
-        array $context = array(),
+        array $context = [],
     ): void {
         $prefix = '[SNAPSHOT] [ROOT-DB]';
         $full = $prefix . ' ' . $message;
@@ -94,7 +94,7 @@ class RootDb {
         }
     }
 
-    private function logError(Throwable $e, string $message, array $context = array()): void {
+    private function logError(Throwable $e, string $message, array $context = []): void {
         $context[ResponseKeyType::Error->value] = $e->getMessage();
         $context['trace'] = $e->getTraceAsString();
         $this->log(LogLevelType::Error->value, $message, $context);

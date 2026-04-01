@@ -31,7 +31,7 @@ trait ManagerTableRestoreTrait {
             if ($isTableAbsent) {
                 return ResultHelper::error(
                     'Table not found in snapshot',
-                    array(ResponseKeyType::Rows->value => 0),
+                    [ResponseKeyType::Rows->value => 0],
                 );
             }
 
@@ -43,7 +43,7 @@ trait ManagerTableRestoreTrait {
         } catch (Throwable $e) {
             return ResultHelper::errorFromException(
                 $e,
-                array(ResponseKeyType::Rows->value => 0),
+                [ResponseKeyType::Rows->value => 0],
             );
         }
     }
@@ -67,9 +67,9 @@ trait ManagerTableRestoreTrait {
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             $this->wpdb->query("COMMIT");
 
-            return ResultHelper::ok(array(
+            return ResultHelper::ok([
                 ResponseKeyType::Rows->value => $totalRows,
-            ));
+            ]);
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -94,7 +94,7 @@ trait ManagerTableRestoreTrait {
             $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$batchSize} OFFSET {$offset}")->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($rows as $row) {
-                $values = array();
+                $values = [];
                 foreach ($columnNames as $col) {
                     $values[] = $row[$col] ?? null;
                 }
@@ -118,10 +118,10 @@ trait ManagerTableRestoreTrait {
             return ResultHelper::error(ResponseMessageType::ProviderMissing->value);
         }
 
-        return $provider->createSnapshot(array(
+        return $provider->createSnapshot([
             'scope' => SnapshotScopeType::WordPress->value,
             'trigger' => SnapshotTriggerType::Api->value,
             'pre_restore_of' => $originalSnapshotId,
-        ));
+        ]);
     }
 }

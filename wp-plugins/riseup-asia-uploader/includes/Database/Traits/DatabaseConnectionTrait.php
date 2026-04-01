@@ -56,7 +56,7 @@ trait DatabaseConnectionTrait {
         $isDirCreationFailed = (PathHelper::makeDirectory($baseDir, true) === false);
 
         if ($isDirCreationFailed) {
-            $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
+            $this->fileLogger->error('Failed to create base directory', ['dir' => $baseDir]);
 
             throw new Exception('Failed to create data directory: ' . $baseDir);
         }
@@ -75,7 +75,7 @@ trait DatabaseConnectionTrait {
 
         try {
             if ($isVerbose) {
-                $this->fileLogger->debug('[BOOT] Initializing PDO connection', array('path' => $this->dbPath));
+                $this->fileLogger->debug('[BOOT] Initializing PDO connection', ['path' => $this->dbPath]);
             }
 
             $this->pdo = InitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
@@ -97,10 +97,10 @@ trait DatabaseConnectionTrait {
             $this->createTables();
 
             $initMs = round((microtime(true) - $initStart) * 1000, 2);
-            $this->fileLogger->info('Database ready', array(
+            $this->fileLogger->info('Database ready', [
                 'path'   => $this->dbPath,
                 'timeMs' => $initMs,
-            ));
+            ]);
 
             return true;
         } catch (Throwable $e) {
@@ -124,7 +124,7 @@ trait DatabaseConnectionTrait {
 
             $newVersion = $this->getCurrentSchemaVersion();
             if ($newVersion > $current) {
-                $this->fileLogger->info('Database migrated', array('from' => $current, 'to' => $newVersion));
+                $this->fileLogger->info('Database migrated', ['from' => $current, 'to' => $newVersion]);
             }
         } catch (PDOException $e) {
             $this->fileLogger->logCriticalException($e, 'Database migration failed');

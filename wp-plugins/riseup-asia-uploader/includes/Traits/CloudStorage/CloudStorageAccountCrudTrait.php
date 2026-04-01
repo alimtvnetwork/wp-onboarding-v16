@@ -38,17 +38,17 @@ trait CloudStorageAccountCrudTrait {
                 $rows,
             );
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value  => true,
                 ResponseKeyType::Accounts->value => $accounts,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to list cloud storage accounts');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -62,23 +62,23 @@ trait CloudStorageAccountCrudTrait {
             $isNotFound = ($account === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($account),
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get cloud storage account');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -92,10 +92,10 @@ trait CloudStorageAccountCrudTrait {
             $hasErrors = !empty($validation);
 
             if ($hasErrors) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Errors->value  => $validation,
-                ), HttpStatusType::BadRequest->value);
+                ], HttpStatusType::BadRequest->value);
             }
 
             $row   = $this->buildAccountRow($params);
@@ -112,23 +112,23 @@ trait CloudStorageAccountCrudTrait {
             $newId   = $this->db->lastInsertId();
             $account = $this->getCloudStorageAccountById((int) $newId);
 
-            $this->logCloudStorageAction(ActionType::CloudStorageAccountAdd, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageAccountAdd, [
                 ResponseKeyType::AccountId->value    => $newId,
                 ResponseKeyType::AccountLabel->value => $params[CloudStorageAccountFieldType::AccountLabel->value] ?? '',
                 ResponseKeyType::Provider->value     => $params[CloudStorageAccountFieldType::Provider->value] ?? '',
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($account),
-            ), HttpStatusType::Created->value);
+            ], HttpStatusType::Created->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to create cloud storage account');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -142,15 +142,15 @@ trait CloudStorageAccountCrudTrait {
             $isNotFound = ($existing === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $params = $request->get_json_params();
-            $sets   = array();
-            $values = array();
+            $sets   = [];
+            $values = [];
 
             $this->applyAccountUpdate($params, $existing, $sets, $values);
 
@@ -167,17 +167,17 @@ trait CloudStorageAccountCrudTrait {
 
             $updated = $this->getCloudStorageAccountById($id);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($updated),
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to update cloud storage account');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -191,39 +191,39 @@ trait CloudStorageAccountCrudTrait {
             $isNotFound = ($existing === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $table = TableType::CloudStorageAccounts->value;
-            $this->db->execute("DELETE FROM {$table} WHERE Id = ?", array($id));
+            $this->db->execute("DELETE FROM {$table} WHERE Id = ?", [$id]);
 
             $settingsTable = TableType::CloudStorageSettings->value;
 
             $this->db->execute(
                 "UPDATE {$settingsTable} SET DefaultAccountId = NULL WHERE DefaultAccountId = ?",
-                array($id),
+                [$id],
             );
 
-            $this->logCloudStorageAction(ActionType::CloudStorageAccountRemove, array(
+            $this->logCloudStorageAction(ActionType::CloudStorageAccountRemove, [
                 ResponseKeyType::AccountId->value    => $id,
                 ResponseKeyType::AccountLabel->value => $existing['AccountLabel'] ?? '',
                 ResponseKeyType::Provider->value     => $existing['Provider'] ?? '',
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Account deleted',
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to delete cloud storage account');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -238,10 +238,10 @@ trait CloudStorageAccountCrudTrait {
             $isNotFound = ($account === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Account not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
             $provider = CloudStorageProviderType::from($account['Provider']);
@@ -251,7 +251,7 @@ trait CloudStorageAccountCrudTrait {
                 $provider->isGitHub()      => $this->githubTestConnection($account, $token),
                 $provider->isGitLab()      => $this->gitlabTestConnection($account, $token),
                 $provider->isGoogleDrive() => $this->googleDriveTestConnection($account, $token),
-                default                    => array('Success' => false, 'Error' => 'Provider not yet supported'),
+                default                    => ['Success' => false, 'Error' => 'Provider not yet supported'],
             };
 
             $this->updateAccountLastUsed($accountId, $result);
@@ -260,10 +260,10 @@ trait CloudStorageAccountCrudTrait {
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to test cloud storage connection');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -272,7 +272,7 @@ trait CloudStorageAccountCrudTrait {
     /** Validate account creation/update fields. */
     private function validateAccountFields(array $params): array
     {
-        $errors   = array();
+        $errors   = [];
         $provider = $params[CloudStorageAccountFieldType::Provider->value] ?? '';
 
         $isProviderEmpty = empty($provider);
@@ -314,7 +314,7 @@ trait CloudStorageAccountCrudTrait {
         $token        = $params[CloudStorageAccountFieldType::AccessToken->value] ?? '';
         $refreshToken = $params[CloudStorageAccountFieldType::RefreshToken->value] ?? '';
 
-        $row = array(
+        $row = [
             'Provider'     => $params[CloudStorageAccountFieldType::Provider->value],
             'AccountLabel' => sanitize_text_field($params[CloudStorageAccountFieldType::AccountLabel->value] ?? ''),
             'Username'     => sanitize_text_field($params[CloudStorageAccountFieldType::Username->value] ?? ''),
@@ -327,7 +327,7 @@ trait CloudStorageAccountCrudTrait {
             'FolderId'     => sanitize_text_field($params[CloudStorageAccountFieldType::FolderId->value] ?? ''),
             'FolderName'   => sanitize_text_field($params[CloudStorageAccountFieldType::FolderName->value] ?? ''),
             'IsActive'     => 1,
-        );
+        ];
 
         return $row;
     }
@@ -338,12 +338,12 @@ trait CloudStorageAccountCrudTrait {
         $isNull = ($row === false);
 
         if ($isNull) {
-            return array();
+            return [];
         }
 
         $token = $this->decryptToken($row['AccessToken'] ?? '');
 
-        return array(
+        return [
             'Id'           => (int) $row['Id'],
             'Provider'     => $row['Provider'],
             'AccountLabel' => $row['AccountLabel'],
@@ -359,7 +359,7 @@ trait CloudStorageAccountCrudTrait {
             'LastUsedAt'   => $row['LastUsedAt'] ?? '',
             'LastError'    => $row['LastError'] ?? '',
             'CreatedAt'    => $row['CreatedAt'] ?? '',
-        );
+        ];
     }
 
     /** Fetch an account by its primary key. */
@@ -367,13 +367,13 @@ trait CloudStorageAccountCrudTrait {
     {
         $table = TableType::CloudStorageAccounts->value;
 
-        return $this->db->querySingle("SELECT * FROM {$table} WHERE Id = ?", array($id));
+        return $this->db->querySingle("SELECT * FROM {$table} WHERE Id = ?", [$id]);
     }
 
     /** Apply update fields to SET clause arrays. */
     private function applyAccountUpdate(array $params, array $existing, array &$sets, array &$values): void
     {
-        $textFields = array('AccountLabel', 'Username', 'Email', 'BaseUrl', 'RepoName', 'RepoOwner', 'FolderId', 'FolderName');
+        $textFields = ['AccountLabel', 'Username', 'Email', 'BaseUrl', 'RepoName', 'RepoOwner', 'FolderId', 'FolderName'];
 
         foreach ($textFields as $field) {
             $hasField = isset($params[$field]);
@@ -415,7 +415,7 @@ trait CloudStorageAccountCrudTrait {
         if ($isSuccess) {
             $this->db->execute(
                 "UPDATE {$table} SET LastUsedAt = datetime('now'), LastError = '' WHERE Id = ?",
-                array($accountId),
+                [$accountId],
             );
 
             return;
@@ -425,7 +425,7 @@ trait CloudStorageAccountCrudTrait {
 
         $this->db->execute(
             "UPDATE {$table} SET LastError = ? WHERE Id = ?",
-            array($error, $accountId),
+            [$error, $accountId],
         );
     }
 

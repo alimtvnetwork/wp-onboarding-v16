@@ -44,7 +44,7 @@ trait ImportExecutionFileTrait {
             $incDir = PathHelper::join($snapshotRoot, $inc['relative_path']);
 
             if (PathHelper::isDirMissing($incDir)) {
-                $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
+                $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', ['folder' => $inc['folder_name']]);
                 continue;
             }
             $incFiles = glob(PathHelper::join($incDir, '*.sqlite'));
@@ -59,7 +59,7 @@ trait ImportExecutionFileTrait {
             $zipPath = PathHelper::join($snapshotRoot, $plugin['zip_file']);
 
             if (PathHelper::isFileMissing($zipPath)) {
-                $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
+                $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', ['plugin' => $plugin['plugin_slug']]);
                 continue;
             }
             if (!empty($plugin['checksumMd5'])) {
@@ -121,13 +121,13 @@ trait ImportExecutionFileTrait {
                 $this->deleteDirectory($path);
             } else {
                 if (!@unlink($path)) {
-                    $this->log(LogLevelType::Warn->value, 'Failed to delete file during cleanup', array('path' => $path));
+                    $this->log(LogLevelType::Warn->value, 'Failed to delete file during cleanup', ['path' => $path]);
                 }
             }
         }
 
         if (!@rmdir($dir)) {
-            $this->log(LogLevelType::Warn->value, 'Failed to remove directory during cleanup', array('dir' => $dir));
+            $this->log(LogLevelType::Warn->value, 'Failed to remove directory during cleanup', ['dir' => $dir]);
         }
     }
 

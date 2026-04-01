@@ -35,6 +35,7 @@ class FileLogger {
     use LoggerDedupTrait;
     use LoggerPersistentDedupTrait;
     use LoggerLevelMethodsTrait;
+use RiseupAsia\Enums\PhpNativeType;
 
     private const SEPARATOR_WIDTH = 80;
     private const TRACE_LABEL_INTERNAL = '<internal>';
@@ -69,7 +70,7 @@ class FileLogger {
     private int $stackTraceDepth = 0;
 
     /** @var array<string, bool> */
-    private array $dedupHashes = array();
+    private array $dedupHashes = [];
     private ?array $requestMetadataCache = null;
 
     public static function getInstance(): self {
@@ -114,13 +115,13 @@ class FileLogger {
         }
 
         $settings = json_decode($contents, true);
-        $isDecodeFailed = !is_array($settings);
+        $isDecodeFailed = gettype($settings) !== PhpNativeType::PhpArray->value;
 
         if ($isDecodeFailed) {
             return;
         }
 
-        $hasLogging = isset($settings['logging']) && is_array($settings['logging']);
+        $hasLogging = isset($settings['logging']) && gettype($settings['logging']) === PhpNativeType::PhpArray->value;
 
         if ($hasLogging === false) {
             return;

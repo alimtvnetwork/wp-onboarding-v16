@@ -54,13 +54,13 @@ class SnapshotScheduler {
     }
 
     public function init() {
-        add_filter(HookType::CronSchedules->value, array($this, 'registerCronSchedules'));
-        add_action(HookType::CronSnapshotScheduled->value, array($this, 'executeScheduledSnapshot'));
-        add_action(HookType::CronSnapshotImmediate->value, array($this, 'executeImmediateSnapshot'));
-        add_action(HookType::CronSnapshotCleanup->value, array($this, 'executeCleanup'));
-        add_action(HookType::CronSnapshotWorkerBatch->value, array($this, 'executeWorkerBatch'));
-        add_action(HookType::CronSnapshotRestore->value, array($this, 'executeCronRestore'));
-        add_action(HookType::CronSnapshotIncremental->value, array($this, 'executeCronIncremental'));
+        add_filter(HookType::CronSchedules->value, [$this, 'registerCronSchedules']);
+        add_action(HookType::CronSnapshotScheduled->value, [$this, 'executeScheduledSnapshot']);
+        add_action(HookType::CronSnapshotImmediate->value, [$this, 'executeImmediateSnapshot']);
+        add_action(HookType::CronSnapshotCleanup->value, [$this, 'executeCleanup']);
+        add_action(HookType::CronSnapshotWorkerBatch->value, [$this, 'executeWorkerBatch']);
+        add_action(HookType::CronSnapshotRestore->value, [$this, 'executeCronRestore']);
+        add_action(HookType::CronSnapshotIncremental->value, [$this, 'executeCronIncremental']);
         $this->ensureCleanupScheduled();
         $this->syncScheduleWithSettings();
     }

@@ -27,18 +27,18 @@ trait LifecycleHooksTrait
      * Handle WordPress core activated_plugin hook.
      */
     public function onPluginActivated(string $plugin, bool $networkWide = false): void {
-        $this->logLifecycleEvent(ActionType::Enable->value, $plugin, 'activated_plugin', array(
+        $this->logLifecycleEvent(ActionType::Enable->value, $plugin, 'activated_plugin', [
             'networkWide' => $networkWide,
-        ));
+        ]);
     }
 
     /**
      * Handle WordPress core deactivated_plugin hook.
      */
     public function onPluginDeactivated(string $plugin, bool $networkDeactivating = false): void {
-        $this->logLifecycleEvent(ActionType::Disable->value, $plugin, 'deactivated_plugin', array(
+        $this->logLifecycleEvent(ActionType::Disable->value, $plugin, 'deactivated_plugin', [
             'networkDeactivating' => $networkDeactivating,
-        ));
+        ]);
     }
 
     /**
@@ -51,7 +51,7 @@ trait LifecycleHooksTrait
             return;
         }
 
-        $this->logLifecycleEvent(ActionType::Delete->value, $plugin, 'deleted_plugin', array());
+        $this->logLifecycleEvent(ActionType::Delete->value, $plugin, 'deleted_plugin', []);
     }
 
     /**
@@ -71,18 +71,18 @@ trait LifecycleHooksTrait
             $slug = $this->extractPluginSlug($plugin);
             $triggeredBy = $this->detectTriggerSource();
 
-            $this->fileLogger->info('WordPress hook: Plugin lifecycle event', array(
+            $this->fileLogger->info('WordPress hook: Plugin lifecycle event', [
                 'action'      => $action,
                 'plugin'      => $plugin,
                 'slug'        => $slug,
                 'triggeredBy' => $triggeredBy,
-            ));
+            ]);
 
-            $details = array_merge($extra, array(
+            $details = array_merge($extra, [
                 'pluginFile'  => $plugin,
                 'triggeredBy' => $triggeredBy,
                 'hookSource'  => $hookSource,
-            ));
+            ]);
 
             $this->logger->logPluginAction($action, $slug, StatusType::Success->value, $details);
         } catch (Throwable $e) {

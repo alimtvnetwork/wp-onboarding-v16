@@ -57,21 +57,21 @@ trait SyncManifestTrait
         $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $pluginDir, $ignore);
 
-        return new WP_REST_Response(array(
+        return new WP_REST_Response([
             ResponseKeyType::Success->value => true,
-            ResponseKeyType::Data->value => array(
+            ResponseKeyType::Data->value => [
                 ResponseKeyType::Plugin->value    => $slug,
                 ResponseKeyType::FileCount->value => count($result[ResponseKeyType::Files->value]),
                 ResponseKeyType::GeneratedAt->value => DateHelper::nowIso(),
                 ResponseKeyType::Cached->value    => $result[ResponseKeyType::Cached->value] > 0,
-                ResponseKeyType::CacheStats->value => array(
+                ResponseKeyType::CacheStats->value => [
                     ResponseKeyType::FromCache->value => $result[ResponseKeyType::Cached->value],
                     ResponseKeyType::Computed->value  => $result[ResponseKeyType::Computed->value],
                     ResponseKeyType::Removed->value   => $result[ResponseKeyType::Removed->value],
-                ),
+                ],
                 ResponseKeyType::Files->value => $result[ResponseKeyType::Files->value],
-            ),
-        ), HttpStatusType::Ok->value);
+            ],
+        ], HttpStatusType::Ok->value);
     }
 
     private function scanDirectoryForFiles(
@@ -106,11 +106,11 @@ trait SyncManifestTrait
     }
 
     private function buildFileEntry(string $relPath, string $fullPath): array {
-        return array(
+        return [
             'path' => str_replace('\\', '/', $relPath),
             'hash' => @md5_file($fullPath) ?: '',
             'size' => @filesize($fullPath) ?: 0,
             'modifiedAt' => ($mtime = @filemtime($fullPath)) ? DateHelper::formatIso($mtime) : null,
-        );
+        ];
     }
 }

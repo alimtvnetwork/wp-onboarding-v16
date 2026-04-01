@@ -49,9 +49,9 @@ trait IncrementalDiscoveryTrait {
         try {
             return $this->queryLatestMasterDir($pdo);
         } catch (Throwable $e) {
-            $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array(
+            $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', [
                 'error' => $e->getMessage(),
-            ));
+            ]);
 
             return null;
         }
@@ -112,14 +112,14 @@ trait IncrementalDiscoveryTrait {
     }
 
     private function buildInventoryFromRows(array $rows): array {
-        $inventory = array();
+        $inventory = [];
 
         foreach ($rows as $row) {
             $pk = $this->detectPrimaryKey($row[ResponseKeyType::TableName->value]);
-            $inventory[$row[ResponseKeyType::TableName->value]] = array(
+            $inventory[$row[ResponseKeyType::TableName->value]] = [
                 ResponseKeyType::RowCount->value  => (int) $row[ResponseKeyType::RowCount->value],
                 ResponseKeyType::PkColumn->value => $pk,
-            );
+            ];
         }
 
         return $inventory;

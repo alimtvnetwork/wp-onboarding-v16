@@ -17,25 +17,26 @@ use PDO;
 use Throwable;
 
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait OrmQueryTrait {
 
     public function select($columns) {
-        $this->selectColumns = is_array($columns) ? $columns : func_get_args();
+        $this->selectColumns = gettype($columns) === PhpNativeType::PhpArray->value ? $columns : func_get_args();
 
         return $this;
     }
 
     /** Select a single column. */
     public function selectColumn(string $column) {
-        $this->selectColumns = array($column);
+        $this->selectColumns = [$column];
 
         return $this;
     }
 
     /** Select with COUNT(*). */
     public function selectCount(string $alias = 'count') {
-        $this->selectColumns = array("COUNT(*) as {$alias}");
+        $this->selectColumns = ["COUNT(*) as {$alias}"];
 
         return $this;
     }
@@ -95,7 +96,7 @@ trait OrmQueryTrait {
 
         try {
             $stmt = self::$pdo->prepare($sql);
-            $stmt->execute(array(':id' => $id));
+            $stmt->execute([':id' => $id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $result ?: null;
@@ -110,7 +111,7 @@ trait OrmQueryTrait {
         $isPdoMissing = (self::$pdo === null);
 
         if ($isPdoMissing) {
-            return array();
+            return [];
         }
 
         $sql = $this->buildSelectSql();
@@ -122,7 +123,7 @@ trait OrmQueryTrait {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'OrmQueryTrait::findMany() failed:');
-            return array();
+            return [];
         }
     }
 

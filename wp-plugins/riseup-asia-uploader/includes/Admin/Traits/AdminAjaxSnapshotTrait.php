@@ -29,7 +29,7 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $settings = $this->parseSnapshotSettingsFromPost();
@@ -38,7 +38,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse snapshot settings from $_POST data. */
     private function parseSnapshotSettingsFromPost(): array {
-        $settings = array();
+        $settings = [];
         $this->parsePostTextFields($settings);
         $this->parsePostIntFields($settings);
         $this->parsePostBoolFields($settings);
@@ -50,13 +50,13 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse text fields from $_POST into settings. */
     private function parsePostTextFields(array &$settings) {
-        $fields = array(
+        $fields = [
             'preferred_provider',
             'schedule_frequency',
             'schedule_time',
             'default_scope',
             'retention_type',
-        );
+        ];
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -67,13 +67,13 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse integer fields from $_POST into settings. */
     private function parsePostIntFields(array &$settings) {
-        $fields = array(
+        $fields = [
             'schedule_day',
             'retention_days',
             'retention_count',
             'max_snapshot_size_mb',
             'batch_size',
-        );
+        ];
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -84,7 +84,7 @@ trait AdminAjaxSnapshotTrait {
 
     /** Parse boolean fields from $_POST into settings. */
     private function parsePostBoolFields(array &$settings) {
-        $fields = array('schedule_enabled', 'pre_restore_backup');
+        $fields = ['schedule_enabled', 'pre_restore_backup'];
 
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -129,9 +129,9 @@ trait AdminAjaxSnapshotTrait {
         }
 
         if ($result) {
-            wp_send_json_success(array(ResponseKeyType::Message->value => 'Snapshot settings saved'));
+            wp_send_json_success([ResponseKeyType::Message->value => 'Snapshot settings saved']);
         } else {
-            wp_send_json_success(array(ResponseKeyType::Message->value => 'Settings unchanged'));
+            wp_send_json_success([ResponseKeyType::Message->value => 'Settings unchanged']);
         }
     }
 
@@ -140,13 +140,13 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $scheduler = SnapshotFactory::scheduler();
         $result = $scheduler->runManualCleanup();
 
-        wp_send_json_success(array(
+        wp_send_json_success([
             ResponseKeyType::Message->value => sprintf(
                 'Cleanup complete: %d by policy, %d orphans, %d failed removed. Freed %s.',
                 $result[ResponseKeyType::DeletedByPolicy->value],
@@ -155,7 +155,7 @@ trait AdminAjaxSnapshotTrait {
                 PathHelper::formatBytes($result[ResponseKeyType::SpaceFreedBytes->value]),
             ),
             ResponseKeyType::Result->value => $result,
-        ));
+        ]);
     }
 
     /** AJAX handler: Get snapshot storage stats. */
@@ -163,7 +163,7 @@ trait AdminAjaxSnapshotTrait {
         check_ajax_referer(NonceType::Admin->value, 'nonce');
 
         if (BooleanHelpers::isCapabilityMissing(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array(ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value));
+            wp_send_json_error([ResponseKeyType::Message->value => ResponseMessageType::Unauthorized->value]);
         }
 
         $scheduler = SnapshotFactory::scheduler();

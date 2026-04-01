@@ -76,34 +76,34 @@ trait DatabaseMigrationsV6V8Trait {
         // 'All' = PluginSelectionType::All, 'Auto' = SnapshotProviderType::Auto,
         // 'WordPress' = SnapshotScopeType::WordPress, 'Manual' = SnapshotFrequencyType::Manual.
         // Literals are required here because enum ->value access is not permitted in array declarations.
-        $defaults = array(
-            array('snapshot.mode',             'PerTable',     'string'),
-            array('snapshot.backup_type',      'Incremental',  'string'),
-            array('snapshot.worker_count',     '10',           'int'),
-            array('snapshot.storage_path',     'snapshots/',   'string'),
-            array('snapshot.include_plugins',  '1',            'bool'),
-            array('snapshot.plugin_selection', 'All',          'string'),
-            array('snapshot.retention_days',   '30',           'int'),
-            array('snapshot.retention_count',  '10',           'int'),
-            array('snapshot.compression',      '1',            'bool'),
-            array('snapshot.batch_size',       '1000',         'int'),
-            array('snapshot.provider',         'Auto',         'string'),
-            array('snapshot.scope',            'WordPress',    'string'),
-            array('snapshot.frequency',        'Manual',       'string'),
-            array('snapshot.schedule_time',    '03:00',        'string'),
-            array('snapshot.pre_restore_backup', '1',          'bool'),
-        );
+        $defaults = [
+            ['snapshot.mode',             'PerTable',     'string'],
+            ['snapshot.backup_type',      'Incremental',  'string'],
+            ['snapshot.worker_count',     '10',           'int'],
+            ['snapshot.storage_path',     'snapshots/',   'string'],
+            ['snapshot.include_plugins',  '1',            'bool'],
+            ['snapshot.plugin_selection', 'All',          'string'],
+            ['snapshot.retention_days',   '30',           'int'],
+            ['snapshot.retention_count',  '10',           'int'],
+            ['snapshot.compression',      '1',            'bool'],
+            ['snapshot.batch_size',       '1000',         'int'],
+            ['snapshot.provider',         'Auto',         'string'],
+            ['snapshot.scope',            'WordPress',    'string'],
+            ['snapshot.frequency',        'Manual',       'string'],
+            ['snapshot.schedule_time',    '03:00',        'string'],
+            ['snapshot.pre_restore_backup', '1',          'bool'],
+        ];
 
         $now  = DateHelper::nowUtc();
         $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO " . TableType::SnapshotSettings->value . " (Key, Value, Type, UpdatedAt) VALUES (?, ?, ?, ?)");
 
         foreach ($defaults as $row) {
-            $stmt->execute(array(
+            $stmt->execute([
                 $row[0],
                 $row[1],
                 $row[2],
                 $now,
-            ));
+            ]);
         }
 
         $this->recordMigration(8);

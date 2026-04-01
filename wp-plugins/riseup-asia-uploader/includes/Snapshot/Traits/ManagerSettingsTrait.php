@@ -26,12 +26,13 @@ use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotWorkerModeType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait ManagerSettingsTrait {
     public function getSettings(): array {
         $settings = $this->readSettingsFromDb();
 
-        $defaults = array(
+        $defaults = [
             SettingsKeyType::Mode->value            => SnapshotWorkerModeType::PerTable->value,
             SettingsKeyType::BackupType->value       => SnapshotModeType::Incremental->value,
             SettingsKeyType::WorkerCount->value      => 10,
@@ -47,8 +48,8 @@ trait ManagerSettingsTrait {
             SettingsKeyType::Frequency->value        => SnapshotFrequencyType::Manual->value,
             SettingsKeyType::ScheduleTime->value     => '03:00',
             SettingsKeyType::PreRestoreBackup->value => true,
-            SettingsKeyType::CustomTables->value     => array(),
-        );
+            SettingsKeyType::CustomTables->value     => [],
+        ];
 
         return array_merge($defaults, $settings);
     }
@@ -58,12 +59,12 @@ trait ManagerSettingsTrait {
         $isPdoMissing = ($pdo === null);
 
         if ($isPdoMissing) {
-            return array();
+            return [];
         }
 
         try {
             $rows = $pdo->query("SELECT Key, Value, Type FROM " . TableType::SnapshotSettings->value)->fetchAll(PDO::FETCH_ASSOC);
-            $settings = array();
+            $settings = [];
 
             foreach ($rows as $row) {
                 $key = str_replace('snapshot.', '', $row['Key']);
@@ -75,7 +76,7 @@ trait ManagerSettingsTrait {
         } catch (Throwable $e) {
             $this->logWarn($e, 'Failed to read SnapshotSettings from SQLite');
 
-            return array();
+            return [];
         }
     }
 
@@ -109,14 +110,14 @@ trait ManagerSettingsTrait {
 
                 foreach ($settings as $key => $value) {
                     $dbKey = 'snapshot.' . $key;
-                    $type = is_bool($value) ? 'bool' : (is_int($value) ? 'int' : 'string');
-                    $dbValue = is_bool($value) ? ($value ? '1' : '0') : (string)$value;
-                    $stmt->execute(array(
+                    $type = gettype($value) === PhpNativeType::PhpBoolean->value ? 'bool' : (gettype($value) === PhpNativeType::PhpInteger->value ? 'int' : 'string');
+                    $dbValue = gettype($value) === PhpNativeType::PhpBoolean->value ? ($value ? '1' : '0') : (string)$value;
+                    $stmt->execute([
                         $dbKey,
                         $dbValue,
                         $type,
                         $now,
-                    ));
+                    ]);
                 }
             } catch (Throwable $e) {
                 $this->logError($e, 'Failed to update SnapshotSettings');
@@ -130,9 +131,9 @@ trait ManagerSettingsTrait {
         }
 
         $result = $this->getSettings();
-        $this->log(LogLevelType::Info->value, 'Snapshot settings updated', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot settings updated', [
             'keys' => array_keys($settings),
-        ));
+        ]);
 
         return $result;
     }
@@ -144,7 +145,7 @@ trait ManagerSettingsTrait {
             case 'bool':
                 return $value === '1' || $value === 'true';
             case 'json':
-                return json_decode($value, true) ?: array();
+                return json_decode($value, true) ?: [];
             default:
                 return $value;
         }

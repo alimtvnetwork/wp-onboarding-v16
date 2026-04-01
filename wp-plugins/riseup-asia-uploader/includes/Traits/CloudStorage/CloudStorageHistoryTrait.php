@@ -35,34 +35,34 @@ trait CloudStorageHistoryTrait {
 
             $table    = TableType::CloudStorageBackupHistory->value;
             $countSql = "SELECT COUNT(*) FROM {$table} WHERE AccountId = :accountId";
-            $total    = (int) $this->db->queryScalar($countSql, array('accountId' => $accountId));
+            $total    = (int) $this->db->queryScalar($countSql, ['accountId' => $accountId]);
 
             $listSql = sprintf(
                 "SELECT * FROM %s WHERE AccountId = :accountId ORDER BY CreatedAt DESC LIMIT :limit OFFSET :offset",
                 $table,
             );
 
-            $rows = $this->db->queryAll($listSql, array(
+            $rows = $this->db->queryAll($listSql, [
                 'accountId' => $accountId,
                 'limit'     => $perPage,
                 'offset'    => $offset,
-            ));
+            ]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 'BackupHistory'                 => $rows,
                 ResponseKeyType::Total->value   => $total,
                 'Page'                          => $page,
                 'PerPage'                       => $perPage,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
 
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to list backup history');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -72,29 +72,29 @@ trait CloudStorageHistoryTrait {
         try {
             $id    = (int) $request->get_param('id');
             $table = TableType::CloudStorageBackupHistory->value;
-            $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", array('id' => $id));
+            $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", ['id' => $id]);
 
             $isNotFound = ($row === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Backup record not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 'Backup'                        => $row,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
 
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get backup history record');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -104,31 +104,31 @@ trait CloudStorageHistoryTrait {
         try {
             $id    = (int) $request->get_param('id');
             $table = TableType::CloudStorageBackupHistory->value;
-            $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", array('id' => $id));
+            $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", ['id' => $id]);
 
             $isNotFound = ($row === false);
 
             if ($isNotFound) {
-                return new WP_REST_Response(array(
+                return new WP_REST_Response([
                     ResponseKeyType::Success->value => false,
                     ResponseKeyType::Error->value   => 'Backup record not found',
-                ), HttpStatusType::NotFound->value);
+                ], HttpStatusType::NotFound->value);
             }
 
-            $this->db->execute("DELETE FROM {$table} WHERE Id = :id", array('id' => $id));
+            $this->db->execute("DELETE FROM {$table} WHERE Id = :id", ['id' => $id]);
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Backup record deleted',
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
 
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to delete backup history record');
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => false,
                 ResponseKeyType::Error->value   => $e->getMessage(),
-            ), HttpStatusType::InternalServerError->value);
+            ], HttpStatusType::InternalServerError->value);
         }
     }
 
@@ -145,7 +145,7 @@ trait CloudStorageHistoryTrait {
             $table,
         );
 
-        $this->db->execute($sql, array(
+        $this->db->execute($sql, [
             'accountId'        => $data['AccountId'],
             'backupType'       => $data['BackupType'],
             'fileName'         => $data['FileName'],
@@ -163,7 +163,7 @@ trait CloudStorageHistoryTrait {
             'folderPath'       => $data['FolderPath'] ?? '',
             'chunkCount'       => $data['ChunkCount'] ?? 0,
             'totalSize'        => $data['TotalSize'] ?? 0,
-        ));
+        ]);
 
         return (int) $this->db->lastInsertId();
     }
@@ -172,11 +172,11 @@ trait CloudStorageHistoryTrait {
     private function updateBackupHistoryStatus(
         int $id,
         CloudStorageBackupStatusType $status,
-        array $extra = array()
+        array $extra = []
     ): void {
         $table = TableType::CloudStorageBackupHistory->value;
-        $sets  = array('Status = :status');
-        $params = array('status' => $status->value, 'id' => $id);
+        $sets  = ['Status = :status'];
+        $params = ['status' => $status->value, 'id' => $id];
 
         foreach ($extra as $key => $value) {
             $sets[]           = "{$key} = :{$key}";
@@ -194,11 +194,11 @@ trait CloudStorageHistoryTrait {
 
         return $this->db->queryOne(
             "SELECT * FROM {$table} WHERE AccountId = :accountId AND BackupType = :type AND Status = :status ORDER BY CreatedAt DESC LIMIT 1",
-            array(
+            [
                 'accountId' => $accountId,
                 'type'      => CloudStorageBackupType::Full->value,
                 'status'    => CloudStorageBackupStatusType::Success->value,
-            ),
+            ],
         );
     }
 
@@ -209,7 +209,7 @@ trait CloudStorageHistoryTrait {
 
         return $this->db->queryOne(
             "SELECT * FROM {$table} WHERE Id = :id",
-            array('id' => $id),
+            ['id' => $id],
         );
     }
 }

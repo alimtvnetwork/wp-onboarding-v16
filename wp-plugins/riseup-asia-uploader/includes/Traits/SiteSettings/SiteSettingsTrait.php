@@ -42,15 +42,15 @@ trait SiteSettingsTrait
     public function handleUpdateSiteSettings(WP_REST_Request $request): WP_REST_Response
     {
         $body = $request->get_json_params();
-        $updated = array();
-        $errors = array();
+        $updated = [];
+        $errors = [];
 
         // Search engine visibility (blog_public: 1 = visible, 0 = discouraged)
         if (array_key_exists('searchEngineVisible', $body)) {
             $value = (bool) $body['searchEngineVisible'];
             update_option('blog_public', $value ? '1' : '0');
             $updated['searchEngineVisible'] = $value;
-            $this->fileLogger->info('Updated search engine visibility', array('value' => $value));
+            $this->fileLogger->info('Updated search engine visibility', ['value' => $value]);
         }
 
         // WP_DEBUG — requires wp-config.php modification
@@ -138,16 +138,16 @@ trait SiteSettingsTrait
 
         $hasErrors = count($errors) > 0;
 
-        $this->fileLogger->info('Site settings update complete', array(
+        $this->fileLogger->info('Site settings update complete', [
             'updated' => array_keys($updated),
             'errors'  => $errors,
-        ));
+        ]);
 
-        $result = array(
+        $result = [
             ResponseKeyType::Success->value => true,
             'updated'  => $updated,
             'settings' => $this->buildSiteSettingsPayload(),
-        );
+        ];
 
         if ($hasErrors) {
             $result['warnings'] = $errors;
@@ -163,7 +163,7 @@ trait SiteSettingsTrait
      */
     private function buildSiteSettingsPayload(): array
     {
-        return array(
+        return [
             'searchEngineVisible' => (get_option('blog_public', '1') === '1'),
             'wpDebug'            => defined('WP_DEBUG') && WP_DEBUG,
             'wpDebugLog'         => defined('WP_DEBUG_LOG') && WP_DEBUG_LOG,
@@ -185,7 +185,7 @@ trait SiteSettingsTrait
             'timezone'           => wp_timezone_string(),
             'activeTheme'        => get_stylesheet(),
             'serverSoftware'     => isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field($_SERVER['SERVER_SOFTWARE']) : 'unknown',
-        );
+        ];
     }
 
     /**
@@ -200,7 +200,7 @@ trait SiteSettingsTrait
 
         $isNotWritable = !is_writable($configPath);
         if ($isNotWritable) {
-            $this->fileLogger->warning('wp-config.php is not writable', array('path' => $configPath));
+            $this->fileLogger->warning('wp-config.php is not writable', ['path' => $configPath]);
             return false;
         }
 

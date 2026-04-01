@@ -44,7 +44,7 @@ trait ManagerImportRecordTrait {
         string $filename,
         string $filepath,
     ): array {
-        return array(
+        return [
             'Sequence' => $sequence,
             'Filename' => $filename,
             'Filepath' => $filepath,
@@ -57,11 +57,11 @@ trait ManagerImportRecordTrait {
             'Status' => SnapshotStatusType::Complete->value,
             'CreatedAt' => DateHelper::nowIso(),
             'CompletedAt' => DateHelper::nowIso(),
-            'ImportSource' => json_encode(array(
+            'ImportSource' => json_encode([
                 ResponseKeyType::OriginalId->value => $snapshotData['id'] ?? null,
                 ResponseKeyType::OriginalCreatedAt->value => $snapshotData['created_at'] ?? null,
                 ResponseKeyType::SourceSite->value => $manifest['source']['site_url'] ?? null,
-            )),
-        );
+            ]),
+        ];
     }
 }

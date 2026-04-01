@@ -18,22 +18,23 @@ use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\ResponseKeyType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait PostCrudTrait {
 
     public function createPost(array $data): array {
-        $this->fileLogger->info('Creating post', array('title' => $data['title'] ?? ''));
+        $this->fileLogger->info('Creating post', ['title' => $data['title'] ?? '']);
 
         if (empty($data['title'])) {
             $this->fileLogger->warn('Post creation failed: title required');
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Title is required');
+            return [ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Title is required'];
         }
 
         if (empty($data['content'])) {
             $this->fileLogger->warn('Post creation failed: content required');
 
-            return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Content is required');
+            return [ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Content is required'];
         }
 
         try {
@@ -44,30 +45,30 @@ trait PostCrudTrait {
                 return $this->handlePostError(ActionType::PostCreate->value, 0, $data['title'], $postId->get_error_message());
             }
 
-            $this->fileLogger->info('Post created', array('postId' => $postId));
-            $this->assignCategories($postId, $data['categories'] ?? array());
+            $this->fileLogger->info('Post created', ['postId' => $postId]);
+            $this->assignCategories($postId, $data['categories'] ?? []);
 
-            $this->logger->logPostCreate($postId, array(
+            $this->logger->logPostCreate($postId, [
                 'title' => $data['title'], 'slug' => get_post_field('post_name', $postId),
-                'status' => $postData['post_status'], 'categories' => $data['categories'] ?? array(),
-            ));
+                'status' => $postData['post_status'], 'categories' => $data['categories'] ?? [],
+            ]);
 
-            return array(ResponseKeyType::Success->value => true, 'post' => $this->formatPost(get_post($postId)));
+            return [ResponseKeyType::Success->value => true, 'post' => $this->formatPost(get_post($postId))];
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post creation exception');
         }
     }
 
     public function updatePost(int $postId, array $data): array {
-        $this->fileLogger->info('Updating post', array('postId' => $postId));
+        $this->fileLogger->info('Updating post', ['postId' => $postId]);
 
         try {
             $post = get_post($postId);
             $isPostMissing = ($post === null);
             if ($isPostMissing) {
-                $this->fileLogger->warn('Post not found', array('postId' => $postId));
+                $this->fileLogger->warn('Post not found', ['postId' => $postId]);
 
-                return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Post not found');
+                return [ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => 'Post not found'];
             }
 
             $postData = $this->buildUpdateData($postId, $data);
@@ -79,23 +80,23 @@ trait PostCrudTrait {
 
             $this->assignCategories($postId, $data['categories'] ?? null);
             $this->logger->logPostUpdate($postId, $data);
-            $this->fileLogger->info('Post updated', array('postId' => $postId));
+            $this->fileLogger->info('Post updated', ['postId' => $postId]);
 
             $updatedPost = get_post($postId);
 
-            return array(ResponseKeyType::Success->value => true, 'post' => $this->formatPost($updatedPost, true));
+            return [ResponseKeyType::Success->value => true, 'post' => $this->formatPost($updatedPost, true)];
         } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post update exception');
         }
     }
 
     private function buildPostData(array $data): array {
-        $postData = array(
+        $postData = [
             'post_title'   => sanitize_text_field($data['title']),
             'post_content' => wp_kses_post($data['content']),
             'post_status'  => $this->validatePostStatus($data['status'] ?? PostStatusType::Draft->value),
             'post_type'    => 'post',
-        );
+        ];
 
         $hasSlug = !empty($data['slug'] ?? null);
         if ($hasSlug) {
@@ -111,7 +112,7 @@ trait PostCrudTrait {
     }
 
     private function buildUpdateData(int $postId, array $data): array {
-        $postData = array('ID' => $postId);
+        $postData = ['ID' => $postId];
         if (isset($data['title']))   { $postData['post_title']   = sanitize_text_field($data['title']); }
         if (isset($data['content'])) { $postData['post_content'] = wp_kses_post($data['content']); }
         if (isset($data['slug']))    { $postData['post_name']    = sanitize_title($data['slug']); }
@@ -125,29 +126,29 @@ trait PostCrudTrait {
         int $postId,
         string $title,
         string $errorMsg,
-        array $data = array(),
+        array $data = [],
     ): array {
-        $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
+        $this->fileLogger->error('Post operation failed', ['error' => $errorMsg]);
         $hasTitle = !empty($title);
-        $details = $hasTitle ? array('title' => $title) : $data;
+        $details = $hasTitle ? ['title' => $title] : $data;
         $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
 
-        return array(ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $errorMsg);
+        return [ResponseKeyType::Success->value => false, ResponseKeyType::Error->value => $errorMsg];
     }
 
     private function assignCategories(int $postId, ?array $categories): void {
-        $hasCategories = !empty($categories) && is_array($categories);
+        $hasCategories = !empty($categories) && gettype($categories) === PhpNativeType::PhpArray->value;
         if ($hasCategories) {
             wp_set_post_categories($postId, array_map('intval', $categories));
         }
     }
 
     private function formatPost(object $post, bool $isUpdate = false): array {
-        $result = array(
+        $result = [
             'id' => $post->ID, 'title' => $post->post_title,
             'slug' => $post->post_name, 'status' => $post->post_status,
             'permalink' => get_permalink($post->ID),
-        );
+        ];
         $result[$isUpdate ? 'updated_at' : 'created_at'] = ($isUpdate ? $post->post_modified_gmt : $post->post_date_gmt) . 'Z';
 
         return $result;

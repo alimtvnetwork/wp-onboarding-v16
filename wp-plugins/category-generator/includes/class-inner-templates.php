@@ -40,14 +40,14 @@ class CG_Inner_Templates {
      * Get all inner template types
      */
     public static function get_types() {
-        return array(
+        return [
             self::TYPE_ANCHOR => __('Anchor Link', 'category-generator'),
             self::TYPE_HEADER => __('Header Block', 'category-generator'),
             self::TYPE_MARKETING => __('Marketing Copy', 'category-generator'),
             self::TYPE_CTA => __('Call to Action', 'category-generator'),
             self::TYPE_SNIPPET => __('Text Snippet', 'category-generator'),
             self::TYPE_LINK_LIST => __('Category Link List', 'category-generator'),
-        );
+        ];
     }
     
     /**
@@ -117,13 +117,13 @@ class CG_Inner_Templates {
             return false;
         }
         
-        $new_data = array(
+        $new_data = [
             'name' => $template['name'] . ' (Copy)',
             'name_id' => $template['name_id'] . '_copy_' . time(),
             'type' => $template['type'],
             'content' => $template['content'],
             'category' => $template['category'] ?? ''
-        );
+        ];
         
         return $this->save_template($new_data);
     }
@@ -136,7 +136,7 @@ class CG_Inner_Templates {
      * @param array $context Variables context for placeholder replacement
      * @return string Processed content
      */
-    public function process_content($content, $context = array()) {
+    public function process_content($content, $context = []) {
         // Match {inner:N} for numeric IDs
         $content = preg_replace_callback(
             '/\{inner:(\d+)\}/',
@@ -170,7 +170,7 @@ class CG_Inner_Templates {
      * Process template content with context variables
      */
     private function process_template_content($template_content, $context) {
-        $placeholders = array(
+        $placeholders = [
             '{title}' => $context['title'] ?? '',
             '{area}' => $context['area'] ?? '',
             '{category}' => $context['category'] ?? '',
@@ -180,10 +180,10 @@ class CG_Inner_Templates {
             '{phone}' => $context['phone'] ?? '',
             '{email}' => $context['email'] ?? '',
             '{website}' => $context['website'] ?? '',
-        );
+        ];
         
         // Add business profile fields if available
-        if (isset($context['business_profile']) && is_array($context['business_profile'])) {
+        if (isset($context['business_profile']) && gettype($context['business_profile']) === 'array') {
             foreach ($context['business_profile'] as $key => $value) {
                 $placeholders['{' . $key . '}'] = $value;
             }
@@ -201,19 +201,19 @@ class CG_Inner_Templates {
      * @param int $limit Maximum links to include
      * @return string Generated HTML
      */
-    public function generate_category_links($categories = array(), $template = '<a href="{url}" title="{name}">{name}</a>', $limit = 5) {
+    public function generate_category_links($categories = [], $template = '<a href="{url}" title="{name}">{name}</a>', $limit = 5) {
         if (empty($categories)) {
             // Get random existing categories
-            $args = array(
+            $args = [
                 'taxonomy' => 'category',
                 'hide_empty' => false,
                 'number' => $limit,
                 'orderby' => 'rand'
-            );
+            ];
             $categories = get_categories($args);
         }
         
-        $links = array();
+        $links = [];
         $count = 0;
         
         foreach ($categories as $cat) {
@@ -229,13 +229,13 @@ class CG_Inner_Templates {
             
             if ($cat_obj) {
                 $link = str_replace(
-                    array('{url}', '{name}', '{slug}', '{id}'),
-                    array(
+                    ['{url}', '{name}', '{slug}', '{id}'],
+                    [
                         get_category_link($cat_obj->term_id),
                         esc_html($cat_obj->name),
                         $cat_obj->slug,
                         $cat_obj->term_id
-                    ),
+                    ],
                     $template
                 );
                 $links[] = $link;
@@ -250,49 +250,49 @@ class CG_Inner_Templates {
      * Get default inner templates
      */
     public function get_default_templates() {
-        return array(
-            array(
+        return [
+            [
                 'name' => 'Company Founded Statement',
                 'name_id' => 'company-founded',
                 'type' => self::TYPE_SNIPPET,
                 'content' => 'Founded 2023 bringing 5 years combined expertise, {business_name} serves {area} with exceptional {title}. Furthermore, completing more than 210 projects demonstrates verified capability. Additionally, client loyalty grows 2% monthly.',
                 'category' => 'About'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Service Area Statement',
                 'name_id' => 'service-area',
                 'type' => self::TYPE_SNIPPET,
                 'content' => 'Proudly serving {area} and surrounding suburbs with professional {title} services.',
                 'category' => 'About'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Contact CTA',
                 'name_id' => 'contact-cta',
                 'type' => self::TYPE_CTA,
                 'content' => '<a href="{website}/contact" class="cg-cta-button" title="Contact {business_name} for {title}">Get Your Free Quote Today</a>',
                 'category' => 'CTA'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Phone CTA',
                 'name_id' => 'phone-cta',
                 'type' => self::TYPE_CTA,
                 'content' => '<a href="tel:{phone}" class="cg-cta-phone" title="Call {business_name}">Call Now: {phone}</a>',
                 'category' => 'CTA'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Trust Statement',
                 'name_id' => 'trust-statement',
                 'type' => self::TYPE_MARKETING,
                 'content' => 'Trusted by over 500 {area} businesses and families. Licensed, insured, and committed to excellence.',
                 'category' => 'Marketing'
-            ),
-            array(
+            ],
+            [
                 'name' => 'Internal Category Links',
                 'name_id' => 'related-services',
                 'type' => self::TYPE_LINK_LIST,
                 'content' => 'Explore our related services: {category_links}',
                 'category' => 'Links'
-            ),
-        );
+            ],
+        ];
     }
 }

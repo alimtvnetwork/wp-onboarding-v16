@@ -19,6 +19,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\UserMetaKeyType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait UserImportCsvTrait {
 
@@ -27,7 +28,7 @@ trait UserImportCsvTrait {
      */
     public function handleImportUsers(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'POST /users/import'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users/import']);
 
         return $this->safeExecute(function () use ($request) {
             $files = $request->get_file_params();
@@ -56,7 +57,7 @@ trait UserImportCsvTrait {
             $created = 0;
             $updated = 0;
             $skipped = 0;
-            $errors = array();
+            $errors = [];
             $rowNum = 1;
 
             while (($row = fgetcsv($handle)) !== false) {
@@ -67,13 +68,13 @@ trait UserImportCsvTrait {
                     $created++;
                 } elseif ($result === 'updated') {
                     $updated++;
-                } elseif (is_string($result) && str_starts_with($result, 'error:')) {
+                } elseif (gettype($result) === PhpNativeType::PhpString->value && str_starts_with($result, 'error:')) {
                     $username = $row[$headerMap['Username'] ?? 0] ?? '';
-                    $errors[] = array(
+                    $errors[] = [
                         'Row'      => $rowNum,
                         'Username' => $username,
                         'Error'    => substr($result, 6),
-                    );
+                    ];
                 } else {
                     $skipped++;
                 }
@@ -81,21 +82,21 @@ trait UserImportCsvTrait {
 
             fclose($handle);
 
-            $this->fileLogger->info('Users imported from CSV', array(
+            $this->fileLogger->info('Users imported from CSV', [
                 'created' => $created,
                 'updated' => $updated,
                 'skipped' => $skipped,
                 'errors'  => count($errors),
                 'by'      => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('Import complete')
-                ->setSingleResult(array(
+                ->setSingleResult([
                     'Created' => $created,
                     'Updated' => $updated,
                     'Skipped' => $skipped,
                     'Errors'  => $errors,
-                ))
+                ])
                 ->autoDetectRequestedAt()
                 ->setDelegatedAt(home_url())
                 ->toResponse();
@@ -142,7 +143,7 @@ trait UserImportCsvTrait {
 
         $password = $this->resolveImportPassword($passwordHash);
 
-        $userdata = array(
+        $userdata = [
             'user_login'   => sanitize_user($username),
             'user_email'   => sanitize_email($email),
             'user_pass'    => $password,
@@ -153,7 +154,7 @@ trait UserImportCsvTrait {
             'user_url'     => $row[$headerMap['Website'] ?? -1] ?? '',
             'description'  => $row[$headerMap['Bio'] ?? -1] ?? '',
             'role'         => $row[$headerMap['Role'] ?? -1] ?? 'subscriber',
-        );
+        ];
 
         $newUserId = wp_insert_user($userdata);
         $isError = is_wp_error($newUserId);
@@ -167,7 +168,7 @@ trait UserImportCsvTrait {
 
         if ($isPreHashed) {
             global $wpdb;
-            $wpdb->update($wpdb->users, array('user_pass' => $passwordHash), array('ID' => $newUserId));
+            $wpdb->update($wpdb->users, ['user_pass' => $passwordHash], ['ID' => $newUserId]);
             wp_cache_delete($newUserId, 'users');
         }
 
@@ -178,13 +179,13 @@ trait UserImportCsvTrait {
 
     private function updateExistingFromCsv(int $userId, array $row, array $headerMap, string $passwordHash): string
     {
-        $userdata = array('ID' => $userId);
+        $userdata = ['ID' => $userId];
 
-        $fieldMap = array(
+        $fieldMap = [
             'Email'       => 'user_email',
             'DisplayName' => 'display_name',
             'Website'     => 'user_url',
-        );
+        ];
 
         foreach ($fieldMap as $csvKey => $wpKey) {
             $idx = $headerMap[$csvKey] ?? -1;
@@ -202,7 +203,7 @@ trait UserImportCsvTrait {
 
             if ($isPreHashed) {
                 global $wpdb;
-                $wpdb->update($wpdb->users, array('user_pass' => $passwordHash), array('ID' => $userId));
+                $wpdb->update($wpdb->users, ['user_pass' => $passwordHash], ['ID' => $userId]);
                 wp_cache_delete($userId, 'users');
             } else {
                 $userdata['user_pass'] = $passwordHash;
@@ -227,12 +228,12 @@ trait UserImportCsvTrait {
 
     private function importMetaFromCsv(int $userId, array $row, array $headerMap): void
     {
-        $metaFieldMap = array(
+        $metaFieldMap = [
             'FirstName' => 'first_name',
             'LastName'  => 'last_name',
             'Nickname'  => 'nickname',
             'Bio'       => 'description',
-        );
+        ];
 
         foreach ($metaFieldMap as $csvKey => $metaKey) {
             $idx = $headerMap[$csvKey] ?? -1;

@@ -49,19 +49,19 @@ class UpdateResolver {
 
         $settings = $this->getSettings();
         if (!empty($settings['enabled'])) {
-            add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'checkForPluginUpdate'));
-            add_filter(HookType::PluginsApi->value, array($this, 'pluginInfo'), 10, 3);
+            add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, [$this, 'checkForPluginUpdate']);
+            add_filter(HookType::PluginsApi->value, [$this, 'pluginInfo'], 10, 3);
             $this->fileLogger->info('Auto-update hooks registered');
         }
     }
 
     public function getSettings(): array {
-        $defaults = array(
+        $defaults = [
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
             'cache_days' => UpdateConfigType::CacheDaysDefault->value, 'last_check' => '', 'last_error' => '',
-            'package_url' => '', 'new_version' => '', 'update_info' => array(),
-        );
-        $settings = get_option(OptionNameType::UpdateSettings->value, array());
+            'package_url' => '', 'new_version' => '', 'update_info' => [],
+        ];
+        $settings = get_option(OptionNameType::UpdateSettings->value, []);
 
         return wp_parse_args($settings, $defaults);
     }

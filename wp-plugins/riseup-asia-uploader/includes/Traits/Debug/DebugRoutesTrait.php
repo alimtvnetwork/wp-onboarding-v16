@@ -21,6 +21,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait DebugRoutesTrait
 {
@@ -35,7 +36,7 @@ trait DebugRoutesTrait
             $server = rest_get_server();
             $allRoutes = $server->get_routes($namespace);
 
-            $routes = array();
+            $routes = [];
 
             foreach ($allRoutes as $pattern => $handlers) {
                 $isPluginRoute = (strpos($pattern, $prefix) === 0);
@@ -45,14 +46,14 @@ trait DebugRoutesTrait
                 }
 
                 $relativePath = substr($pattern, strlen($prefix));
-                $methods = array();
+                $methods = [];
 
                 foreach ($handlers as $handler) {
-                    $handlerMethods = $handler['methods'] ?? array();
+                    $handlerMethods = $handler['methods'] ?? [];
 
-                    if (is_array($handlerMethods)) {
+                    if (gettype($handlerMethods) === PhpNativeType::PhpArray->value) {
                         $methods = array_merge($methods, array_keys($handlerMethods));
-                    } elseif (is_string($handlerMethods)) {
+                    } elseif (gettype($handlerMethods) === PhpNativeType::PhpString->value) {
                         $methods = array_merge($methods, explode(',', $handlerMethods));
                     }
                 }
@@ -62,12 +63,12 @@ trait DebugRoutesTrait
 
                 $category = $this->categorizeRoute($relativePath);
 
-                $routes[] = array(
+                $routes[] = [
                     'pattern'  => $pattern,
                     'path'     => $relativePath ?: '/',
                     'methods'  => array_values($methods),
                     'category' => $category,
-                );
+                ];
             }
 
             usort($routes, function (array $a, array $b): int {
@@ -80,21 +81,21 @@ trait DebugRoutesTrait
                 return strcmp($a['path'], $b['path']);
             });
 
-            $categories = array();
+            $categories = [];
 
             foreach ($routes as $route) {
                 $cat = $route['category'];
                 $categories[$cat] = ($categories[$cat] ?? 0) + 1;
             }
 
-            return new WP_REST_Response(array(
+            return new WP_REST_Response([
                 ResponseKeyType::Success->value => true,
                 'namespace'  => $namespace,
                 'totalRoutes' => count($routes),
                 'categories' => $categories,
                 'routes'     => $routes,
                 'version'    => PluginConfigType::Version->value,
-            ), HttpStatusType::Ok->value);
+            ], HttpStatusType::Ok->value);
         }, 'debug_routes');
     }
 
@@ -102,7 +103,7 @@ trait DebugRoutesTrait
      * Categorize a route path into a logical group.
      */
     private function categorizeRoute(string $path): string {
-        $prefixMap = array(
+        $prefixMap = [
             '/snapshots/'       => 'snapshot',
             '/agents'           => 'agent',
             '/plugins/'         => 'plugin',
@@ -120,7 +121,7 @@ trait DebugRoutesTrait
             '/upload'           => 'core',
             '/posts'            => 'post',
             '/categories'       => 'post',
-        );
+        ];
 
         foreach ($prefixMap as $prefix => $category) {
             $isMatch = (strpos($path, $prefix) === 0);

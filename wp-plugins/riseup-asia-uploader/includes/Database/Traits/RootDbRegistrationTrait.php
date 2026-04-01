@@ -32,48 +32,48 @@ trait RootDbRegistrationTrait {
     ): void {
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO SnapshotTables
             (TableName, RowCount, SqliteFile, FileSizeBytes, ChecksumMd5, ExportedAt) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array(
+        $stmt->execute([
             $tableName,
             $rowCount,
             $sqliteFile,
             $fileSize,
             $checksum,
             DateHelper::nowIso(),
-        ));
+        ]);
     }
 
     /** Update final stats in SnapshotMeta. */
     public function updateStats(PDO $pdo, int $tableCount, int $totalRows): void {
         $stmt = $pdo->prepare("UPDATE SnapshotMeta SET TableCount = ?, TotalRows = ? WHERE Id = 1");
-        $stmt->execute(array($tableCount, $totalRows));
+        $stmt->execute([$tableCount, $totalRows]);
     }
 
     /** Register an incremental backup in a-root.db. */
     public function registerIncremental(PDO $pdo, array $info): void {
         $stmt = $pdo->prepare("INSERT INTO IncrementalBackups
             (SequenceNum, FolderName, CreatedAt, TablesChanged, TotalNewRows, RelativePath) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array(
+        $stmt->execute([
             $info['sequenceNum'],
             $info['folderName'],
             DateHelper::nowIso(),
             $info[ResponseKeyType::TablesChanged->value] ?? 0,
             $info[ResponseKeyType::TotalNewRows->value] ?? 0,
             $info['relativePath'],
-        ));
+        ]);
     }
 
     /** Register a plugin snapshot in a-root.db. */
     public function registerPluginSnapshot(PDO $pdo, array $info): void {
         $stmt = $pdo->prepare("INSERT INTO PluginSnapshots
             (PluginSlug, PluginName, PluginVersion, ZipFile, FileSizeBytes, ChecksumMd5) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array(
+        $stmt->execute([
             $info[ResponseKeyType::PluginSlug->value],
             $info['pluginName'] ?? '',
             $info[ResponseKeyType::PluginVersion->value] ?? '',
             $info['zipFile'],
             $info['fileSizeBytes'] ?? 0,
             $info['checksumMd5'] ?? '',
-        ));
+        ]);
     }
 
     /** Read metadata from an existing a-root.db. */
@@ -85,7 +85,7 @@ trait RootDbRegistrationTrait {
         try {
             return $this->readMetadataFromPdo($filepath);
         } catch (Throwable $e) {
-            $this->logError($e, 'Failed to read a-root.db', array('path' => $filepath));
+            $this->logError($e, 'Failed to read a-root.db', ['path' => $filepath]);
 
             return null;
         }
@@ -103,13 +103,13 @@ trait RootDbRegistrationTrait {
     }
 
     private function resolveAllTableNames(PDO $pdo): array {
-        return array(
+        return [
             'meta'         => $this->resolveRootDbTableName($pdo, 'SnapshotMeta'),
             'tables'       => $this->resolveRootDbTableName($pdo, 'SnapshotTables'),
             'deps'         => $this->resolveRootDbTableName($pdo, 'TableDependencies'),
             'incrementals' => $this->resolveRootDbTableName($pdo, 'IncrementalBackups'),
             'plugins'      => $this->resolveRootDbTableName($pdo, 'PluginSnapshots'),
-        );
+        ];
     }
 
     private function queryAllMetadata(PDO $pdo, array $t): array {
@@ -119,13 +119,13 @@ trait RootDbRegistrationTrait {
         $incrementals = $pdo->query("SELECT * FROM {$t['incrementals']} ORDER BY {$this->resolveCol($pdo, $t['incrementals'], 'SequenceNum')}")->fetchAll(PDO::FETCH_ASSOC);
         $plugins = $pdo->query("SELECT * FROM {$t['plugins']} ORDER BY {$this->resolveCol($pdo, $t['plugins'], 'PluginSlug')}")->fetchAll(PDO::FETCH_ASSOC);
 
-        return array(
+        return [
             ResponseKeyType::Meta->value          => $meta,
             ResponseKeyType::Tables->value        => $tables,
             ResponseKeyType::Dependencies->value  => $deps,
             ResponseKeyType::Incrementals->value  => $incrementals,
             ResponseKeyType::Plugins->value       => $plugins,
-        );
+        ];
     }
 
     /** Shorthand for resolveRootDbColumnName. */

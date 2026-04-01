@@ -32,12 +32,12 @@ trait LogRetrievalTrait
         $settings = $this->resolveRetrievalSettings($request);
         $logsDir  = $this->fileLogger->getLogsDir();
 
-        $result = array(
+        $result = [
             ResponseKeyType::Success->value     => true,
             ResponseKeyType::Version->value     => PluginConfigType::Version->value,
             'RequestedAt'                        => gmdate('Y-m-d\TH:i:s.v\Z'),
             ResponseKeyType::Settings->value     => $settings,
-        );
+        ];
 
         $isInfoLogRequested = $settings['include_info_log'];
 
@@ -73,14 +73,14 @@ trait LogRetrievalTrait
     /** Resolve retrieval settings from query params with defaults. */
     private function resolveRetrievalSettings(WP_REST_Request $request): array
     {
-        $resolved = array(
+        $resolved = [
             'include_info_log'   => true,
             'include_error_log'  => true,
             'include_stacktrace' => true,
             'max_lines'          => 200,
-        );
+        ];
 
-        foreach (array('include_info_log', 'include_error_log', 'include_stacktrace') as $key) {
+        foreach (['include_info_log', 'include_error_log', 'include_stacktrace'] as $key) {
             $paramValue = $request->get_param($key);
             $isParamPresent = ($paramValue !== null);
 
@@ -102,7 +102,7 @@ trait LogRetrievalTrait
     /** Read the last N lines of a log file and return metadata + content. */
     private function readLogFileTail(string $filePath, int $maxLines): array
     {
-        $result = array(
+        $result = [
             ResponseKeyType::Exists->value    => false,
             'File'                             => basename($filePath),
             ResponseKeyType::Path->value      => $filePath,
@@ -111,7 +111,7 @@ trait LogRetrievalTrait
             ResponseKeyType::TotalLines->value => 0,
             ResponseKeyType::TotalSize->value  => 0,
             ResponseKeyType::Truncated->value  => false,
-        );
+        ];
 
         $isFileUnreadable = !is_readable($filePath);
 

@@ -17,6 +17,7 @@ use WP_REST_Response;
 use WP_Application_Passwords;
 use RiseupAsia\Enums\UserRoleType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Enums\PhpNativeType;
 
 trait UserWriteTrait {
 
@@ -25,7 +26,7 @@ trait UserWriteTrait {
      */
     public function handleCreateUser(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'POST /users'));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users']);
 
         return $this->safeExecute(function () use ($request) {
             $body = $request->get_json_params();
@@ -53,7 +54,7 @@ trait UserWriteTrait {
                     ->toResponse();
             }
 
-            $userdata = array(
+            $userdata = [
                 'user_login'   => $username,
                 'user_email'   => $email,
                 'user_pass'    => $password,
@@ -64,17 +65,17 @@ trait UserWriteTrait {
                 'user_url'     => esc_url_raw($body['Website'] ?? ''),
                 'description'  => sanitize_textarea_field($body['Bio'] ?? ''),
                 'role'         => $role,
-            );
+            ];
 
             $newUserId = wp_insert_user($userdata);
             $isError = is_wp_error($newUserId);
 
             if ($isError) {
                 $errorMessage = $newUserId->get_error_message();
-                $this->fileLogger->error('User creation failed', array(
+                $this->fileLogger->error('User creation failed', [
                     'username' => $username,
                     'error'    => $errorMessage,
-                ));
+                ]);
 
                 return EnvelopeBuilder::error('User creation failed: ' . $errorMessage, 400)
                     ->autoDetectRequestedAt()
@@ -83,25 +84,25 @@ trait UserWriteTrait {
             }
 
             // Write social meta
-            $hasSocial = isset($body['Social']) && is_array($body['Social']);
+            $hasSocial = isset($body['Social']) && gettype($body['Social']) === PhpNativeType::PhpArray->value;
 
             if ($hasSocial) {
                 $this->writeSocialMeta($newUserId, $body['Social']);
             }
 
             // Write Yoast meta
-            $hasYoast = isset($body['Yoast']) && is_array($body['Yoast']);
+            $hasYoast = isset($body['Yoast']) && gettype($body['Yoast']) === PhpNativeType::PhpArray->value;
 
             if ($hasYoast) {
                 $this->writeYoastMeta($newUserId, $body['Yoast']);
             }
 
-            $result = array(
+            $result = [
                 'Id'       => $newUserId,
                 'Username' => $username,
                 'Email'    => $email,
                 'Role'     => $role,
-            );
+            ];
 
             // Create app password if requested
             $shouldCreateAppPass = !empty($body['CreateAppPassword']);
@@ -110,7 +111,7 @@ trait UserWriteTrait {
                 $appPassName = sanitize_text_field($body['AppPasswordName'] ?? 'API Access');
                 $appPassResult = WP_Application_Passwords::create_new_application_password(
                     $newUserId,
-                    array('name' => $appPassName),
+                    ['name' => $appPassName],
                 );
 
                 $isAppPassCreated = !is_wp_error($appPassResult);
@@ -120,12 +121,12 @@ trait UserWriteTrait {
                 }
             }
 
-            $this->fileLogger->info('User created', array(
+            $this->fileLogger->info('User created', [
                 'userId'   => $newUserId,
                 'username' => $username,
                 'role'     => $role,
                 'by'       => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('User created', 201)
                 ->setSingleResult($result)
@@ -141,7 +142,7 @@ trait UserWriteTrait {
     public function handleUpdateUser(WP_REST_Request $request): WP_REST_Response
     {
         $userId = (int) $request->get_param('id');
-        $this->fileLogger->info('User endpoint accessed', array('endpoint' => 'PUT /users/{id}', 'userId' => $userId));
+        $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'PUT /users/{id}', 'userId' => $userId]);
 
         return $this->safeExecute(function () use ($request, $userId) {
             $user = get_userdata($userId);
@@ -155,14 +156,14 @@ trait UserWriteTrait {
             }
 
             $body = $request->get_json_params();
-            $modified = array();
-            $userdata = array('ID' => $userId);
+            $modified = [];
+            $userdata = ['ID' => $userId];
 
             // Core fields mapping
-            $coreFieldMap = array(
+            $coreFieldMap = [
                 'Email'       => 'user_email',
                 'DisplayName' => 'display_name',
-            );
+            ];
 
             foreach ($coreFieldMap as $jsonKey => $wpKey) {
                 $isProvided = isset($body[$jsonKey]);
@@ -182,11 +183,11 @@ trait UserWriteTrait {
             }
 
             // Meta fields mapping
-            $metaFieldMap = array(
+            $metaFieldMap = [
                 'FirstName' => 'first_name',
                 'LastName'  => 'last_name',
                 'Nickname'  => 'nickname',
-            );
+            ];
 
             foreach ($metaFieldMap as $jsonKey => $metaKey) {
                 $isProvided = isset($body[$jsonKey]);
@@ -234,10 +235,10 @@ trait UserWriteTrait {
                 $isUpdateError = is_wp_error($updateResult);
 
                 if ($isUpdateError) {
-                    $this->fileLogger->error('User update failed', array(
+                    $this->fileLogger->error('User update failed', [
                         'userId' => $userId,
                         'error'  => $updateResult->get_error_message(),
-                    ));
+                    ]);
 
                     return EnvelopeBuilder::error('Update failed: ' . $updateResult->get_error_message(), 400)
                         ->autoDetectRequestedAt()
@@ -247,7 +248,7 @@ trait UserWriteTrait {
             }
 
             // Social meta
-            $hasSocial = isset($body['Social']) && is_array($body['Social']);
+            $hasSocial = isset($body['Social']) && gettype($body['Social']) === PhpNativeType::PhpArray->value;
 
             if ($hasSocial) {
                 $socialModified = $this->writeSocialMeta($userId, $body['Social']);
@@ -255,25 +256,25 @@ trait UserWriteTrait {
             }
 
             // Yoast meta
-            $hasYoast = isset($body['Yoast']) && is_array($body['Yoast']);
+            $hasYoast = isset($body['Yoast']) && gettype($body['Yoast']) === PhpNativeType::PhpArray->value;
 
             if ($hasYoast) {
                 $yoastModified = $this->writeYoastMeta($userId, $body['Yoast']);
                 $modified = array_merge($modified, $yoastModified);
             }
 
-            $this->fileLogger->info('User updated', array(
+            $this->fileLogger->info('User updated', [
                 'userId'         => $userId,
                 'fieldsModified' => $modified,
                 'by'             => wp_get_current_user()->user_login,
-            ));
+            ]);
 
             return EnvelopeBuilder::success('User updated')
-                ->setSingleResult(array(
+                ->setSingleResult([
                     'Id'             => $userId,
                     'Updated'        => true,
                     'FieldsModified' => $modified,
-                ))
+                ])
                 ->autoDetectRequestedAt()
                 ->setDelegatedAt(home_url())
                 ->toResponse();

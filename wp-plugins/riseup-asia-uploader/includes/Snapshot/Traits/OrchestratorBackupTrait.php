@@ -29,7 +29,7 @@ use RiseupAsia\Helpers\DateHelper;
 use RiseupAsia\Snapshot\IncrementalBackup;
 
 trait OrchestratorBackupTrait {
-    public function executeFullBackup(array $options = array()): array {
+    public function executeFullBackup(array $options = []): array {
         $resolved = $this->resolveBackupOptions($options);
         $this->log(LogLevelType::Info->value, 'Starting full backup orchestration', $resolved);
 
@@ -42,14 +42,14 @@ trait OrchestratorBackupTrait {
         $settings = $this->manager->getSettings();
         $this->worker->setPoolSize($settings[SettingsKeyType::WorkerPoolSize->value] ?? SnapshotConfigType::WorkerPoolDefault->value);
 
-        return array(
+        return [
             ResponseKeyType::Title->value          => $options[ResponseKeyType::Title->value] ?? ('Full Backup ' . DateHelper::nowCompactDatetime()),
             ResponseKeyType::Scope->value          => $options[ResponseKeyType::Scope->value] ?? $settings[ResponseKeyType::Scope->value] ?? SnapshotScopeType::WordPress->value,
             ResponseKeyType::IncludePlugins->value  => $options[ResponseKeyType::IncludePlugins->value] ?? $settings[SettingsKeyType::IncludePlugins->value] ?? true,
             ResponseKeyType::PluginSelection->value => $options[ResponseKeyType::PluginSelection->value] ?? $settings[SettingsKeyType::PluginSelection->value] ?? PluginSelectionType::All->value,
             ResponseKeyType::Compression->value     => $options[ResponseKeyType::Compression->value] ?? $settings[SettingsKeyType::Compression->value] ?? true,
             ResponseKeyType::Settings->value        => $settings,
-        );
+        ];
     }
 
     private function executeAsyncBackup(array $resolved): array {
@@ -71,12 +71,12 @@ trait OrchestratorBackupTrait {
     }
 
     private function logAsyncJobCreated(array $workerResult): void {
-        $this->log(LogLevelType::Info->value, 'Async backup job created', array(
+        $this->log(LogLevelType::Info->value, 'Async backup job created', [
             ResponseKeyType::JobId->value       => $workerResult[ResponseKeyType::JobId->value] ?? null,
             ResponseKeyType::TotalTables->value => $workerResult[ResponseKeyType::TotalTables->value] ?? null,
             ResponseKeyType::PoolSize->value    => $workerResult[ResponseKeyType::PoolSize->value] ?? null,
             ResponseKeyType::Directory->value   => $workerResult[ResponseKeyType::Directory->value] ?? null,
-        ));
+        ]);
     }
 
     private function registerAsyncSnapshot(array $resolved, array $workerResult): int|false {
@@ -84,16 +84,16 @@ trait OrchestratorBackupTrait {
             $resolved[ResponseKeyType::Title->value],
             $resolved[ResponseKeyType::Scope->value],
             $workerResult,
-            array(
+            [
                 ResponseKeyType::Count->value     => 0,
                 ResponseKeyType::TotalSize->value => 0,
-            ),
+            ],
             $workerResult[ResponseKeyType::Path->value],
         );
     }
 
     private function buildAsyncBackupResponse(array $workerResult, int|false $snapshotId): array {
-        return array(
+        return [
             ResponseKeyType::Success->value     => true,
             ResponseKeyType::Async->value       => true,
             ResponseKeyType::JobId->value       => $workerResult[ResponseKeyType::JobId->value] ?? null,
@@ -103,7 +103,7 @@ trait OrchestratorBackupTrait {
             ResponseKeyType::TotalTables->value => $workerResult[ResponseKeyType::TotalTables->value] ?? null,
             ResponseKeyType::PoolSize->value    => $workerResult[ResponseKeyType::PoolSize->value] ?? null,
             ResponseKeyType::Status->value      => $workerResult[ResponseKeyType::Status->value] ?? null,
-        );
+        ];
     }
 
     private function executeSyncBackup(array $resolved): array {
@@ -126,7 +126,7 @@ trait OrchestratorBackupTrait {
     private function finalizeSyncExport(array $resolved, array $workerResult, float $startTime): array {
         $context = $this->buildSyncContext($resolved, $workerResult);
         $context[ResponseKeyType::Duration->value] = microtime(true) - $startTime;
-        $context[ResponseKeyType::Errors->value] = $workerResult[ResponseKeyType::Errors->value] ?? array();
+        $context[ResponseKeyType::Errors->value] = $workerResult[ResponseKeyType::Errors->value] ?? [];
 
         return $context;
     }
@@ -156,18 +156,18 @@ trait OrchestratorBackupTrait {
             return $this->snapshotPlugins($snapshotDir, $resolved[ResponseKeyType::PluginSelection->value]);
         }
 
-        return array(
+        return [
             ResponseKeyType::Count->value    => 0,
             ResponseKeyType::TotalSize->value => 0,
-        );
+        ];
     }
 
     private function buildEmptyZipResult(): array {
-        return array(
+        return [
             ResponseKeyType::Path->value      => null,
             ResponseKeyType::Size->value      => 0,
             ResponseKeyType::ZipFailed->value => false,
-        );
+        ];
     }
 
     private function buildSyncExportResponse(
@@ -176,7 +176,7 @@ trait OrchestratorBackupTrait {
         int|false $snapshotId,
         array $zipResult,
     ): array {
-        return array(
+        return [
             ResponseKeyType::Success->value    => true,
             ResponseKeyType::SnapshotId->value => $snapshotId,
             ResponseKeyType::Directory->value  => $workerResult[ResponseKeyType::Directory->value],
@@ -187,16 +187,16 @@ trait OrchestratorBackupTrait {
             ResponseKeyType::ZipPath->value    => $zipResult[ResponseKeyType::Path->value],
             ResponseKeyType::ZipSize->value    => $zipResult[ResponseKeyType::Size->value],
             ResponseKeyType::ZipFailed->value  => $zipResult[ResponseKeyType::ZipFailed->value] ?? false,
-        );
+        ];
     }
 
     private function runWorkerExport(array $resolved, bool $async): array {
-        $config = array(
+        $config = [
             ResponseKeyType::Title->value    => $resolved[ResponseKeyType::Title->value],
             ResponseKeyType::Scope->value    => $resolved[ResponseKeyType::Scope->value],
             ResponseKeyType::Type->value     => SnapshotModeType::Full->value,
             ResponseKeyType::Settings->value => $resolved[ResponseKeyType::Settings->value],
-        );
+        ];
 
         return $async ? $this->worker->execute($config) : $this->worker->executeSynchronous($config);
     }
@@ -214,31 +214,31 @@ trait OrchestratorBackupTrait {
     }
 
     private function buildSuccessfulZipResult(array $zipResult): array {
-        return array(
+        return [
             ResponseKeyType::Path->value      => $zipResult[ResponseKeyType::Path->value],
             ResponseKeyType::Size->value      => $zipResult[ResponseKeyType::Size->value],
             ResponseKeyType::ZipFailed->value => false,
-        );
+        ];
     }
 
     private function logZipFailure(array $zipResult): void {
-        $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array(
+        $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', [
             ResponseKeyType::Error->value => $zipResult[ResponseKeyType::Error->value],
-        ));
+        ]);
     }
 
     private function buildFailedZipResult(): array {
-        return array(
+        return [
             ResponseKeyType::Path->value      => null,
             ResponseKeyType::Size->value      => 0,
             ResponseKeyType::ZipFailed->value => true,
-        );
+        ];
     }
 
     /**
      * Execute an incremental backup against the latest full snapshot.
      */
-    public function executeIncrementalBackup(array $options = array()): array {
+    public function executeIncrementalBackup(array $options = []): array {
         $this->log(LogLevelType::Info->value, 'Starting incremental backup orchestration', $options);
 
         try {
@@ -264,21 +264,21 @@ trait OrchestratorBackupTrait {
     }
 
     private function buildNoMasterError(): array {
-        return array(
+        return [
             ResponseKeyType::Success->value => false,
             ResponseKeyType::Error->value   => 'No full snapshot found. A full backup is required before creating an incremental.',
             ResponseKeyType::Phase->value   => SnapshotPhaseType::IncrementalLookup->value,
-        );
+        ];
     }
 
     private function logIncrementalComplete(array $result, string $masterDir): void {
         $status = $result[ResponseKeyType::Success->value] ? 'complete' : 'failed';
 
-        $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . $status, array(
+        $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . $status, [
             'master'                              => basename($masterDir),
             ResponseKeyType::TablesChanged->value => $result[ResponseKeyType::TablesChanged->value] ?? 0,
             ResponseKeyType::TotalNewRows->value  => $result[ResponseKeyType::TotalNewRows->value] ?? 0,
-        ));
+        ]);
     }
 
     private function resolveMasterDir(array $options, object $incremental): ?string {
@@ -303,7 +303,7 @@ trait OrchestratorBackupTrait {
         }
 
         $stmt = $pdo->prepare("SELECT Filepath FROM " . TableType::Snapshots->value . " WHERE Id = ?");
-        $stmt->execute(array($masterSnapshotId));
+        $stmt->execute([$masterSnapshotId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $isValid = ($row && is_dir($row['Filepath']));

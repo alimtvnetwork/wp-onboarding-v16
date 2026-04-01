@@ -37,7 +37,7 @@ class ColorConfig {
         $isFileMissing = PathHelper::isFileMissing($path);
 
         if ($isFileMissing) {
-            self::$colors = array();
+            self::$colors = [];
 
             return self::$colors;
         }
@@ -45,7 +45,7 @@ class ColorConfig {
         $json = @file_get_contents($path);
 
         if ($json === false) {
-            self::$colors = array();
+            self::$colors = [];
 
             return self::$colors;
         }
@@ -54,7 +54,7 @@ class ColorConfig {
         $isDecodeFailed = ($decoded === null);
 
         if ($isDecodeFailed) {
-            self::$colors = array();
+            self::$colors = [];
 
             return self::$colors;
         }
@@ -91,7 +91,7 @@ class ColorConfig {
             return $colors[$g];
         }
 
-        return array();
+        return [];
     }
 
     /** Get a log level color by level value. */

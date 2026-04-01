@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\ContentTypeValueType;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PhpNativeType;
 
 class LicenseClient
 {
@@ -129,7 +130,7 @@ class LicenseClient
         $responseBody = wp_remote_retrieve_body($response);
         $decoded = json_decode($responseBody, true);
 
-        $isInvalidJson = !is_array($decoded);
+        $isInvalidJson = gettype($decoded) !== PhpNativeType::PhpArray->value;
 
         if ($isInvalidJson) {
             return null;

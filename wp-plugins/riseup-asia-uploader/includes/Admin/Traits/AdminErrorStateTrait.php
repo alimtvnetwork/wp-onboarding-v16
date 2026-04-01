@@ -34,7 +34,7 @@ trait AdminErrorStateTrait {
 
             $lastSeen = $this->getFlashValue('last_seen_error_id', 0);
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM ' . TableType::ErrorSessions->value . ' WHERE Id > ?');
-            $stmt->execute(array($lastSeen));
+            $stmt->execute([$lastSeen]);
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
@@ -55,7 +55,7 @@ trait AdminErrorStateTrait {
             }
 
             $stmt = $pdo->prepare('SELECT Value FROM ' . TableType::FlashState->value . ' WHERE Key = ?');
-            $stmt->execute(array($key));
+            $stmt->execute([$key]);
             $val = $stmt->fetchColumn();
             $isFound = ($val !== false);
 

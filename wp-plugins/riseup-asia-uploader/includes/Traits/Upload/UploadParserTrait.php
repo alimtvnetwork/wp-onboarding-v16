@@ -50,7 +50,7 @@ trait UploadParserTrait {
         $upload = $files[RequestFieldType::PluginZip->value];
 
         if ($upload['error'] !== UPLOAD_ERR_OK) {
-            $this->fileLogger->error('Multipart upload error', array('code' => $upload['error']));
+            $this->fileLogger->error('Multipart upload error', ['code' => $upload['error']]);
             return $this->errorResponse('File upload failed (error code: ' . $upload['error'] . ')', HttpStatusType::BadRequest->value);
         }
 
@@ -104,16 +104,16 @@ trait UploadParserTrait {
         $uploadSource = $this->resolveUploadSource($data);
         $clientPluginVersion = isset($data[RequestFieldType::PluginVersion->value]) ? sanitize_text_field($data[RequestFieldType::PluginVersion->value]) : '';
 
-        $this->fileLogger->debug('Upload parameters', array(
+        $this->fileLogger->debug('Upload parameters', [
             'slug' => $slug, 'activate' => $activate,
             'uploadSource' => $uploadSource, 'clientVersion' => $clientPluginVersion,
             'fileSize' => strlen($zipContent),
-        ));
+        ]);
 
-        return array(
+        return [
             'zipContent' => $zipContent, 'slug' => $slug, 'activate' => $activate,
             'uploadSource' => $uploadSource, 'clientPluginVersion' => $clientPluginVersion,
-        );
+        ];
     }
 
     /**

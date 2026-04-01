@@ -43,14 +43,14 @@ trait ExporterHelpersTrait {
 
     private function fetchSnapshotById(PDO $pdo, int $snapshotId): array|false {
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE Id = ?');
-        $stmt->execute(array($snapshotId));
+        $stmt->execute([$snapshotId]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     private function validateSnapshotEligibility(array $snapshot, int $snapshotId): ?array {
         if ($snapshot['Scope'] === SnapshotModeType::Incremental->value) {
-            $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
+            $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', ['id' => $snapshotId]);
 
             return null;
         }
@@ -59,10 +59,10 @@ trait ExporterHelpersTrait {
         $isSnapshotIncomplete = ($snapshotStatus === null || $snapshotStatus->isOtherThan(SnapshotStatusType::Complete));
 
         if ($isSnapshotIncomplete) {
-            $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array(
+            $this->log(LogLevelType::Warn->value, 'Snapshot not complete', [
                 'id'     => $snapshotId,
                 'status' => $snapshot['Status'],
-            ));
+            ]);
 
             return null;
         }
@@ -80,7 +80,7 @@ trait ExporterHelpersTrait {
         }
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE SnapshotId = ? AND Status = ?');
-        $stmt->execute(array($snapshotId, SnapshotExportStatusType::Valid->value));
+        $stmt->execute([$snapshotId, SnapshotExportStatusType::Valid->value]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -95,7 +95,7 @@ trait ExporterHelpersTrait {
         }
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE Id = ?');
-        $stmt->execute(array($exportId));
+        $stmt->execute([$exportId]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -110,11 +110,11 @@ trait ExporterHelpersTrait {
         }
 
         $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE Id = ?');
-        $stmt->execute(array($exportId));
+        $stmt->execute([$exportId]);
     }
 
     /** Log helper. */
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(string $level, string $message, array $context = []): void {
         $context['class'] = 'RiseupSnapshotExporter';
         $prefixed = '[SnapshotExporter] ' . $message;
 
