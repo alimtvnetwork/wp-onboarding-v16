@@ -235,6 +235,40 @@ function Invoke-CheckMode {
                     } else {
                         Write-Host "      No registered routes in response" -ForegroundColor DarkYellow
                     }
+                    # ── HEAD Probing ──────────────────────────────────────
+                    if ($VerboseMode -and $isReady -and $availableEndpoints.Count -gt 0) {
+                        Write-Host "      Endpoint Probes (HEAD):" -ForegroundColor DarkGray
+
+                        foreach ($ep in $availableEndpoints) {
+                            $probeUrl = "$siteUrl/wp-json/$($ns.Namespace)/$ep"
+                            $probeSw = [System.Diagnostics.Stopwatch]::StartNew()
+
+                            try {
+                                $probeResp = Invoke-WebRequest -Uri $probeUrl -Method Head -Headers $headers -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+                                $probeSw.Stop()
+                                $probeMs = $probeSw.ElapsedMilliseconds
+                                $probeStatus = [int]$probeResp.StatusCode
+
+                                $probeColor = if ($probeStatus -lt 300) { "Green" } elseif ($probeStatus -lt 400) { "Yellow" } else { "Red" }
+                                Write-Host "        $ep" -NoNewline -ForegroundColor Gray
+                                Write-Host " → $probeStatus" -NoNewline -ForegroundColor $probeColor
+                                Write-Host " (${probeMs}ms)" -ForegroundColor DarkGray
+                            } catch {
+                                $probeSw.Stop()
+                                $probeMs = $probeSw.ElapsedMilliseconds
+                                $probeErr = "FAIL"
+                                $probeResponse = $_.Exception.Response
+
+                                if ($null -ne $probeResponse) {
+                                    $probeErr = "$([int]$probeResponse.StatusCode)"
+                                }
+
+                                Write-Host "        $ep" -NoNewline -ForegroundColor Gray
+                                Write-Host " → $probeErr" -NoNewline -ForegroundColor Red
+                                Write-Host " (${probeMs}ms)" -ForegroundColor DarkGray
+                            }
+                        }
+                    }
                 } elseif ($isReady) {
                     Write-Host "      Endpoints: $($availableEndpoints -join ', ')" -ForegroundColor DarkGray
                 }
