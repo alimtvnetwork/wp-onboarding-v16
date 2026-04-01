@@ -15,7 +15,7 @@ class CG_Variables {
     
     private static $instance = null;
     private $db;
-    private $variables = array();
+    private $variables = [];
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -43,12 +43,12 @@ class CG_Variables {
      * @param array $context Additional context variables (title, area, etc.)
      * @return array Compiled variables
      */
-    public function compile_variables($context = array()) {
+    public function compile_variables($context = []) {
         $this->load_variables();
         
         // Merge context with stored variables
         $all_vars = array_merge($context, $this->variables);
-        $compiled = array();
+        $compiled = [];
         $max_iterations = 10; // Prevent infinite loops
         
         foreach ($all_vars as $name => $value) {
@@ -67,7 +67,7 @@ class CG_Variables {
      * @return string Resolved value
      */
     private function resolve_value($value, $variables, $depth = 10) {
-        if ($depth <= 0 || !is_string($value)) {
+        if ($depth <= 0 || gettype($value) !== 'string') {
             return $value;
         }
         
@@ -94,7 +94,7 @@ class CG_Variables {
      * @param array $context Context variables
      * @return string Concatenated result
      */
-    public function parse_expression($expression, $context = array()) {
+    public function parse_expression($expression, $context = []) {
         // Split by + for concatenation
         $parts = preg_split('/\s*\+\s*/', $expression);
         $result = '';
@@ -143,7 +143,7 @@ class CG_Variables {
      * @param array $context Context variables (title, area, business_profile, etc.)
      * @return string Processed template
      */
-    public function process_template($template, $context = array()) {
+    public function process_template($template, $context = []) {
         $compiled = $this->compile_variables($context);
         
         // Replace {var:name} patterns

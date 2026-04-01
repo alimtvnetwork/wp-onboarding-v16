@@ -214,7 +214,7 @@ class CG_Constants {
      * Get business types for Schema.org
      */
     public static function get_business_types() {
-        return array(
+        return [
             'LocalBusiness' => __('Local Business', 'category-generator'),
             'ProfessionalService' => __('Professional Service', 'category-generator'),
             'HomeAndConstructionBusiness' => __('Home & Construction', 'category-generator'),
@@ -227,37 +227,37 @@ class CG_Constants {
             'LegalService' => __('Legal Service', 'category-generator'),
             'Restaurant' => __('Restaurant', 'category-generator'),
             'Store' => __('Store', 'category-generator'),
-        );
+        ];
     }
     
     /**
      * Get price range options
      */
     public static function get_price_ranges() {
-        return array(
+        return [
             '$' => __('$ - Budget', 'category-generator'),
             '$$' => __('$$ - Moderate', 'category-generator'),
             '$$$' => __('$$$ - Premium', 'category-generator'),
             '$$$$' => __('$$$$ - Luxury', 'category-generator'),
-        );
+        ];
     }
     
     /**
      * Get pagination options for select dropdown
      */
     public static function get_pagination_options() {
-        return array(
+        return [
             self::PAGINATION_DEFAULT,
             self::PAGINATION_MEDIUM,
             'all'
-        );
+        ];
     }
     
     /**
      * Get all available placeholders
      */
     public static function get_placeholders() {
-        return array(
+        return [
             self::PLACEHOLDER_TITLE,
             self::PLACEHOLDER_AREA,
             self::PLACEHOLDER_CATEGORY,
@@ -267,7 +267,7 @@ class CG_Constants {
             self::PLACEHOLDER_META_TITLE,
             self::PLACEHOLDER_META_DESC,
             self::PLACEHOLDER_INNER,
-        );
+        ];
     }
     
     /**
@@ -314,38 +314,38 @@ class CG_Constants {
      * Output constants as JavaScript object for client-side use
      */
     public static function get_js_constants() {
-        return array(
-            'pagination' => array(
+        return [
+            'pagination' => [
                 'default' => self::PAGINATION_DEFAULT,
                 'medium' => self::PAGINATION_MEDIUM,
-            ),
-            'limits' => array(
+            ],
+            'limits' => [
                 'recentSnapshots' => self::RECENT_SNAPSHOTS_LIMIT,
                 'snapshotDefault' => self::SNAPSHOT_LIMIT_DEFAULT,
                 'metaDescMinChars' => self::META_DESC_MIN_CHARS,
                 'metaTitleVariations' => self::META_TITLE_VARIATIONS,
                 'metaDescVariations' => self::META_DESC_VARIATIONS,
-            ),
-            'truncate' => array(
+            ],
+            'truncate' => [
                 'short' => self::TRUNCATE_SHORT,
                 'medium' => self::TRUNCATE_MEDIUM,
                 'long' => self::TRUNCATE_LONG,
-            ),
-            'animation' => array(
+            ],
+            'animation' => [
                 'fadeDuration' => self::ANIMATION_FADE_DURATION,
-            ),
-            'columns' => array(
+            ],
+            'columns' => [
                 'historyDefault' => self::HISTORY_COLUMNS_DEFAULT,
                 'historyWithYoast' => self::HISTORY_COLUMNS_WITH_YOAST,
-            ),
-            'yoastScore' => array(
+            ],
+            'yoastScore' => [
                 'good' => self::YOAST_SCORE_GOOD,
                 'ok' => self::YOAST_SCORE_OK,
-            ),
-            'dateFormats' => array(
+            ],
+            'dateFormats' => [
                 'sortable' => self::DATE_FORMAT_SORTABLE,
                 'snapshot' => self::DATE_FORMAT_SNAPSHOT,
-            ),
-        );
+            ],
+        ];
     }
 }

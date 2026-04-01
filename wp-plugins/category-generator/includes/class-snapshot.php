@@ -23,11 +23,11 @@ class CG_Snapshot {
     /**
      * WordPress tables to snapshot
      */
-    private $wp_tables = array(
+    private $wp_tables = [
         'terms',
         'term_taxonomy', 
         'termmeta'
-    );
+    ];
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -109,7 +109,7 @@ class CG_Snapshot {
             
             $stmt = $snapshot_db->prepare("INSERT INTO snapshot_meta (key, value) VALUES (:key, :value)");
             
-            $meta = array(
+            $meta = [
                 'title' => $title,
                 'notes' => $notes,
                 'type' => $type,
@@ -119,7 +119,7 @@ class CG_Snapshot {
                 'terms_count' => $counts['terms'],
                 'taxonomy_count' => $counts['term_taxonomy'],
                 'termmeta_count' => $counts['termmeta']
-            );
+            ];
             
             foreach ($meta as $key => $value) {
                 $stmt->bindValue(':key', $key, SQLITE3_TEXT);
@@ -131,7 +131,7 @@ class CG_Snapshot {
             $snapshot_db->close();
             
             // Record in plugin database
-            $snapshot_id = $this->db->save_snapshot(array(
+            $snapshot_id = $this->db->save_snapshot([
                 'title' => $title,
                 'notes' => $notes,
                 'type' => $type,
@@ -141,25 +141,25 @@ class CG_Snapshot {
                 'taxonomy_count' => $counts['term_taxonomy'],
                 'termmeta_count' => $counts['termmeta'],
                 'filesize' => filesize($filepath)
-            ));
+            ]);
             
             // Enforce snapshot limit
             $this->enforce_snapshot_limit($type);
             
-            return array(
+            return [
                 'success' => true,
                 'message' => sprintf(__('Snapshot created: %s', 'category-generator'), $title),
                 'snapshot_id' => $snapshot_id,
                 'filename' => $filename,
                 'counts' => $counts
-            );
+            ];
             
         } catch (Exception $e) {
             error_log('CG Snapshot Error: ' . $e->getMessage());
-            return array(
+            return [
                 'success' => false,
                 'message' => __('Failed to create snapshot: ', 'category-generator') . $e->getMessage()
-            );
+            ];
         }
     }
     
@@ -210,11 +210,11 @@ class CG_Snapshot {
      * Copy WordPress tables to snapshot
      */
     private function copy_wp_tables_to_snapshot($snapshot_db, $wpdb) {
-        $counts = array(
+        $counts = [
             'terms' => 0,
             'term_taxonomy' => 0,
             'termmeta' => 0
-        );
+        ];
         
         // Get category taxonomy term IDs for filtering
         $category_term_ids = $wpdb->get_col("
@@ -291,51 +291,51 @@ class CG_Snapshot {
             $snapshot = $this->db->get_snapshot($snapshot_id);
             
             if (!$snapshot) {
-                return array(
+                return [
                     'success' => false,
                     'message' => __('Snapshot not found', 'category-generator')
-                );
+                ];
             }
             
             $filepath = $snapshot['filepath'];
             
             if (!file_exists($filepath)) {
-                return array(
+                return [
                     'success' => false,
                     'message' => __('Snapshot file not found', 'category-generator')
-                );
+                ];
             }
             
             // Open snapshot database
             $snapshot_db = new SQLite3($filepath);
             $snapshot_db->enableExceptions(true);
             
-            $restored = array(
+            $restored = [
                 'terms' => 0,
                 'updated' => 0,
                 'skipped' => 0
-            );
+            ];
             
             // Get all terms from snapshot
             $result = $snapshot_db->query("SELECT * FROM wp_terms");
-            $snapshot_terms = array();
+            $snapshot_terms = [];
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $snapshot_terms[$row['term_id']] = $row;
             }
             
             // Get taxonomy data
             $result = $snapshot_db->query("SELECT * FROM wp_term_taxonomy");
-            $snapshot_taxonomies = array();
+            $snapshot_taxonomies = [];
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $snapshot_taxonomies[$row['term_id']] = $row;
             }
             
             // Get termmeta
             $result = $snapshot_db->query("SELECT * FROM wp_termmeta");
-            $snapshot_meta = array();
+            $snapshot_meta = [];
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 if (!isset($snapshot_meta[$row['term_id']])) {
-                    $snapshot_meta[$row['term_id']] = array();
+                    $snapshot_meta[$row['term_id']] = [];
                 }
                 $snapshot_meta[$row['term_id']][] = $row;
             }
@@ -351,10 +351,10 @@ class CG_Snapshot {
                 
                 if ($existing_term) {
                     // Update existing term
-                    wp_update_term($existing_term->term_id, $taxonomy, array(
+                    wp_update_term($existing_term->term_id, $taxonomy, [
                         'name' => $term['name'],
                         'description' => $snapshot_taxonomies[$term_id]['description'] ?? ''
-                    ));
+                    ]);
                     $restored['updated']++;
                     $actual_term_id = $existing_term->term_id;
                 } else {
@@ -371,11 +371,11 @@ class CG_Snapshot {
                         }
                     }
                     
-                    $result = wp_insert_term($term['name'], $taxonomy, array(
+                    $result = wp_insert_term($term['name'], $taxonomy, [
                         'slug' => $term['slug'],
                         'description' => $snapshot_taxonomies[$term_id]['description'] ?? '',
                         'parent' => $parent
-                    ));
+                    ]);
                     
                     if (!is_wp_error($result)) {
                         $restored['terms']++;
@@ -394,7 +394,7 @@ class CG_Snapshot {
                 }
             }
             
-            return array(
+            return [
                 'success' => true,
                 'message' => sprintf(
                     __('Restore complete: %d new, %d updated, %d skipped', 'category-generator'),
@@ -403,14 +403,14 @@ class CG_Snapshot {
                     $restored['skipped']
                 ),
                 'stats' => $restored
-            );
+            ];
             
         } catch (Exception $e) {
             error_log('CG Snapshot Restore Error: ' . $e->getMessage());
-            return array(
+            return [
                 'success' => false,
                 'message' => __('Failed to restore snapshot: ', 'category-generator') . $e->getMessage()
-            );
+            ];
         }
     }
     
@@ -472,14 +472,14 @@ class CG_Snapshot {
         
         try {
             $snapshot_db = new SQLite3($snapshot['filepath']);
-            $meta = array();
+            $meta = [];
             $result = $snapshot_db->query("SELECT * FROM snapshot_meta");
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $meta[$row['key']] = $row['value'];
             }
             $snapshot_db->close();
             
-            return array_merge($snapshot, array('meta' => $meta));
+            return array_merge($snapshot, ['meta' => $meta]);
         } catch (Exception $e) {
             return $snapshot;
         }

@@ -15,7 +15,7 @@ class CG_Tests {
     
     private static $instance = null;
     private $db;
-    private $test_results = array();
+    private $test_results = [];
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -34,152 +34,152 @@ class CG_Tests {
      * @return array Test results
      */
     public function run_all_tests() {
-        $this->test_results = array(
+        $this->test_results = [
             'total' => 0,
             'passed' => 0,
             'failed' => 0,
-            'tests' => array()
-        );
+            'tests' => []
+        ];
         
         // Check if database is available before running tests
         if (!$this->db || !$this->db->is_connected()) {
-            $this->test_results['tests'][] = array(
+            $this->test_results['tests'][] = [
                 'name' => 'Database Connection',
                 'status' => 'failed',
                 'message' => 'Database is not connected. Check if SQLite extension is enabled and database path is writable.',
                 'time' => 0
-            );
+            ];
             $this->test_results['total'] = 1;
             $this->test_results['failed'] = 1;
             return $this->test_results;
         }
         
         // ==================== DATABASE TESTS ====================
-        $this->run_test('Database Connection', array($this, 'test_database_connection'));
-        $this->run_test('Table Creation', array($this, 'test_tables_exist'));
-        $this->run_test('Database Insert', array($this, 'test_database_insert'));
-        $this->run_test('Database Update', array($this, 'test_database_update'));
-        $this->run_test('Database Delete', array($this, 'test_database_delete'));
-        $this->run_test('Database Transaction', array($this, 'test_database_transaction'));
+        $this->run_test('Database Connection', [$this, 'test_database_connection']);
+        $this->run_test('Table Creation', [$this, 'test_tables_exist']);
+        $this->run_test('Database Insert', [$this, 'test_database_insert']);
+        $this->run_test('Database Update', [$this, 'test_database_update']);
+        $this->run_test('Database Delete', [$this, 'test_database_delete']);
+        $this->run_test('Database Transaction', [$this, 'test_database_transaction']);
         
         // ==================== VARIABLE TESTS ====================
-        $this->run_test('Variable Basic', array($this, 'test_variable_basic'));
-        $this->run_test('Variable Concatenation', array($this, 'test_variable_concatenation'));
-        $this->run_test('Variable Reference', array($this, 'test_variable_reference'));
-        $this->run_test('Variable Nested Reference', array($this, 'test_variable_nested_reference'));
-        $this->run_test('Variable Math Operations', array($this, 'test_variable_math'));
-        $this->run_test('Variable Empty Handling', array($this, 'test_variable_empty'));
-        $this->run_test('Variable Special Chars', array($this, 'test_variable_special_chars'));
+        $this->run_test('Variable Basic', [$this, 'test_variable_basic']);
+        $this->run_test('Variable Concatenation', [$this, 'test_variable_concatenation']);
+        $this->run_test('Variable Reference', [$this, 'test_variable_reference']);
+        $this->run_test('Variable Nested Reference', [$this, 'test_variable_nested_reference']);
+        $this->run_test('Variable Math Operations', [$this, 'test_variable_math']);
+        $this->run_test('Variable Empty Handling', [$this, 'test_variable_empty']);
+        $this->run_test('Variable Special Chars', [$this, 'test_variable_special_chars']);
         
         // ==================== INNER TEMPLATE TESTS ====================
-        $this->run_test('Inner Template Create', array($this, 'test_inner_template_create'));
-        $this->run_test('Inner Template Process', array($this, 'test_inner_template_process'));
-        $this->run_test('Inner Template By ID', array($this, 'test_inner_template_by_id'));
-        $this->run_test('Inner Template By Name', array($this, 'test_inner_template_by_name'));
-        $this->run_test('Inner Template Nested', array($this, 'test_inner_template_nested'));
-        $this->run_test('Inner Template With Variables', array($this, 'test_inner_template_with_variables'));
+        $this->run_test('Inner Template Create', [$this, 'test_inner_template_create']);
+        $this->run_test('Inner Template Process', [$this, 'test_inner_template_process']);
+        $this->run_test('Inner Template By ID', [$this, 'test_inner_template_by_id']);
+        $this->run_test('Inner Template By Name', [$this, 'test_inner_template_by_name']);
+        $this->run_test('Inner Template Nested', [$this, 'test_inner_template_nested']);
+        $this->run_test('Inner Template With Variables', [$this, 'test_inner_template_with_variables']);
         
         // ==================== IMPORT/EXPORT TESTS ====================
-        $this->run_test('CSV Export', array($this, 'test_csv_export'));
-        $this->run_test('CSV Escaping', array($this, 'test_csv_escaping'));
-        $this->run_test('Import Validation', array($this, 'test_import_validation'));
-        $this->run_test('JSON Export', array($this, 'test_json_export'));
-        $this->run_test('Import Merge Mode', array($this, 'test_import_merge'));
+        $this->run_test('CSV Export', [$this, 'test_csv_export']);
+        $this->run_test('CSV Escaping', [$this, 'test_csv_escaping']);
+        $this->run_test('Import Validation', [$this, 'test_import_validation']);
+        $this->run_test('JSON Export', [$this, 'test_json_export']);
+        $this->run_test('Import Merge Mode', [$this, 'test_import_merge']);
         
         // ==================== TEMPLATE TESTS ====================
-        $this->run_test('HTML Template Save', array($this, 'test_html_template_save'));
-        $this->run_test('HTML Template Update', array($this, 'test_html_template_update'));
-        $this->run_test('Meta Template Save', array($this, 'test_meta_template_save'));
-        $this->run_test('Schema Template Save', array($this, 'test_schema_template_save'));
-        $this->run_test('Placeholder Replacement', array($this, 'test_placeholder_replacement'));
-        $this->run_test('Placeholder All Types', array($this, 'test_placeholder_all_types'));
-        $this->run_test('Template Category Hierarchy', array($this, 'test_template_category_hierarchy'));
+        $this->run_test('HTML Template Save', [$this, 'test_html_template_save']);
+        $this->run_test('HTML Template Update', [$this, 'test_html_template_update']);
+        $this->run_test('Meta Template Save', [$this, 'test_meta_template_save']);
+        $this->run_test('Schema Template Save', [$this, 'test_schema_template_save']);
+        $this->run_test('Placeholder Replacement', [$this, 'test_placeholder_replacement']);
+        $this->run_test('Placeholder All Types', [$this, 'test_placeholder_all_types']);
+        $this->run_test('Template Category Hierarchy', [$this, 'test_template_category_hierarchy']);
         
         // ==================== CATEGORY GENERATION TESTS ====================
-        $this->run_test('Category Name Format', array($this, 'test_category_name_format'));
-        $this->run_test('Slug Generation', array($this, 'test_slug_generation'));
-        $this->run_test('Slug With Special Chars', array($this, 'test_slug_special_chars'));
-        $this->run_test('Parent/Child Logic', array($this, 'test_parent_child_logic'));
-        $this->run_test('(S) Notation Parsing', array($this, 'test_s_notation'));
-        $this->run_test('(S) Notation Edge Cases', array($this, 'test_s_notation_edge_cases'));
-        $this->run_test('Area List Parsing', array($this, 'test_area_list_parsing'));
-        $this->run_test('Bulk Generation Count', array($this, 'test_bulk_generation_count'));
+        $this->run_test('Category Name Format', [$this, 'test_category_name_format']);
+        $this->run_test('Slug Generation', [$this, 'test_slug_generation']);
+        $this->run_test('Slug With Special Chars', [$this, 'test_slug_special_chars']);
+        $this->run_test('Parent/Child Logic', [$this, 'test_parent_child_logic']);
+        $this->run_test('(S) Notation Parsing', [$this, 'test_s_notation']);
+        $this->run_test('(S) Notation Edge Cases', [$this, 'test_s_notation_edge_cases']);
+        $this->run_test('Area List Parsing', [$this, 'test_area_list_parsing']);
+        $this->run_test('Bulk Generation Count', [$this, 'test_bulk_generation_count']);
         
         // ==================== HTML WRAPPER TESTS ====================
-        $this->run_test('Div Wrapper Generation', array($this, 'test_div_wrapper'));
-        $this->run_test('Schema in Div', array($this, 'test_schema_div_wrapper'));
-        $this->run_test('Class Names Applied', array($this, 'test_class_names'));
-        $this->run_test('Custom Classes', array($this, 'test_custom_classes'));
-        $this->run_test('HTML Sanitization', array($this, 'test_html_sanitization'));
+        $this->run_test('Div Wrapper Generation', [$this, 'test_div_wrapper']);
+        $this->run_test('Schema in Div', [$this, 'test_schema_div_wrapper']);
+        $this->run_test('Class Names Applied', [$this, 'test_class_names']);
+        $this->run_test('Custom Classes', [$this, 'test_custom_classes']);
+        $this->run_test('HTML Sanitization', [$this, 'test_html_sanitization']);
         
         // ==================== YOAST INTEGRATION TESTS ====================
-        $this->run_test('Yoast Meta Generation', array($this, 'test_yoast_meta'));
-        $this->run_test('Focus Keyword Generation', array($this, 'test_focus_keyword'));
-        $this->run_test('Meta Title Length', array($this, 'test_meta_title_length'));
-        $this->run_test('Meta Description Min Length', array($this, 'test_meta_desc_min_length'));
-        $this->run_test('Yoast Score Thresholds', array($this, 'test_yoast_score_thresholds'));
+        $this->run_test('Yoast Meta Generation', [$this, 'test_yoast_meta']);
+        $this->run_test('Focus Keyword Generation', [$this, 'test_focus_keyword']);
+        $this->run_test('Meta Title Length', [$this, 'test_meta_title_length']);
+        $this->run_test('Meta Description Min Length', [$this, 'test_meta_desc_min_length']);
+        $this->run_test('Yoast Score Thresholds', [$this, 'test_yoast_score_thresholds']);
         
         // ==================== BUSINESS PROFILE TESTS ====================
-        $this->run_test('Business Profile Save', array($this, 'test_business_profile_save'));
-        $this->run_test('Business Profile Update', array($this, 'test_business_profile_update'));
-        $this->run_test('Multiple Profiles', array($this, 'test_multiple_profiles'));
-        $this->run_test('Area Postal Code Mapping', array($this, 'test_area_postal_mapping'));
-        $this->run_test('Business Profile Schema', array($this, 'test_business_profile_schema'));
+        $this->run_test('Business Profile Save', [$this, 'test_business_profile_save']);
+        $this->run_test('Business Profile Update', [$this, 'test_business_profile_update']);
+        $this->run_test('Multiple Profiles', [$this, 'test_multiple_profiles']);
+        $this->run_test('Area Postal Code Mapping', [$this, 'test_area_postal_mapping']);
+        $this->run_test('Business Profile Schema', [$this, 'test_business_profile_schema']);
         
         // ==================== SETTINGS TESTS ====================
-        $this->run_test('Settings Save/Load', array($this, 'test_settings'));
-        $this->run_test('Settings Default Values', array($this, 'test_settings_defaults'));
-        $this->run_test('AI Provider Config', array($this, 'test_ai_config'));
-        $this->run_test('CSS Class Settings', array($this, 'test_css_class_settings'));
+        $this->run_test('Settings Save/Load', [$this, 'test_settings']);
+        $this->run_test('Settings Default Values', [$this, 'test_settings_defaults']);
+        $this->run_test('AI Provider Config', [$this, 'test_ai_config']);
+        $this->run_test('CSS Class Settings', [$this, 'test_css_class_settings']);
         
         // ==================== CONSTANTS TESTS ====================
-        $this->run_test('Constants Defined', array($this, 'test_constants_defined'));
-        $this->run_test('CSS Class Constants', array($this, 'test_css_class_constants'));
-        $this->run_test('Filesize Formatter', array($this, 'test_filesize_formatter'));
-        $this->run_test('Yoast Score Classes', array($this, 'test_yoast_score_classes'));
+        $this->run_test('Constants Defined', [$this, 'test_constants_defined']);
+        $this->run_test('CSS Class Constants', [$this, 'test_css_class_constants']);
+        $this->run_test('Filesize Formatter', [$this, 'test_filesize_formatter']);
+        $this->run_test('Yoast Score Classes', [$this, 'test_yoast_score_classes']);
         
         // ==================== SNAPSHOT TESTS ====================
-        $this->run_test('Snapshot Create', array($this, 'test_snapshot_create'));
-        $this->run_test('Snapshot Types', array($this, 'test_snapshot_types'));
-        $this->run_test('Snapshot Limit Enforcement', array($this, 'test_snapshot_limit'));
+        $this->run_test('Snapshot Create', [$this, 'test_snapshot_create']);
+        $this->run_test('Snapshot Types', [$this, 'test_snapshot_types']);
+        $this->run_test('Snapshot Limit Enforcement', [$this, 'test_snapshot_limit']);
         
         // ==================== SAVED TITLES/AREAS TESTS ====================
-        $this->run_test('Saved Titles Create', array($this, 'test_saved_titles_create'));
-        $this->run_test('Saved Titles Retrieve', array($this, 'test_saved_titles_retrieve'));
-        $this->run_test('Saved Areas Create', array($this, 'test_saved_areas_create'));
-        $this->run_test('Saved Areas Retrieve', array($this, 'test_saved_areas_retrieve'));
+        $this->run_test('Saved Titles Create', [$this, 'test_saved_titles_create']);
+        $this->run_test('Saved Titles Retrieve', [$this, 'test_saved_titles_retrieve']);
+        $this->run_test('Saved Areas Create', [$this, 'test_saved_areas_create']);
+        $this->run_test('Saved Areas Retrieve', [$this, 'test_saved_areas_retrieve']);
         
         // ==================== UTILITY TESTS ====================
-        $this->run_test('String Sanitization', array($this, 'test_string_sanitization'));
-        $this->run_test('Array Filtering', array($this, 'test_array_filtering'));
-        $this->run_test('Empty Input Handling', array($this, 'test_empty_input_handling'));
-        $this->run_test('Unicode Support', array($this, 'test_unicode_support'));
-        $this->run_test('Date Format Constants', array($this, 'test_date_format_constants'));
-        $this->run_test('Spacing Constants', array($this, 'test_spacing_constants'));
-        $this->run_test('Icon Size Constants', array($this, 'test_icon_size_constants'));
+        $this->run_test('String Sanitization', [$this, 'test_string_sanitization']);
+        $this->run_test('Array Filtering', [$this, 'test_array_filtering']);
+        $this->run_test('Empty Input Handling', [$this, 'test_empty_input_handling']);
+        $this->run_test('Unicode Support', [$this, 'test_unicode_support']);
+        $this->run_test('Date Format Constants', [$this, 'test_date_format_constants']);
+        $this->run_test('Spacing Constants', [$this, 'test_spacing_constants']);
+        $this->run_test('Icon Size Constants', [$this, 'test_icon_size_constants']);
         
         // ==================== REMOTE API TESTS ====================
-        $this->run_test('Remote API URL Validation', array($this, 'test_remote_api_url_validation'));
+        $this->run_test('Remote API URL Validation', [$this, 'test_remote_api_url_validation']);
         
         // ==================== AJAX HANDLER TESTS ====================
-        $this->run_test('AJAX Actions Defined', array($this, 'test_ajax_actions_defined'));
-        $this->run_test('AJAX Nonce Validation', array($this, 'test_ajax_nonce_validation'));
-        $this->run_test('AJAX Response Format', array($this, 'test_ajax_response_format'));
-        $this->run_test('AJAX Save Template Handler', array($this, 'test_ajax_save_template_handler'));
-        $this->run_test('AJAX Get Template Handler', array($this, 'test_ajax_get_template_handler'));
-        $this->run_test('AJAX Snapshot Handler', array($this, 'test_ajax_snapshot_handler'));
+        $this->run_test('AJAX Actions Defined', [$this, 'test_ajax_actions_defined']);
+        $this->run_test('AJAX Nonce Validation', [$this, 'test_ajax_nonce_validation']);
+        $this->run_test('AJAX Response Format', [$this, 'test_ajax_response_format']);
+        $this->run_test('AJAX Save Template Handler', [$this, 'test_ajax_save_template_handler']);
+        $this->run_test('AJAX Get Template Handler', [$this, 'test_ajax_get_template_handler']);
+        $this->run_test('AJAX Snapshot Handler', [$this, 'test_ajax_snapshot_handler']);
         
         // ==================== JS DATA TESTS ====================
-        $this->run_test('JS Constants Export', array($this, 'test_js_constants_export'));
-        $this->run_test('JS CSS Classes Export', array($this, 'test_js_css_classes_export'));
-        $this->run_test('JS DOM Element IDs', array($this, 'test_js_dom_element_ids'));
-        $this->run_test('JS Localized Strings', array($this, 'test_js_localized_strings'));
-        $this->run_test('JS Template Type Validation', array($this, 'test_js_template_type_validation'));
+        $this->run_test('JS Constants Export', [$this, 'test_js_constants_export']);
+        $this->run_test('JS CSS Classes Export', [$this, 'test_js_css_classes_export']);
+        $this->run_test('JS DOM Element IDs', [$this, 'test_js_dom_element_ids']);
+        $this->run_test('JS Localized Strings', [$this, 'test_js_localized_strings']);
+        $this->run_test('JS Template Type Validation', [$this, 'test_js_template_type_validation']);
         
         // ==================== INPUT VALIDATION TESTS ====================
-        $this->run_test('Input XSS Prevention', array($this, 'test_input_xss_prevention'));
-        $this->run_test('Input SQL Injection Prevention', array($this, 'test_input_sql_injection_prevention'));
-        $this->run_test('Input Max Length Validation', array($this, 'test_input_max_length_validation'));
+        $this->run_test('Input XSS Prevention', [$this, 'test_input_xss_prevention']);
+        $this->run_test('Input SQL Injection Prevention', [$this, 'test_input_sql_injection_prevention']);
+        $this->run_test('Input Max Length Validation', [$this, 'test_input_max_length_validation']);
         
         return $this->test_results;
     }
@@ -188,23 +188,23 @@ class CG_Tests {
      * Run specific test group
      */
     public function run_test_group($group) {
-        $this->test_results = array(
+        $this->test_results = [
             'total' => 0,
             'passed' => 0,
             'failed' => 0,
-            'tests' => array()
-        );
+            'tests' => []
+        ];
         
-        $groups = array(
-            'database' => array(
+        $groups = [
+            'database' => [
                 'test_database_connection',
                 'test_tables_exist',
                 'test_database_insert',
                 'test_database_update',
                 'test_database_delete',
                 'test_database_transaction',
-            ),
-            'variables' => array(
+            ],
+            'variables' => [
                 'test_variable_basic',
                 'test_variable_concatenation',
                 'test_variable_reference',
@@ -212,41 +212,41 @@ class CG_Tests {
                 'test_variable_math',
                 'test_variable_empty',
                 'test_variable_special_chars',
-            ),
-            'templates' => array(
+            ],
+            'templates' => [
                 'test_inner_template_create',
                 'test_inner_template_process',
                 'test_html_template_save',
                 'test_meta_template_save',
                 'test_placeholder_replacement',
                 'test_template_category_hierarchy',
-            ),
-            'categories' => array(
+            ],
+            'categories' => [
                 'test_category_name_format',
                 'test_slug_generation',
                 'test_parent_child_logic',
                 'test_s_notation',
                 'test_area_list_parsing',
-            ),
-            'yoast' => array(
+            ],
+            'yoast' => [
                 'test_yoast_meta',
                 'test_focus_keyword',
                 'test_meta_title_length',
                 'test_meta_desc_min_length',
                 'test_yoast_score_thresholds',
-            ),
-            'saved' => array(
+            ],
+            'saved' => [
                 'test_saved_titles_create',
                 'test_saved_titles_retrieve',
                 'test_saved_areas_create',
                 'test_saved_areas_retrieve',
-            ),
-            'snapshots' => array(
+            ],
+            'snapshots' => [
                 'test_snapshot_create',
                 'test_snapshot_types',
                 'test_snapshot_limit',
-            ),
-            'utility' => array(
+            ],
+            'utility' => [
                 'test_string_sanitization',
                 'test_array_filtering',
                 'test_empty_input_handling',
@@ -254,33 +254,33 @@ class CG_Tests {
                 'test_date_format_constants',
                 'test_spacing_constants',
                 'test_icon_size_constants',
-            ),
-            'ajax' => array(
+            ],
+            'ajax' => [
                 'test_ajax_actions_defined',
                 'test_ajax_nonce_validation',
                 'test_ajax_response_format',
                 'test_ajax_save_template_handler',
                 'test_ajax_get_template_handler',
                 'test_ajax_snapshot_handler',
-            ),
-            'javascript' => array(
+            ],
+            'javascript' => [
                 'test_js_constants_export',
                 'test_js_css_classes_export',
                 'test_js_dom_element_ids',
                 'test_js_localized_strings',
                 'test_js_template_type_validation',
-            ),
-            'validation' => array(
+            ],
+            'validation' => [
                 'test_input_xss_prevention',
                 'test_input_sql_injection_prevention',
                 'test_input_max_length_validation',
-            ),
-        );
+            ],
+        ];
         
         if (isset($groups[$group])) {
             foreach ($groups[$group] as $test) {
                 $name = ucwords(str_replace('_', ' ', str_replace('test_', '', $test)));
-                $this->run_test($name, array($this, $test));
+                $this->run_test($name, [$this, $test]);
             }
         }
         
@@ -293,12 +293,12 @@ class CG_Tests {
     private function run_test($name, $callback) {
         $this->test_results['total']++;
         
-        $result = array(
+        $result = [
             'name' => $name,
             'status' => 'passed',
             'message' => '',
             'time' => 0
-        );
+        ];
         
         $start = microtime(true);
         
@@ -310,7 +310,7 @@ class CG_Tests {
                 $this->test_results['passed']++;
             } else {
                 $result['status'] = 'failed';
-                $result['message'] = is_string($test_result) ? $test_result : 'Test returned false';
+                $result['message'] = gettype($test_result) === 'string' ? $test_result : 'Test returned false';
                 $this->test_results['failed']++;
             }
         } catch (Exception $e) {
@@ -331,13 +331,13 @@ class CG_Tests {
     }
     
     private function test_tables_exist() {
-        $tables = array(
+        $tables = [
             'category_history',
             'html_templates',
             'meta_templates',
             'schema_templates',
             'business_profile'
-        );
+        ];
         
         foreach ($tables as $table) {
             if (!$this->db->table_exists($table)) {
@@ -415,51 +415,51 @@ class CG_Tests {
     
     private function test_variable_basic() {
         $vars = CG_Variables::get_instance();
-        $result = $vars->compile_variables(array('title' => 'Test'));
+        $result = $vars->compile_variables(['title' => 'Test']);
         return isset($result['title']) && $result['title'] === 'Test';
     }
     
     private function test_variable_concatenation() {
         $vars = CG_Variables::get_instance();
-        $context = array('first' => 'Hello', 'second' => 'World');
+        $context = ['first' => 'Hello', 'second' => 'World'];
         $result = $vars->parse_expression('"Hello" + " " + "World"', $context);
         return $result === 'Hello World';
     }
     
     private function test_variable_reference() {
         $vars = CG_Variables::get_instance();
-        $context = array('base' => 'Hello', 'derived' => '{var:base} World');
+        $context = ['base' => 'Hello', 'derived' => '{var:base} World'];
         $compiled = $vars->compile_variables($context);
         return $compiled['derived'] === 'Hello World';
     }
     
     private function test_variable_nested_reference() {
         $vars = CG_Variables::get_instance();
-        $context = array(
+        $context = [
             'level1' => 'A',
             'level2' => '{var:level1}B',
             'level3' => '{var:level2}C'
-        );
+        ];
         $compiled = $vars->compile_variables($context);
         return $compiled['level3'] === 'ABC';
     }
     
     private function test_variable_math() {
         $vars = CG_Variables::get_instance();
-        $result = $vars->parse_expression('5 + 3', array());
+        $result = $vars->parse_expression('5 + 3', []);
         return $result == 8;
     }
     
     private function test_variable_empty() {
         $vars = CG_Variables::get_instance();
-        $context = array('empty' => '', 'null' => null);
+        $context = ['empty' => '', 'null' => null];
         $compiled = $vars->compile_variables($context);
         return $compiled['empty'] === '' && ($compiled['null'] === '' || $compiled['null'] === null);
     }
     
     private function test_variable_special_chars() {
         $vars = CG_Variables::get_instance();
-        $context = array('special' => 'Test & "quotes" <tag>');
+        $context = ['special' => 'Test & "quotes" <tag>'];
         $compiled = $vars->compile_variables($context);
         return strpos($compiled['special'], '&') !== false;
     }
@@ -468,12 +468,12 @@ class CG_Tests {
     
     private function test_inner_template_create() {
         $inner = CG_Inner_Templates::get_instance();
-        $id = $inner->save_template(array(
+        $id = $inner->save_template([
             'name' => 'Test Template ' . time(),
             'name_id' => 'test_template_' . time(),
             'type' => 'snippet',
             'content' => 'Test content for {title}'
-        ));
+        ]);
         return $id > 0;
     }
     
@@ -481,7 +481,7 @@ class CG_Tests {
         $inner = CG_Inner_Templates::get_instance();
         $result = $inner->process_content(
             'Before {title} After',
-            array('title' => 'TEST')
+            ['title' => 'TEST']
         );
         return strpos($result, 'TEST') !== false;
     }
@@ -496,7 +496,7 @@ class CG_Tests {
         
         $first = $templates[0];
         $content = "Test {inner:{$first['id']}} end";
-        $result = $inner->process_content($content, array());
+        $result = $inner->process_content($content, []);
         
         return strpos($result, '{inner:') === false || $result !== $content;
     }
@@ -515,7 +515,7 @@ class CG_Tests {
         }
         
         $content = "Test {inner:{$first['name_id']}} end";
-        $result = $inner->process_content($content, array());
+        $result = $inner->process_content($content, []);
         
         return strpos($result, '{inner:') === false || $result !== $content;
     }
@@ -524,18 +524,18 @@ class CG_Tests {
         // Test nested inner template references
         $inner = CG_Inner_Templates::get_instance();
         $content = "Start {title} End";
-        $result = $inner->process_content($content, array('title' => 'NESTED'));
+        $result = $inner->process_content($content, ['title' => 'NESTED']);
         return strpos($result, 'NESTED') !== false;
     }
     
     private function test_inner_template_with_variables() {
         $inner = CG_Inner_Templates::get_instance();
         $content = "{title} in {area} by {business_name}";
-        $result = $inner->process_content($content, array(
+        $result = $inner->process_content($content, [
             'title' => 'Service',
             'area' => 'Melbourne',
             'business_name' => 'Test Co'
-        ));
+        ]);
         return strpos($result, 'Service') !== false && strpos($result, 'Melbourne') !== false;
     }
     
@@ -543,7 +543,7 @@ class CG_Tests {
     
     private function test_csv_export() {
         $ie = CG_Import_Export::get_instance();
-        $zip_path = $ie->export(array('html_templates'), 'csv');
+        $zip_path = $ie->export(['html_templates'], 'csv');
         
         if (!$zip_path || !file_exists($zip_path)) {
             return 'Export failed to create file';
@@ -555,15 +555,15 @@ class CG_Tests {
     }
     
     private function test_csv_escaping() {
-        $data = array(
-            array('name' => 'Test', 'content' => "Line 1\nLine 2\nLine 3")
-        );
+        $data = [
+            ['name' => 'Test', 'content' => "Line 1\nLine 2\nLine 3"]
+        ];
         
         $output = fopen('php://temp', 'r+');
         fputcsv($output, array_keys($data[0]));
         
-        $escaped = str_replace(array("\r\n", "\n", "\r"), "\\n", $data[0]['content']);
-        fputcsv($output, array($data[0]['name'], $escaped));
+        $escaped = str_replace(["\r\n", "\n", "\r"], "\\n", $data[0]['content']);
+        fputcsv($output, [$data[0]['name'], $escaped]);
         
         rewind($output);
         $csv = stream_get_contents($output);
@@ -574,13 +574,13 @@ class CG_Tests {
     
     private function test_import_validation() {
         $ie = CG_Import_Export::get_instance();
-        $result = $ie->import('/nonexistent/file.csv', array());
+        $result = $ie->import('/nonexistent/file.csv', []);
         return $result['success'] === false;
     }
     
     private function test_json_export() {
         $ie = CG_Import_Export::get_instance();
-        $zip_path = $ie->export(array('html_templates'), 'json');
+        $zip_path = $ie->export(['html_templates'], 'json');
         
         if (!$zip_path || !file_exists($zip_path)) {
             return 'JSON export failed to create file';
@@ -646,10 +646,10 @@ class CG_Tests {
     }
     
     private function test_schema_template_save() {
-        $schema = json_encode(array(
+        $schema = json_encode([
             '@type' => 'LocalBusiness',
             'name' => '{business_name}'
-        ));
+        ]);
         
         $id = $this->db->insert_schema_template(
             'Test Schema ' . time(),
@@ -664,15 +664,15 @@ class CG_Tests {
     
     private function test_placeholder_replacement() {
         $template = '{title} services in {area} by {business_name}';
-        $context = array(
+        $context = [
             'title' => 'Cleaning',
             'area' => 'Melbourne',
             'business_name' => 'Test Co'
-        );
+        ];
         
         $result = str_replace(
-            array('{title}', '{area}', '{business_name}'),
-            array($context['title'], $context['area'], $context['business_name']),
+            ['{title}', '{area}', '{business_name}'],
+            [$context['title'], $context['area'], $context['business_name']],
             $template
         );
         
@@ -680,7 +680,7 @@ class CG_Tests {
     }
     
     private function test_placeholder_all_types() {
-        $placeholders = array(
+        $placeholders = [
             '{title}' => 'Title',
             '{area}' => 'Area',
             '{category}' => 'Category',
@@ -689,7 +689,7 @@ class CG_Tests {
             '{business_name}' => 'Business',
             '{meta_title}' => 'Meta Title',
             '{meta_description}' => 'Meta Description'
-        );
+        ];
         
         $template = implode(' | ', array_keys($placeholders));
         $result = str_replace(array_keys($placeholders), array_values($placeholders), $template);
@@ -705,20 +705,20 @@ class CG_Tests {
     
     private function test_template_category_hierarchy() {
         // Test 3-level hierarchy: Root -> Category -> Subcategory
-        $hierarchy = array(
-            'root' => array(
+        $hierarchy = [
+            'root' => [
                 'name' => 'Services',
-                'children' => array(
-                    array(
+                'children' => [
+                    [
                         'name' => 'Cleaning',
-                        'children' => array(
-                            array('name' => 'Commercial Cleaning'),
-                            array('name' => 'Residential Cleaning')
-                        )
-                    )
-                )
-            )
-        );
+                        'children' => [
+                            ['name' => 'Commercial Cleaning'],
+                            ['name' => 'Residential Cleaning']
+                        ]
+                    ]
+                ]
+            ]
+        ];
         
         return isset($hierarchy['root']['children'][0]['children']);
     }
@@ -731,8 +731,8 @@ class CG_Tests {
         $area = 'Sydney';
         
         $result = str_replace(
-            array('{title}', '{area}'),
-            array($title, $area),
+            ['{title}', '{area}'],
+            [$title, $area],
             $format
         );
         
@@ -746,11 +746,11 @@ class CG_Tests {
     }
     
     private function test_slug_special_chars() {
-        $test_cases = array(
+        $test_cases = [
             'Melbourne & Sydney' => 'melbourne-sydney',
             'Test "Quotes"' => 'test-quotes',
             'Café Services' => 'cafe-services',
-        );
+        ];
         
         foreach ($test_cases as $input => $expected) {
             $slug = sanitize_title($input);
@@ -766,9 +766,9 @@ class CG_Tests {
     }
     
     private function test_parent_child_logic() {
-        $areas = array('Melbourne', 'Sydney(S)', 'Brisbane');
+        $areas = ['Melbourne', 'Sydney(S)', 'Brisbane'];
         
-        $children = array();
+        $children = [];
         foreach ($areas as $area) {
             if (preg_match('/\(S\)\s*$/i', $area)) {
                 $children[] = trim(preg_replace('/\(S\)\s*$/i', '', $area));
@@ -779,12 +779,12 @@ class CG_Tests {
     }
     
     private function test_s_notation() {
-        $test_cases = array(
-            'Melbourne(S)' => array('is_sub' => true, 'clean' => 'Melbourne'),
-            'Sydney (S)' => array('is_sub' => true, 'clean' => 'Sydney'),
-            'Brisbane' => array('is_sub' => false, 'clean' => 'Brisbane'),
-            'Perth(s)' => array('is_sub' => true, 'clean' => 'Perth'),
-        );
+        $test_cases = [
+            'Melbourne(S)' => ['is_sub' => true, 'clean' => 'Melbourne'],
+            'Sydney (S)' => ['is_sub' => true, 'clean' => 'Sydney'],
+            'Brisbane' => ['is_sub' => false, 'clean' => 'Brisbane'],
+            'Perth(s)' => ['is_sub' => true, 'clean' => 'Perth'],
+        ];
         
         foreach ($test_cases as $input => $expected) {
             $is_sub = (bool) preg_match('/\(S\)\s*$/i', $input);
@@ -799,11 +799,11 @@ class CG_Tests {
     }
     
     private function test_s_notation_edge_cases() {
-        $edge_cases = array(
-            '(S)' => array('is_sub' => true, 'clean' => ''),
-            'Test(S)More' => array('is_sub' => false, 'clean' => 'Test(S)More'),
-            'Normal Area' => array('is_sub' => false, 'clean' => 'Normal Area'),
-        );
+        $edge_cases = [
+            '(S)' => ['is_sub' => true, 'clean' => ''],
+            'Test(S)More' => ['is_sub' => false, 'clean' => 'Test(S)More'],
+            'Normal Area' => ['is_sub' => false, 'clean' => 'Normal Area'],
+        ];
         
         foreach ($edge_cases as $input => $expected) {
             $is_sub = (bool) preg_match('/\(S\)\s*$/i', $input);
@@ -825,8 +825,8 @@ class CG_Tests {
     }
     
     private function test_bulk_generation_count() {
-        $titles = array('Cleaning', 'Plumbing');
-        $areas = array('Melbourne', 'Sydney', 'Brisbane');
+        $titles = ['Cleaning', 'Plumbing'];
+        $areas = ['Melbourne', 'Sydney', 'Brisbane'];
         
         $expected_count = count($titles) * count($areas);
         return $expected_count === 6;
@@ -869,7 +869,7 @@ class CG_Tests {
     
     private function test_html_sanitization() {
         $dangerous = '<script>alert("xss")</script>';
-        $sanitized = wp_kses($dangerous, array());
+        $sanitized = wp_kses($dangerous, []);
         
         return strpos($sanitized, '<script>') === false;
     }
@@ -879,8 +879,8 @@ class CG_Tests {
     private function test_yoast_meta() {
         $pattern = '{title} {area} | Professional Services';
         $result = str_replace(
-            array('{title}', '{area}'),
-            array('Cleaning', 'Melbourne'),
+            ['{title}', '{area}'],
+            ['Cleaning', 'Melbourne'],
             $pattern
         );
         
@@ -890,8 +890,8 @@ class CG_Tests {
     private function test_focus_keyword() {
         $pattern = CG_Constants::DEFAULT_FOCUS_KEYWORD_PATTERN;
         $result = str_replace(
-            array('{title}', '{area}'),
-            array('Cleaning', 'Melbourne'),
+            ['{title}', '{area}'],
+            ['Cleaning', 'Melbourne'],
             $pattern
         );
         
@@ -925,10 +925,10 @@ class CG_Tests {
     // ==================== BUSINESS PROFILE TESTS ====================
     
     private function test_business_profile_save() {
-        $data = array(
+        $data = [
             'business_name' => 'Test Business ' . time(),
             'phone' => '1234567890'
-        );
+        ];
         
         $this->db->save_business_profile($data);
         $profile = $this->db->get_business_profile();
@@ -943,7 +943,7 @@ class CG_Tests {
         }
         
         $new_name = 'Updated Business ' . time();
-        $this->db->save_business_profile(array('business_name' => $new_name));
+        $this->db->save_business_profile(['business_name' => $new_name]);
         
         $updated = $this->db->get_business_profile();
         return $updated && $updated['business_name'] === $new_name;
@@ -951,36 +951,36 @@ class CG_Tests {
     
     private function test_multiple_profiles() {
         $profiles = $this->db->get_all_business_profiles();
-        return is_array($profiles);
+        return gettype($profiles) === 'array';
     }
     
     private function test_area_postal_mapping() {
-        $mapping = array(
+        $mapping = [
             'Melbourne' => '3000',
             'Sydney' => '2000',
             'Brisbane' => '4000',
             'Perth' => '6000',
-        );
+        ];
         
         return isset($mapping['Melbourne']) && $mapping['Melbourne'] === '3000';
     }
     
     private function test_business_profile_schema() {
-        $profile = array(
+        $profile = [
             'business_name' => 'Test Business',
             'phone' => '123456789',
             'email' => 'test@example.com',
             'address' => '123 Test St',
             'city' => 'Melbourne',
             'country' => 'Australia'
-        );
+        ];
         
-        $schema = array(
+        $schema = [
             '@type' => 'LocalBusiness',
             'name' => $profile['business_name'],
             'telephone' => $profile['phone'],
             'email' => $profile['email']
-        );
+        ];
         
         $json = json_encode($schema);
         return strpos($json, 'LocalBusiness') !== false;
@@ -1004,7 +1004,7 @@ class CG_Tests {
         $settings = CG_Settings::get_instance();
         $defaults = CG_Settings::get_defaults();
         
-        return is_array($defaults) && !empty($defaults);
+        return gettype($defaults) === 'array' && !empty($defaults);
     }
     
     private function test_ai_config() {
@@ -1024,12 +1024,12 @@ class CG_Tests {
     // ==================== CONSTANTS TESTS ====================
     
     private function test_constants_defined() {
-        $required = array(
+        $required = [
             'PAGINATION_DEFAULT',
             'SNAPSHOT_LIMIT_DEFAULT',
             'META_DESC_MIN_CHARS',
             'DEFAULT_WRAPPER_CLASS',
-        );
+        ];
         
         foreach ($required as $const) {
             if (!defined('CG_Constants::' . $const)) {
@@ -1044,12 +1044,12 @@ class CG_Tests {
     }
     
     private function test_css_class_constants() {
-        $required = array(
+        $required = [
             'LAYOUT_CARD',
             'LAYOUT_TABS',
             'MODAL',
             'BTN_PRIMARY',
-        );
+        ];
         
         foreach ($required as $const) {
             $value = constant('CG_CSS::' . $const);
@@ -1062,11 +1062,11 @@ class CG_Tests {
     }
     
     private function test_filesize_formatter() {
-        $tests = array(
+        $tests = [
             500 => '500 B',
             1024 => '1.00 KB',
             1048576 => '1.00 MB',
-        );
+        ];
         
         foreach ($tests as $bytes => $expected) {
             $result = CG_Constants::format_filesize($bytes);
@@ -1171,16 +1171,16 @@ class CG_Tests {
     // ==================== REMOTE API TESTS ====================
     
     private function test_remote_api_url_validation() {
-        $valid_urls = array(
+        $valid_urls = [
             'https://example.com/api',
             'http://localhost:8080/api',
             'https://api.domain.com/v1/templates',
-        );
+        ];
         
-        $invalid_urls = array(
+        $invalid_urls = [
             'not-a-url',
             'ftp://example.com',
-        );
+        ];
         
         foreach ($valid_urls as $url) {
             if (!filter_var($url, FILTER_VALIDATE_URL)) {
@@ -1216,20 +1216,20 @@ class CG_Tests {
     private function test_empty_input_handling() {
         // Test that empty inputs don't cause errors
         $empty_string = '';
-        $empty_array = array();
+        $empty_array = [];
         
         return empty($empty_string) && empty($empty_array);
     }
     
     private function test_unicode_support() {
         // Test Unicode characters in category names
-        $unicode_strings = array(
+        $unicode_strings = [
             'Café',
             'Straße',
             '日本語',
             'Ελληνικά',
             'العربية'
-        );
+        ];
         
         foreach ($unicode_strings as $str) {
             if (mb_strlen($str) === 0) {
@@ -1267,7 +1267,7 @@ class CG_Tests {
     
     private function test_ajax_actions_defined() {
         // Verify all AJAX action constants are defined
-        $required_actions = array(
+        $required_actions = [
             CG_Constants::AJAX_CREATE_SNAPSHOT,
             CG_Constants::AJAX_RESTORE_SNAPSHOT,
             CG_Constants::AJAX_DELETE_SNAPSHOT,
@@ -1277,7 +1277,7 @@ class CG_Tests {
             CG_Constants::AJAX_RUN_TESTS,
             CG_Constants::AJAX_GET_SAVED_TITLES,
             CG_Constants::AJAX_GET_SAVED_AREAS,
-        );
+        ];
         
         foreach ($required_actions as $action) {
             if (empty($action)) {
@@ -1305,15 +1305,15 @@ class CG_Tests {
     
     private function test_ajax_response_format() {
         // Test JSON response structure
-        $success_response = array(
+        $success_response = [
             'success' => true,
-            'data' => array('message' => 'Test')
-        );
+            'data' => ['message' => 'Test']
+        ];
         
-        $error_response = array(
+        $error_response = [
             'success' => false,
-            'data' => array('message' => 'Error')
-        );
+            'data' => ['message' => 'Error']
+        ];
         
         $success_json = json_encode($success_response);
         $error_json = json_encode($error_response);
@@ -1366,7 +1366,7 @@ class CG_Tests {
         }
         
         $recent = $snapshot->get_recent(5);
-        return is_array($recent);
+        return gettype($recent) === 'array';
     }
     
     // ==================== JS DATA TESTS ====================
@@ -1375,11 +1375,11 @@ class CG_Tests {
         // Verify JS constants export format
         $js_constants = CG_Constants::get_js_constants();
         
-        if (!is_array($js_constants)) {
+        if (gettype($js_constants) !== 'array') {
             return "JS constants not an array";
         }
         
-        $required_keys = array('pagination', 'limits', 'truncate', 'animation', 'yoastScore');
+        $required_keys = ['pagination', 'limits', 'truncate', 'animation', 'yoastScore'];
         
         foreach ($required_keys as $key) {
             if (!isset($js_constants[$key])) {
@@ -1394,13 +1394,13 @@ class CG_Tests {
         // Verify CSS classes are properly formatted for JS
         $classes = CG_CSS::get_js_classes();
         
-        if (!is_array($classes)) {
+        if (gettype($classes) !== 'array') {
             return "JS classes not an array";
         }
         
         // Check that class names don't contain invalid characters
         foreach ($classes as $group => $items) {
-            if (!is_array($items)) continue;
+            if (gettype($items) !== 'array') continue;
             foreach ($items as $key => $class) {
                 if (preg_match('/[^a-zA-Z0-9\-_]/', $class)) {
                     return "Invalid class name: {$class}";
@@ -1415,13 +1415,13 @@ class CG_Tests {
         // Verify DOM element IDs are properly formatted
         $ids = CG_CSS::get_js_ids();
         
-        if (!is_array($ids)) {
+        if (gettype($ids) !== 'array') {
             return "JS IDs not an array";
         }
         
         // IDs should start with 'cg-'
         foreach ($ids as $group => $items) {
-            if (!is_array($items)) continue;
+            if (gettype($items) !== 'array') continue;
             foreach ($items as $key => $id) {
                 if (strpos($id, 'cg-') !== 0) {
                     return "ID '{$id}' doesn't start with 'cg-' prefix";
@@ -1434,12 +1434,12 @@ class CG_Tests {
     
     private function test_js_localized_strings() {
         // Test that localized strings are translatable
-        $test_strings = array(
+        $test_strings = [
             __('Generate', 'category-generator'),
             __('Save', 'category-generator'),
             __('Delete', 'category-generator'),
             __('Settings', 'category-generator'),
-        );
+        ];
         
         foreach ($test_strings as $str) {
             if (empty($str)) {
@@ -1452,7 +1452,7 @@ class CG_Tests {
     
     private function test_js_template_type_validation() {
         // Test template type constants used in JS
-        $valid_types = array('html', 'meta', 'schema');
+        $valid_types = ['html', 'meta', 'schema'];
         
         // Simulate what JS would receive
         foreach ($valid_types as $type) {
@@ -1468,12 +1468,12 @@ class CG_Tests {
     
     private function test_input_xss_prevention() {
         // Test XSS prevention
-        $xss_attempts = array(
+        $xss_attempts = [
             '<script>alert("xss")</script>',
             '<img src=x onerror=alert("xss")>',
             'javascript:alert("xss")',
             '<svg onload=alert("xss")>',
-        );
+        ];
         
         foreach ($xss_attempts as $attempt) {
             $sanitized = wp_kses_post($attempt);
@@ -1487,11 +1487,11 @@ class CG_Tests {
     
     private function test_input_sql_injection_prevention() {
         // Test SQL injection prevention via escaping
-        $sql_attempts = array(
+        $sql_attempts = [
             "'; DROP TABLE users; --",
             "1 OR 1=1",
             "UNION SELECT * FROM users",
-        );
+        ];
         
         global $wpdb;
         

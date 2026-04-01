@@ -275,33 +275,33 @@ class CG_CSS {
      * Get all CSS classes as JavaScript object
      */
     public static function get_js_classes() {
-        return array(
-            'layout' => array(
+        return [
+            'layout' => [
                 'adminWrap' => self::ADMIN_WRAP,
                 'container' => self::CONTAINER,
                 'main' => self::MAIN,
                 'sidebar' => self::SIDEBAR,
                 'card' => self::CARD,
-            ),
-            'table' => array(
+            ],
+            'table' => [
                 'loadingRow' => self::LOADING_ROW,
                 'emptyRow' => self::EMPTY_ROW,
                 'emptyState' => self::EMPTY_STATE,
                 'rowCheckbox' => self::ROW_CHECKBOX,
-            ),
-            'badge' => array(
+            ],
+            'badge' => [
                 'base' => self::BADGE,
                 'yes' => self::BADGE_YES,
                 'no' => self::BADGE_NO,
-            ),
-            'yoast' => array(
+            ],
+            'yoast' => [
                 'score' => self::YOAST_SCORE,
                 'good' => self::YOAST_GOOD,
                 'ok' => self::YOAST_OK,
                 'bad' => self::YOAST_BAD,
                 'na' => self::YOAST_NA,
-            ),
-            'modal' => array(
+            ],
+            'modal' => [
                 'base' => self::MODAL,
                 'content' => self::MODAL_CONTENT,
                 'large' => self::MODAL_LARGE,
@@ -309,39 +309,39 @@ class CG_CSS {
                 'body' => self::MODAL_BODY,
                 'footer' => self::MODAL_FOOTER,
                 'close' => self::MODAL_CLOSE,
-            ),
-            'pagination' => array(
+            ],
+            'pagination' => [
                 'base' => self::PAGINATION,
                 'wrapper' => self::PAGINATION_WRAPPER,
                 'perPage' => self::PER_PAGE_SELECTOR,
                 'current' => self::CURRENT,
-            ),
-            'bulk' => array(
+            ],
+            'bulk' => [
                 'bar' => self::BULK_ACTIONS_BAR,
                 'selected' => self::BULK_SELECTED,
                 'buttons' => self::BULK_BUTTONS,
                 'action' => self::BULK_ACTION,
                 'danger' => self::BULK_DANGER,
-            ),
-            'action' => array(
+            ],
+            'action' => [
                 'link' => self::ACTION_LINK,
                 'viewHistory' => self::VIEW_HISTORY,
                 'injectLink' => self::INJECT_LINK,
-            ),
-            'snapshot' => array(
+            ],
+            'snapshot' => [
                 'restore' => self::RESTORE_SNAPSHOT,
                 'download' => self::DOWNLOAD_SNAPSHOT,
                 'delete' => self::DELETE_SNAPSHOT,
-            ),
-        );
+            ],
+        ];
     }
     
     /**
      * Get all element IDs as JavaScript object
      */
     public static function get_js_ids() {
-        return array(
-            'history' => array(
+        return [
+            'history' => [
                 'table' => self::ID_HISTORY_TABLE,
                 'body' => self::ID_HISTORY_BODY,
                 'pagination' => self::ID_HISTORY_PAGINATION,
@@ -352,8 +352,8 @@ class CG_CSS {
                 'bulkActionsBar' => self::ID_BULK_ACTIONS_BAR,
                 'bulkCancel' => self::ID_BULK_CANCEL,
                 'perPage' => self::ID_PER_PAGE,
-            ),
-            'snapshot' => array(
+            ],
+            'snapshot' => [
                 'title' => self::ID_SNAPSHOT_TITLE,
                 'notes' => self::ID_SNAPSHOT_NOTES,
                 'createBtn' => self::ID_CREATE_SNAPSHOT_BTN,
@@ -363,13 +363,13 @@ class CG_CSS {
                 'restoreTitle' => self::ID_RESTORE_SNAPSHOT_TITLE,
                 'beforeRestore' => self::ID_SNAPSHOT_BEFORE_RESTORE,
                 'confirmRestoreBtn' => self::ID_CONFIRM_RESTORE_BTN,
-            ),
-            'quickSnapshot' => array(
+            ],
+            'quickSnapshot' => [
                 'name' => self::ID_QUICK_SNAPSHOT_NAME,
                 'btn' => self::ID_QUICK_SNAPSHOT_BTN,
                 'autoToggle' => self::ID_AUTO_SNAPSHOT_TOGGLE,
                 'restoreSelect' => self::ID_QUICK_RESTORE_SELECT,
-            ),
-        );
+            ],
+        ];
     }
 }
