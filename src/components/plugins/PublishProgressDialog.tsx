@@ -124,14 +124,22 @@ ${logSection}
 
 const STAGE_LABELS: Record<string, string> = {
   backup: "Creating Backup",
+  remote_backup: "Remote Backup",
   cloud_upload: "Uploading to Cloud Storage",
   package: "Packaging Files",
+  pre_backup: "Pre-Upload Backup",
   upload: "Uploading to Site",
   activate: "Activating Plugin",
   cleanup: "Cleaning Up",
   verify: "Verifying Deployment",
   version_check: "Verifying Version",
 };
+
+// Stages visible in the progress UI (ordered).
+// Internal/non-blocking stages (remote_backup, pre_backup) are excluded.
+const VISIBLE_STAGE_ORDER = [
+  "backup", "cloud_upload", "package", "upload", "activate", "version_check",
+];
 
 function buildDefaultStages(): PublishStage[] {
   const stages: PublishStage[] = [
