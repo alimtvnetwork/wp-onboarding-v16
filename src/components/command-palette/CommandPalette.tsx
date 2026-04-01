@@ -18,6 +18,11 @@ import {
   Moon,
   Sun,
   Monitor,
+  Activity,
+  Cloud,
+  KeyRound,
+  Users,
+  Radio,
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 
