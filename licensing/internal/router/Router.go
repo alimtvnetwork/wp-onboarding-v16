@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"riseup-licensing/internal/handlers"
+	"riseup-licensing/internal/manifest"
 	"riseup-licensing/internal/middleware"
 	"riseup-licensing/internal/services"
 	"riseup-licensing/pkg/ratelimit"
