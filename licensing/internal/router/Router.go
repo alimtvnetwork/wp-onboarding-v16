@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"riseup-licensing/internal/handlers"
+	"riseup-licensing/internal/manifest"
 	"riseup-licensing/internal/middleware"
 	"riseup-licensing/internal/services"
 	"riseup-licensing/pkg/ratelimit"
@@ -100,6 +101,7 @@ func registerAdminRoutes(
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.UpdateLicense).Methods("PATCH")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.DeleteLicense).Methods("DELETE")
 	admin.HandleFunc("/audit", h.ListAuditLogs).Methods("GET")
+	admin.HandleFunc("/manifest/validate", manifest.HandleValidateManifest).Methods("POST")
 }
 
 // resolveRateLimit returns the configured rate or a sensible default.
