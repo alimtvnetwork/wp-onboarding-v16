@@ -138,8 +138,8 @@ func TestGoAbbrCasing_UsesConfigPascalAbbreviations(t *testing.T) {
 		},
 		Spec: config.RuleSpec{
 			Severity: "warning",
-			Params: map[string]interface{}{
-				"abbreviations": []interface{}{"Sql"},
+			Params: map[string]any{
+				"abbreviations": []any{"Sql"},
 			},
 		},
 	}
