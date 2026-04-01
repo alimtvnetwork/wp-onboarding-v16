@@ -330,18 +330,21 @@ trait ExporterBuildTrait {
         int $snapshotId,
         array $incrementalData,
         array $zipMeta,
+        string $contentHash,
     ) {
         $zipSize = filesize($zipMeta[ResponseKeyType::Path->value]);
 
         $stmt = $pdo->prepare(
-            'UPDATE ' . TableType::SnapshotExports->value . ' SET Status = ?, ZipSize = ?, IncludedIds = ?, IncrementalCount = ? WHERE SnapshotId = ?'
+            'UPDATE ' . TableType::SnapshotExports->value .
+            ' SET Status = ?, ZipSize = ?, IncludedIds = ?, IncrementalCount = ?, ContentHash = ? WHERE SnapshotId = ?'
         );
         $stmt->execute([
+            SnapshotExportStatusType::Valid->value,
+            $zipSize,
+            json_encode($incrementalData[ResponseKeyType::IncludedIds->value]),
+            count($incrementalData[ResponseKeyType::Incrementals->value]),
+            $contentHash,
             $snapshotId,
-            $zipMeta[ResponseKeyType::Filename->value],
-            $zipMeta[ResponseKeyType::Path->value],
-            json_encode([$snapshotId]),
-            SnapshotExportStatusType::Building->value,
         ]);
 
         $this->logBuildSuccess($snapshotId, $zipMeta[ResponseKeyType::Filename->value], $zipSize);

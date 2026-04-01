@@ -45,20 +45,35 @@ trait ExporterPublicApiTrait {
             );
         }
 
+        $snapshotDir = dirname($snapshot[ResponseKeyType::FilePath->value]);
         $existing = $this->getValidExport($fullSnapshotId);
-        if ($existing && file_exists($existing['ZipPath'])) {
-            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', [
-                'exportId' => $existing['Id'],
-                'filename' => $existing['ZipFilename'],
-            ]);
 
-            return ResultHelper::ok([
-                ResponseKeyType::Cached->value => true,
-                ResponseKeyType::Export->value => $existing,
-            ]);
+        if ($existing && file_exists($existing['ZipPath'])) {
+            $currentHash = $this->computeContentHash($snapshotDir);
+            $storedHash  = $existing['ContentHash'] ?? '';
+            $isHashStale = ($storedHash !== '' && $currentHash !== $storedHash);
+
+            if ($isHashStale) {
+                $this->log(LogLevelType::Info->value, 'Content hash mismatch — invalidating cached ZIP', [
+                    'exportId'   => $existing['Id'],
+                    'storedHash' => substr($storedHash, 0, 12),
+                    'newHash'    => substr($currentHash, 0, 12),
+                ]);
+                $this->invalidateZip($fullSnapshotId);
+            } else {
+                $this->log(LogLevelType::Info->value, 'Returning cached ZIP export (hash valid)', [
+                    'exportId' => $existing['Id'],
+                    'filename' => $existing['ZipFilename'],
+                ]);
+
+                return ResultHelper::ok([
+                    ResponseKeyType::Cached->value => true,
+                    ResponseKeyType::Export->value => $existing,
+                ]);
+            }
         }
 
-        if ($existing) {
+        if ($existing && !file_exists($existing['ZipPath'])) {
             $this->deleteExportRecord($existing['Id']);
         }
 
