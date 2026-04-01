@@ -51,7 +51,7 @@
 | 5 | Backup History Visualization (Phase 5E) | 🟡 Medium | ✅ Done — CloudStorageBackupTimeline component wired into account cards | S-047 |
 | 5b | Cloud Storage PascalCase → camelCase type fix | 🟡 Medium | ✅ Done — all types, components, hooks, methods fixed | — |
 | 6 | Go Backend UserClient + React wiring | 🟡 Medium | ✅ Done — route, sidebar, page, command palette all wired | — |
-| 7 | Progress Bar Normalization | 🟡 Medium | Open | — |
+| 7 | Progress Bar Normalization | 🟡 Medium | ✅ Done — centralized ProgressRanges.go + frontend stage ordering fix | — |
 | 8 | Chunk reassembly manifest validation | 🟡 Medium | ✅ Done | S-048 |
 | 9 | Auto-invalidate cached ZIP on source change | 🟡 Medium | ✅ Done | S-052 |
 | 10 | Google Drive Rotation (Phase 5F) | 🟢 Low | Open | S-046 |
