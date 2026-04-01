@@ -1,0 +1,47 @@
+# AI Instructions — Category Generator Plugin
+
+> **Plugin:** Category Generator for Area by Riseup Asia LLC
+> **PHP Requirement:** 8.1+
+> **Updated:** 2026-04-01
+
+---
+
+## Critical: QUpload Syntax Validator Compatibility
+
+All plugins deployed via QUpload are validated using `token_get_all($content, TOKEN_PARSE)` before activation. The following patterns MUST be avoided.
+
+### BLOCKED Patterns (Never Use)
+
+| Pattern | Replacement |
+|---------|-------------|
+| `is_array($var)` | `gettype($var) === 'array'` |
+| `is_string($var)` | `gettype($var) === 'string'` |
+| `is_int($var)` | `gettype($var) === 'integer'` |
+| `is_float($var)` | `gettype($var) === 'double'` |
+| `is_bool($var)` | `gettype($var) === 'boolean'` |
+| `is_object($var)` | `gettype($var) === 'object'` |
+| `is_null($var)` | `gettype($var) === 'NULL'` |
+| `array()` constructor | Use `[]` short syntax |
+
+### SAFE Patterns
+
+`in_array()`, `array_merge()`, `array_filter()`, `array_map()`, `array_key_exists()` — all safe (tokenize as T_STRING).
+
+---
+
+## PHP Coding Rules
+
+- Catch `Throwable`, never `Exception`
+- Positive boolean names only (`$isValid`, `$hasData`)
+- Extract ternary conditions to named booleans
+- Use short array syntax `[]` everywhere
+
+---
+
+## Version Bumping
+
+Any code change bumps at least minor version.
+
+---
+
+*These instructions are enforced for all AI editors working on this plugin.*
