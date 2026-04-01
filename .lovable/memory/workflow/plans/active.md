@@ -59,7 +59,7 @@
 | 12 | QUpload API method migration (activate/deactivate → PUT) | 🟢 Low | Open | — |
 | 13 | Create `settings.json` for QUpload | 🟢 Low | Open | S-049 |
 | 14 | `/logs/rotation-status` endpoint | 🟢 Low | Open | S-050 |
-| 15 | Verbose `-check` mode (HEAD probing) | 🟢 Low | Open | S-051 |
+| 15 | Verbose `-check` mode (HEAD probing) | 🟢 Low | ✅ Done — HEAD probes per endpoint in verbose mode | S-051 |
 | 16 | Licensing admin dashboard | 🟢 Low | Open | S-053 |
 | 17 | Publish analytics dashboard | 🟢 Low | Open | S-054 |
 
