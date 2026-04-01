@@ -166,11 +166,11 @@ func TestWrite(t *testing.T) {
 	}
 
 	// Decode as generic map to verify JSON structure
-	var decoded map[string]interface{}
+	var decoded map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&decoded); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	status, ok := decoded["Status"].(map[string]interface{})
+	status, ok := decoded["Status"].(map[string]any)
 	if !ok {
 		t.Fatal("expected Status block in JSON")
 	}
@@ -189,7 +189,7 @@ func TestJSON_Serialization_PascalCase(t *testing.T) {
 		t.Fatalf("marshal failed: %v", err)
 	}
 
-	var decoded map[string]interface{}
+	var decoded map[string]any
 	json.Unmarshal(b, &decoded) //nolint:errcheck
 
 	for _, key := range []string{"Status", "Attributes", "Results", "Errors"} {

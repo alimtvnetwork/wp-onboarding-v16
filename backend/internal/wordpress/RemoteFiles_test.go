@@ -158,7 +158,7 @@ func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
 			t.Fatalf("unexpected content-type: %s", r.Header.Get("Content-Type"))
 		}
 
-		var body map[string]interface{}
+		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode body: %v", err)
 		}
