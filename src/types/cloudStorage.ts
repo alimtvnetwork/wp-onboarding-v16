@@ -26,6 +26,7 @@ export type BackupStrategyType = 'full_only' | 'full_and_incremental';
 export type BackupScheduleType = 'hourly' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'manual';
 export type CloudStorageBackupType = 'full' | 'incremental';
 export type CloudStorageBackupStatus = 'pending' | 'uploading' | 'success' | 'failed';
+export type RotationPolicy = 'delete_oldest' | 'archive_oldest' | 'keep_full_delete_incremental';
 
 export interface CloudStorageBackupHistoryRecord {
   id: number;
