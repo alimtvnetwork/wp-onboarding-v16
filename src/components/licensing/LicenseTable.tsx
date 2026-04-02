@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Eye, Copy, Check } from "lucide-react";
 import { LicenseStatusBadge } from "./LicenseStatusBadge";
 import { LicenseTypeBadge } from "./LicenseTypeBadge";
@@ -30,6 +31,9 @@ import type { License } from "@/types/licensing";
 interface Props {
   licenses: License[];
   onSelect: (license: License) => void;
+  batchSelected?: License[];
+  onBatchToggle?: (license: License) => void;
+  onSelectAll?: () => void;
 }
 
 export function LicenseTable({ licenses, onSelect }: Props) {
