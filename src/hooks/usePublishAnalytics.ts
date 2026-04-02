@@ -324,31 +324,3 @@ export function usePublishAnalytics(days: number = 30, customRange?: { from: Dat
   });
 }
 
-export function usePublishAnalytics(days: number = 30, customRange?: { from: Date; to: Date }) {
-  const rangeKey = customRange
-    ? `${customRange.from.toISOString()}-${customRange.to.toISOString()}`
-    : String(days);
-
-  return useQuery({
-    queryKey: ["publish-analytics", rangeKey],
-    queryFn: async () => {
-      const res = await api.getPublishHistory({ limit: ANALYTICS_LIMIT });
-      const entries = res.data?.entries ?? [];
-      if (customRange) {
-        const diffDays = Math.ceil(
-          (customRange.to.getTime() - customRange.from.getTime()) / (1000 * 60 * 60 * 24)
-        ) + 1;
-        return buildAnalytics(
-          entries.filter((e) => {
-            const d = new Date(e.createdAt);
-            return d >= customRange.from && d <= customRange.to;
-          }),
-          diffDays,
-          customRange.from
-        );
-      }
-      return buildAnalytics(entries, days);
-    },
-    staleTime: 60_000,
-  });
-}
