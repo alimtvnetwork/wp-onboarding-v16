@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Eye, Copy, Check } from "lucide-react";
 import { LicenseStatusBadge } from "./LicenseStatusBadge";
 import { LicenseTypeBadge } from "./LicenseTypeBadge";
@@ -30,9 +31,12 @@ import type { License } from "@/types/licensing";
 interface Props {
   licenses: License[];
   onSelect: (license: License) => void;
+  batchSelected?: License[];
+  onBatchToggle?: (license: License) => void;
+  onSelectAll?: () => void;
 }
 
-export function LicenseTable({ licenses, onSelect }: Props) {
+export function LicenseTable({ licenses, onSelect, batchSelected = [], onBatchToggle, onSelectAll }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<License | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const deleteMutation = useDeleteLicense();
@@ -66,6 +70,14 @@ export function LicenseTable({ licenses, onSelect }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
+              {onBatchToggle && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={batchSelected.length === licenses.length && licenses.length > 0}
+                    onCheckedChange={() => onSelectAll?.()}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-[60px]">ID</TableHead>
               <TableHead>Key</TableHead>
               <TableHead>Email</TableHead>
@@ -80,9 +92,18 @@ export function LicenseTable({ licenses, onSelect }: Props) {
             {licenses.map((license) => (
               <TableRow
                 key={license.id}
-                className="cursor-pointer hover:bg-muted/50"
+                className={`cursor-pointer hover:bg-muted/50 ${batchSelected.some((l) => l.id === license.id) ? "bg-primary/5" : ""}`}
                 onClick={() => onSelect(license)}
               >
+                {onBatchToggle && (
+                  <TableCell>
+                    <Checkbox
+                      checked={batchSelected.some((l) => l.id === license.id)}
+                      onCheckedChange={() => onBatchToggle(license)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {license.id}
                 </TableCell>
