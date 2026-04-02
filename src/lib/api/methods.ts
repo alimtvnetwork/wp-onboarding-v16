@@ -829,7 +829,17 @@ export const api = {
       { method: "POST", body: JSON.stringify({ BackupId: backupId }) },
     ),
 
-  // Site settings & health summary
+  // Cloud Storage — Rotation
+  getRotationStatus: (accountId: number) =>
+    request<import('@/types/cloudStorage').RotationStatus>(
+      `/cloud-storage/accounts/${accountId}/rotation-status`,
+    ),
+  triggerRotation: (accountId: number) =>
+    request<{ success: boolean; message: string }>(
+      `/cloud-storage/accounts/${accountId}/rotate`,
+      { method: "POST" },
+    ),
+
   getRemoteSiteSettings: (siteId: number) =>
     request<SiteSettingsResponse>(`/sites/${siteId}/site-settings`),
   updateRemoteSiteSettings: (siteId: number, settings: Partial<SiteSettingsUpdate>) =>
