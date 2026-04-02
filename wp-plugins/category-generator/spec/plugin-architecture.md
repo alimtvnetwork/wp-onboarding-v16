@@ -1491,6 +1491,229 @@ The form submits via AJAX to `cg_save_business_profile` with a single serialized
 
 ---
 
+## 13.2 Built-in Test Runner
+
+The plugin ships with a comprehensive in-admin test suite (`CG_Tests`, 1777 lines) that validates all subsystems without requiring PHPUnit or WP-CLI. Tests run inside the WordPress runtime with full access to the SQLite database, WordPress APIs, and plugin services.
+
+### Architecture
+
+```
+┌─────────────────────────────────────┐
+│         tests-page.php (UI)         │
+│  [Run All Tests ▾] [Group Select]   │
+│  [Download PHPUnit Tests]           │
+└──────────────┬──────────────────────┘
+               │ AJAX POST
+               ▼
+┌─────────────────────────────────────┐
+│  wp_ajax_cg_run_tests               │
+│  ├─ group = "all" → run_all_tests() │
+│  └─ group = "xxx" → run_test_group()│
+└──────────────┬──────────────────────┘
+               ▼
+┌─────────────────────────────────────┐
+│  CG_Tests (Singleton)               │
+│  ├── run_test($name, $callback)     │
+│  │   ├── true/null  → passed        │
+│  │   ├── false      → "returned false"│
+│  │   ├── string     → failed + msg  │
+│  │   └── Exception  → failed + msg  │
+│  └── Timing: microtime(true) per test│
+└─────────────────────────────────────┘
+```
+
+### AJAX Endpoint
+
+| Action | Method | Parameters | Response |
+|--------|--------|-----------|----------|
+| `cg_run_tests` | POST | `nonce`, `group` (default `"all"`) | JSON result object |
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 72,
+    "passed": 71,
+    "failed": 1,
+    "tests": [
+      {
+        "name": "Database Connection",
+        "status": "passed",
+        "message": "",
+        "time": 0.12
+      },
+      {
+        "name": "Meta Title Length",
+        "status": "failed",
+        "message": "Title exceeds 60 chars: 'Very Long Title...'",
+        "time": 0.45
+      }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total` | int | Total tests executed |
+| `passed` | int | Count of passed tests |
+| `failed` | int | Count of failed tests |
+| `tests[].name` | string | Human-readable test name |
+| `tests[].status` | string | `"passed"` or `"failed"` |
+| `tests[].message` | string | Empty on pass; error detail on fail |
+| `tests[].time` | float | Execution time in milliseconds |
+
+### Test Groups & Scenarios
+
+Tests are organized into 13 groups, selectable from the admin UI dropdown or via the `group` AJAX parameter.
+
+#### `database` — SQLite Foundation (6 tests)
+
+| Test | Validates |
+|------|-----------|
+| Database Connection | `CG_Database::get_instance()` returns non-null and `is_connected()` is true |
+| Table Creation | All required tables exist: `category_history`, `html_templates`, `meta_templates`, `schema_templates`, `business_profile` |
+| Database Insert | `insert_html_template()` returns a valid ID |
+| Database Update | `update_html_template()` persists changed `description` field |
+| Database Delete | `delete_html_template()` removes the record; subsequent `get` returns null/false |
+| Database Transaction | Two sequential inserts both succeed (IDs are truthy) |
+
+> All database tests perform **self-cleanup** — test records are deleted after assertions.
+
+#### `variables` — Variable System (7 tests)
+
+| Test | Validates |
+|------|-----------|
+| Variable Basic | `compile_variables()` passes through context values unchanged |
+| Variable Concatenation | `parse_expression('"Hello" + " " + "World"')` → `"Hello World"` |
+| Variable Reference | `{var:base}` resolves to the value of `base` in context |
+| Variable Nested Reference | `{var:level2}` → `{var:level1}B` → `"AB"`, chain resolves to `"ABC"` |
+| Variable Math Operations | `parse_expression('5 + 3')` → `8` |
+| Variable Empty Handling | Empty string and null values compile without errors |
+| Variable Special Chars | `& " < >` characters survive compilation intact |
+
+#### `templates` — Inner Templates & HTML Templates (6 tests)
+
+| Test | Validates |
+|------|-----------|
+| Inner Template Create | `save_template()` returns ID > 0 |
+| Inner Template Process | `process_content('Before {title} After', ['title' => 'TEST'])` contains `"TEST"` |
+| HTML Template Save | Insert + retrieve round-trip |
+| Meta Template Save | Meta template insert returns valid ID |
+| Placeholder Replacement | All `{title}`, `{area}`, `{business_name}` placeholders resolve |
+| Template Category Hierarchy | Parent/child category assignment validates correctly |
+
+#### `categories` — Generation Logic (5 tests)
+
+| Test | Validates |
+|------|-----------|
+| Category Name Format | Title + Area produce correct combined name |
+| Slug Generation | Name → slug transformation (lowercase, hyphens) |
+| Parent/Child Logic | Child categories reference correct parent term ID |
+| (S) Notation Parsing | `"Cleaning(S)"` expands to both singular and plural forms |
+| Area List Parsing | Newline-separated area text parses into correct array |
+
+#### `yoast` — SEO Integration (5 tests)
+
+| Test | Validates |
+|------|-----------|
+| Yoast Meta Generation | `_yoast_wpseo_metadesc` key populated correctly |
+| Focus Keyword Generation | Pattern `{title} {area}` resolves to actual values |
+| Meta Title Length | Generated title ≤ 60 characters |
+| Meta Description Min Length | Generated description meets minimum length |
+| Yoast Score Thresholds | Score class constants map to correct CSS classes |
+
+#### `saved` — Saved Titles & Areas (4 tests)
+
+| Test | Validates |
+|------|-----------|
+| Saved Titles Create | Insert into `saved_titles` returns valid ID |
+| Saved Titles Retrieve | Retrieved record matches inserted content |
+| Saved Areas Create | Insert into `saved_areas` returns valid ID |
+| Saved Areas Retrieve | Retrieved record matches inserted content |
+
+#### `snapshots` — Backup System (3 tests)
+
+| Test | Validates |
+|------|-----------|
+| Snapshot Create | Snapshot file created at expected path |
+| Snapshot Types | Both `"manual"` and `"auto"` types persist correctly |
+| Snapshot Limit Enforcement | Old snapshots pruned when count exceeds configured maximum |
+
+#### `utility` — Helpers & Constants (7 tests)
+
+| Test | Validates |
+|------|-----------|
+| String Sanitization | `sanitize_text_field()` strips unsafe content |
+| Array Filtering | Empty values removed from arrays |
+| Empty Input Handling | Null/empty inputs produce safe defaults |
+| Unicode Support | Multi-byte characters (CJK, emoji) survive round-trip |
+| Date Format Constants | `CG_Constants` date format values are valid |
+| Spacing Constants | Spacing pixel values are positive integers |
+| Icon Size Constants | Icon dimensions are within expected range |
+
+#### `ajax` — Handler Validation (6 tests)
+
+| Test | Validates |
+|------|-----------|
+| AJAX Actions Defined | All `wp_ajax_cg_*` hooks are registered |
+| AJAX Nonce Validation | Requests without valid nonce are rejected |
+| AJAX Response Format | All handlers return `wp_send_json_success/error` format |
+| AJAX Save Template Handler | Template save round-trip via handler |
+| AJAX Get Template Handler | Template retrieval returns expected structure |
+| AJAX Snapshot Handler | Snapshot create/list via AJAX works correctly |
+
+#### `javascript` — JS Data Contract (5 tests)
+
+| Test | Validates |
+|------|-----------|
+| JS Constants Export | `wp_localize_script()` passes constants to `cgAdmin` |
+| JS CSS Classes Export | CSS class constants available in JS context |
+| JS DOM Element IDs | Expected element IDs referenced in JS match template output |
+| JS Localized Strings | i18n strings passed to JS are non-empty |
+| JS Template Type Validation | Template types (`html`, `meta`, `schema`) validated client-side |
+
+#### `validation` — Security (3 tests)
+
+| Test | Validates |
+|------|-----------|
+| Input XSS Prevention | `<script>alert(1)</script>` stripped from saved data |
+| Input SQL Injection Prevention | SQL fragments (`'; DROP TABLE`) neutralized by parameterized queries |
+| Input Max Length Validation | Oversized inputs truncated or rejected |
+
+#### Unlisted Groups (run in "All Tests" only)
+
+| Group | Tests | Coverage |
+|-------|-------|----------|
+| Inner Template extended | Inner Template By ID, By Name, Nested, With Variables | `{inner:id}` and `{inner:name}` resolution + nesting |
+| Import/Export | CSV Export, CSV Escaping, Import Validation, JSON Export, Import Merge | Round-trip data integrity |
+| HTML Wrappers | Div Wrapper, Schema in Div, Class Names, Custom Classes, HTML Sanitization | Output HTML structure |
+| Business Profile | Profile Save, Update, Multiple Profiles, Area Postal Mapping, Profile Schema | Multi-profile + Schema.org output |
+| Settings | Settings Save/Load, Defaults, AI Provider Config, CSS Class Settings | Configuration persistence |
+| Constants | Constants Defined, CSS Class Constants, Filesize Formatter, Yoast Score Classes | `CG_Constants` + `CG_CSS` coverage |
+| Remote API | Remote API URL Validation | URL format check for external template server |
+
+### Test Runner Behaviour
+
+- **Singleton pattern:** `CG_Tests::get_instance()` — one instance per request.
+- **Database pre-check:** If `CG_Database` is not connected, all tests are skipped and a single `"Database Connection"` failure is returned.
+- **Self-cleaning:** All tests that create records (templates, variables, profiles) delete them after assertions.
+- **Timing:** Each test is individually timed via `microtime(true)` — `time` field is in **milliseconds**.
+- **Pass semantics:** `true` or `null` return = pass. `false` = generic fail. String return = fail with that string as message. Thrown `Exception` = fail with exception message.
+
+### Admin UI
+
+The test page (`templates/tests-page.php`) provides:
+
+1. **Run All Tests** button — executes every test across all groups
+2. **Group dropdown** — 11 selectable groups (database, variables, templates, categories, yoast, saved, snapshots, utility, ajax, javascript, validation)
+3. **Download PHPUnit Tests** button — exports the test suite as a PHPUnit-compatible file for CI integration
+4. **Results panel** — colour-coded pass/fail rows with test name, status badge, message (on failure), and execution time
+
+---
+
 ## 14. QUpload Compatibility Rules
 
 See `.ai-instructions` for full details. Key constraints:
