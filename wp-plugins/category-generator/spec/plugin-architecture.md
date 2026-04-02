@@ -25,15 +25,23 @@
 │  Category_Generator_Pro (category-generator.php)                │
 │  ├── wp_ajax_cg_generate_categories                             │
 │  ├── wp_ajax_cg_preview_combinations                            │
-│  ├── wp_ajax_cg_save_template / get / delete / duplicate        │
-│  ├── wp_ajax_cg_save_inner_template / get / delete              │
+│  ├── wp_ajax_cg_get_category_history / get_history_item         │
+│  ├── wp_ajax_cg_save_template / get / get_templates / delete    │
+│  │   / duplicate                                                │
+│  ├── wp_ajax_cg_save_template_category / delete_template_cat    │
+│  ├── wp_ajax_cg_save_inner_template / get / get_all / delete    │
 │  ├── wp_ajax_cg_save_variable / get / delete                    │
+│  ├── wp_ajax_cg_save_business_profile / get / get_all / delete  │
 │  ├── wp_ajax_cg_save_settings / get                             │
-│  ├── wp_ajax_cg_export_data / import_data                       │
+│  ├── wp_ajax_cg_export_data / import_data / get_import_history  │
 │  ├── wp_ajax_cg_create_snapshot / restore / delete / download   │
-│  ├── wp_ajax_cg_inject_inner_template                           │
+│  │   / get_recent_snapshots                                     │
+│  ├── wp_ajax_cg_inject_inner_template / get_term_description    │
 │  ├── wp_ajax_cg_bulk_delete_history(_and_categories)            │
-│  └── wp_ajax_cg_download_database / restore_database            │
+│  ├── wp_ajax_cg_save_titles / save_areas / get_saved_*          │
+│  ├── wp_ajax_cg_run_tests                                       │
+│  ├── wp_ajax_cg_download_database / restore / reset_database    │
+│  └── wp_ajax_cg_dismiss_whats_new                               │
 └────────┬────────────────────────────────────────────────────────┘
          │
          ▼
