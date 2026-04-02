@@ -1219,6 +1219,20 @@ templates/
 ├── tests-page.php              ← Test runner
 ├── snapshots-page.php          ← Snapshots manager
 └── partials/
+    ├── admin-loading.php
+    ├── admin-sidebar.php
+    ├── admin-snapshot-scripts.php
+    ├── admin-snapshot-toolbar.php
+    ├── admin-styles.php
+    ├── business-profile-form.php
+    ├── business-profile-scripts.php
+    ├── business-profile-styles.php
+    ├── history-bulk-actions.php
+    ├── history-header.php
+    ├── history-modals.php
+    ├── history-scripts.php
+    ├── history-styles.php
+    ├── history-table.php
     ├── settings-tabs.php
     ├── settings-tab-general.php
     ├── settings-tab-classes.php
@@ -1229,6 +1243,12 @@ templates/
     ├── settings-modals.php
     ├── settings-styles.php
     ├── settings-scripts.php
+    ├── snapshot-create-form.php
+    ├── snapshot-restore-modal.php
+    ├── snapshot-scripts.php
+    ├── snapshot-styles.php
+    ├── snapshot-table.php
+    ├── snapshot-table-row.php
     ├── templates-tabs.php
     ├── templates-tab-html.php
     ├── templates-tab-meta.php
