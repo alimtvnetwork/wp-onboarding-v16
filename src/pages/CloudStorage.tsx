@@ -245,7 +245,7 @@ export default function CloudStorage() {
               </div>
 
               {/* Provider settings (1/3 width) */}
-              <div>
+              <div className="space-y-4">
                 <CloudStorageProviderSettings
                   provider={p.id}
                   settings={activeProvider === p.id ? settings : undefined}
@@ -254,6 +254,14 @@ export default function CloudStorage() {
                   onSave={handleSaveSettings}
                   isSaving={saveSettings.isPending}
                 />
+                {/* Google Drive rotation status cards */}
+                {p.id === "GoogleDrive" && settings?.rotationEnabled && filteredAccounts.map((account) => (
+                  <GoogleDriveRotationStatus
+                    key={account.id}
+                    accountId={account.id}
+                    accountLabel={account.accountLabel}
+                  />
+                ))}
               </div>
             </div>
           </TabsContent>
