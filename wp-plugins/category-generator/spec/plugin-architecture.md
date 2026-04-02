@@ -1333,20 +1333,22 @@ The profile data maps directly to a `LocalBusiness` (or subtype) JSON-LD block i
 
 #### Schema Type Mapping
 
-The `business_type` field maps to Schema.org `@type`:
+The `business_type` field stores the Schema.org `@type` value directly (not a separate key). Available types are defined in `CG_Constants::get_business_types()`:
 
-| business_type value | Schema.org @type |
-|---------------------|------------------|
-| `local_business` | `LocalBusiness` |
-| `cleaning_service` | `CleaningService` (extends `LocalBusiness`) |
-| `plumber` | `Plumber` |
-| `electrician` | `Electrician` |
-| `hvac` | `HVACBusiness` |
-| `locksmith` | `Locksmith` |
-| `moving_company` | `MovingCompany` |
-| `pest_control` | `PestControl` |
-| `roofing` | `RoofingContractor` |
-| `professional_service` | `ProfessionalService` |
+| business_type value | UI Label |
+|---------------------|----------|
+| `LocalBusiness` | Local Business |
+| `ProfessionalService` | Professional Service |
+| `HomeAndConstructionBusiness` | Home & Construction |
+| `CleaningService` | Cleaning Service |
+| `Plumber` | Plumber |
+| `Electrician` | Electrician |
+| `RealEstateAgent` | Real Estate Agent |
+| `FinancialService` | Financial Service |
+| `HealthAndBeautyBusiness` | Health & Beauty |
+| `LegalService` | Legal Service |
+| `Restaurant` | Restaurant |
+| `Store` | Store |
 
 #### Generated JSON-LD Structure
 
