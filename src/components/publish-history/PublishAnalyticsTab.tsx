@@ -1,4 +1,4 @@
-// Publish Analytics Tab — 4 charts: daily publishes, success rate trend, duration heatmap, per-site breakdown.
+// Publish Analytics Tab — charts, plugin analytics, stage durations, and failure analysis.
 
 import { useState } from "react";
 import { format } from "date-fns";
@@ -28,6 +28,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { exportAnalyticsCsv, exportAnalyticsPdf } from "@/lib/analyticsExport";
+import { PluginAnalyticsPanel } from "./PluginAnalyticsPanel";
+import { StageDurationPanel } from "./StageDurationPanel";
+import { FailureAnalysisPanel } from "./FailureAnalysisPanel";
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
