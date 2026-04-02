@@ -26,6 +26,7 @@ export type BackupStrategyType = 'full_only' | 'full_and_incremental';
 export type BackupScheduleType = 'hourly' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'manual';
 export type CloudStorageBackupType = 'full' | 'incremental';
 export type CloudStorageBackupStatus = 'pending' | 'uploading' | 'success' | 'failed';
+export type RotationPolicy = 'delete_oldest' | 'archive_oldest' | 'keep_full_delete_incremental';
 
 export interface CloudStorageBackupHistoryRecord {
   id: number;
@@ -120,6 +121,20 @@ export interface CloudStorageSettings {
   fullBackupDayOfWeek: number;
   fullBackupTimeUtc: string;
   incrementalBackupTimeUtc: string;
+  // Google Drive rotation extensions
+  maxBackupCount?: number;
+  maxTotalSizeMB?: number;
+  archiveFolderId?: string;
+  rotationPolicy?: RotationPolicy;
+}
+
+export interface RotationStatus {
+  currentCount: number;
+  currentSizeMB: number;
+  maxCount: number;
+  maxSizeMB: number;
+  isOverLimit: boolean;
+  nextAction: string;
 }
 
 export interface CloudStorageTestResult {

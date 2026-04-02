@@ -7,6 +7,7 @@ import type {
   CloudStorageSettings,
   CloudStorageTestResult,
   CloudStorageProvider,
+  RotationStatus,
 } from "@/types/cloudStorage";
 
 const ACCOUNTS_KEY = "cloud-storage-accounts";
@@ -99,5 +100,39 @@ export function useSaveCloudStorageSettings() {
       return requireSuccess(res, { endpoint: `/cloud-storage/settings/${provider}`, method: "PUT" });
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: [SETTINGS_KEY, vars.provider] }),
+  });
+}
+
+const ROTATION_STATUS_KEY = "cloud-storage-rotation-status";
+
+export function useRotationStatus(accountId: number) {
+  return useQuery({
+    queryKey: [ROTATION_STATUS_KEY, accountId],
+    queryFn: async () => {
+      try {
+        const res = await api.getRotationStatus(accountId);
+        const data = requireSuccess(res, { endpoint: `/cloud-storage/accounts/${accountId}/rotation-status` });
+        return data as unknown as RotationStatus;
+      } catch {
+        return null;
+      }
+    },
+    enabled: accountId > 0,
+  });
+}
+
+export function useTriggerRotation() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationKey: ["cloud-storage-trigger-rotation"],
+    mutationFn: async (accountId: number) => {
+      const res = await api.triggerRotation(accountId);
+      return requireSuccess(res, { endpoint: `/cloud-storage/accounts/${accountId}/rotate`, method: "POST" });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [ROTATION_STATUS_KEY] });
+      qc.invalidateQueries({ queryKey: [ACCOUNTS_KEY] });
+    },
   });
 }
