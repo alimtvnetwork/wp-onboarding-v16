@@ -1409,51 +1409,69 @@ This ensures each generated category page gets location-specific Schema.org mark
 
 ### Business Profile Placeholder Mapping
 
-All profile fields are available as `{bp:field_name}` placeholders in HTML, Meta, and Schema templates.
+Business profile fields use **direct `{field_name}` syntax** (no prefix) in HTML, Meta, and Schema templates. They share the same namespace as input placeholders like `{title}` and `{area}`.
 
-| Placeholder | Source Field | Example Value |
-|-------------|-------------|---------------|
-| `{bp:business_name}` | `business_name` | Atto Property |
-| `{bp:business_type}` | `business_type` | CleaningService |
-| `{bp:street_address}` | `street_address` | 123 Main Street |
-| `{bp:city}` | `city` | Melbourne |
-| `{bp:state}` | `state` | VIC |
-| `{bp:postal_code}` | `postal_code` | 3000 |
-| `{bp:country}` | `country` | Australia |
-| `{bp:phone}` | `phone` | +61 3 1234 5678 |
-| `{bp:email}` | `email` | contact@example.com |
-| `{bp:website}` | `website` | https://example.com |
-| `{bp:opening_hours}` | `opening_hours` | "Mo-Fr 08:00-17:00" |
-| `{bp:price_range}` | `price_range` | $$ - $$$ |
-| `{bp:price_range_min}` | `price_range_min` | 50 |
-| `{bp:price_range_max}` | `price_range_max` | 200 |
-| `{bp:price_note}` | `price_note` | subject to change |
-| `{bp:service_areas}` | `service_areas` | Melbourne, Sydney |
-| `{bp:services_offered}` | `services_offered` | Carpet Cleaning, Office Cleaning |
-| `{bp:rating_value}` | `rating_value` | 4.8 |
-| `{bp:rating_count}` | `rating_count` | 127 |
-| `{bp:logo_url}` | `logo_url` | https://example.com/logo.png |
-| `{bp:image_url}` | `image_url` | https://example.com/image.jpg |
-| `{bp:social_profiles}` | `social_profiles` | https://facebook.com/... |
+#### HTML & Meta Template Placeholders
 
-#### Dynamic Location Placeholders
+These are available in the HTML description and Yoast meta placeholder contexts:
 
-When `use_dynamic_location` is enabled, these additional placeholders become available:
+| Placeholder | Source Field | Default Fallback | Available In |
+|-------------|-------------|-----------------|--------------|
+| `{business_name}` | `business_name` | `""` | HTML, Meta, Schema |
+| `{business_type}` | `business_type` | `"LocalBusiness"` | HTML, Meta, Schema |
+| `{phone}` | `phone` | `""` | HTML, Meta, Schema |
+| `{email}` | `email` | `""` | HTML, Meta, Schema |
+| `{website}` | `website` | `""` | HTML, Meta, Schema |
+| `{contact_url}` | Derived | `home_url('/contact/')` | HTML, Meta |
+| `{street_address}` | `street_address` | `""` | HTML, Meta, Schema |
+| `{city}` | `city` | `""` | HTML, Meta, Schema |
+| `{state}` | `state` | `""` | HTML, Meta, Schema |
+| `{postal_code}` | `postal_code` | `""` | HTML, Meta, Schema |
+| `{country}` | `country` | `"Australia"` | HTML, Meta, Schema |
+| `{opening_hours}` | `opening_hours` | `""` / `"Mo-Fr 08:00-17:00"` | HTML, Schema |
+| `{price_range}` | `price_range` | `""` / `"$$"` | HTML, Schema |
+| `{rating_value}` | `rating_value` | `"5.0"` | HTML, Meta, Schema |
+| `{rating_count}` | `rating_count` | `"100"` | HTML, Meta, Schema |
+| `{logo_url}` | `logo_url` | `""` | HTML, Schema |
+| `{image_url}` | `image_url` | `""` | HTML, Schema |
+| `{latitude}` | Derived | `""` | Schema |
+| `{longitude}` | Derived | `""` | Schema |
 
-| Placeholder | Source | Description |
-|-------------|--------|-------------|
-| `{bp:dynamic_city}` | Current `{area}` | The area being generated |
-| `{bp:dynamic_postal}` | `area_postal_mapping` lookup | Postal code for the area |
+> **Note on `{contact_url}`:** Derived at generation time as `$business_profile['website']` if set, otherwise `home_url('/contact/')`.
+
+> **Note on defaults:** Some placeholders have different fallback values depending on the template context (HTML vs Schema). The table shows both where they differ.
+
+#### Fields Stored but Not Individually Mapped as Placeholders
+
+The following fields exist in the `business_profiles` SQLite table and are used in Schema.org JSON-LD generation (assembled programmatically), but are **not** available as standalone `{field}` placeholders in templates:
+
+| Field | Used In |
+|-------|---------|
+| `price_range_min` | Schema JSON-LD `priceRange` |
+| `price_range_max` | Schema JSON-LD `priceRange` |
+| `price_note` | Schema JSON-LD custom annotation |
+| `service_areas` | Schema JSON-LD `areaServed` array |
+| `services_offered` | Schema JSON-LD `hasOfferCatalog` |
+| `social_profiles` | Schema JSON-LD `sameAs` array |
+
+#### Dynamic Location Overrides
+
+When `use_dynamic_location` is enabled, the `{city}` and `{postal_code}` placeholders are **overridden** per-category with the current area's values. No separate `{dynamic_city}` placeholder exists — the override is transparent:
+
+| Placeholder | Static Mode | Dynamic Mode (`use_dynamic_location = true`) |
+|-------------|------------|----------------------------------------------|
+| `{city}` | Profile `city` | Current `{area}` value |
+| `{postal_code}` | Profile `postal_code` | `area_postal_mapping` lookup (fallback: profile value) |
 
 #### Resolution Order in Generation Pipeline
 
 ```
 Step 1: Load business profile (default or specified)
-Step 2: Build bp: context map from profile fields
-Step 3: If use_dynamic_location → override city/postal with area data
+Step 2: Build placeholder context map from profile fields
+Step 3: If use_dynamic_location → override {city}/{postal_code} with area data
 Step 4: Resolve {var:*} placeholders (Variables system)
-Step 5: Resolve {bp:*} placeholders from context map
-Step 6: Resolve {title}, {area}, and other input placeholders
+Step 5: Resolve business profile placeholders ({business_name}, {phone}, etc.)
+Step 6: Resolve {title}, {area}, {slug}, {url}, and other input placeholders
 Step 7: Resolve {inner:*} placeholders (Inner Templates)
 Step 8: Final output
 ```
