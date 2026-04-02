@@ -1593,6 +1593,140 @@ Lookups use **exact string match** (`WHERE area = :area`). The area value from t
 
 ---
 
+## 13.4 Saved Titles & Areas
+
+The plugin provides a reusable list system for storing frequently-used title sets and area sets. Users can save, load, update, and delete named lists — then populate the Generate page's input textareas with a single dropdown selection.
+
+### Purpose
+
+Instead of retyping or pasting the same title/area combinations across generation runs, users save them as named presets. Each list stores its content as **newline-separated values** (one title or area per line), matching the format of the generation input textareas.
+
+### SQLite Schema
+
+Both `saved_titles` and `saved_areas` share an identical schema:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PK AUTOINCREMENT | |
+| `name` | TEXT | NOT NULL | Display name for the list |
+| `content` | TEXT | NOT NULL | Newline-separated values |
+| `category` | TEXT | DEFAULT `''` | Grouping label (for future optgroup UI) |
+| `subcategory` | TEXT | DEFAULT `''` | Sub-grouping label |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+
+**Indexes:** `idx_saved_titles_name(name)`, `idx_saved_areas_name(name)`
+
+**Ordering:** Both tables are queried with `ORDER BY category ASC, name ASC`, grouping by category first.
+
+### Category & Subcategory Grouping
+
+The `category` and `subcategory` columns allow logical grouping of saved lists:
+
+```
+category: "Cleaning"
+├── subcategory: "Commercial"
+│   ├── "Office Cleaning Titles"
+│   └── "Industrial Cleaning Titles"
+├── subcategory: "Residential"
+│   └── "Home Cleaning Titles"
+category: "Property"
+├── "Real Estate Titles"
+└── "Property Management Titles"
+```
+
+Currently the UI renders a flat `<select>` dropdown sorted by category + name. The grouping fields are stored but not yet surfaced as `<optgroup>` elements.
+
+### AJAX Endpoints
+
+| Action | Method | Parameters | Response |
+|--------|--------|-----------|----------|
+| `cg_save_titles` | POST | `nonce`, `id` (0=new), `name`, `content` | `{ success: true, data: { id } }` |
+| `cg_save_areas` | POST | `nonce`, `id` (0=new), `name`, `content` | `{ success: true, data: { id } }` |
+| `cg_get_saved_titles` | POST | `nonce`, `id` | `{ success: true, data: { ...row } }` |
+| `cg_get_saved_areas` | POST | `nonce`, `id` | `{ success: true, data: { ...row } }` |
+
+#### Save Logic (Upsert Pattern)
+
+```
+if id > 0 → update_saved_titles(id, name, content)
+else      → save_titles(name, content) → returns new id
+```
+
+Same pattern for areas. The `category` and `subcategory` fields are accepted by the database methods but are **not currently passed** from the AJAX handlers.
+
+### Database API
+
+| Method | Table | Description |
+|--------|-------|-------------|
+| `save_titles($name, $content, $category, $subcategory)` | `saved_titles` | INSERT, returns `lastInsertRowID()` |
+| `update_saved_titles($id, $name, $content, $category, $subcategory)` | `saved_titles` | UPDATE by id, sets `updated_at` |
+| `delete_saved_titles($id)` | `saved_titles` | DELETE by id |
+| `get_saved_titles()` | `saved_titles` | All rows, ordered by category + name |
+| `get_saved_titles_item($id)` | `saved_titles` | Single row by id |
+| `save_areas(...)` | `saved_areas` | Same as above, mirrored |
+| `update_saved_areas(...)` | `saved_areas` | Same as above, mirrored |
+| `delete_saved_areas(...)` | `saved_areas` | Same as above, mirrored |
+| `get_saved_areas()` | `saved_areas` | Same as above, mirrored |
+| `get_saved_areas_item($id)` | `saved_areas` | Same as above, mirrored |
+
+### UI Integration (Generate Page)
+
+The saved lists are surfaced on `templates/admin-page.php` as dropdown selectors above the Titles and Areas textareas:
+
+```
+┌──────────────────────────────────────────┐
+│ Titles                                    │
+│ ┌──────────────────────────────────────┐ │
+│ │ — Load saved titles —            ▾   │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Commercial Cleaning                  │ │
+│ │ Office Cleaning                      │ │
+│ │ Carpet Cleaning                      │ │
+│ └──────────────────────────────────────┘ │
+├──────────────────────────────────────────┤
+│ Areas                                     │
+│ ┌──────────────────────────────────────┐ │
+│ │ — Load saved areas —             ▾   │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Werribee                             │ │
+│ │ Point Cook                           │ │
+│ │ Tarneit                              │ │
+│ └──────────────────────────────────────┘ │
+└──────────────────────────────────────────┘
+```
+
+#### Load Flow
+
+1. User selects a saved list from the `<select>` dropdown
+2. JS fires AJAX `cg_get_saved_titles` (or `cg_get_saved_areas`) with the selected `id`
+3. Response contains the `content` field (newline-separated)
+4. JS populates the corresponding `<textarea>` with the content
+
+#### Save Flow
+
+1. User types or edits titles/areas in the textarea
+2. User clicks "Save" and provides a name
+3. JS fires AJAX `cg_save_titles` (or `cg_save_areas`) with `id=0` for new, or existing `id` for update
+4. Dropdown is refreshed with the new/updated entry
+
+### Content Format
+
+Content is stored as raw newline-separated text, matching the generation input format:
+
+```
+Commercial Cleaning
+Office Cleaning
+Carpet Cleaning
+Window Cleaning
+```
+
+Empty lines and whitespace-only lines are preserved in storage but filtered out during generation parsing (see §3 Generation Pipeline, Area List Parsing).
+
+---
+
 ## 13.2 Built-in Test Runner
 
 
