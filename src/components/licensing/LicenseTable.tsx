@@ -92,9 +92,18 @@ export function LicenseTable({ licenses, onSelect, batchSelected = [], onBatchTo
             {licenses.map((license) => (
               <TableRow
                 key={license.id}
-                className="cursor-pointer hover:bg-muted/50"
+                className={`cursor-pointer hover:bg-muted/50 ${batchSelected.some((l) => l.id === license.id) ? "bg-primary/5" : ""}`}
                 onClick={() => onSelect(license)}
               >
+                {onBatchToggle && (
+                  <TableCell>
+                    <Checkbox
+                      checked={batchSelected.some((l) => l.id === license.id)}
+                      onCheckedChange={() => onBatchToggle(license)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {license.id}
                 </TableCell>
