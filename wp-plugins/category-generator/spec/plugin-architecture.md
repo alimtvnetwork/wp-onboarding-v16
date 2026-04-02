@@ -1491,7 +1491,110 @@ The form submits via AJAX to `cg_save_business_profile` with a single serialized
 
 ---
 
+## 13.3 Area Postal Mapping
+
+The `area_postal_mapping` table provides geocoding data that links area names to postal codes, states, and coordinates. This data powers the **Dynamic Location** feature (§13.1) by overriding Schema.org address fields per generated category.
+
+### SQLite Schema
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PK AUTOINCREMENT | |
+| `area` | TEXT | NOT NULL UNIQUE | Area name (must match generation input exactly) |
+| `postal_code` | TEXT | NOT NULL | e.g., `"3030"` |
+| `state` | TEXT | | e.g., `"VIC"` |
+| `latitude` | REAL | | Decimal latitude |
+| `longitude` | REAL | | Decimal longitude |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+
+**Unique constraint on `area`** — each area name maps to exactly one postal code. Saving a duplicate area performs an **upsert** (update existing row).
+
+### Database API
+
+The `CG_Database` class exposes three methods:
+
+| Method | Signature | Behaviour |
+|--------|-----------|-----------|
+| `save_area_postal` | `($area, $postal_code, $state='', $lat=null, $lng=null)` | Upsert — checks `SELECT id` first, then `UPDATE` or `INSERT` |
+| `get_area_postal` | `($area)` | Returns single row as associative array, or `false`/`null` if not found |
+| `get_all_area_postals` | `()` | Returns all rows ordered by `area ASC` |
+
+> **Note:** There are currently **no dedicated AJAX endpoints** for area postal mapping. Data is managed through the `CG_Database` API, populated via import operations or programmatic calls during generation setup.
+
+### Data Population Methods
+
+#### 1. Manual via `save_area_postal()`
+
+Called programmatically to seed or update individual mappings:
+
+```php
+$db = CG_Database::get_instance();
+$db->save_area_postal('Werribee', '3030', 'VIC', -37.8986, 144.6631);
+$db->save_area_postal('Point Cook', '3030', 'VIC', -37.9202, 144.7474);
+$db->save_area_postal('Melbourne CBD', '3000', 'VIC', -37.8136, 144.9631);
+```
+
+#### 2. Bulk via Import/Export System
+
+The `area_postal_mapping` table is included in the plugin's import/export scope (`CG_Import_Export`). When importing a `.db` or ZIP backup, any `area_postal_mapping` records are restored alongside other plugin data.
+
+#### 3. During Generation (Auto-populate)
+
+When generating categories with `use_dynamic_location` enabled, the system queries `area_postal_mapping` for each area. If not found, it falls back to the business profile's static postal code — but does **not** auto-create missing mappings.
+
+### Lookup Fallback Logic
+
+During category generation with `use_dynamic_location = true`:
+
+```
+┌─────────────────────────────────────────┐
+│ Current area from generation context    │
+│ e.g., "Werribee"                        │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│ Query: get_area_postal("Werribee")      │
+└──────┬──────────────────┬───────────────┘
+       │ Found             │ Not Found
+       ▼                   ▼
+┌──────────────┐   ┌──────────────────────┐
+│ Use mapped   │   │ Fall back to         │
+│ postal_code  │   │ business_profile     │
+│ "3030"       │   │ postal_code field    │
+│              │   │ (e.g., "3000")       │
+│ Use mapped   │   │                      │
+│ state "VIC"  │   │ Keep profile state   │
+└──────────────┘   └──────────────────────┘
+       │                   │
+       ▼                   ▼
+┌─────────────────────────────────────────┐
+│ Override Schema.org JSON-LD fields:     │
+│ • addressLocality = current {area}      │
+│ • postalCode = resolved postal code     │
+│ • areaServed = [current {area}]         │
+└─────────────────────────────────────────┘
+```
+
+### Interaction with Placeholders
+
+| Placeholder | Without mapping | With mapping |
+|-------------|----------------|--------------|
+| `{city}` | Overridden to current `{area}` | Same — always `{area}` |
+| `{postal_code}` | Business profile value | Mapped `postal_code` from table |
+| `{latitude}` | `""` (empty) | Mapped `latitude` if present |
+| `{longitude}` | `""` (empty) | Mapped `longitude` if present |
+
+### Area Name Matching
+
+Lookups use **exact string match** (`WHERE area = :area`). The area value from the generation input must match the stored `area` column precisely — matching is **case-sensitive** and **whitespace-sensitive**. No normalisation is applied.
+
+> **Recommendation:** When populating the mapping table, use area names identical to those entered in the generation Titles/Areas input fields.
+
+---
+
 ## 13.2 Built-in Test Runner
+
 
 The plugin ships with a comprehensive in-admin test suite (`CG_Tests`, 1777 lines) that validates all subsystems without requiring PHPUnit or WP-CLI. Tests run inside the WordPress runtime with full access to the SQLite database, WordPress APIs, and plugin services.
 
