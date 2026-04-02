@@ -121,6 +121,20 @@ export interface CloudStorageSettings {
   fullBackupDayOfWeek: number;
   fullBackupTimeUtc: string;
   incrementalBackupTimeUtc: string;
+  // Google Drive rotation extensions
+  maxBackupCount?: number;
+  maxTotalSizeMB?: number;
+  archiveFolderId?: string;
+  rotationPolicy?: RotationPolicy;
+}
+
+export interface RotationStatus {
+  currentCount: number;
+  currentSizeMB: number;
+  maxCount: number;
+  maxSizeMB: number;
+  isOverLimit: boolean;
+  nextAction: string;
 }
 
 export interface CloudStorageTestResult {
