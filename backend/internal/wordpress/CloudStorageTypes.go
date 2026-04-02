@@ -70,6 +70,21 @@ type CloudStorageSettings struct {
 	FullBackupDayOfWeek         int    `json:"FullBackupDayOfWeek"`
 	FullBackupTimeUtc           string `json:"FullBackupTimeUtc"`
 	IncrementalBackupTimeUtc    string `json:"IncrementalBackupTimeUtc"`
+	// Google Drive rotation extensions
+	MaxBackupCount  int    `json:"MaxBackupCount,omitempty"`
+	MaxTotalSizeMB  int    `json:"MaxTotalSizeMB,omitempty"`
+	ArchiveFolderId string `json:"ArchiveFolderId,omitempty"`
+	RotationPolicy  string `json:"RotationPolicy,omitempty"` // delete_oldest | archive_oldest | keep_full_delete_incremental
+}
+
+// RotationStatus represents the current rotation state for an account.
+type RotationStatus struct {
+	CurrentCount  int     `json:"CurrentCount"`
+	CurrentSizeMB float64 `json:"CurrentSizeMB"`
+	MaxCount      int     `json:"MaxCount"`
+	MaxSizeMB     int     `json:"MaxSizeMB"`
+	IsOverLimit   bool    `json:"IsOverLimit"`
+	NextAction    string  `json:"NextAction"`
 }
 
 // CloudStorageUploadRequest is the request body for uploading a backup.
