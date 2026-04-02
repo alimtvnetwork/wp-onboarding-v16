@@ -601,36 +601,163 @@ wp-content/uploads/category-generator/exports/cg_export_YYYY-MM-DD_HH-mm-ss.zip
 
 ### Purpose
 
-Import templates from external servers (e.g., a central template library shared across WordPress sites).
+Import templates from external servers (e.g., a central template library shared across multiple WordPress sites). This enables organizations to maintain a single source of truth for HTML, Meta, and Schema templates and distribute them across sites.
 
-### Configuration
+### Architecture
 
-Stored as JSON array in `settings` table under key `remote_template_apis`:
+```
+┌──────────────────────────────────────────────────────┐
+│              SETTINGS → REMOTE TAB                    │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │ API List                                         │ │
+│  │  ┌─────────────────────────────────────────┐    │ │
+│  │  │ Company Templates   [Fetch] [Remove]    │    │ │
+│  │  │ URL: https://...    Enabled: ✓          │    │ │
+│  │  └─────────────────────────────────────────┘    │ │
+│  │  ┌─────────────────────────────────────────┐    │ │
+│  │  │ Partner Templates   [Fetch] [Remove]    │    │ │
+│  │  │ URL: https://...    Enabled: ✗          │    │ │
+│  │  └─────────────────────────────────────────┘    │ │
+│  │                                                  │ │
+│  │  [+ Add New API]                                 │ │
+│  └─────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────┘
+```
+
+### Storage
+
+Stored as a **JSON array** in the `settings` table under key `remote_template_apis`:
 
 ```json
 [
   {
-    "id": "api_abc123",
+    "id": "api_64f2a1b3c",
     "name": "Company Template Server",
     "url": "https://templates.example.com/api/templates",
-    "api_key": "Bearer token",
+    "api_key": "sk-abc123...",
     "oauth_token": "",
     "enabled": true
   }
 ]
 ```
 
-### Fetch Flow
+### API Entry Fields
 
-1. `fetch_remote_templates($api_id)` called
-2. Resolves API config from stored JSON
-3. `wp_remote_get()` with `Authorization: Bearer {api_key}` header, 30s timeout
-4. Expects JSON array response
-5. Returns `{ success: true, templates: [...] }` or error
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Auto | `uniqid('api_')` — unique identifier |
+| `name` | string | Yes | Display name in UI |
+| `url` | string | Yes | GET endpoint URL |
+| `api_key` | string | No | Bearer token for Authorization header |
+| `oauth_token` | string | No | OAuth token (alternative auth) |
+| `enabled` | boolean | Yes | Toggle for active/inactive |
 
-### Settings Tab
+### Fetch Flow (Step by Step)
 
-Managed in **Settings → Remote** tab. Operations: add, remove, toggle enable/disable.
+```
+┌──────────┐    ┌────────────────┐    ┌───────────────┐    ┌──────────────┐
+│ User     │    │ CG_Settings    │    │ wp_remote_get │    │ Remote       │
+│ clicks   │───▶│ fetch_remote_  │───▶│ (30s timeout) │───▶│ Server       │
+│ [Fetch]  │    │ templates()    │    │               │    │              │
+└──────────┘    └────────────────┘    └───────────────┘    └──────────────┘
+                       │                                          │
+                       │◀─────────── JSON array response ─────────│
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Validate:       │
+              │ • Is array?     │
+              │ • Not empty?    │
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │ Return          │
+              │ { success: true │
+              │   templates: [] │
+              │ }               │
+              └─────────────────┘
+```
+
+| Step | Component | Action | Output |
+|------|-----------|--------|--------|
+| 1 | UI | User clicks Fetch on an API entry | `$api_id` |
+| 2 | `fetch_remote_templates($api_id)` | Looks up API config in stored JSON by ID | API config or error |
+| 3 | Validation | Checks `$api` exists and `url` is non-empty | Error if missing |
+| 4 | Headers | If `api_key` set: `Authorization: Bearer {api_key}` | Headers array |
+| 5 | HTTP | `wp_remote_get($url, ['headers' => ..., 'timeout' => 30])` | WP response |
+| 6 | Error check | `is_wp_error($response)` → return error message | — |
+| 7 | Parse | `json_decode($body, true)` | Decoded data |
+| 8 | Type check | `gettype($data) === 'array'` | Error if not array |
+| 9 | Return | `['success' => true, 'templates' => $data]` | Templates array |
+
+### Expected Remote Server Response
+
+The remote server **must** return a JSON array of template objects. The plugin does not enforce a strict schema — it passes the raw array to the UI for the user to select and import.
+
+**Recommended response format:**
+
+```json
+[
+  {
+    "name": "Service Area Landing",
+    "type": "html",
+    "content": "<div class=\"service\">{title} in {area}</div>",
+    "category": "Landing Pages",
+    "description": "Standard service-area landing page template"
+  },
+  {
+    "name": "Local Business Meta",
+    "type": "meta",
+    "meta_title_pattern": "{Title} {Area} | {var:business_name}",
+    "meta_description_pattern": "Professional {title} services in {area}.",
+    "focus_keyword_pattern": "{title} {area}"
+  },
+  {
+    "name": "LocalBusiness Schema",
+    "type": "schema",
+    "schema_type": "LocalBusiness",
+    "schema_content": "{\"@context\":\"https://schema.org\",\"@type\":\"LocalBusiness\",...}"
+  }
+]
+```
+
+### Error Handling
+
+| Condition | Response |
+|-----------|----------|
+| API ID not found in stored config | `{ success: false, message: "API not found or URL is empty" }` |
+| URL is empty | `{ success: false, message: "API not found or URL is empty" }` |
+| Network error / timeout (30s) | `{ success: false, message: "<WP_Error message>" }` |
+| Non-JSON or non-array response | `{ success: false, message: "Invalid response from API" }` |
+| HTTP 4xx/5xx | Body parsed; if not valid JSON array → error |
+
+### CRUD Operations
+
+| Operation | Method | Description |
+|-----------|--------|-------------|
+| **Add** | `add_remote_api($config)` | Appends to JSON array, auto-generates `id` via `uniqid('api_')` |
+| **Remove** | `remove_remote_api($api_id)` | Filters out by ID, re-indexes with `array_values()` |
+| **List** | `get_remote_apis()` | Decodes JSON, validates is array, returns `[]` on invalid |
+| **Fetch** | `fetch_remote_templates($api_id)` | GET request, returns templates array |
+| **Update** | Via `save_all()` | Full settings save includes serialized API list |
+
+### Settings Tab UI
+
+Managed in **Settings → Remote** tab (`templates/partials/settings-tab-remote.php`):
+
+- **API list**: Each entry shows name, URL, enabled status, with Fetch and Remove buttons
+- **Add form**: Name + URL + API Key + OAuth Token fields
+- **Enable/Disable toggle**: Per-API, persisted in JSON
+- **Fetch results**: Displayed inline after clicking Fetch, with option to import selected templates
+
+### Security Considerations
+
+| Concern | Mitigation |
+|---------|------------|
+| API key exposure | Keys stored in SQLite (server-side only), never sent to browser in plain text |
+| SSRF risk | `wp_remote_get()` follows WP's HTTP API restrictions |
+| Malicious content | Templates are HTML; same sanitization as manually-entered templates applies on use |
+| Timeout | 30-second hard timeout prevents hanging requests |
 
 ---
 
