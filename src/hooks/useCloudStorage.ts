@@ -7,6 +7,7 @@ import type {
   CloudStorageSettings,
   CloudStorageTestResult,
   CloudStorageProvider,
+  RotationStatus,
 } from "@/types/cloudStorage";
 
 const ACCOUNTS_KEY = "cloud-storage-accounts";
