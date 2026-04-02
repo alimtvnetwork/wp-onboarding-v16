@@ -436,6 +436,145 @@ When injecting, the template content comes from the **`<select>` option's `data-
 
 ---
 
+## 3.2. Variables System
+
+### Purpose
+
+Dynamic key-value placeholders (`{var:key}`) that can be used in any template — HTML, Meta, Schema, or Inner Templates. Variables can **reference other variables**, enabling composable, DRY content blocks.
+
+### Storage
+
+SQLite `variables` table:
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `id` | INTEGER | PK AUTOINCREMENT |
+| `name` | TEXT | NOT NULL UNIQUE |
+| `value` | TEXT | NOT NULL |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
+### Syntax
+
+```
+{var:variable_name}
+```
+
+Name pattern: `[a-zA-Z_][a-zA-Z0-9_]*` (letters, digits, underscores; must start with letter or underscore).
+
+### CRUD Operations
+
+| Operation | AJAX Action | Parameters | Handler |
+|-----------|-------------|------------|---------|
+| List all | `cg_get_variables` | — | Returns all variables as key-value pairs |
+| Create/Update | `cg_save_variable` | `name`, `value` | Upserts by unique `name` |
+| Delete | `cg_delete_variable` | `name` | Removes by name |
+
+All endpoints require `check_ajax_referer('cg_nonce')` + `manage_categories` capability.
+
+### Resolution Order
+
+When `process_template()` or `compile_variables()` is called:
+
+```
+1. Load stored variables from SQLite
+2. Merge with runtime context (title, area, etc.)
+       Context takes precedence over stored variables
+3. For each variable value:
+   a. Scan for {var:name} references
+   b. Recursively resolve referenced variables
+   c. Max recursion depth: 10 (prevents infinite loops)
+   d. Unresolved references left as literal {var:name}
+4. Return compiled map
+```
+
+### Variable-to-Variable References
+
+Variables can reference other variables, enabling composition:
+
+```
+company_tagline  = "Your trusted partner"
+company_intro    = "{var:company_name} - {var:company_tagline}"
+full_header      = "<h2>{var:company_intro} in {area}</h2>"
+```
+
+Resolution for `{var:full_header}`:
+```
+Step 1: {var:full_header}
+     → "<h2>{var:company_intro} in {area}</h2>"
+
+Step 2: {var:company_intro}
+     → "{var:company_name} - {var:company_tagline}"
+
+Step 3: {var:company_name} → "Acme Plumbing"
+        {var:company_tagline} → "Your trusted partner"
+
+Result: "<h2>Acme Plumbing - Your trusted partner in {area}</h2>"
+```
+
+> **Note:** `{area}` is not a variable reference — it's a generation-time placeholder resolved separately by `generate_from_pattern()`.
+
+### Recursion Safety
+
+| Guard | Value | Behavior |
+|-------|-------|----------|
+| Max depth | 10 | After 10 levels of `{var:X}` → `{var:Y}` → ..., stops resolving |
+| Circular reference | Handled | A→B→A stops at depth limit, leaves `{var:A}` literal |
+| Non-string values | Skipped | `resolve_value()` returns non-strings as-is |
+
+### Expression Parsing
+
+`parse_expression()` supports **string concatenation** with `+` operator:
+
+```
+"Hello " + {var:name} + " from " + {var:city}
+```
+
+- Quoted strings (`"..."` or `'...'`) are literal text
+- Unquoted tokens are resolved as variable references
+- Whitespace around `+` is trimmed
+
+### Interaction with Inner Templates
+
+Variables and inner templates are resolved at **different stages** during generation:
+
+```
+┌─────────────────────────────────────────────────┐
+│           Generation Pipeline Order              │
+│                                                  │
+│  1. generate_from_pattern()                      │
+│     └── Resolves: {title}, {area}, {category},  │
+│         {business_*}, {slug}, etc.               │
+│                                                  │
+│  2. generate_description()                       │
+│     └── Resolves: Same placeholders + {meta_*}  │
+│         + {var:*} via process_template()         │
+│                                                  │
+│  3. CG_Inner_Templates::process_content()        │
+│     └── Resolves: {inner:id}, {inner:name}      │
+│         Each inner template's content gets       │
+│         placeholder replacement (title, area,    │
+│         business_profile) but NOT {var:*}        │
+│                                                  │
+│  4. Final HTML assembly                          │
+│     └── Wrap in div + append schema              │
+└─────────────────────────────────────────────────┘
+```
+
+**Key insight:** `{var:*}` placeholders are resolved in step 2 via `CG_Variables::process_template()`. Inner templates resolved in step 3 receive context placeholders (`{title}`, `{area}`, etc.) but do **not** re-run variable resolution. To use variables inside inner templates, embed the variable's **value** directly or use standard placeholders.
+
+### Usage Examples
+
+| Variable Name | Value | Use Case |
+|---------------|-------|----------|
+| `company_name` | `Acme Plumbing` | Reuse across all templates |
+| `service_guarantee` | `100% satisfaction guaranteed` | Marketing consistency |
+| `base_url` | `https://example.com` | Link building |
+| `cta_text` | `Call {var:company_name} at {phone}` | Composable CTA |
+| `footer_html` | `<p>{var:service_guarantee}. Serving {area}.</p>` | Multi-variable composition |
+
+---
+
 ## 4. Snapshot System
 
 ### Purpose
