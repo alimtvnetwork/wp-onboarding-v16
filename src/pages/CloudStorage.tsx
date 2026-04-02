@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Cloud, Github, HardDrive, FolderOpen } from "lucide-react";
+import { Plus, Cloud, Github, HardDrive, FolderOpen, History } from "lucide-react";
 import { toast } from "sonner";
 import { CloudStorageAccountCard } from "@/components/cloud-storage/CloudStorageAccountCard";
 import { CloudStorageAccountDialog } from "@/components/cloud-storage/CloudStorageAccountDialog";
@@ -22,6 +22,7 @@ import type {
   CloudStorageAccountUpdateRequest,
   CloudStorageProvider,
 } from "@/types/cloudStorage";
+import { CloudStorageBackupTimeline } from "@/components/cloud-storage/CloudStorageBackupTimeline";
 
 const PROVIDERS: { id: CloudStorageProvider; label: string; icon: React.ReactNode }[] = [
   { id: "GitHub", label: "GitHub", icon: <Github className="h-4 w-4" /> },
@@ -119,6 +120,11 @@ export default function CloudStorage() {
     );
   };
 
+  const [viewMode, setViewMode] = useState<"accounts" | "history">("accounts");
+
+  // Selected account for backup history
+  const selectedHistoryAccountId = filteredAccounts.length > 0 ? filteredAccounts[0].id : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -132,13 +138,53 @@ export default function CloudStorage() {
             </p>
           </div>
         </div>
-        <Button onClick={handleAddAccount}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Account
-        </Button>
+        <div className="flex items-center gap-2">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "accounts" | "history")}>
+            <TabsList className="h-8">
+              <TabsTrigger value="accounts" className="text-xs gap-1.5 px-3 py-1">
+                <Cloud className="h-3.5 w-3.5" />
+                Accounts
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-xs gap-1.5 px-3 py-1">
+                <History className="h-3.5 w-3.5" />
+                Backup History
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button onClick={handleAddAccount}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Account
+          </Button>
+        </div>
       </div>
 
-      {/* Provider Tabs */}
+      {/* Backup History View */}
+      {viewMode === "history" && (
+        <div className="space-y-4">
+          {accounts.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-border rounded-lg">
+              <History className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No accounts configured</p>
+              <p className="text-xs text-muted-foreground mt-1">Add a cloud storage account to view backup history</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {accounts.map((account) => (
+                <div key={account.id} className="border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-sm font-semibold">{account.accountLabel}</span>
+                    <span className="text-xs text-muted-foreground">({account.provider})</span>
+                  </div>
+                  <CloudStorageBackupTimeline accountId={account.id} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Provider Tabs (Accounts view) */}
+      {viewMode === "accounts" && (
       <Tabs
         value={activeProvider}
         onValueChange={(v) => setActiveProvider(v as CloudStorageProvider)}
@@ -212,6 +258,8 @@ export default function CloudStorage() {
           </TabsContent>
         ))}
       </Tabs>
+
+      )}
 
       {/* Account Dialog */}
       <CloudStorageAccountDialog
