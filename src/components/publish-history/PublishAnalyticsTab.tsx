@@ -382,6 +382,19 @@ export function PublishAnalyticsTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Row 3: Plugin analytics */}
+      <PluginAnalyticsPanel plugins={data.plugins} />
+
+      {/* Row 4: Stage duration breakdown + deployment speed trend */}
+      <StageDurationPanel
+        stages={data.stages}
+        durationTrend={data.durationTrend}
+        p95DurationMs={data.summary.p95DurationMs}
+      />
+
+      {/* Row 5: Failure analysis */}
+      <FailureAnalysisPanel failures={data.failures} totalFailed={data.summary.failed} />
     </div>
   );
 }
