@@ -70,6 +70,14 @@ export function LicenseTable({ licenses, onSelect, batchSelected = [], onBatchTo
         <Table>
           <TableHeader>
             <TableRow>
+              {onBatchToggle && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={batchSelected.length === licenses.length && licenses.length > 0}
+                    onCheckedChange={() => onSelectAll?.()}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-[60px]">ID</TableHead>
               <TableHead>Key</TableHead>
               <TableHead>Email</TableHead>
