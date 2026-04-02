@@ -143,7 +143,7 @@ export function PublishAnalyticsTab() {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <SummaryCard label={`Total (${rangeLabel})`} value={data.summary.total} />
         <SummaryCard
           label="Success Rate"
@@ -152,6 +152,7 @@ export function PublishAnalyticsTab() {
         <SummaryCard label="Successes" value={data.summary.success} />
         <SummaryCard label="Failures" value={data.summary.failed} />
         <SummaryCard label="Avg Duration" value={durationLabel(data.summary.avgDurationMs)} />
+        <SummaryCard label="P95 Duration" value={durationLabel(data.summary.p95DurationMs)} />
       </div>
 
       {/* Row 1: Daily publishes + Success rate trend */}
