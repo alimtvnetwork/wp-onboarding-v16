@@ -208,7 +208,9 @@ Resolution order:
 | `{logo_url}` / `{image_url}` | Media | Business profile |
 | `{slug}` | Category slug | Generated |
 | `{url}` | Full URL path | `home_url('/' + slug + '/')` |
-| `{meta_title}` / `{meta_desc}` | SEO fields | Generated from patterns |
+| `{meta_title}` / `{meta_description}` | SEO fields | Generated from patterns |
+| `{contact_url}` | Contact page URL | `website` or `home_url('/contact/')` |
+| `{latitude}` / `{longitude}` | Coordinates | Area postal mapping (Schema only) |
 | `{inner:ID}` / `{inner:name}` | Inner template | Resolved recursively |
 | `{var:key}` | Variable | From variables table |
 
