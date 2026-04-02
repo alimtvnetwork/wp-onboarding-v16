@@ -90,26 +90,146 @@
 | 6 | Generate | AJAX `cg_generate_categories` — batch creates via `wp_insert_term()` |
 | 7 | History logged | Each generation recorded with titles, areas, template used |
 
-### Placeholder System
+### Generation Workflow Diagram
 
-| Placeholder | Value | Example |
-|-------------|-------|---------|
-| `{title}` | Raw title | `plumbing` |
-| `{area}` | Raw area | `downtown` |
-| `{category}` | `{title} {area}` | `plumbing downtown` |
-| `{TITLE}` | UPPERCASE | `PLUMBING` |
-| `{AREA}` | UPPERCASE | `DOWNTOWN` |
-| `{Title}` | Title Case | `Plumbing` |
-| `{Area}` | Title Case | `Downtown` |
-| `{inner:ID}` | Inner template by ID | Resolved recursively |
-| `{inner:name}` | Inner template by name | Resolved recursively |
-| `{var:key}` | Variable value | From variables table |
+> See visual flowchart: `category-generation-workflow.mmd`
+
+### Detailed Generation Pipeline
+
+#### Phase 0: Pre-flight
+
+| Step | Action | Details |
+|------|--------|---------|
+| 0.1 | Nonce + capability check | `check_ajax_referer` + `manage_categories` |
+| 0.2 | Parse inputs | Titles and areas split by newline, trimmed, empty lines removed |
+| 0.3 | Validate | Error if titles or areas empty |
+| 0.4 | Auto-snapshot | If `auto_snapshot_before_generate` setting is true, creates snapshot with type `auto` |
+| 0.5 | Load business profile | `get_business_profile()` for placeholder data |
+
+#### Phase 1: Parent Category Creation (Optional)
+
+When `create_parents = true`, each **title** becomes a parent category:
+
+| Step | Action | Details |
+|------|--------|---------|
+| 1.1 | For each title | Iterate titles array |
+| 1.2 | `term_exists($title, $taxonomy)` | Check WordPress for existing term |
+| 1.3a | **Exists** | Store `term_id` in `$parent_term_ids[$title]` |
+| 1.3b | **New** | `wp_insert_term($title, $taxonomy, ['parent' => $static_parent_id])` |
+| 1.4 | Log to history | `insert_category_history()` with empty area |
+
+#### Phase 2: Cross-Join Loop
+
+For each **title × area** combination:
+
+| Step | Action | Details |
+|------|--------|---------|
+| 2.1 | `(S)` marker detection | If area ends with `(S)`, strip marker and force child mode |
+| 2.2 | Resolve parent ID | Priority: `$parent_term_ids[$title]` → `term_exists($title)` → `$static_parent_id` |
+| 2.3 | Generate category name | `str_replace(['{title}','{area}'], [$title,$area], $format)` |
+| 2.4 | Generate slug | From `slug_pattern` or `sanitize_title($category_name)` |
+| 2.5 | Generate meta fields | `meta_title_pattern` and `meta_description_pattern` through `generate_from_pattern()` |
+| 2.6 | Generate HTML body | Template placeholders replaced via `generate_description()` |
+| 2.7 | Process inner templates | `CG_Inner_Templates::process_content()` resolves `{inner:id}` and `{inner:name}` |
+| 2.8 | Wrap HTML | `<div class="{wrapper_class}">...</div>` |
+| 2.9 | Schema injection | If enabled: generate JSON-LD → append `<script type="application/ld+json">` in schema wrapper div |
+
+#### Duplicate Handling
+
+| Condition | Behavior |
+|-----------|----------|
+| `term_exists($category_name, $taxonomy)` returns truthy | **Skip creation** — category added to `categories_existed` array |
+| `update_existing_meta = true` AND term exists | **Update Yoast meta** on existing term (title, description, focus keyword) |
+| `update_existing_meta = false` AND term exists | **No changes** — silently skipped |
+| Term does not exist | **Create** via `wp_insert_term()` with description, slug, parent |
+
+> **Note:** There is no batch chunking — all combinations are processed in a single synchronous AJAX request. For large cross-joins (e.g., 50×50 = 2,500), the PHP execution time and memory limits apply.
+
+#### Yoast Meta Writing (`update_yoast_meta()`)
+
+Called for both new terms and existing terms (when `update_existing_meta` is enabled):
+
+| Step | Target | Key | Value |
+|------|--------|-----|-------|
+| 1 | Check Yoast active | `WPSEO_VERSION` or `WPSEO_Taxonomy_Meta` | — |
+| 2 | Term meta (primary) | `_yoast_wpseo_title` | Generated meta title |
+| 3 | Term meta (primary) | `_yoast_wpseo_metadesc` | Generated meta description |
+| 4 | Term meta (primary) | `_yoast_wpseo_focuskw` | From `yoast_focus_keyword_pattern` setting |
+| 5 | Options (internal) | `wpseo_taxonomy_meta[$taxonomy][$term_id]` | `wpseo_title`, `wpseo_desc`, `wpseo_focuskw` |
+| 6 | Fallback meta | `cg_meta_title` | Always written regardless of Yoast status |
+| 7 | Fallback meta | `cg_meta_description` | Always written regardless of Yoast status |
+
+#### Inner Template Resolution (During Generation)
+
+`CG_Inner_Templates::process_content()` is called with full context:
+
+```php
+$context = [
+    'title'            => $title,
+    'area'             => $clean_area,
+    'category'         => $category_name,
+    'slug'             => $slug,
+    'url'              => home_url('/' . $slug . '/'),
+    'business_profile' => $business_profile
+];
+```
+
+Resolution order:
+1. `{inner:123}` — numeric ID → `get_template(123)` → replace content
+2. `{inner:my-snippet}` — name ID → `get_template_by_name('my-snippet')` → replace content
+3. Each resolved inner template's content is **recursively processed** for placeholders
+4. Unresolved `{inner:...}` references are left as-is (no error)
+
+#### Full Placeholder Map (Generation Context)
+
+| Placeholder | Value | Source |
+|-------------|-------|--------|
+| `{title}` | Raw title | User input |
+| `{area}` | Raw area (cleaned) | User input, `(S)` stripped |
+| `{category}` / `{name}` | Generated category name | Format pattern |
+| `{Title}` / `{Area}` | Title Case | `ucwords()` |
+| `{TITLE}` / `{AREA}` | UPPERCASE | `strtoupper()` |
+| `{title_lower}` / `{area_lower}` | lowercase | `strtolower()` |
+| `{business_name}` | Company name | Business profile |
+| `{business_type}` | Schema.org type | Business profile |
+| `{phone}` / `{email}` / `{website}` | Contact info | Business profile |
+| `{street_address}` / `{city}` / `{state}` | Address | Business profile |
+| `{postal_code}` / `{country}` | Location | Business profile |
+| `{opening_hours}` / `{price_range}` | Operations | Business profile |
+| `{rating_value}` / `{rating_count}` | Reviews | Business profile |
+| `{logo_url}` / `{image_url}` | Media | Business profile |
+| `{slug}` | Category slug | Generated |
+| `{url}` | Full URL path | `home_url('/' + slug + '/')` |
+| `{meta_title}` / `{meta_desc}` | SEO fields | Generated from patterns |
+| `{inner:ID}` / `{inner:name}` | Inner template | Resolved recursively |
+| `{var:key}` | Variable | From variables table |
+
+#### Result Structure
+
+```json
+{
+  "success": true,
+  "data": {
+    "parents_created": [{"id": 1, "name": "Plumbing"}],
+    "parents_existed": ["Electrical"],
+    "categories_created": [{"id": 5, "name": "Plumbing Downtown", "slug": "plumbing-downtown", "parent": "Plumbing"}],
+    "categories_existed": ["Plumbing Uptown"],
+    "meta_updated": ["Plumbing Uptown"],
+    "errors": []
+  }
+}
+```
 
 ### Options
 
 - **Taxonomy**: Default `category` or any registered custom taxonomy
-- **Parent category**: Assign all generated terms under a parent
-- **Auto-snapshot**: Creates snapshot before generation (if enabled)
+- **Parent category**: Assign all generated terms under a parent (`static_parent_id`)
+- **Create parents**: Each title becomes a parent category
+- **Make children**: Generated categories nested under their title's parent
+- **Update existing meta**: Write Yoast meta even on pre-existing terms
+- **Include schema**: Append JSON-LD `<script>` to description
+- **Use global schema**: Use business profile data in schema
+- **Auto-snapshot**: Creates snapshot before generation (if enabled in settings)
 
 ---
 
