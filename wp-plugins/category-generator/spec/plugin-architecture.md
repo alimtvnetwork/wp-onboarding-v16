@@ -1308,23 +1308,24 @@ The Business Profile provides structured company data used for Schema.org markup
 
 ### Multi-Profile Support
 
-The plugin supports **multiple business profiles** stored in the `business_profiles` SQLite table (see §2 schema). Each profile is a complete set of business data; one profile is marked `is_default = 1` and is used automatically during generation unless overridden.
+The plugin supports **multiple business profiles** stored in the `business_profile` SQLite table (see §5 schema). The table supports an `is_default` column, but the current `get_business_profile()` implementation simply returns the **first row** (`LIMIT 1`) when no `id` is specified.
 
 #### AJAX Endpoints
 
 | Action | Method | Description |
 |--------|--------|-------------|
-| `cg_get_business_profiles` | GET | List all profiles (id, business_name, is_default) |
-| `cg_get_business_profile` | GET | Full profile by `id` |
-| `cg_save_business_profile` | POST | Create or update (upsert by `id`) |
-| `cg_delete_business_profile` | POST | Delete by `id`; prevents deleting the default |
-| `cg_set_default_profile` | POST | Sets `is_default = 1` on target, `0` on all others |
+| `cg_get_business_profiles` | POST | List all profiles (id, business_name, is_default) via `get_all_business_profiles()` |
+| `cg_get_business_profile` | POST | Full profile by `id`, or first profile if no `id` |
+| `cg_save_business_profile` | POST | Upsert — updates first existing row, or inserts if none |
+| `cg_delete_business_profile` | POST | Delete by `id` |
+
+> **Note:** There is no dedicated `cg_set_default_profile` endpoint. The `is_default` column exists in the schema but is not actively managed by the current AJAX layer.
 
 #### Profile Selection at Generation Time
 
-1. If `profile_id` is sent in the generate request → use that profile.
-2. Otherwise → use the profile where `is_default = 1`.
-3. If no default exists → use an empty context (all `{bp:*}` placeholders resolve to `""`).
+1. If `profile_id` is sent in the generate request → use that profile via `get_business_profile($id)`.
+2. Otherwise → `get_business_profile()` returns the first row (`SELECT * FROM business_profile LIMIT 1`).
+3. If no rows exist → use an empty context (all business placeholders resolve to `""`).
 
 ### Schema.org JSON-LD Generation
 
