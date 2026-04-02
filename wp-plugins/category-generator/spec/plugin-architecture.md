@@ -1302,6 +1302,177 @@ category-generator/
 
 ---
 
+## 13.1 Business Profile System
+
+The Business Profile provides structured company data used for Schema.org markup generation, placeholder resolution in templates, and dynamic location features during category generation.
+
+### Multi-Profile Support
+
+The plugin supports **multiple business profiles** stored in the `business_profiles` SQLite table (see §2 schema). Each profile is a complete set of business data; one profile is marked `is_default = 1` and is used automatically during generation unless overridden.
+
+#### AJAX Endpoints
+
+| Action | Method | Description |
+|--------|--------|-------------|
+| `cg_get_business_profiles` | GET | List all profiles (id, business_name, is_default) |
+| `cg_get_business_profile` | GET | Full profile by `id` |
+| `cg_save_business_profile` | POST | Create or update (upsert by `id`) |
+| `cg_delete_business_profile` | POST | Delete by `id`; prevents deleting the default |
+| `cg_set_default_profile` | POST | Sets `is_default = 1` on target, `0` on all others |
+
+#### Profile Selection at Generation Time
+
+1. If `profile_id` is sent in the generate request → use that profile.
+2. Otherwise → use the profile where `is_default = 1`.
+3. If no default exists → use an empty context (all `{bp:*}` placeholders resolve to `""`).
+
+### Schema.org JSON-LD Generation
+
+The profile data maps directly to a `LocalBusiness` (or subtype) JSON-LD block injected into generated category descriptions when a Schema template is active.
+
+#### Schema Type Mapping
+
+The `business_type` field maps to Schema.org `@type`:
+
+| business_type value | Schema.org @type |
+|---------------------|------------------|
+| `local_business` | `LocalBusiness` |
+| `cleaning_service` | `CleaningService` (extends `LocalBusiness`) |
+| `plumber` | `Plumber` |
+| `electrician` | `Electrician` |
+| `hvac` | `HVACBusiness` |
+| `locksmith` | `Locksmith` |
+| `moving_company` | `MovingCompany` |
+| `pest_control` | `PestControl` |
+| `roofing` | `RoofingContractor` |
+| `professional_service` | `ProfessionalService` |
+
+#### Generated JSON-LD Structure
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "{business_type}",
+  "name": "{business_name}",
+  "url": "{website}",
+  "telephone": "{phone}",
+  "email": "{email}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{street_address}",
+    "addressLocality": "{city}",        // ← dynamic location override
+    "addressRegion": "{state}",
+    "postalCode": "{postal_code}",      // ← dynamic location override
+    "addressCountry": "{country}"
+  },
+  "openingHours": ["{opening_hours}"],
+  "priceRange": "{price_range}",
+  "areaServed": ["{service_areas}"],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Services",
+    "itemListElement": ["{services_offered}"]
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{rating_value}",
+    "reviewCount": "{rating_count}"
+  },
+  "logo": "{logo_url}",
+  "image": "{image_url}",
+  "sameAs": ["{social_profiles}"]
+}
+```
+
+**Omission rule:** Any top-level property whose resolved value is empty (`""`, `[]`, `null`) is **omitted** from the output to produce valid, minimal JSON-LD.
+
+### Dynamic Location Feature
+
+When the setting `use_dynamic_location` is `true` (default), the Schema.org address fields are **overridden per generated category** using the current `{area}` value:
+
+| JSON-LD Field | Static Value | Dynamic Override |
+|---------------|-------------|-----------------|
+| `addressLocality` | Profile `city` | Current `{area}` value |
+| `postalCode` | Profile `postal_code` | Lookup from `area_postal_mapping` table |
+| `areaServed` | Profile `service_areas` | Replaced with `["{area}"]` |
+
+#### Postal Code Lookup Flow
+
+```
+1. Area name from current generation context   → e.g., "Werribee"
+2. Query: SELECT postal_code FROM area_postal_mapping WHERE area = ?
+3. If found → use mapped postal_code (e.g., "3030")
+4. If not found → keep profile's postal_code as fallback
+```
+
+This ensures each generated category page gets location-specific Schema.org markup without manual editing.
+
+### Business Profile Placeholder Mapping
+
+All profile fields are available as `{bp:field_name}` placeholders in HTML, Meta, and Schema templates.
+
+| Placeholder | Source Field | Example Value |
+|-------------|-------------|---------------|
+| `{bp:business_name}` | `business_name` | Atto Property |
+| `{bp:business_type}` | `business_type` | CleaningService |
+| `{bp:street_address}` | `street_address` | 123 Main Street |
+| `{bp:city}` | `city` | Melbourne |
+| `{bp:state}` | `state` | VIC |
+| `{bp:postal_code}` | `postal_code` | 3000 |
+| `{bp:country}` | `country` | Australia |
+| `{bp:phone}` | `phone` | +61 3 1234 5678 |
+| `{bp:email}` | `email` | contact@example.com |
+| `{bp:website}` | `website` | https://example.com |
+| `{bp:opening_hours}` | `opening_hours` | "Mo-Fr 08:00-17:00" |
+| `{bp:price_range}` | `price_range` | $$ - $$$ |
+| `{bp:price_range_min}` | `price_range_min` | 50 |
+| `{bp:price_range_max}` | `price_range_max` | 200 |
+| `{bp:price_note}` | `price_note` | subject to change |
+| `{bp:service_areas}` | `service_areas` | Melbourne, Sydney |
+| `{bp:services_offered}` | `services_offered` | Carpet Cleaning, Office Cleaning |
+| `{bp:rating_value}` | `rating_value` | 4.8 |
+| `{bp:rating_count}` | `rating_count` | 127 |
+| `{bp:logo_url}` | `logo_url` | https://example.com/logo.png |
+| `{bp:image_url}` | `image_url` | https://example.com/image.jpg |
+| `{bp:social_profiles}` | `social_profiles` | https://facebook.com/... |
+
+#### Dynamic Location Placeholders
+
+When `use_dynamic_location` is enabled, these additional placeholders become available:
+
+| Placeholder | Source | Description |
+|-------------|--------|-------------|
+| `{bp:dynamic_city}` | Current `{area}` | The area being generated |
+| `{bp:dynamic_postal}` | `area_postal_mapping` lookup | Postal code for the area |
+
+#### Resolution Order in Generation Pipeline
+
+```
+Step 1: Load business profile (default or specified)
+Step 2: Build bp: context map from profile fields
+Step 3: If use_dynamic_location → override city/postal with area data
+Step 4: Resolve {var:*} placeholders (Variables system)
+Step 5: Resolve {bp:*} placeholders from context map
+Step 6: Resolve {title}, {area}, and other input placeholders
+Step 7: Resolve {inner:*} placeholders (Inner Templates)
+Step 8: Final output
+```
+
+### UI Form Sections
+
+The Business Profile admin page (`templates/business-profile-page.php`) groups fields into six cards:
+
+1. **Basic Information** — business_name, business_type (dropdown), website
+2. **Contact Information** — phone, email
+3. **Address** — street_address, city, state, postal_code, country
+4. **Business Details** — opening_hours, price_range (dropdown), service_areas, services_offered
+5. **Ratings & Reviews** — rating_value (step 0.1, range 0–5), rating_count
+6. **Media** — logo_url, image_url, social_profiles (one URL per line)
+
+The form submits via AJAX to `cg_save_business_profile` with a single serialized payload.
+
+---
+
 ## 14. QUpload Compatibility Rules
 
 See `.ai-instructions` for full details. Key constraints:
