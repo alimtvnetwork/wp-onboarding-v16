@@ -151,7 +151,168 @@ Reusable snippets embedded via `{inner:id}` or `{inner:name}`:
 | `snippet` | Text Snippet |
 | `link_list` | Category Link List |
 
-Inner templates support the same placeholder system and can be injected into existing category descriptions via the History page inject UI.
+Inner templates support the same placeholder system and can be injected into existing category descriptions via the History page inject UI (see §3.1 below).
+
+---
+
+## 3.1. History Inject Workflow
+
+### Purpose
+
+Inject inner template content into **existing** WordPress category descriptions without regenerating the category. This allows post-generation enrichment — adding CTAs, anchor links, marketing blocks, or schema snippets to categories that were already created.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    HISTORY PAGE                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Category Row: "Plumbing Downtown"  [View] [Inject]        │  │
+│  └───────────────────────────────────────┬───────────────────┘  │
+│                                          │ click [Inject]       │
+│                                          ▼                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │              INJECT MODAL (#cg-inject-modal)               │  │
+│  │                                                            │  │
+│  │  ┌─ Inner Template Select ──────────────────────────────┐ │  │
+│  │  │  [▼ Select Inner Template ]                          │ │  │
+│  │  │  Preview: <div class="cta">Call us today!</div>      │ │  │
+│  │  └──────────────────────────────────────────────────────┘ │  │
+│  │                                                            │  │
+│  │  ┌─ Current Description (textarea) ─────────────────────┐ │  │
+│  │  │  <div class="service">                               │ │  │
+│  │  │    <h2>Plumbing Downtown</h2>                        │ │  │
+│  │  │    <p>Professional plumbing in Downtown...</p>  ◄── cursor│
+│  │  │  </div>                                              │ │  │
+│  │  └──────────────────────────────────────────────────────┘ │  │
+│  │                                                            │  │
+│  │  [Cancel]  [Insert at Start]  [Insert at End]  [Inject at Cursor] │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step-by-Step Flow
+
+| Step | Component | Action | Details |
+|------|-----------|--------|---------|
+| 1 | History table | User clicks **[Inject]** link on a history row | Passes `history_id` |
+| 2 | `openInjectModal()` | Resets modal state | Clears template select, preview, content |
+| 3 | AJAX | `cg_get_history_item` | Fetches history record → gets `term_id` + `taxonomy` |
+| 4 | AJAX | `cg_get_term_description` | Fetches **live** WordPress term description via `get_term()` |
+| 5 | Fallback | If term fetch fails | Falls back to `meta_description` from history record |
+| 6 | Modal | Populates textarea with current description | User can see and edit |
+| 7 | User | Selects inner template from dropdown | Preview updates inline |
+| 8 | User | Clicks position button | One of: Start, End, or Cursor |
+| 9 | `performInject()` | Computes `newContent` based on position | See position modes below |
+| 10 | AJAX | `cg_inject_inner_template` | Sends `history_id`, `inner_template_id`, `new_content` |
+| 11 | Server | `wp_update_term()` | Updates WP term description in database |
+| 12 | Server | `update_category_history()` | Updates history record's `meta_description` |
+| 13 | UI | Success alert + modal close + history reload | |
+
+### Position Modes
+
+| Mode | Button | Behavior | Code |
+|------|--------|----------|------|
+| **Start** | `[Insert at Start]` | Prepends template content + `\n` before existing content | `templateContent + '\n' + content` |
+| **End** | `[Insert at End]` | Appends `\n` + template content after existing content | `content + '\n' + templateContent` |
+| **Cursor** | `[Inject at Cursor]` | Inserts template content at textarea cursor position (`selectionStart`) | `content.substring(0, cursorPos) + templateContent + content.substring(cursorPos)` |
+
+**Cursor position detection:** Uses `textarea.selectionStart` (DOM property). If no cursor position is set (user hasn't clicked into textarea), defaults to position `0` (equivalent to Start).
+
+### Data Flow Diagram
+
+```
+                        ┌──────────────┐
+                        │ User clicks  │
+                        │ [Inject]     │
+                        └──────┬───────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ cg_get_history_item │
+                    │ → term_id, taxonomy │
+                    └──────────┬──────────┘
+                               │
+                  ┌────────────▼────────────┐
+                  │ cg_get_term_description │
+                  │ → live WP description   │
+                  └────────────┬────────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ User selects inner  │
+                    │ template + position │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────▼────────────────┐
+              │         Position Logic           │
+              │  start: prepend + \n             │
+              │  end:   \n + append              │
+              │  cursor: splice at selectionStart│
+              └────────────────┬────────────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ Merged newContent    │
+                    └──────────┬──────────┘
+                               │
+               ┌───────────────▼───────────────┐
+               │  cg_inject_inner_template     │
+               │  ├── wp_update_term()         │
+               │  │   → updates WP description │
+               │  └── update_category_history()│
+               │      → updates history record │
+               └───────────────────────────────┘
+```
+
+### AJAX Endpoints Used
+
+| Action | Method | Parameters | Response |
+|--------|--------|------------|----------|
+| `cg_get_history_item` | POST | `id` | `{ term_id, taxonomy, meta_description, ... }` |
+| `cg_get_term_description` | POST | `term_id`, `taxonomy` | `{ description: "..." }` |
+| `cg_inject_inner_template` | POST | `history_id`, `inner_template_id`, `new_content` | `{ message: "Injected successfully" }` |
+
+### Inner Template Resolution
+
+When injecting, the template content comes from the **`<select>` option's `data-content` attribute** — the raw HTML of the inner template. The content is inserted **as-is** without placeholder resolution at inject time. Placeholders (`{title}`, `{area}`, etc.) remain in the injected content and are only resolved when the category description is rendered on the frontend.
+
+**Resolution chain:**
+1. Inner template HTML stored in `inner_templates.content`
+2. Loaded into `<option data-content="...">` on modal open
+3. Selected template's `data-content` read by JavaScript
+4. Spliced into existing description at chosen position
+5. Full merged HTML sent to server as `new_content`
+6. Server writes to WP via `wp_update_term()` — no placeholder processing
+
+### Input Sanitization
+
+| Layer | Sanitization |
+|-------|-------------|
+| Client → Server | `new_content` sent as POST body |
+| Server | `wp_kses_post($new_content)` — allows safe HTML tags, strips scripts |
+| WP Storage | Standard `wp_update_term()` handling |
+
+### UI Components
+
+| Element | ID | Purpose |
+|---------|-----|---------|
+| Modal overlay | `#cg-inject-modal` | Full-screen modal container |
+| History ID | `#cg-inject-history-id` | Hidden input storing current history row ID |
+| Template select | `#cg-inject-template-select` | Dropdown of all inner templates with `data-content` |
+| Template preview | `#cg-inject-template-preview` | Shows selected template's HTML content |
+| Content textarea | `#cg-inject-content` | Editable current description (click to set cursor) |
+| Cancel button | `#cg-inject-cancel` | Closes modal |
+| Start button | `#cg-inject-at-start` | Triggers `performInject('start')` |
+| End button | `#cg-inject-at-end` | Triggers `performInject('end')` |
+| Cursor button | `#cg-inject-at-cursor` | Triggers `performInject('cursor')` |
+
+### Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| Term deleted in WP but exists in history | `cg_get_term_description` returns error; falls back to history `meta_description` |
+| No inner template selected | Alert: "Please select an inner template" — inject blocked |
+| Cursor not placed in textarea | `selectionStart` defaults to `0` (same as Start mode) |
+| Empty description (new term) | Template content becomes the entire description |
+| Multiple sequential injects | Each reads fresh description from WP, preventing stale overwrites |
 
 ---
 
