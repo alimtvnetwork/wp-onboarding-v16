@@ -37,16 +37,51 @@ export interface SiteBreakdown {
   successRate: number;
 }
 
+export interface PluginBreakdown {
+  pluginName: string;
+  pluginId: number;
+  total: number;
+  success: number;
+  failed: number;
+  successRate: number;
+  avgDurationMs: number;
+}
+
+export interface StageDuration {
+  stage: string;
+  avgMs: number;
+  p95Ms: number;
+  count: number;
+}
+
+export interface FailureCategory {
+  category: string;
+  count: number;
+  percentage: number;
+  examples: string[];
+}
+
+export interface DurationTrendPoint {
+  date: string;
+  avgMs: number;
+  p95Ms: number;
+}
+
 export interface PublishAnalyticsData {
   daily: DailyPublishPoint[];
   successRate: SuccessRatePoint[];
   heatmap: HeatmapCell[];
   sites: SiteBreakdown[];
+  plugins: PluginBreakdown[];
+  stages: StageDuration[];
+  failures: FailureCategory[];
+  durationTrend: DurationTrendPoint[];
   summary: {
     total: number;
     success: number;
     failed: number;
     avgDurationMs: number;
+    p95DurationMs: number;
     peakDay: string;
   };
 }
