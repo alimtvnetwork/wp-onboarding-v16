@@ -36,7 +36,7 @@ interface Props {
   onSelectAll?: () => void;
 }
 
-export function LicenseTable({ licenses, onSelect }: Props) {
+export function LicenseTable({ licenses, onSelect, batchSelected = [], onBatchToggle, onSelectAll }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<License | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const deleteMutation = useDeleteLicense();
