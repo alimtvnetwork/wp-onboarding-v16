@@ -22,6 +22,7 @@ import type {
   CloudStorageAccountUpdateRequest,
   CloudStorageProvider,
 } from "@/types/cloudStorage";
+import { CloudStorageBackupTimeline } from "@/components/cloud-storage/CloudStorageBackupTimeline";
 
 const PROVIDERS: { id: CloudStorageProvider; label: string; icon: React.ReactNode }[] = [
   { id: "GitHub", label: "GitHub", icon: <Github className="h-4 w-4" /> },
