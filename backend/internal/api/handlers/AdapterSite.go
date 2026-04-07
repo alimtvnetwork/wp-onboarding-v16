@@ -89,6 +89,10 @@ type SiteServiceInterface interface {
 	UpdateRemoteSiteSettings(ctx context.Context, siteId int64, body map[string]any) (*wordpress.SiteSettingsUpdateResult, *apperror.AppError) // map[string]any justified: dynamic PHP settings input
 	GetRemoteSiteHealthSummary(ctx context.Context, siteId int64) (*wordpress.HealthSummaryData, *apperror.AppError)
 	GetRemoteDebugRoutes(ctx context.Context, siteId int64) (any, *apperror.AppError)
+
+	// Dedup registry proxy — typed returns
+	GetRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryResult, *apperror.AppError)
+	ClearRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryClearResult, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
