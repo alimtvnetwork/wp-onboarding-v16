@@ -62,6 +62,15 @@
 
 ### ✅ Phase H-1: Licensing Admin Dashboard
 - React dashboard with license CRUD, audit log viewer, health badge
+- Go Stats/BatchRevoke/BatchExtend/ExportCSV endpoints + routes
+- Analytics tab with distribution charts, creation timeline, expiration alerts
+- Batch operations with confirmation dialogs and CSV export
+
+### ✅ S-046: Google Drive Folder Rotation
+- Go endpoint/operation enums, WP client, handlers, service proxy
+- PHP CloudStorageRotationTrait with 3 rotation policies (delete_oldest, archive_oldest, keep_full_delete_incremental)
+- Route registration and ResponseKeyType entries
+- React UI already complete (GoogleDriveRotationStatus component)
 
 ---
 
