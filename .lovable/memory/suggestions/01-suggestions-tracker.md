@@ -14,7 +14,7 @@
 | S-046 | 2026-03-15 | Low | Lovable | done | Implement Phase 5F for Google Drive folder-based rotation adaptation |
 | S-047 | 2026-03-15 | Medium | Lovable | done | Implement backup history visualization UI (Phase 5E) in the Cloud Storage dashboard |
 | S-048 | 2026-03-15 | Medium | Lovable | done | Add Go backend validation for chunk reassembly manifest integrity during publishing |
-| S-049 | 2026-03-16 | Low | Lovable | open | Create `wp-plugins/qupload/settings.json` with explicit logging config defaults |
+| S-049 | 2026-03-16 | Low | Lovable | done | Create `wp-plugins/qupload/settings.json` with explicit logging config defaults |
 | S-050 | 2026-03-16 | Low | Lovable | open | Add GET `/logs/rotation-status` endpoint to QUpload for remote rotation monitoring |
 | S-051 | 2026-03-16 | Medium | Lovable | done | Add verbose endpoint probing to `-check` (HEAD requests per endpoint) |
 | S-052 | 2026-03-16 | Medium | Lovable | done | Auto-invalidate cached ZIP when plugin source files change (hash-based) |
@@ -100,8 +100,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 2 |
-| Completed | 66 |
+| Open | 1 |
+| Completed | 67 |
 | Closed N/A | 1 |
 | Rejected | 1 |
 | **Total** | **70** |
