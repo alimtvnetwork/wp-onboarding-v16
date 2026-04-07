@@ -22,6 +22,7 @@ use RiseupAsia\Logging\Traits\LoggerDedupTrait;
 use RiseupAsia\Logging\Traits\LoggerPersistentDedupTrait;
 use RiseupAsia\Logging\Traits\LoggerLevelMethodsTrait;
 use RiseupAsia\Helpers\DateHelper;
+use RiseupAsia\Enums\PhpNativeType;
 
 /**
  * Class FileLogger
