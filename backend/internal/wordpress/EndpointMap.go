@@ -99,6 +99,10 @@ const (
 	EPImportUsersCsv   WPEndpointName = "ImportUsersCsv"
 	EPExportSqlite     WPEndpointName = "ExportUsersSqlite"
 	EPImportSqlite     WPEndpointName = "ImportUsersSqlite"
+
+	// Cloud storage rotation endpoints
+	EPCloudStorageRotationStatus WPEndpointName = "CloudStorageRotationStatus"
+	EPCloudStorageRotate         WPEndpointName = "CloudStorageRotate"
 )
 
 // GoEndpointRoute describes the Go backend API route for a delegated operation.
