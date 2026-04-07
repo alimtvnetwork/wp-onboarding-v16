@@ -26,4 +26,5 @@ trait CloudStorageTrait {
     use CloudStorageHistoryTrait;
     use CloudStorageScheduleTrait;
     use CloudStorageRestoreTrait;
+    use CloudStorageRotationTrait;
 }
