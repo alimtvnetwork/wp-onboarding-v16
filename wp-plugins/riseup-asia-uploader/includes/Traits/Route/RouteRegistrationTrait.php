@@ -221,6 +221,20 @@ trait RouteRegistrationTrait
             'callback'            => [$this, 'handleCloudStorageRestore'],
             'permission_callback' => $this->buildPermissionCallback('cloud_storage_restore', $csPerm),
         ]);
+
+        // GET /cloud-storage/rotation-status
+        $safeRegister(EndpointType::CloudStorageRotationStatus->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handleCloudStorageRotationStatus'],
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_rotation_status', $csPerm),
+        ]);
+
+        // POST /cloud-storage/rotate
+        $safeRegister(EndpointType::CloudStorageRotate->route(), [
+            'methods'             => HttpMethodType::Post->value,
+            'callback'            => [$this, 'handleCloudStorageRotate'],
+            'permission_callback' => $this->buildPermissionCallback('cloud_storage_rotate', $csPerm),
+        ]);
     }
 
     /**
