@@ -182,6 +182,8 @@ var variantLabels = [...]string{
 	CloudStorageBackupHistory:       "CloudStorageBackupHistory",
 	CloudStorageBackupHistoryId:     "CloudStorageBackupHistoryId",
 	CloudStorageRestore:             "CloudStorageRestore",
+	CloudStorageRotationStatus:      "CloudStorageRotationStatus",
+	CloudStorageRotate:              "CloudStorageRotate",
 	SiteSettings:                    "SiteSettings",
 	SiteHealthSummary:               "SiteHealthSummary",
 	DebugRoutes:                     "DebugRoutes",
