@@ -101,7 +101,7 @@
 | Metric | Count |
 |--------|-------|
 | Open | 1 |
-| Completed | 66 |
+| Completed | 67 |
 | Closed N/A | 1 |
 | Rejected | 1 |
 | **Total** | **70** |
