@@ -36,7 +36,7 @@ class FileLogger {
     use LoggerDedupTrait;
     use LoggerPersistentDedupTrait;
     use LoggerLevelMethodsTrait;
-use RiseupAsia\Enums\PhpNativeType;
+
 
     private const SEPARATOR_WIDTH = 80;
     private const TRACE_LABEL_INTERNAL = '<internal>';
