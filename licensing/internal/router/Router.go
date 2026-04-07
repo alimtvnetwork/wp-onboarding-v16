@@ -97,6 +97,10 @@ func registerAdminRoutes(
 
 	admin.HandleFunc("/licenses", h.CreateLicense).Methods("POST")
 	admin.HandleFunc("/licenses", h.ListLicenses).Methods("GET")
+	admin.HandleFunc("/licenses/stats", h.GetStats).Methods("GET")
+	admin.HandleFunc("/licenses/batch/revoke", h.BatchRevoke).Methods("POST")
+	admin.HandleFunc("/licenses/batch/extend", h.BatchExtend).Methods("POST")
+	admin.HandleFunc("/licenses/export", h.ExportCSV).Methods("GET")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.GetLicense).Methods("GET")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.UpdateLicense).Methods("PATCH")
 	admin.HandleFunc("/licenses/{id:[0-9]+}", h.DeleteLicense).Methods("DELETE")
