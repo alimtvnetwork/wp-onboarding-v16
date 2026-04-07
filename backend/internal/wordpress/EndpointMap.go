@@ -99,6 +99,10 @@ const (
 	EPImportUsersCsv   WPEndpointName = "ImportUsersCsv"
 	EPExportSqlite     WPEndpointName = "ExportUsersSqlite"
 	EPImportSqlite     WPEndpointName = "ImportUsersSqlite"
+
+	// Cloud storage rotation endpoints
+	EPCloudStorageRotationStatus WPEndpointName = "CloudStorageRotationStatus"
+	EPCloudStorageRotate         WPEndpointName = "CloudStorageRotate"
 )
 
 // GoEndpointRoute describes the Go backend API route for a delegated operation.
@@ -194,6 +198,10 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPImportUsersCsv: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import"},
 	EPExportSqlite:   {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users/export-sqlite"},
 	EPImportSqlite:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import-sqlite"},
+
+	// Cloud storage rotation
+	EPCloudStorageRotationStatus: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/cloud-storage/rotation-status"},
+	EPCloudStorageRotate:         {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/cloud-storage/rotate"},
 }
 
 // WPEndpointMap maps each operation enum to the WordPress Riseup Asia Uploader REST endpoint.
@@ -277,6 +285,10 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPImportUsersCsv: {Method: httpmethod.Post, Endpoint: ep.UsersImport},
 	EPExportSqlite:   {Method: httpmethod.Get, Endpoint: ep.UsersExportSqlite},
 	EPImportSqlite:   {Method: httpmethod.Post, Endpoint: ep.UsersImportSqlite},
+
+	// Cloud storage rotation
+	EPCloudStorageRotationStatus: {Method: httpmethod.Get, Endpoint: ep.CloudStorageRotationStatus},
+	EPCloudStorageRotate:         {Method: httpmethod.Post, Endpoint: ep.CloudStorageRotate},
 }
 
 // ResolveGoEndpoint returns the Go backend route for a given operation,

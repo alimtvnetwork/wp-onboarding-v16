@@ -93,6 +93,10 @@ type SiteServiceInterface interface {
 	// Dedup registry proxy — typed returns
 	GetRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryResult, *apperror.AppError)
 	ClearRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryClearResult, *apperror.AppError)
+
+	// Cloud storage rotation proxy — typed returns
+	GetCloudStorageRotationStatus(ctx context.Context, siteId int64, query string) (*wordpress.RotationStatus, *apperror.AppError)
+	TriggerCloudStorageRotation(ctx context.Context, siteId int64, body wordpress.CloudStorageRotateRequest) (*wordpress.CloudStorageRotateResult, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -391,4 +395,12 @@ func (a *SiteServiceAdapter) ExportRemoteUsersCsv(ctx context.Context, siteId in
 
 func (a *SiteServiceAdapter) ExportRemoteUsersSqlite(ctx context.Context, siteId int64) (*wordpress.UserExportResult, *apperror.AppError) {
 	return a.Service.ExportRemoteUsersSqlite(ctx, siteId)
+}
+
+func (a *SiteServiceAdapter) GetCloudStorageRotationStatus(ctx context.Context, siteId int64, query string) (*wordpress.RotationStatus, *apperror.AppError) {
+	return a.Service.GetCloudStorageRotationStatus(ctx, siteId, query)
+}
+
+func (a *SiteServiceAdapter) TriggerCloudStorageRotation(ctx context.Context, siteId int64, body wordpress.CloudStorageRotateRequest) (*wordpress.CloudStorageRotateResult, *apperror.AppError) {
+	return a.Service.TriggerCloudStorageRotation(ctx, siteId, body)
 }

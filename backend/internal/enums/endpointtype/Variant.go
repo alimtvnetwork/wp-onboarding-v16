@@ -89,6 +89,8 @@ const (
 	CloudStorageBackupHistory
 	CloudStorageBackupHistoryId
 	CloudStorageRestore
+	CloudStorageRotationStatus
+	CloudStorageRotate
 	SiteSettings
 	SiteHealthSummary
 	DebugRoutes
@@ -180,6 +182,8 @@ var variantLabels = [...]string{
 	CloudStorageBackupHistory:       "CloudStorageBackupHistory",
 	CloudStorageBackupHistoryId:     "CloudStorageBackupHistoryId",
 	CloudStorageRestore:             "CloudStorageRestore",
+	CloudStorageRotationStatus:      "CloudStorageRotationStatus",
+	CloudStorageRotate:              "CloudStorageRotate",
 	SiteSettings:                    "SiteSettings",
 	SiteHealthSummary:               "SiteHealthSummary",
 	DebugRoutes:                     "DebugRoutes",
@@ -271,6 +275,8 @@ var variantValues = [...]string{
 	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
 	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
 	CloudStorageRestore:             "/cloud-storage/restore",
+	CloudStorageRotationStatus:      "/cloud-storage/rotation-status",
+	CloudStorageRotate:              "/cloud-storage/rotate",
 	SiteSettings:                    "/site-settings",
 	SiteHealthSummary:               "/site-health-summary",
 	DebugRoutes:                     "/debug/routes",

@@ -126,6 +126,8 @@ enum EndpointType: string
     case CloudStorageBackupHistory   = 'cloud-storage/backup-history';
     case CloudStorageBackupHistoryId = 'cloud-storage/backup-history/(?P<id>\d+)';
     case CloudStorageRestore         = 'cloud-storage/restore';
+    case CloudStorageRotationStatus  = 'cloud-storage/rotation-status';
+    case CloudStorageRotate          = 'cloud-storage/rotate';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

@@ -92,6 +92,9 @@ func registerSiteRoutes(api *mux.Router) {
 	api.HandleFunc("/sites/{id}/remote-logs/retrieve", handlers.RetrieveRemoteLogs).Methods("GET")
 	api.HandleFunc("/sites/{id}/remote-logs/dedup-registry", handlers.GetRemoteDedupRegistry).Methods("GET")
 	api.HandleFunc("/sites/{id}/remote-logs/dedup-registry", handlers.ClearRemoteDedupRegistry).Methods("DELETE")
+	// Cloud storage rotation
+	api.HandleFunc("/sites/{id}/cloud-storage/rotation-status", handlers.GetCloudStorageRotationStatus).Methods("GET")
+	api.HandleFunc("/sites/{id}/cloud-storage/rotate", handlers.TriggerCloudStorageRotation).Methods("POST")
 	registerSnapshotRoutes(api)
 	registerUserRoutes(api)
 	registerSiteSettingsRoutes(api)

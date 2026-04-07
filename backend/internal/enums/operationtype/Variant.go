@@ -67,6 +67,8 @@ const (
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
+	CloudStorageRotationStatus
+	CloudStorageRotate
 	ListUsers
 	GetUser
 	CreateUser
@@ -141,7 +143,9 @@ var variantLabels = [...]string{
 	ClearDedupRegistry:     "ClearDedupRegistry",
 	CloudStorageUpload:         "CloudStorageUpload",
 	CloudStorageRestore:       "CloudStorageRestore",
-	CloudStorageBackupHistory: "CloudStorageBackupHistory",
+	CloudStorageBackupHistory:     "CloudStorageBackupHistory",
+	CloudStorageRotationStatus:    "CloudStorageRotationStatus",
+	CloudStorageRotate:            "CloudStorageRotate",
 	ListUsers:                 "ListUsers",
 	GetUser:                   "GetUser",
 	CreateUser:                "CreateUser",
@@ -216,7 +220,9 @@ var variantValues = [...]string{
 	ClearDedupRegistry:     "clear dedup registry",
 	CloudStorageUpload:         "cloud storage upload",
 	CloudStorageRestore:       "cloud storage restore",
-	CloudStorageBackupHistory: "cloud storage backup history",
+	CloudStorageBackupHistory:     "cloud storage backup history",
+	CloudStorageRotationStatus:    "cloud storage rotation status",
+	CloudStorageRotate:            "cloud storage rotate",
 	ListUsers:                 "list users",
 	GetUser:                   "get user",
 	CreateUser:                "create user",
