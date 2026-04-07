@@ -11,15 +11,15 @@
 | ID | Created | Priority | Source | Status | Description |
 |----|---------|----------|--------|--------|-------------|
 | S-044 | 2026-03-15 | Medium | Lovable | done | Cloud Storage Go pipeline cloud_upload stage — already implemented |
-| S-046 | 2026-03-15 | Low | Lovable | open | Implement Phase 5F for Google Drive folder-based rotation adaptation |
+| S-046 | 2026-03-15 | Low | Lovable | done | Implement Phase 5F for Google Drive folder-based rotation adaptation |
 | S-047 | 2026-03-15 | Medium | Lovable | done | Implement backup history visualization UI (Phase 5E) in the Cloud Storage dashboard |
 | S-048 | 2026-03-15 | Medium | Lovable | done | Add Go backend validation for chunk reassembly manifest integrity during publishing |
 | S-049 | 2026-03-16 | Low | Lovable | open | Create `wp-plugins/qupload/settings.json` with explicit logging config defaults |
 | S-050 | 2026-03-16 | Low | Lovable | open | Add GET `/logs/rotation-status` endpoint to QUpload for remote rotation monitoring |
 | S-051 | 2026-03-16 | Medium | Lovable | done | Add verbose endpoint probing to `-check` (HEAD requests per endpoint) |
 | S-052 | 2026-03-16 | Medium | Lovable | done | Auto-invalidate cached ZIP when plugin source files change (hash-based) |
-| S-053 | 2026-03-16 | Low | Lovable | open | Admin dashboard for licensing server (React SPA or Go templates) — **needs spec first** |
-| S-054 | 2026-03-16 | Low | Lovable | open | Publish analytics / history reporting dashboard — **needs spec first** |
+| S-053 | 2026-03-16 | Low | Lovable | done | Admin dashboard for licensing server — Go Stats/Batch/Export endpoints + React analytics |
+| S-054 | 2026-03-16 | Low | Lovable | done | Publish analytics / history reporting dashboard |
 | S-055 | 2026-04-01 | High | User | done | Scan and fix all QUpload-incompatible PHP patterns (is_array, array(), magic strings) across all plugins |
 | S-056 | 2026-04-01 | Medium | User | done | Create .ai-instructions files in plugin roots with PHP compatibility rules |
 
@@ -100,8 +100,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 9 |
-| Completed | 59 |
+| Open | 2 |
+| Completed | 66 |
 | Closed N/A | 1 |
 | Rejected | 1 |
 | **Total** | **70** |
