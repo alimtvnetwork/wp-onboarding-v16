@@ -138,20 +138,18 @@
 
 > **For handoff to other AI models:** Pick the next task based on priority and unblocked status.
 
-**Recommended implementation order:**
-
-1. **J-1: Rewrite Go bootstrap — ZIP once** — 🔴 Critical, unblocked
-2. **J-2: Cross-upload strategy** — 🔴 Critical, depends on J-1
-3. **J-3: Parallel site uploads** — 🟡 High, depends on J-1 + J-2
-4. **J-4: Pre-flight endpoint check UI** — 🟡 High, unblocked (can parallelize with J-1)
-5. **J-5: Phased progress UI** — 🟡 High, depends on J-1 + J-3
-6. **J-6: Delegated error logs** — 🟡 High, unblocked (can parallelize)
-7. **J-7: Retry limiting** — 🟢 Medium, depends on J-2
+**All planned phases and suggestions are complete.** Only deployment verification remains blocked.
 
 **Blocked (needs user action):**
-- Phase A: All deployment tasks
-- I-4: Redeploy for plugin_slug fix
+- Phase A (A-1, A-2, A-3): Deploy v2.17.0+ via `.\run.ps1 -uas`
+- I-4: Redeploy for plugin_slug fix (v2.30.0)
+
+**Potential future features (Phase K — not yet specced):**
+1. **K-1: Scheduled Publishing** — queue publishes for future time
+2. **K-3: Webhook Notifications** — Slack/Discord/custom URL on publish events
+3. **K-4: Multi-user Access Control** — role-based dashboard access
+4. **K-5: Plugin Dependency Graph** — visualize shared library dependencies
 
 ---
 
-*Master plan for AI handoff. Pick from "Next Task Selection" above. Read specs before implementing.*
+*Master plan for AI handoff. All phases complete. Deploy to unblock Phase A.*
