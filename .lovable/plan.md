@@ -123,12 +123,14 @@
 
 ---
 
-### Phase H: Future Features
+### ✅ Phase H: Future Features (All Complete)
 
 | # | Task | Priority | Dependencies | Status |
 |---|------|----------|------------|--------|
-| H-2 | Publish analytics / history reporting | 🟢 Low | — | ✅ Complete |
+| H-2 | Publish analytics / history reporting (S-054) | 🟢 Low | — | ✅ Complete |
 | H-3 | User Management implementation | 🟢 Low | `spec/16-user-management/` exists | ✅ Complete |
+| S-046 | Google Drive folder rotation | 🟢 Low | — | ✅ Complete |
+| S-053 | Licensing admin dashboard (Go backend) | 🟢 Low | H-1 | ✅ Complete |
 
 ---
 
