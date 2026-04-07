@@ -67,6 +67,8 @@ const (
 	CloudStorageUpload
 	CloudStorageRestore
 	CloudStorageBackupHistory
+	CloudStorageRotationStatus
+	CloudStorageRotate
 	ListUsers
 	GetUser
 	CreateUser

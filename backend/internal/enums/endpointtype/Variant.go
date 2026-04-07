@@ -89,6 +89,8 @@ const (
 	CloudStorageBackupHistory
 	CloudStorageBackupHistoryId
 	CloudStorageRestore
+	CloudStorageRotationStatus
+	CloudStorageRotate
 	SiteSettings
 	SiteHealthSummary
 	DebugRoutes
