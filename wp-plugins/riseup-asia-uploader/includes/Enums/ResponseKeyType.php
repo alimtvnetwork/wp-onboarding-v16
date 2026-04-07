@@ -347,7 +347,7 @@ enum ResponseKeyType: string
     /** Plugin archive keys. */
     case Zip            = 'Zip';
     case ZipFile        = 'ZipFile';
-    case FileSizeBytes  = 'FileSizeBytes';
+    case ArchiveFileSizeBytes = 'FileSizeBytes';
     case ChecksumMd5    = 'ChecksumMd5';
     case PluginName     = 'PluginName';
 
