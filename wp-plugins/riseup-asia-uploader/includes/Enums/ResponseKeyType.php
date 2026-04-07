@@ -398,6 +398,18 @@ enum ResponseKeyType: string
     case CommitSha         = 'CommitSha';
     case BaseFullBackupId  = 'BaseFullBackupId';
 
+    /** Cloud storage rotation keys. */
+    case CurrentCount      = 'CurrentCount';
+    case CurrentSizeMB     = 'CurrentSizeMB';
+    case MaxCount          = 'MaxCount';
+    case MaxSizeMB         = 'MaxSizeMB';
+    case IsOverLimit       = 'IsOverLimit';
+    case NextAction        = 'NextAction';
+    case Applied           = 'Applied';
+    case FilesMoved        = 'FilesMoved';
+    case DeletedFiles      = 'DeletedFiles';
+    case MovedFiles        = 'MovedFiles';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
