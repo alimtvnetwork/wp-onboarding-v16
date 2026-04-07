@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
@@ -29,11 +30,11 @@ var TriggerCloudStorageRotation http.HandlerFunc = func(w http.ResponseWriter, r
 	}
 
 	var body wordpress.CloudStorageRotateRequest
-	if !decodeBody(w, r, &body) {
+	if isBodyInvalid(w, r, &body) {
 		return
 	}
 
-	result, appErr := Services.SiteService.TriggerCloudStorageRotation(ctx, siteId, body)
+	result, appErr := Services.SiteService.TriggerCloudStorageRotation(r.Context(), siteId, body)
 	if appErr != nil {
 		respondErrorWithDelegated(w, resolveHttpStatus(appErr, wordpress.HttpStatusServerError), apperror.ErrWPConnection, appErr.Error(), appErr)
 		return
