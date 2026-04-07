@@ -93,6 +93,10 @@ type SiteServiceInterface interface {
 	// Dedup registry proxy — typed returns
 	GetRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryResult, *apperror.AppError)
 	ClearRemoteDedupRegistry(ctx context.Context, siteId int64) (*wordpress.DedupRegistryClearResult, *apperror.AppError)
+
+	// Cloud storage rotation proxy — typed returns
+	GetCloudStorageRotationStatus(ctx context.Context, siteId int64, query string) (*wordpress.RotationStatus, *apperror.AppError)
+	TriggerCloudStorageRotation(ctx context.Context, siteId int64, body wordpress.CloudStorageRotateRequest) (*wordpress.CloudStorageRotateResult, *apperror.AppError)
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
