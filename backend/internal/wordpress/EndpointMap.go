@@ -198,6 +198,10 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPImportUsersCsv: {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import"},
 	EPExportSqlite:   {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/users/export-sqlite"},
 	EPImportSqlite:   {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/users/import-sqlite"},
+
+	// Cloud storage rotation
+	EPCloudStorageRotationStatus: {Method: httpmethod.Get, Pattern: "/api/v1/sites/{id}/cloud-storage/rotation-status"},
+	EPCloudStorageRotate:         {Method: httpmethod.Post, Pattern: "/api/v1/sites/{id}/cloud-storage/rotate"},
 }
 
 // WPEndpointMap maps each operation enum to the WordPress Riseup Asia Uploader REST endpoint.
