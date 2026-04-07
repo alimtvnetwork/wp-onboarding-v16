@@ -285,6 +285,10 @@ var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPImportUsersCsv: {Method: httpmethod.Post, Endpoint: ep.UsersImport},
 	EPExportSqlite:   {Method: httpmethod.Get, Endpoint: ep.UsersExportSqlite},
 	EPImportSqlite:   {Method: httpmethod.Post, Endpoint: ep.UsersImportSqlite},
+
+	// Cloud storage rotation
+	EPCloudStorageRotationStatus: {Method: httpmethod.Get, Endpoint: ep.CloudStorageRotationStatus},
+	EPCloudStorageRotate:         {Method: httpmethod.Post, Endpoint: ep.CloudStorageRotate},
 }
 
 // ResolveGoEndpoint returns the Go backend route for a given operation,
