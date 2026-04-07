@@ -56,7 +56,7 @@ func (s *LicenseService) Stats() apperror.Result[LicenseStats] {
 	byProductResult := s.queryDistribution(statsDistByProductSql)
 	if byProductResult.HasError() {
 
-		return apperror.FailFrom[LicenseStats](byProductResult.AppError())
+		return apperror.Fail[LicenseStats](byProductResult.AppError())
 	}
 	stats.ByProduct = byProductResult.Value()
 
@@ -64,7 +64,7 @@ func (s *LicenseService) Stats() apperror.Result[LicenseStats] {
 	byTypeResult := s.queryDistribution(statsDistByTypeSql)
 	if byTypeResult.HasError() {
 
-		return apperror.FailFrom[LicenseStats](byTypeResult.AppError())
+		return apperror.Fail[LicenseStats](byTypeResult.AppError())
 	}
 	stats.ByType = byTypeResult.Value()
 
@@ -72,7 +72,7 @@ func (s *LicenseService) Stats() apperror.Result[LicenseStats] {
 	byStatusResult := s.queryDistribution(statsDistByStatusSql)
 	if byStatusResult.HasError() {
 
-		return apperror.FailFrom[LicenseStats](byStatusResult.AppError())
+		return apperror.Fail[LicenseStats](byStatusResult.AppError())
 	}
 	stats.ByStatus = byStatusResult.Value()
 
