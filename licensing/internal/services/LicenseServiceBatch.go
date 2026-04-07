@@ -55,7 +55,7 @@ func (s *LicenseService) BatchExtend(ids []int64, days int) apperror.Result[int]
 	isInvalidDuration := days <= 0
 
 	if isInvalidDuration {
-		return apperror.Fail[int](apperror.ErrValidation, "days must be positive")
+		return apperror.Fail[int](apperror.ErrInternal, "days must be positive")
 	}
 
 	// For each license, extend expiry from current expires_at (or from now if null)
