@@ -275,6 +275,8 @@ var variantValues = [...]string{
 	CloudStorageBackupHistory:       "/cloud-storage/backup-history",
 	CloudStorageBackupHistoryId:     "/cloud-storage/backup-history/(?P<id>\\d+)",
 	CloudStorageRestore:             "/cloud-storage/restore",
+	CloudStorageRotationStatus:      "/cloud-storage/rotation-status",
+	CloudStorageRotate:              "/cloud-storage/rotate",
 	SiteSettings:                    "/site-settings",
 	SiteHealthSummary:               "/site-health-summary",
 	DebugRoutes:                     "/debug/routes",
