@@ -867,20 +867,20 @@ final class DatabaseSeeder
     /**
      * Process a single seed entry from the manifest.
      *
-     * @param array<string, string> $entry             Manifest entry
-     * @param string|null           $lastSeededVersion Previously seeded version
+     * @param array<string, string> $entry          Manifest entry
+     * @param string                $currentVersion Current plugin version
      */
-    private function processSeedEntry(array $entry, ?string $lastSeededVersion): void
+    private function processSeedEntry(array $entry, string $currentVersion): void
     {
         $seedFile = $entry['file'] ?? '';
         $table = $entry['table'] ?? '';
-        $requiredVersion = $entry['version'] ?? '0.0.0';
         $strategyValue = $entry['strategy'] ?? 'insert_if_empty';
 
-        // Skip if this seed was already applied at a previous version
+        // Per-file version tracking — skip if already seeded at this version or newer
+        $lastSeeded = $this->getLastSeededVersion($seedFile);
         $isAlreadySeeded = (
-            $lastSeededVersion !== null
-            && version_compare($requiredVersion, $lastSeededVersion, '<=')
+            $lastSeeded !== null
+            && version_compare($currentVersion, $lastSeeded, '<=')
         );
 
         if ($isAlreadySeeded) {
@@ -923,6 +923,9 @@ final class DatabaseSeeder
             };
 
             $this->db->exec('COMMIT');
+
+            // Record per-file version after successful seed
+            $this->setLastSeededVersion($seedFile, $currentVersion);
         } catch (Throwable $e) {
             $this->db->exec('ROLLBACK');
 
