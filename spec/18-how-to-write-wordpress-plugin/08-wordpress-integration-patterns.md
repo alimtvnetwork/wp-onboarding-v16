@@ -994,34 +994,46 @@ final class DatabaseSeeder
     }
 
     /**
-     * Get the last version that was seeded.
+     * Ensure the seed_history table exists.
      */
-    private function getLastSeededVersion(): ?string
+    private function ensureSeedHistoryTable(): void
     {
         $this->db->exec('
             CREATE TABLE IF NOT EXISTS seed_history (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                seed_file       TEXT    NOT NULL UNIQUE,
+                last_seeded_ver TEXT    NOT NULL,
+                seeded_at       TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         ');
-
-        $result = $this->db->querySingle(
-            "SELECT value FROM seed_history WHERE key = 'last_seeded_version'"
-        );
-
-        $hasResult = ($result !== null && $result !== false);
-
-        return $hasResult ? (string) $result : null;
     }
 
     /**
-     * Record the current version as seeded.
+     * Get the last version a specific seed file was applied at.
      */
-    private function setLastSeededVersion(string $version): void
+    private function getLastSeededVersion(string $seedFile): ?string
     {
         $stmt = $this->db->prepare(
-            "INSERT OR REPLACE INTO seed_history (key, value) VALUES ('last_seeded_version', :version)"
+            "SELECT last_seeded_ver FROM seed_history WHERE seed_file = :file"
         );
+        $stmt->bindValue(':file', $seedFile, SQLITE3_TEXT);
+        $result = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+
+        $hasResult = (gettype($result) === 'array' && isset($result['last_seeded_ver']));
+
+        return $hasResult ? $result['last_seeded_ver'] : null;
+    }
+
+    /**
+     * Record the version a specific seed file was applied at.
+     */
+    private function setLastSeededVersion(string $seedFile, string $version): void
+    {
+        $stmt = $this->db->prepare(
+            "INSERT OR REPLACE INTO seed_history (seed_file, last_seeded_ver)
+             VALUES (:file, :version)"
+        );
+        $stmt->bindValue(':file', $seedFile, SQLITE3_TEXT);
         $stmt->bindValue(':version', $version, SQLITE3_TEXT);
         $stmt->execute();
     }
