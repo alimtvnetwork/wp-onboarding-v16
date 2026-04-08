@@ -1328,3 +1328,4 @@ add_action('plugins_loaded', function (): void {
 | `PhpNativeType` | `Enums/PhpNativeType.php` | PhpArray, PhpString, PhpInteger, PhpDouble, PhpBoolean, PhpObject, PhpNull |
 | `AjaxActionType` | `Enums/AjaxActionType.php` | ClearCache, ExportData, RunDiagnostic |
 | `CronScheduleType` | `Enums/CronScheduleType.php` | LogRotation, CacheCleanup |
+| `SeedStrategyType` | `Enums/SeedStrategyType.php` | InsertIfEmpty, UpsertByKey, ReplaceAll |
