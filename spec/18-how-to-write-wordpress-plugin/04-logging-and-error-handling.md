@@ -1,6 +1,6 @@
 # Phase 4 — Logging and Error Handling
 
-> **Purpose:** Define the complete logging architecture and error handling strategy in full detail so any AI can implement it correctly from scratch.
+> **Purpose:** Define the complete logging architecture, error handling strategy, debug-mode gating, and stack trace formatting in full detail so any AI can implement it correctly from scratch.
 
 ---
 
@@ -19,7 +19,52 @@ The autoloader and bootstrap run before any plugin classes are available. If the
 
 ---
 
-## 4.2 FileLogger — Complete Specification
+## 4.2 Debug Mode — The Master Gate
+
+Every plugin defines a debug mode constant in its main plugin file:
+
+```
+/** Enable debug mode — exposes stack traces in API responses. */
+define('MY_PLUGIN_DEBUG', false);
+```
+
+### What debug mode controls
+
+| Feature | Debug ON | Debug OFF |
+|---------|----------|-----------|
+| Stack traces in API error responses | ✅ Full frames included in `Errors.Backend` | ❌ `Errors.Backend` omitted entirely |
+| Verbose log entries | ✅ `debug()` writes to `info.log` | ❌ `debug()` calls are silently skipped |
+| Error response detail | ✅ Full exception message in `Errors.BackendMessage` | ⚠️ Generic message: `"An internal error occurred"` |
+| Performance timing in logs | ✅ Included in context | ❌ Omitted |
+
+### Checking debug mode
+
+Use the `PluginConfigType` enum, not the raw constant:
+
+```
+enum PluginConfigType: string
+{
+    case DebugConstant = 'MY_PLUGIN_DEBUG';
+
+    /** Check if the plugin is running in debug mode. */
+    public static function isDebugMode(): bool
+    {
+        $constantName = self::DebugConstant->value;
+        $isDefined = defined($constantName);
+
+        return $isDefined && constant($constantName) === true;
+    }
+}
+```
+
+**Usage:**
+```
+$isDebug = PluginConfigType::isDebugMode();
+```
+
+---
+
+## 4.3 FileLogger — Complete Specification
 
 ### Singleton access
 
@@ -37,24 +82,79 @@ The logger writes to three separate files, all under `wp-content/uploads/{plugin
 | `error.log` | Only warn and error entries | `warn()` and `error()` calls |
 | `stacktrace.log` | Full stack traces for errors | `logException()` and error-level calls |
 
-### Public API
+### Public API — Full Signatures
 
-| Method | Level | Writes to error.log | Writes stacktrace | Dedup enabled |
-|--------|-------|--------------------|--------------------|---------------|
-| `debug($message, $context)` | Debug | No | No | Yes (persistent) |
-| `info($message, $context)` | Info | No | No | Yes (persistent) |
-| `warn($message, $context)` | Warn | Yes | Yes | No |
-| `error($message, $context)` | Error | Yes | Yes | No |
-| `logException($e, $context)` | Error | Yes | Yes (from exception) | No |
-| `logCriticalException($e, $context)` | Error | Yes | Yes | No — re-throws |
+```
+class FileLogger
+{
+    /**
+     * Log a debug-level message. Only writes if debug mode is enabled.
+     *
+     * @param string               $message  Human-readable description
+     * @param array<string, mixed> $context  Structured key-value context data
+     */
+    public function debug(string $message, array $context = []): void;
 
-### logCriticalException — the "log and crash" method
+    /**
+     * Log an informational message.
+     *
+     * @param string               $message  Human-readable description
+     * @param array<string, mixed> $context  Key-value pairs (e.g., ['version' => '2.31.0', 'timeMs' => 1.23])
+     */
+    public function info(string $message, array $context = []): void;
 
-This method logs the exception and then **re-throws it** (return type `never`). Use it in infrastructure code (boot, route registration, autoloader) where silent failure causes cascading breakage. Call sites do not need a separate `throw $e` — the method handles it internally.
+    /**
+     * Log a warning. Writes to both info.log and error.log.
+     * Also writes a stack trace entry for diagnostic context.
+     *
+     * @param string               $message  Warning description
+     * @param array<string, mixed> $context  Key-value pairs with diagnostic data
+     */
+    public function warn(string $message, array $context = []): void;
+
+    /**
+     * Log an error. Writes to info.log, error.log, and stacktrace.log.
+     *
+     * @param string               $message  Error description
+     * @param array<string, mixed> $context  Key-value pairs (e.g., ['endpoint' => '/status', 'userId' => 1])
+     */
+    public function error(string $message, array $context = []): void;
+
+    /**
+     * Log an exception with full stack trace extraction.
+     *
+     * @param Throwable            $exception  The caught exception
+     * @param string               $context    Human-readable context string (e.g., 'Route registration')
+     */
+    public function logException(Throwable $exception, string $context = ''): void;
+
+    /**
+     * Log a critical exception and re-throw it. Return type is `never`.
+     * Use in infrastructure code where silent failure causes cascading breakage.
+     *
+     * @param Throwable $exception  The caught exception
+     * @param string    $context    Human-readable context string
+     *
+     * @throws Throwable Always re-throws the original exception
+     */
+    public function logCriticalException(Throwable $exception, string $context = ''): never;
+}
+```
+
+### Method behaviour matrix
+
+| Method | Level | Writes to info.log | Writes to error.log | Writes stacktrace | Dedup enabled | Skipped in non-debug |
+|--------|-------|--------------------|---------------------|--------------------|---------------|---------------------|
+| `debug()` | Debug | Yes (if debug) | No | No | Yes (persistent) | ✅ Yes |
+| `info()` | Info | Yes | No | No | Yes (persistent) | No |
+| `warn()` | Warn | Yes | Yes | Yes | No | No |
+| `error()` | Error | Yes | Yes | Yes | No | No |
+| `logException()` | Error | Yes | Yes | Yes (from exception) | No | No |
+| `logCriticalException()` | Error | Yes | Yes | Yes | No — re-throws | No |
 
 ---
 
-## 4.3 Log Entry Format
+## 4.4 Log Entry Format
 
 Every log line follows this exact format:
 
@@ -71,6 +171,14 @@ Every log line follows this exact format:
 | File:Line | Extracted from `debug_backtrace()` | `Plugin.php:107` |
 | Context | JSON-encoded associative array | `{"version":"2.31.0","timeMs":1.23}` |
 
+### Examples of actual log lines
+
+```
+[07-Apr-26 2:30 PM v2.31.0] [Info] Plugin initialized successfully (Plugin.php:107) {"version":"2.31.0","timeMs":12.5}
+[07-Apr-26 2:30 PM v2.31.0] [Warn] Request exceeded timeout threshold (UploadHandlerTrait.php:45) {"endpoint":"/upload","durationMs":5200,"thresholdMs":5000}
+[07-Apr-26 2:31 PM v2.31.0] [Error] Failed to activate plugin on remote site (ActivateHandlerTrait.php:78) {"site":"site-a","httpStatus":502,"responseBody":"Bad Gateway"}
+```
+
 ### Caller resolution
 
 The logger uses `debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)` to capture the actual caller's file and line, not the logger's own location. The skip depth is:
@@ -83,16 +191,20 @@ The logger uses `debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)` to capture the
 
 ---
 
-## 4.4 Stack Trace File Format
+## 4.5 Stack Trace File Format
 
 Stack traces are written to a dedicated file with visual separators:
 
 ```
 ================================================================================
 [07-Apr-26 2:30 PM v2.31.0] Error message here (SomeFile.php:42)
+Exception: RuntimeException
+Message: Cannot connect to remote endpoint
 --------------------------------------------------------------------------------
-#0 Plugin.php(107): PluginName\Core\Plugin->registerRoutes()
-#1 WP_Hook.php(324): WP_Hook->apply_filters()
+#0 ActivateHandlerTrait.php(78): PluginName\Traits\Activate\ActivateHandlerTrait->executeActivation()
+#1 ResponseTrait.php(35): PluginName\Traits\Core\ResponseTrait->safeExecute()
+#2 WP_REST_Server.php(1181): WP_REST_Server->dispatch()
+#3 rest-api.php(407): rest_do_request()
 ================================================================================
 
 ```
@@ -101,7 +213,7 @@ Each trace entry is a self-contained block with `=` separators for easy visual s
 
 ---
 
-## 4.5 Log Rotation
+## 4.6 Log Rotation
 
 The FileLogger automatically rotates log files when they exceed a size threshold.
 
@@ -136,7 +248,7 @@ logs/
 
 ---
 
-## 4.6 Deduplication
+## 4.7 Deduplication
 
 The logger has two dedup layers to prevent repetitive log entries:
 
@@ -155,7 +267,7 @@ The logger has two dedup layers to prevent repetitive log entries:
 
 ---
 
-## 4.7 Error Handling — Mandatory Rules
+## 4.8 Error Handling — Mandatory Rules
 
 ### Rule 1: Always catch Throwable
 
@@ -192,38 +304,259 @@ When FileLogger is not available (autoloader, bootstrap), use the `ErrorLogHelpe
 
 Every public REST handler method must be wrapped in `$this->safeExecute()`. Direct try-catch in endpoint handlers is not allowed — delegate to the ResponseTrait infrastructure.
 
-### Rule 5: Stack trace frames in API responses
+### Rule 5: Stack trace frames are debug-mode gated
 
-Error responses must include structured stack trace frames (not just a string) so that external systems can parse them:
+Error responses include structured stack trace frames **only when debug mode is enabled**. In production, the `Errors.Backend` field is omitted entirely to prevent information leakage.
 
-```json
+---
+
+## 4.9 safeExecute() — Complete Specification
+
+This is the most critical error-handling function in the plugin. It is defined in `ResponseTrait` and serves as the universal error boundary for all REST endpoints.
+
+### Full implementation pattern
+
+```
+/**
+ * Execute a callback with comprehensive error handling.
+ *
+ * @param callable $callback     The business logic to execute (must return WP_REST_Response)
+ * @param string   $endpointName A human-readable name for logging (e.g., 'activate-plugin')
+ *
+ * @return WP_REST_Response Always returns a valid response, even on failure
+ */
+protected function safeExecute(
+    callable $callback,
+    string $endpointName,
+): WP_REST_Response {
+    try {
+        return $callback();
+    } catch (Throwable $e) {
+        // Tier 1: Always log to PHP error_log (available even if FileLogger fails)
+        error_log(
+            "[{$this->getPluginSlug()}] safeExecute error in '{$endpointName}': "
+            . $e->getMessage() . "\n"
+            . $e->getTraceAsString()
+        );
+
+        // Tier 2: Log via FileLogger if available
+        $hasLogger = ($this->fileLogger !== null);
+
+        if ($hasLogger) {
+            $this->fileLogger->logException($e, "safeExecute:{$endpointName}");
+        }
+
+        // Build error response with debug-mode gating
+        return $this->buildErrorResponse($e, $endpointName);
+    }
+}
+```
+
+### buildErrorResponse — Debug-Mode Gating
+
+```
+/**
+ * Build an error response with stack trace conditionally included.
+ *
+ * @param Throwable $e            The caught exception
+ * @param string    $endpointName The endpoint name for context
+ *
+ * @return WP_REST_Response Formatted error envelope
+ */
+private function buildErrorResponse(
+    Throwable $e,
+    string $endpointName,
+): WP_REST_Response {
+    $isDebug = PluginConfigType::isDebugMode();
+
+    // In debug mode: real message + stack trace
+    // In production: generic message, no trace
+    $errorMessage = $isDebug
+        ? $e->getMessage()
+        : 'An internal error occurred';
+
+    $builder = EnvelopeBuilder::error($errorMessage, 500);
+
+    if ($isDebug) {
+        $builder->setStackTrace($this->formatStackFrames($e));
+    }
+
+    return $builder
+        ->setRequestedAt($endpointName)
+        ->toResponse();
+}
+```
+
+### formatStackFrames — Structured Trace Extraction
+
+```
+/**
+ * Extract structured stack trace frames from an exception.
+ *
+ * @param Throwable $e The exception to extract frames from
+ *
+ * @return array<int, string> Formatted trace lines
+ */
+private function formatStackFrames(Throwable $e): array
 {
-  "Errors": {
-    "BackendMessage": "Error description",
-    "Backend": [
-      "#0 SomeFile.php(42): ClassName->method()",
-      "#1 AnotherFile.php(100): AnotherClass->caller()"
-    ]
-  }
+    $rawTrace = $e->getTraceAsString();
+    $lines = explode("\n", $rawTrace);
+    $frames = [];
+
+    foreach ($lines as $line) {
+        $trimmedLine = trim($line);
+        $hasContent = ($trimmedLine !== '');
+
+        if ($hasContent) {
+            $frames[] = $trimmedLine;
+        }
+    }
+
+    return $frames;
 }
 ```
 
 ---
 
-## 4.8 ErrorLogHelper — Specification
+## 4.10 API Error Response Format — Complete Examples
 
-A minimal static class with two methods:
+### Debug mode ON — full details
 
-| Method | Signature | Behaviour |
-|--------|-----------|-----------|
-| `log` | `(Throwable $e, string $context): void` | Calls `error_log()` with context + message + trace |
-| `logAndThrow` | `(Throwable $e, string $context): never` | Calls `log()` then `throw $e` |
+```json
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 500,
+    "Message": "Cannot connect to remote endpoint: Connection refused",
+    "Timestamp": "2026-04-07T14:30:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/my-plugin-api/v1/activate",
+    "TotalRecords": 0
+  },
+  "Results": [],
+  "Errors": {
+    "BackendMessage": "Cannot connect to remote endpoint: Connection refused",
+    "ExceptionType": "RuntimeException",
+    "Backend": [
+      "#0 ActivateHandlerTrait.php(78): PluginName\\Traits\\Activate\\ActivateHandlerTrait->executeActivation()",
+      "#1 ResponseTrait.php(35): PluginName\\Traits\\Core\\ResponseTrait->PluginName\\Traits\\Core\\{closure}()",
+      "#2 ResponseTrait.php(42): PluginName\\Traits\\Core\\ResponseTrait->safeExecute()",
+      "#3 WP_REST_Server.php(1181): WP_REST_Server->dispatch()",
+      "#4 rest-api.php(407): rest_do_request()"
+    ]
+  }
+}
+```
 
-Use `logAndThrow` in infrastructure code (autoloader, route registration) where the plugin cannot recover. Use `log` in graceful-degradation paths.
+### Debug mode OFF — safe for production
+
+```json
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 500,
+    "Message": "An internal error occurred",
+    "Timestamp": "2026-04-07T14:30:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/my-plugin-api/v1/activate",
+    "TotalRecords": 0
+  },
+  "Results": []
+}
+```
+
+Note: No `Errors` key at all in production. The error is fully logged server-side (both Tier 1 and Tier 2), but the API consumer only sees a generic message. This prevents:
+- Exposing internal file paths
+- Leaking class/method names
+- Revealing PHP version or WordPress internals
+
+### 400-level errors — always include message (not sensitive)
+
+Validation errors (400, 401, 403, 404) always include a descriptive message regardless of debug mode, because they contain no internal implementation details:
+
+```json
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 400,
+    "Message": "Missing required field: plugin_slug",
+    "Timestamp": "2026-04-07T14:30:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/my-plugin-api/v1/activate",
+    "TotalRecords": 0
+  },
+  "Results": []
+}
+```
 
 ---
 
-## 4.9 Shutdown Handler (Fatal Errors)
+## 4.11 ErrorLogHelper — Complete Specification
+
+A minimal static class for Tier 1 logging when FileLogger is unavailable.
+
+### Full implementation pattern
+
+```
+class ErrorLogHelper
+{
+    /**
+     * Log an exception with full context and stack trace to PHP's error_log.
+     *
+     * @param Throwable $exception The caught exception
+     * @param string    $context   Human-readable context (e.g., 'Autoloader:')
+     */
+    public static function log(Throwable $exception, string $context): void
+    {
+        $message = sprintf(
+            '%s %s in %s:%d\n%s',
+            $context,
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine(),
+            $exception->getTraceAsString(),
+        );
+
+        error_log($message);
+    }
+
+    /**
+     * Log an exception and re-throw it. Use in infrastructure code
+     * where silent failure causes cascading breakage.
+     *
+     * @param Throwable $exception The caught exception
+     * @param string    $context   Human-readable context
+     *
+     * @throws Throwable Always re-throws the original exception
+     */
+    public static function logAndThrow(Throwable $exception, string $context): never
+    {
+        self::log($exception, $context);
+
+        throw $exception;
+    }
+}
+```
+
+### When to use ErrorLogHelper vs FileLogger
+
+| Scenario | Use |
+|----------|-----|
+| Inside autoloader (`vendor/autoload.php`) | `ErrorLogHelper::log()` |
+| Inside `Plugin::boot()` before FileLogger init | `ErrorLogHelper::logAndThrow()` |
+| Inside route registration (FileLogger may fail) | `ErrorLogHelper::log()` as fallback |
+| Inside any trait handler method | `$this->fileLogger->logException()` |
+| Inside a static helper class | `ErrorLogHelper::log()` |
+
+---
+
+## 4.12 Shutdown Handler (Fatal Errors)
 
 Register a global shutdown handler to catch fatal errors that bypass try-catch:
 
@@ -232,9 +565,45 @@ Register a global shutdown handler to catch fatal errors that bypass try-catch:
 3. Include memory usage statistics (helps diagnose OOM kills)
 4. Attempt JSON output if the response has not been sent
 
+### Implementation pattern
+
+```
+register_shutdown_function(function (): void {
+    $lastError = error_get_last();
+    $hasError = ($lastError !== null);
+
+    if (!$hasError) {
+        return;
+    }
+
+    $fatalTypes = [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE];
+    $isFatal = in_array($lastError['type'], $fatalTypes, true);
+
+    if (!$isFatal) {
+        return;
+    }
+
+    $memoryUsage = memory_get_peak_usage(true);
+    $memoryMb = round($memoryUsage / 1048576, 2);
+
+    $logEntry = sprintf(
+        "[FATAL] %s in %s:%d | Memory: %sMB | %s\n",
+        $lastError['message'],
+        $lastError['file'],
+        $lastError['line'],
+        $memoryMb,
+        DateHelper::nowLogDisplay(),
+    );
+
+    // Write directly to file — FileLogger may be compromised
+    $logPath = PathHelper::getLogsDir() . '/fatal-errors.log';
+    file_put_contents($logPath, $logEntry, FILE_APPEND | LOCK_EX);
+});
+```
+
 ---
 
-## 4.10 DateHelper — Timestamp Specification
+## 4.13 DateHelper — Timestamp Specification
 
 All timestamps flow through a centralised `DateHelper` class:
 
@@ -251,3 +620,40 @@ All timestamps flow through a centralised `DateHelper` class:
 - All display converts to the WordPress-configured timezone (`Settings > General > Timezone`)
 - The timezone is resolved once and cached for the request lifetime
 - Supports both named timezones (`Asia/Kuala_Lumpur`) and GMT offset fallback
+
+---
+
+## 4.14 Complete Error Handling Flow — End to End
+
+This shows exactly what happens when an exception occurs during an API request:
+
+```
+1. Client sends: POST /my-plugin-api/v1/activate { "plugin_slug": "some-plugin" }
+
+2. WordPress routes to: ActivateHandlerTrait::handleActivate($request)
+
+3. handleActivate() calls: $this->safeExecute(fn() => $this->executeActivation($request), 'activate')
+
+4. executeActivation() throws: RuntimeException("Connection refused")
+
+5. safeExecute() catches Throwable:
+   a. Tier 1: error_log("[MyPlugin] safeExecute error in 'activate': Connection refused\n#0 ...")
+   b. Tier 2: $this->fileLogger->logException($e, "safeExecute:activate")
+      → Writes to info.log:    [07-Apr-26 2:31 PM v2.31.0] [Error] safeExecute:activate: Connection refused (ResponseTrait.php:35) {}
+      → Writes to error.log:   [07-Apr-26 2:31 PM v2.31.0] [Error] safeExecute:activate: Connection refused (ResponseTrait.php:35) {}
+      → Writes to stacktrace.log:
+         ================================================================================
+         [07-Apr-26 2:31 PM v2.31.0] safeExecute:activate: Connection refused (ResponseTrait.php:35)
+         Exception: RuntimeException
+         Message: Connection refused
+         --------------------------------------------------------------------------------
+         #0 ActivateHandlerTrait.php(78): ...->executeActivation()
+         #1 ResponseTrait.php(35): ...->safeExecute()
+         ================================================================================
+   c. Calls buildErrorResponse($e, 'activate')
+      → Checks PluginConfigType::isDebugMode()
+      → If debug: includes Errors.Backend with trace frames + real message
+      → If production: generic "An internal error occurred", no Errors key
+
+6. Client receives: JSON envelope with Code 500
+```
