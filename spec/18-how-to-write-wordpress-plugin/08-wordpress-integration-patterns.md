@@ -822,17 +822,23 @@ final class DatabaseSeeder
     private \SQLite3 $db;
     private string $seedsDir;
 
-    public function __construct(\SQLite3 $db)
+    /**
+     * @param \SQLite3    $db       Database connection
+     * @param string|null $seedsDir Path to seeds directory (default: plugin's data/seeds/)
+     */
+    public function __construct(\SQLite3 $db, ?string $seedsDir = null)
     {
         $this->db = $db;
-        $this->seedsDir = plugin_dir_path(dirname(__DIR__)) . 'data/seeds';
+        $this->seedsDir = $seedsDir ?? plugin_dir_path(dirname(__DIR__)) . 'data/seeds';
     }
 
     /**
      * Run all pending seeds based on the manifest and current version.
      * Called after migrations complete (schema must exist before data).
+     *
+     * @param string|null $version Override version (default: reads from PluginConfigType::Version)
      */
-    public function seedAll(): void
+    public function seedAll(?string $version = null): void
     {
         $manifestPath = $this->seedsDir . '/manifest.json';
         $hasManifest = file_exists($manifestPath);
@@ -849,42 +855,32 @@ final class DatabaseSeeder
             return;
         }
 
-        $lastSeededVersion = $this->getLastSeededVersion();
-        $currentVersion = PluginConfigType::Version->value;
-        $isVersionUnchanged = ($lastSeededVersion === $currentVersion);
+        $currentVersion = $version ?? PluginConfigType::Version->value;
 
-        // On first run: lastSeededVersion is null, so we seed everything
-        // On upgrade: seed entries with version > lastSeededVersion
-        // On same version: skip entirely (no reseed needed)
-        if ($isVersionUnchanged) {
-            return;
-        }
+        $this->ensureSeedHistoryTable();
 
         foreach ($manifest['seeds'] as $seedEntry) {
-            $this->processSeedEntry($seedEntry, $lastSeededVersion);
+            $this->processSeedEntry($seedEntry, $currentVersion);
         }
-
-        // Record the current version as seeded
-        $this->setLastSeededVersion($currentVersion);
     }
 
     /**
      * Process a single seed entry from the manifest.
      *
-     * @param array<string, string> $entry             Manifest entry
-     * @param string|null           $lastSeededVersion Previously seeded version
+     * @param array<string, string> $entry          Manifest entry
+     * @param string                $currentVersion Current plugin version
      */
-    private function processSeedEntry(array $entry, ?string $lastSeededVersion): void
+    private function processSeedEntry(array $entry, string $currentVersion): void
     {
         $seedFile = $entry['file'] ?? '';
         $table = $entry['table'] ?? '';
-        $requiredVersion = $entry['version'] ?? '0.0.0';
         $strategyValue = $entry['strategy'] ?? 'insert_if_empty';
 
-        // Skip if this seed was already applied at a previous version
+        // Per-file version tracking — skip if already seeded at this version or newer
+        $lastSeeded = $this->getLastSeededVersion($seedFile);
         $isAlreadySeeded = (
-            $lastSeededVersion !== null
-            && version_compare($requiredVersion, $lastSeededVersion, '<=')
+            $lastSeeded !== null
+            && version_compare($currentVersion, $lastSeeded, '<=')
         );
 
         if ($isAlreadySeeded) {
@@ -927,6 +923,9 @@ final class DatabaseSeeder
             };
 
             $this->db->exec('COMMIT');
+
+            // Record per-file version after successful seed
+            $this->setLastSeededVersion($seedFile, $currentVersion);
         } catch (Throwable $e) {
             $this->db->exec('ROLLBACK');
 
@@ -995,34 +994,46 @@ final class DatabaseSeeder
     }
 
     /**
-     * Get the last version that was seeded.
+     * Ensure the seed_history table exists.
      */
-    private function getLastSeededVersion(): ?string
+    private function ensureSeedHistoryTable(): void
     {
         $this->db->exec('
             CREATE TABLE IF NOT EXISTS seed_history (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                seed_file       TEXT    NOT NULL UNIQUE,
+                last_seeded_ver TEXT    NOT NULL,
+                seeded_at       TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         ');
-
-        $result = $this->db->querySingle(
-            "SELECT value FROM seed_history WHERE key = 'last_seeded_version'"
-        );
-
-        $hasResult = ($result !== null && $result !== false);
-
-        return $hasResult ? (string) $result : null;
     }
 
     /**
-     * Record the current version as seeded.
+     * Get the last version a specific seed file was applied at.
      */
-    private function setLastSeededVersion(string $version): void
+    private function getLastSeededVersion(string $seedFile): ?string
     {
         $stmt = $this->db->prepare(
-            "INSERT OR REPLACE INTO seed_history (key, value) VALUES ('last_seeded_version', :version)"
+            "SELECT last_seeded_ver FROM seed_history WHERE seed_file = :file"
         );
+        $stmt->bindValue(':file', $seedFile, SQLITE3_TEXT);
+        $result = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+
+        $hasResult = (gettype($result) === 'array' && isset($result['last_seeded_ver']));
+
+        return $hasResult ? $result['last_seeded_ver'] : null;
+    }
+
+    /**
+     * Record the version a specific seed file was applied at.
+     */
+    private function setLastSeededVersion(string $seedFile, string $version): void
+    {
+        $stmt = $this->db->prepare(
+            "INSERT OR REPLACE INTO seed_history (seed_file, last_seeded_ver)
+             VALUES (:file, :version)"
+        );
+        $stmt->bindValue(':file', $seedFile, SQLITE3_TEXT);
         $stmt->bindValue(':version', $version, SQLITE3_TEXT);
         $stmt->execute();
     }
@@ -1063,7 +1074,7 @@ public static function runAllPending(): void
 
     // Seed data after schema is up to date
     $seeder = new DatabaseSeeder($migrator->db);
-    $seeder->seedAll();
+    $seeder->seedAll();  // Uses PluginConfigType::Version by default
 }
 ```
 
@@ -1075,12 +1086,11 @@ public static function runAllPending(): void
 3. Activator calls DatabaseMigrator::runAllPending()
 4. Migrator runs migration v2 (adds is_active column)
 5. Migrator calls DatabaseSeeder::seedAll()
-6. Seeder reads manifest.json:
-   - settings.json (v1.0.0) → lastSeededVersion was "1.0.0" → SKIP (already seeded)
-   - templates.json (v1.0.0) → SKIP
-   - permissions.json (v1.2.0) → version > lastSeededVersion → EXECUTE (upsert new defaults)
-7. Seeder records lastSeededVersion = "1.2.0" in seed_history table
-8. Next activation at v1.2.0: seedAll() sees version unchanged → skips entirely
+6. Seeder reads manifest.json and checks per-file seed_history:
+   - settings.json → seed_history shows last_seeded_ver "1.0.0" < "1.2.0" → RE-SEED
+   - permissions.json → no seed_history entry → SEED (first run for this file)
+7. Seeder records last_seeded_ver = "1.2.0" per file in seed_history table
+8. Next activation at v1.2.0: seedAll() sees per-file versions unchanged → skips all
 ```
 
 ### Edge cases
