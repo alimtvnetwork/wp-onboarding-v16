@@ -822,17 +822,23 @@ final class DatabaseSeeder
     private \SQLite3 $db;
     private string $seedsDir;
 
-    public function __construct(\SQLite3 $db)
+    /**
+     * @param \SQLite3    $db       Database connection
+     * @param string|null $seedsDir Path to seeds directory (default: plugin's data/seeds/)
+     */
+    public function __construct(\SQLite3 $db, ?string $seedsDir = null)
     {
         $this->db = $db;
-        $this->seedsDir = plugin_dir_path(dirname(__DIR__)) . 'data/seeds';
+        $this->seedsDir = $seedsDir ?? plugin_dir_path(dirname(__DIR__)) . 'data/seeds';
     }
 
     /**
      * Run all pending seeds based on the manifest and current version.
      * Called after migrations complete (schema must exist before data).
+     *
+     * @param string|null $version Override version (default: reads from PluginConfigType::Version)
      */
-    public function seedAll(): void
+    public function seedAll(?string $version = null): void
     {
         $manifestPath = $this->seedsDir . '/manifest.json';
         $hasManifest = file_exists($manifestPath);
@@ -849,23 +855,13 @@ final class DatabaseSeeder
             return;
         }
 
-        $lastSeededVersion = $this->getLastSeededVersion();
-        $currentVersion = PluginConfigType::Version->value;
-        $isVersionUnchanged = ($lastSeededVersion === $currentVersion);
+        $currentVersion = $version ?? PluginConfigType::Version->value;
 
-        // On first run: lastSeededVersion is null, so we seed everything
-        // On upgrade: seed entries with version > lastSeededVersion
-        // On same version: skip entirely (no reseed needed)
-        if ($isVersionUnchanged) {
-            return;
-        }
+        $this->ensureSeedHistoryTable();
 
         foreach ($manifest['seeds'] as $seedEntry) {
-            $this->processSeedEntry($seedEntry, $lastSeededVersion);
+            $this->processSeedEntry($seedEntry, $currentVersion);
         }
-
-        // Record the current version as seeded
-        $this->setLastSeededVersion($currentVersion);
     }
 
     /**
