@@ -754,7 +754,7 @@ Place this file at the plugin root. AI code generators read it before generating
 
 ## Architecture
 - This plugin follows the spec at `spec/18-how-to-write-wordpress-plugin/`
-- Read ALL 8 phases before writing any code
+- Read ALL 9 phases before writing any code
 
 ## Critical Rules
 1. **No `is_array()`, `is_string()`, `is_int()`, etc.** — Use `TypeCheckerTrait` methods (`$this->isArray()`) or `PhpNativeType::matches()` in static contexts. The syntax validator blocks T_ARRAY tokens.
@@ -767,6 +767,7 @@ Place this file at the plugin root. AI code generators read it before generating
 8. **All REST handlers wrapped in `safeExecute()`** — No bare try-catch in endpoints.
 9. **Every file starts with ABSPATH guard** (after namespace, if namespaced).
 10. **Version lives in `PluginConfigType::Version` only** — never hardcoded elsewhere.
+11. **Seed data lives in `data/seeds/`** — JSON files + `manifest.json` define initial DB state (see Phase 8, §8.5.1). Never hardcode INSERT statements in migrations for reference data.
 
 ## File Generation Order
 When creating a new plugin from scratch:
@@ -780,8 +781,10 @@ When creating a new plugin from scratch:
 8. `includes/Traits/Route/RouteRegistrationTrait.php`
 9. `includes/Core/Plugin.php`
 10. `includes/Core/Activator.php` + `Deactivator.php`
-11. `uninstall.php`
-12. Feature-domain traits (one per endpoint)
+11. `includes/Database/DatabaseMigrator.php` + `DatabaseSeeder.php`
+12. `data/seeds/manifest.json` + seed JSON files (initial reference data)
+13. `uninstall.php`
+14. Feature-domain traits (one per endpoint)
 
 ## Formatting Rules
 - R1: Always use braces, even for single-line if/foreach/while
