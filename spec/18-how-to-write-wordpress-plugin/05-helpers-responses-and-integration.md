@@ -12,10 +12,11 @@ Helpers are **stateless static utility classes**. They never hold instance state
 
 | Helper | Responsibility |
 |--------|---------------|
-| `DateHelper` | All timestamp formatting and timezone conversion (see Phase 4, §4.10) |
+| `DateHelper` | All timestamp formatting and timezone conversion (see Phase 4, §4.13) |
 | `PathHelper` | File path resolution, directory creation, uploads dir resolution |
-| `ErrorLogHelper` | Native `error_log()` wrapper with stack traces (see Phase 4, §4.8) |
+| `ErrorLogHelper` | Native `error_log()` wrapper with stack traces (see Phase 4, §4.11) |
 | `EnvelopeBuilder` | Constructs the standard API response envelope |
+| `TypeCheckerTrait` | Syntax-validator-safe type checking (see Phase 3, §3.8) — note: this is a trait, not a helper, because it needs `$this` context |
 
 ### PathHelper specification
 
@@ -59,22 +60,36 @@ Every REST endpoint returns responses in this exact envelope structure:
 }
 ```
 
-### Error envelope (additional field)
+### Error envelope — Debug mode ON (stack trace included)
 
 ```json
 {
-  "Status": { "IsSuccess": false, "IsFailed": true, "Code": 500, "Message": "Error description", "..." },
-  "Attributes": { "..." },
+  "Status": { "IsSuccess": false, "IsFailed": true, "Code": 500, "Message": "Connection refused", "Timestamp": "2026-04-07T14:30:00Z" },
+  "Attributes": { "RequestedAt": "/my-plugin-api/v1/activate", "TotalRecords": 0 },
   "Results": [],
   "Errors": {
-    "BackendMessage": "Detailed error message",
+    "BackendMessage": "Connection refused",
+    "ExceptionType": "RuntimeException",
     "Backend": [
-      "#0 File.php(42): Class->method()",
-      "#1 File.php(100): Class->caller()"
+      "#0 ActivateHandlerTrait.php(78): PluginName\\Traits\\Activate\\ActivateHandlerTrait->executeActivation()",
+      "#1 ResponseTrait.php(35): PluginName\\Traits\\Core\\ResponseTrait->safeExecute()",
+      "#2 WP_REST_Server.php(1181): WP_REST_Server->dispatch()"
     ]
   }
 }
 ```
+
+### Error envelope — Debug mode OFF (production-safe)
+
+```json
+{
+  "Status": { "IsSuccess": false, "IsFailed": true, "Code": 500, "Message": "An internal error occurred", "Timestamp": "2026-04-07T14:30:00Z" },
+  "Attributes": { "RequestedAt": "/my-plugin-api/v1/activate", "TotalRecords": 0 },
+  "Results": []
+}
+```
+
+> **Note:** The `Errors` key is completely omitted in production to prevent leaking internal file paths, class names, or PHP version details. See Phase 4, §4.10 for full examples.
 
 ### Envelope rules
 
@@ -83,9 +98,10 @@ Every REST endpoint returns responses in this exact envelope structure:
 | `IsSuccess` and `IsFailed` are always both present | They are logical inverses |
 | `Timestamp` is always UTC ISO 8601 | From `DateHelper::nowUtc()` |
 | `Results` is always an array | Even for single results, wrap in array |
-| `Errors` key only present on failure | Never include empty Errors on success |
+| `Errors` key only present on failure **and** debug mode | Never include in production or on success |
 | All keys are PascalCase | Defined in `ResponseKeyType` enum |
-| Stack trace included on errors | `Backend` array contains trace lines |
+| 400-level errors always include descriptive message | Validation errors are not sensitive — always show real message |
+| 500-level errors are gated by debug mode | Generic message in production, real message in debug |
 
 ---
 
@@ -102,24 +118,92 @@ EnvelopeBuilder::success('OK', 200)
     ->toResponse();
 ```
 
-### Error flow
+### Error flow — with debug-mode gating
 
 ```
+// The builder handles debug-mode gating internally
 EnvelopeBuilder::error('Something failed', 500, $exception)
     ->setRequestedAt('/namespace/v1/endpoint')
     ->toResponse();
+// If debug mode ON:  includes Errors.Backend with trace frames
+// If debug mode OFF: omits Errors entirely, uses generic message for 500s
 ```
 
-### Methods
+### Full method signatures
 
-| Method | Purpose |
-|--------|---------|
-| `success($message, $code)` | Static factory for success envelope |
-| `error($message, $code, $exception)` | Static factory for error envelope — extracts trace from exception |
-| `setSingleResult($item)` | Wraps a single associative array in `Results: [$item]` |
-| `setListResult($items)` | Sets `Results` to the provided array directly |
-| `setRequestedAt($path)` | Sets the `RequestedAt` attribute |
-| `toResponse()` | Builds and returns a `WP_REST_Response` |
+```
+class EnvelopeBuilder
+{
+    /**
+     * Create a success envelope.
+     *
+     * @param string $message  Status message (e.g., 'OK', 'Plugin activated')
+     * @param int    $code     HTTP status code (200, 201, etc.)
+     *
+     * @return self Fluent builder instance
+     */
+    public static function success(string $message, int $code = 200): self;
+
+    /**
+     * Create an error envelope. Automatically gates stack trace by debug mode.
+     *
+     * @param string         $message    Error message (used as-is in debug, genericised in production for 5xx)
+     * @param int            $code       HTTP status code (400, 401, 403, 404, 500)
+     * @param Throwable|null $exception  Optional exception for stack trace extraction
+     *
+     * @return self Fluent builder instance
+     */
+    public static function error(string $message, int $code, ?Throwable $exception = null): self;
+
+    /**
+     * Set the requested endpoint path in Attributes.
+     *
+     * @param string $path  The REST route path (e.g., '/my-plugin-api/v1/status')
+     *
+     * @return self
+     */
+    public function setRequestedAt(string $path): self;
+
+    /**
+     * Wrap a single associative array in Results: [$item].
+     *
+     * @param array<string, mixed> $item  The single result item
+     *
+     * @return self
+     */
+    public function setSingleResult(array $item): self;
+
+    /**
+     * Set Results to the provided array directly (for list endpoints).
+     *
+     * @param array<int, array<string, mixed>> $items  The result items
+     *
+     * @return self
+     */
+    public function setListResult(array $items): self;
+
+    /**
+     * Manually set stack trace frames (used by safeExecute).
+     * Only included in the response if debug mode is enabled.
+     *
+     * @param array<int, string> $frames  Formatted trace lines
+     *
+     * @return self
+     */
+    public function setStackTrace(array $frames): self;
+
+    /**
+     * Build and return the final WP_REST_Response.
+     *
+     * @return WP_REST_Response
+     */
+    public function toResponse(): WP_REST_Response;
+}
+```
+
+### Fallback safety
+
+If `EnvelopeBuilder` cannot be loaded (autoloader failure), `ResponseTrait` has an inline fallback that builds the same envelope structure manually. This ensures the plugin never returns a bare PHP error.
 
 ---
 
