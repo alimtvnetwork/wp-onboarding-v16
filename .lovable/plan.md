@@ -136,9 +136,9 @@
 
 ## Documentation & Standards
 
-### ✅ WordPress Plugin Writing Spec (spec/18)
+### ✅ WordPress Plugin Writing Spec (spec/18) — 8 Phases
 
-Six-phase specification for building WordPress plugins from scratch:
+Complete gold-standard specification for building WordPress plugins from scratch:
 
 | Phase | File | Covers |
 |-------|------|--------|
@@ -148,6 +148,8 @@ Six-phase specification for building WordPress plugins from scratch:
 | 4 | `04-logging-and-error-handling.md` | Two-tier logging, **debug-mode gated stack traces (§4.2)**, safeExecute, full error flow |
 | 5 | `05-helpers-responses-and-integration.md` | EnvelopeBuilder with full signatures, debug-gated error envelopes, integration checklist |
 | 6 | `06-input-validation-patterns.md` | Guard-clause validation, field extraction patterns, sanitisation, nested object validation |
+| 7 | `07-reference-implementations.md` | **Complete code:** bootstrap, autoloader, Plugin.php, Activator/Deactivator, uninstall.php, EnvelopeBuilder, .ai-instructions |
+| 8 | `08-wordpress-integration-patterns.md` | Admin pages, Settings API, WP-Cron, AJAX handlers, file uploads, SQLite migrations, transient caching, external HTTP |
 
 ---
 
