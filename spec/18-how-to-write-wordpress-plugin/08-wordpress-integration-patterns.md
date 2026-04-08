@@ -720,6 +720,381 @@ final class DatabaseMigrator
 | Database file deleted while plugin active | Recreate on next access — check file exists before opening |
 | Adding column to existing table | SQLite doesn't support `DROP COLUMN` — use `ALTER TABLE ADD COLUMN` only |
 
+## 8.5.1 Database Seeding — Initial Data from JSON Files
+
+### Concept
+
+Seeding is the process of populating database tables with **default data** on first activation and **updated data** on version upgrades. Seed data lives in JSON files inside the plugin source — not hardcoded in PHP. This allows non-developers to review and modify defaults without touching code.
+
+### Folder structure
+
+```
+plugin-slug/
+├── data/
+│   └── seeds/
+│       ├── manifest.json          ← Declares which seeds exist and their target version
+│       ├── settings.json          ← Default plugin settings
+│       ├── templates.json         ← Default templates / presets
+│       └── permissions.json       ← Default role-capability mappings
+```
+
+### manifest.json — Seed Registry
+
+The manifest declares every seed file, which table it targets, and the **minimum plugin version** that requires it:
+
+```json
+{
+  "seeds": [
+    {
+      "file": "settings.json",
+      "table": "settings",
+      "version": "1.0.0",
+      "strategy": "insert_if_empty"
+    },
+    {
+      "file": "templates.json",
+      "table": "templates",
+      "version": "1.0.0",
+      "strategy": "insert_if_empty"
+    },
+    {
+      "file": "permissions.json",
+      "table": "permissions",
+      "version": "1.2.0",
+      "strategy": "upsert_by_key"
+    }
+  ]
+}
+```
+
+### Seeding strategies
+
+| Strategy | Behaviour | Use when |
+|----------|-----------|----------|
+| `insert_if_empty` | Only seeds if the target table has zero rows | First activation — don't overwrite user customisations |
+| `upsert_by_key` | Inserts new rows, updates existing rows by primary key | Version upgrade adds new defaults without wiping user data |
+| `replace_all` | Truncates table and re-inserts all rows | Non-user-editable reference data (e.g., error codes, system constants) |
+
+### Seed file format
+
+Each JSON file is an array of row objects. Keys match column names:
+
+```json
+[
+  {
+    "key": "log_level",
+    "value": "info",
+    "description": "Minimum log severity to persist",
+    "is_user_editable": true
+  },
+  {
+    "key": "max_upload_size_mb",
+    "value": "50",
+    "description": "Maximum file upload size in megabytes",
+    "is_user_editable": true
+  },
+  {
+    "key": "api_version",
+    "value": "v1",
+    "description": "Current REST API version",
+    "is_user_editable": false
+  }
+]
+```
+
+### DatabaseSeeder — Complete Implementation
+
+```php
+namespace PluginName\Database;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use Throwable;
+use PluginName\Enums\PluginConfigType;
+use PluginName\Enums\SeedStrategyType;
+use PluginName\Helpers\PathHelper;
+use PluginName\Helpers\ErrorLogHelper;
+
+final class DatabaseSeeder
+{
+    private \SQLite3 $db;
+    private string $seedsDir;
+
+    public function __construct(\SQLite3 $db)
+    {
+        $this->db = $db;
+        $this->seedsDir = plugin_dir_path(dirname(__DIR__)) . 'data/seeds';
+    }
+
+    /**
+     * Run all pending seeds based on the manifest and current version.
+     * Called after migrations complete (schema must exist before data).
+     */
+    public function seedAll(): void
+    {
+        $manifestPath = $this->seedsDir . '/manifest.json';
+        $hasManifest = file_exists($manifestPath);
+
+        if (!$hasManifest) {
+            return;
+        }
+
+        $manifestRaw = file_get_contents($manifestPath);
+        $manifest = json_decode($manifestRaw, true);
+        $hasSeeds = (gettype($manifest) === 'array' && isset($manifest['seeds']));
+
+        if (!$hasSeeds) {
+            return;
+        }
+
+        $lastSeededVersion = $this->getLastSeededVersion();
+        $currentVersion = PluginConfigType::Version->value;
+        $isVersionUnchanged = ($lastSeededVersion === $currentVersion);
+
+        // On first run: lastSeededVersion is null, so we seed everything
+        // On upgrade: seed entries with version > lastSeededVersion
+        // On same version: skip entirely (no reseed needed)
+        if ($isVersionUnchanged) {
+            return;
+        }
+
+        foreach ($manifest['seeds'] as $seedEntry) {
+            $this->processSeedEntry($seedEntry, $lastSeededVersion);
+        }
+
+        // Record the current version as seeded
+        $this->setLastSeededVersion($currentVersion);
+    }
+
+    /**
+     * Process a single seed entry from the manifest.
+     *
+     * @param array<string, string> $entry             Manifest entry
+     * @param string|null           $lastSeededVersion Previously seeded version
+     */
+    private function processSeedEntry(array $entry, ?string $lastSeededVersion): void
+    {
+        $seedFile = $entry['file'] ?? '';
+        $table = $entry['table'] ?? '';
+        $requiredVersion = $entry['version'] ?? '0.0.0';
+        $strategyValue = $entry['strategy'] ?? 'insert_if_empty';
+
+        // Skip if this seed was already applied at a previous version
+        $isAlreadySeeded = (
+            $lastSeededVersion !== null
+            && version_compare($requiredVersion, $lastSeededVersion, '<=')
+        );
+
+        if ($isAlreadySeeded) {
+            return;
+        }
+
+        $filePath = $this->seedsDir . '/' . $seedFile;
+        $hasFile = file_exists($filePath);
+
+        if (!$hasFile) {
+            error_log("[Seeder] Seed file not found: {$filePath}");
+
+            return;
+        }
+
+        $strategy = SeedStrategyType::tryFrom($strategyValue);
+        $hasStrategy = ($strategy !== null);
+
+        if (!$hasStrategy) {
+            error_log("[Seeder] Unknown strategy: {$strategyValue}");
+
+            return;
+        }
+
+        try {
+            $rawData = file_get_contents($filePath);
+            $rows = json_decode($rawData, true);
+            $hasRows = (gettype($rows) === 'array' && count($rows) > 0);
+
+            if (!$hasRows) {
+                return;
+            }
+
+            $this->db->exec('BEGIN TRANSACTION');
+
+            match ($strategy) {
+                SeedStrategyType::InsertIfEmpty => $this->seedInsertIfEmpty($table, $rows),
+                SeedStrategyType::UpsertByKey   => $this->seedUpsertByKey($table, $rows),
+                SeedStrategyType::ReplaceAll    => $this->seedReplaceAll($table, $rows),
+            };
+
+            $this->db->exec('COMMIT');
+        } catch (Throwable $e) {
+            $this->db->exec('ROLLBACK');
+
+            ErrorLogHelper::log($e, "Seeder:{$seedFile}:");
+        }
+    }
+
+    /**
+     * Insert rows only if the table is completely empty.
+     */
+    private function seedInsertIfEmpty(string $table, array $rows): void
+    {
+        $count = $this->db->querySingle("SELECT COUNT(*) FROM {$table}");
+        $hasExistingData = ($count > 0);
+
+        if ($hasExistingData) {
+            return;
+        }
+
+        $this->insertRows($table, $rows);
+    }
+
+    /**
+     * Insert new rows, update existing rows by primary key.
+     * Uses SQLite's INSERT OR REPLACE.
+     */
+    private function seedUpsertByKey(string $table, array $rows): void
+    {
+        $this->insertRows($table, $rows, 'INSERT OR REPLACE');
+    }
+
+    /**
+     * Delete all existing rows and re-insert from seed file.
+     */
+    private function seedReplaceAll(string $table, array $rows): void
+    {
+        $this->db->exec("DELETE FROM {$table}");
+        $this->insertRows($table, $rows);
+    }
+
+    /**
+     * Insert an array of rows into a table.
+     *
+     * @param string                          $table  Target table name
+     * @param array<int, array<string, mixed>> $rows   Row data
+     * @param string                          $verb   SQL verb (INSERT or INSERT OR REPLACE)
+     */
+    private function insertRows(string $table, array $rows, string $verb = 'INSERT'): void
+    {
+        $columns = array_keys($rows[0]);
+        $columnList = implode(', ', $columns);
+        $placeholders = implode(', ', array_map(fn($c) => ":{$c}", $columns));
+
+        $sql = "{$verb} INTO {$table} ({$columnList}) VALUES ({$placeholders})";
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($rows as $row) {
+            foreach ($columns as $column) {
+                $value = $row[$column] ?? null;
+                $stmt->bindValue(":{$column}", $value);
+            }
+
+            $stmt->execute();
+            $stmt->reset();
+        }
+    }
+
+    /**
+     * Get the last version that was seeded.
+     */
+    private function getLastSeededVersion(): ?string
+    {
+        $this->db->exec('
+            CREATE TABLE IF NOT EXISTS seed_history (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        ');
+
+        $result = $this->db->querySingle(
+            "SELECT value FROM seed_history WHERE key = 'last_seeded_version'"
+        );
+
+        $hasResult = ($result !== null && $result !== false);
+
+        return $hasResult ? (string) $result : null;
+    }
+
+    /**
+     * Record the current version as seeded.
+     */
+    private function setLastSeededVersion(string $version): void
+    {
+        $stmt = $this->db->prepare(
+            "INSERT OR REPLACE INTO seed_history (key, value) VALUES ('last_seeded_version', :version)"
+        );
+        $stmt->bindValue(':version', $version, SQLITE3_TEXT);
+        $stmt->execute();
+    }
+}
+```
+
+### SeedStrategyType Enum
+
+```php
+namespace PluginName\Enums;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+enum SeedStrategyType: string
+{
+    case InsertIfEmpty = 'insert_if_empty';
+    case UpsertByKey   = 'upsert_by_key';
+    case ReplaceAll    = 'replace_all';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+}
+```
+
+### Integration with DatabaseMigrator
+
+Seeding runs **after** migrations (schema must exist before data is inserted):
+
+```php
+// In DatabaseMigrator::runAllPending() — add seeding after migrations
+public static function runAllPending(): void
+{
+    $migrator = new self();
+    $migrator->runPending();
+
+    // Seed data after schema is up to date
+    $seeder = new DatabaseSeeder($migrator->db);
+    $seeder->seedAll();
+}
+```
+
+### Version upgrade flow
+
+```
+1. User updates plugin from v1.0.0 to v1.2.0
+2. WordPress calls register_activation_hook → Activator::activate()
+3. Activator calls DatabaseMigrator::runAllPending()
+4. Migrator runs migration v2 (adds is_active column)
+5. Migrator calls DatabaseSeeder::seedAll()
+6. Seeder reads manifest.json:
+   - settings.json (v1.0.0) → lastSeededVersion was "1.0.0" → SKIP (already seeded)
+   - templates.json (v1.0.0) → SKIP
+   - permissions.json (v1.2.0) → version > lastSeededVersion → EXECUTE (upsert new defaults)
+7. Seeder records lastSeededVersion = "1.2.0" in seed_history table
+8. Next activation at v1.2.0: seedAll() sees version unchanged → skips entirely
+```
+
+### Edge cases
+
+| Scenario | Handling |
+|----------|----------|
+| Seed file has invalid JSON | `json_decode` returns null → logged, skipped, no crash |
+| Seed file references non-existent table | SQLite throws → caught by transaction rollback |
+| User modified seeded data, then plugin upgrades | `insert_if_empty` preserves user data; `upsert_by_key` adds new rows but updates existing keys; `replace_all` only for system data the user should never edit |
+| Downgrade (v1.2.0 → v1.0.0) | `lastSeededVersion` is higher than manifest entries → all seeds skipped → safe |
+| Manifest missing | `seedAll()` returns immediately — no error |
+| Seed file added in new version but missing from manifest | Not processed — all seeds must be declared in manifest |
+| Empty seed file (empty JSON array) | Detected by `count($rows) === 0` → skipped |
+
 ---
 
 ## 8.6 Transient Caching
