@@ -754,7 +754,7 @@ Place this file at the plugin root. AI code generators read it before generating
 
 ## Architecture
 - This plugin follows the spec at `spec/18-how-to-write-wordpress-plugin/`
-- Read ALL 9 phases before writing any code
+- Read ALL 10 phases before writing any code
 
 ## Critical Rules
 1. **No `is_array()`, `is_string()`, `is_int()`, etc.** — Use `TypeCheckerTrait` methods (`$this->isArray()`) or `PhpNativeType::matches()` in static contexts. The syntax validator blocks T_ARRAY tokens.
