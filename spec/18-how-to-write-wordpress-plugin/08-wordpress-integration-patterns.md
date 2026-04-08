@@ -1074,7 +1074,7 @@ public static function runAllPending(): void
 
     // Seed data after schema is up to date
     $seeder = new DatabaseSeeder($migrator->db);
-    $seeder->seedAll();
+    $seeder->seedAll();  // Uses PluginConfigType::Version by default
 }
 ```
 
@@ -1086,12 +1086,11 @@ public static function runAllPending(): void
 3. Activator calls DatabaseMigrator::runAllPending()
 4. Migrator runs migration v2 (adds is_active column)
 5. Migrator calls DatabaseSeeder::seedAll()
-6. Seeder reads manifest.json:
-   - settings.json (v1.0.0) → lastSeededVersion was "1.0.0" → SKIP (already seeded)
-   - templates.json (v1.0.0) → SKIP
-   - permissions.json (v1.2.0) → version > lastSeededVersion → EXECUTE (upsert new defaults)
-7. Seeder records lastSeededVersion = "1.2.0" in seed_history table
-8. Next activation at v1.2.0: seedAll() sees version unchanged → skips entirely
+6. Seeder reads manifest.json and checks per-file seed_history:
+   - settings.json → seed_history shows last_seeded_ver "1.0.0" < "1.2.0" → RE-SEED
+   - permissions.json → no seed_history entry → SEED (first run for this file)
+7. Seeder records last_seeded_ver = "1.2.0" per file in seed_history table
+8. Next activation at v1.2.0: seedAll() sees per-file versions unchanged → skips all
 ```
 
 ### Edge cases
