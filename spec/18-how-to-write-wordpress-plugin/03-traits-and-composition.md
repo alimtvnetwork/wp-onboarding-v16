@@ -199,3 +199,157 @@ The Plugin class composes traits via `use` statements at the top of the class bo
 6. Debug traits
 
 The Plugin class must **not** override or re-implement any method defined in a trait. If a trait method needs customisation, create a new trait or modify the existing one.
+
+---
+
+## 3.8 TypeCheckerTrait — Safe Type Validation
+
+The `TypeCheckerTrait` wraps the verbose `gettype() === PhpNativeType::...->value` pattern into clean, readable methods. This exists because the syntax validator blocks native PHP type-check functions like `is_array()` (see Phase 2, §2.3).
+
+### Location
+
+```
+Traits/
+└── Core/
+    └── TypeCheckerTrait.php
+```
+
+### Full implementation
+
+```
+namespace PluginName\Traits\Core;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PluginName\Enums\PhpNativeType;
+
+/**
+ * TypeCheckerTrait — Syntax-validator-safe type checking.
+ *
+ * Replaces blocked native functions (is_array, is_string, etc.)
+ * with gettype()-based checks via the PhpNativeType enum.
+ *
+ * @package PluginName\Traits\Core
+ * @since   1.0.0
+ */
+trait TypeCheckerTrait
+{
+    protected function isArray(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpArray->value;
+    }
+
+    protected function isString(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpString->value;
+    }
+
+    protected function isInteger(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpInteger->value;
+    }
+
+    protected function isFloat(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpDouble->value;
+    }
+
+    protected function isBoolean(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpBoolean->value;
+    }
+
+    protected function isObject(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpObject->value;
+    }
+
+    protected function isNull(mixed $value): bool
+    {
+        return gettype($value) === PhpNativeType::PhpNull->value;
+    }
+
+    protected function isNumeric(mixed $value): bool
+    {
+        $type = gettype($value);
+        $isInt = ($type === PhpNativeType::PhpInteger->value);
+        $isFloat = ($type === PhpNativeType::PhpDouble->value);
+
+        return $isInt || $isFloat;
+    }
+
+    protected function isScalar(mixed $value): bool
+    {
+        $type = gettype($value);
+        $isString = ($type === PhpNativeType::PhpString->value);
+        $isInt = ($type === PhpNativeType::PhpInteger->value);
+        $isFloat = ($type === PhpNativeType::PhpDouble->value);
+        $isBool = ($type === PhpNativeType::PhpBoolean->value);
+
+        return $isString || $isInt || $isFloat || $isBool;
+    }
+}
+```
+
+### Usage in a handler trait
+
+```
+trait SomeHandlerTrait
+{
+    use TypeCheckerTrait;
+
+    private function executeSomeLogic(WP_REST_Request $request): WP_REST_Response
+    {
+        $body = $request->get_json_params();
+        $isValidBody = $this->isArray($body);
+
+        if (!$isValidBody) {
+            return EnvelopeBuilder::error('Request body must be a JSON object', 400)
+                ->setRequestedAt($request->get_route())
+                ->toResponse();
+        }
+
+        $name = $body['name'] ?? null;
+        $hasName = ($name !== null && $this->isString($name));
+
+        if (!$hasName) {
+            return EnvelopeBuilder::error('Missing required field: name', 400)
+                ->setRequestedAt($request->get_route())
+                ->toResponse();
+        }
+
+        // ... business logic
+    }
+}
+```
+
+### When to use TypeCheckerTrait vs PhpNativeType::matches()
+
+| Context | Use |
+|---------|-----|
+| Inside a class that composes traits (Plugin, handlers) | `$this->isArray($var)` via `TypeCheckerTrait` |
+| Inside a static helper class | `PhpNativeType::PhpArray->matches($var)` |
+| Inside an enum method | `PhpNativeType::PhpArray->matches($var)` |
+
+### Composition in Plugin.php
+
+Add `TypeCheckerTrait` in the Core infrastructure group:
+
+```
+use PluginName\Traits\Core\TypeCheckerTrait;
+
+class Plugin
+{
+    // Auth traits
+    use AuthTrait;
+    // Route traits
+    use RouteRegistrationTrait;
+    // Core infrastructure traits
+    use ResponseTrait;
+    use TypeCheckerTrait;    // ← add here
+    use StatusHandlerTrait;
+    // ... feature-domain traits
+}
+```
