@@ -134,22 +134,51 @@
 
 ---
 
+## Documentation & Standards
+
+### ✅ WordPress Plugin Writing Spec (spec/18)
+
+Six-phase specification for building WordPress plugins from scratch:
+
+| Phase | File | Covers |
+|-------|------|--------|
+| 1 | `01-foundation-and-architecture.md` | PSR-4 structure, Plugin singleton, autoloader |
+| 2 | `02-enums-and-coding-style.md` | Enum architecture, PhpNativeType with `matches()`, positive booleans, naming |
+| 3 | `03-traits-and-composition.md` | Trait anatomy, ResponseTrait, RouteRegistration, AuthTrait, **TypeCheckerTrait (§3.8)** |
+| 4 | `04-logging-and-error-handling.md` | Two-tier logging, **debug-mode gated stack traces (§4.2)**, safeExecute, full error flow |
+| 5 | `05-helpers-responses-and-integration.md` | EnvelopeBuilder with full signatures, debug-gated error envelopes, integration checklist |
+| 6 | `06-input-validation-patterns.md` | Guard-clause validation, field extraction patterns, sanitisation, nested object validation |
+
+---
+
+## Phase K: Platform Maturity (Specced)
+
+| # | Task | Priority | Spec | Status |
+|---|------|----------|------|--------|
+| K-1 | Scheduled Publishing | 🟡 High | `spec/01-app/18-scheduled-publishing.md` | Specced |
+| K-2 | Rollback / One-Click Revert | 🟡 High | Already implemented (VersionService + UI) | ✅ Done |
+| K-3 | Webhook Notifications | 🟢 Medium | `spec/01-app/17-webhook-notifications.md` | Specced |
+| K-4 | Multi-user Access Control | 🟢 Low | Not yet specced | Backlog |
+| K-5 | Plugin Dependency Graph | 🟢 Low | Not yet specced | Backlog |
+
+---
+
 ## Next Task Selection
 
 > **For handoff to other AI models:** Pick the next task based on priority and unblocked status.
 
-**All planned phases and suggestions are complete.** Only deployment verification remains blocked.
+**Ready to implement:**
+- **K-1: Scheduled Publishing** — fully specced with 7 sub-tasks (K-1.1 through K-1.7)
+- **K-3: Webhook Notifications** — fully specced with 6 sub-tasks (K-3.1 through K-3.6)
 
 **Blocked (needs user action):**
 - Phase A (A-1, A-2, A-3): Deploy v2.17.0+ via `.\run.ps1 -uas`
 - I-4: Redeploy for plugin_slug fix (v2.30.0)
 
-**Potential future features (Phase K — not yet specced):**
-1. **K-1: Scheduled Publishing** — queue publishes for future time
-2. **K-3: Webhook Notifications** — Slack/Discord/custom URL on publish events
-3. **K-4: Multi-user Access Control** — role-based dashboard access
-4. **K-5: Plugin Dependency Graph** — visualize shared library dependencies
+**Backlog (needs spec first):**
+- K-4: Multi-user Access Control
+- K-5: Plugin Dependency Graph
 
 ---
 
-*Master plan for AI handoff. All phases complete. Deploy to unblock Phase A.*
+*Master plan for AI handoff. K-1 and K-3 are next. Deploy to unblock Phase A.*
