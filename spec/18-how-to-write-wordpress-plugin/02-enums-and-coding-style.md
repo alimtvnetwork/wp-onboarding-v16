@@ -90,19 +90,49 @@ This is the most important enum. It centralises every identity value the plugin 
 
 ## 2.3 PhpNativeType — Syntax Validator Compatibility
 
-Some deployment pipelines validate PHP files using `token_get_all()` before activation. The following native PHP functions tokenize as language constructs and may cause validation failures:
+Some deployment pipelines validate PHP files using `token_get_all()` before activation. The following native PHP functions tokenize as language constructs (`T_ARRAY`, `T_STRING_CAST`, etc.) and **will cause validation failures**:
 
-| Blocked function | Replacement |
-|-----------------|-------------|
-| `is_array($var)` | `gettype($var) === PhpNativeType::PhpArray->value` |
-| `is_string($var)` | `gettype($var) === PhpNativeType::PhpString->value` |
-| `is_int($var)` | `gettype($var) === PhpNativeType::PhpInteger->value` |
-| `is_float($var)` | `gettype($var) === PhpNativeType::PhpDouble->value` |
-| `is_bool($var)` | `gettype($var) === PhpNativeType::PhpBoolean->value` |
-| `is_object($var)` | `gettype($var) === PhpNativeType::PhpObject->value` |
-| `is_null($var)` | `gettype($var) === PhpNativeType::PhpNull->value` |
+| Blocked function | Raw replacement | Recommended (via TypeCheckerTrait) |
+|-----------------|----------------|-------------------------------------|
+| `is_array($var)` | `gettype($var) === PhpNativeType::PhpArray->value` | `$this->isArray($var)` |
+| `is_string($var)` | `gettype($var) === PhpNativeType::PhpString->value` | `$this->isString($var)` |
+| `is_int($var)` | `gettype($var) === PhpNativeType::PhpInteger->value` | `$this->isInteger($var)` |
+| `is_float($var)` | `gettype($var) === PhpNativeType::PhpDouble->value` | `$this->isFloat($var)` |
+| `is_bool($var)` | `gettype($var) === PhpNativeType::PhpBoolean->value` | `$this->isBoolean($var)` |
+| `is_object($var)` | `gettype($var) === PhpNativeType::PhpObject->value` | `$this->isObject($var)` |
+| `is_null($var)` | `gettype($var) === PhpNativeType::PhpNull->value` | `$this->isNull($var)` |
+
+> **Best practice:** Always use the `TypeCheckerTrait` methods (right column) instead of the verbose `gettype()` calls. The raw replacement column is for reference only — showing what the trait does internally. See Phase 3, §3.8 for the full trait specification.
 
 **Safe functions** (tokenize as T_STRING, no issues): `in_array()`, `array_merge()`, `array_filter()`, `array_map()`, `array_key_exists()`, `array_slice()`, `array_pop()`.
+
+### PhpNativeType Enum — matches() Method
+
+The enum itself also provides a `matches()` method for standalone use outside classes (e.g., in helpers):
+
+```
+enum PhpNativeType: string
+{
+    case PhpArray   = 'array';
+    case PhpString  = 'string';
+    case PhpInteger = 'integer';
+    case PhpDouble  = 'double';
+    case PhpBoolean = 'boolean';
+    case PhpObject  = 'object';
+    case PhpNull    = 'NULL';
+
+    /** Check if a value's type matches this enum case. */
+    public function matches(mixed $value): bool
+    {
+        return gettype($value) === $this->value;
+    }
+}
+```
+
+**Usage in helpers (static context where traits are unavailable):**
+```
+$isValid = PhpNativeType::PhpArray->matches($input);
+```
 
 ---
 
