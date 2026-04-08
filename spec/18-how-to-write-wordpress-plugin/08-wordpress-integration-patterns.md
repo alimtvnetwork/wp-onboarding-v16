@@ -732,7 +732,7 @@ Seeding is the process of populating database tables with **default data** on fi
 plugin-slug/
 ├── data/
 │   └── seeds/
-│       ├── manifest.json          ← Declares which seeds exist and their target version
+│       ├── manifest.json          ← Declares which seeds exist and their strategy
 │       ├── settings.json          ← Default plugin settings
 │       ├── templates.json         ← Default templates / presets
 │       └── permissions.json       ← Default role-capability mappings
@@ -740,7 +740,7 @@ plugin-slug/
 
 ### manifest.json — Seed Registry
 
-The manifest declares every seed file, which table it targets, and the **minimum plugin version** that requires it:
+The manifest declares every seed file, which table it targets, and the strategy to apply. The optional `version` field is **metadata only** — it documents which plugin version introduced the seed but is **not used by the seeder logic**. Version tracking is handled per-file via the `seed_history` table (see `getLastSeededVersion()`).
 
 ```json
 {
@@ -766,6 +766,8 @@ The manifest declares every seed file, which table it targets, and the **minimum
   ]
 }
 ```
+
+> **Note:** The `version` field is kept as human-readable metadata so developers can see when each seed was introduced. The seeder ignores it — re-seeding is triggered solely by comparing the plugin's current version against `seed_history.last_seeded_ver` per file.
 
 ### Seeding strategies
 
