@@ -10,6 +10,7 @@
 
 | # | File | Title | Description |
 |---|------|-------|-------------|
+| 00 | [00-quick-start.md](00-quick-start.md) | **Quick Start Guide** | Condensed onboarding — read this first. 5 starter files, critical patterns, decision matrix, common mistakes |
 | 01 | [01-foundation-and-architecture.md](01-foundation-and-architecture.md) | Foundation & Architecture | PHP 8.1+ requirements, canonical folder structure, bootstrap file, autoloader, Core Plugin singleton, ABSPATH guard, global type imports, version tracking |
 | 02 | [02-enums-and-coding-style/](02-enums-and-coding-style/00-overview.md) | Enums & Coding Style | Backed enum architecture (4 categories), `match`-based metadata pattern, `PluginConfigType`, `PhpNativeType`, coding style rules (conditionals, formatting, naming, PHPDoc) |
 | 03 | [03-traits-and-composition.md](03-traits-and-composition.md) | Traits & Composition | Trait folder structure, anatomy, `ResponseTrait` (safeExecute), `RouteRegistrationTrait`, `AuthTrait`, `TypeCheckerTrait`, composition in Plugin.php |
