@@ -9,7 +9,7 @@
 | File | Purpose |
 |------|---------|
 | [01-enum-architecture.md](01-enum-architecture.md) | Core enum pattern, standard categories, comparison methods, coding style, naming |
-| [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) | Map-based metadata pattern with `info()` and `label()` delegation |
+| [02-enum-metadata-pattern.md](02-enum-metadata-pattern.md) | `match`-based metadata methods (label, icon, cssClass) and `is*()` helpers |
 | [03-self-update-status-enum.md](03-self-update-status-enum.md) | `SelfUpdateStatusType` — reference impl (17 cases, deployment domain) |
 | [04-action-type-enum.md](04-action-type-enum.md) | `ActionType` — reference impl (40+ cases, transaction logging domain) |
 
@@ -36,19 +36,24 @@ enum ExampleType: string
 }
 ```
 
-### Info-Object Pattern (Preferred for Rich Metadata)
+### Metadata via `match` (PHP)
 
 ```php
-$info = SelfUpdateStatusType::Success->info();
-$label = SelfUpdateStatusType::Success->label();  // Delegates to info()->label
+public function label(): string
+{
+    return match ($this) {
+        self::SomeName  => 'Some Label',
+        self::OtherName => 'Other Label',
+    };
+}
 ```
 
-See [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) for the full pattern.
+See [02-enum-metadata-pattern.md](02-enum-metadata-pattern.md) for the full pattern.
 
 ---
 
 ## Cross-References
 
 - [Go Enum Specification](../../06-golang-standards/01-enum-specification/00-overview.md) — equivalent pattern for Go
-- [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-info-object-pattern.md) — Go version of the metadata pattern
+- [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-info-object-pattern.md) — Go version of the metadata pattern (uses info-object, not `match`)
 - [Phase 10 — Deployment Patterns](../10-deployment-patterns.md) — uses `SelfUpdateStatusType`
