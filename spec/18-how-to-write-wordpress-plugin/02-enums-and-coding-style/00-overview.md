@@ -22,8 +22,14 @@
 ```php
 enum ExampleType: string
 {
-    case SomeName = 'some_value';
+    case SomeName  = 'some_value';
+    case OtherName = 'other_value';
 
+    // Per-case helpers
+    public function isSomeName(): bool  { return $this->isEqual(self::SomeName); }
+    public function isOtherName(): bool { return $this->isEqual(self::OtherName); }
+
+    // Standard comparison methods
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

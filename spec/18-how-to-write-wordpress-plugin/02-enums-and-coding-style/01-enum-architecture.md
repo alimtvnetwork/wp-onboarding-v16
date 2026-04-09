@@ -56,15 +56,34 @@ Every enum must include these three methods. They provide a consistent, readable
 | `isOtherThan($other)` | Replace `$enum !== SomeType::Value` |
 | `isAnyOf(...$others)` | Replace `in_array($enum, [...], true)` |
 
-### Enum helper methods
+### Per-case `is*()` methods
 
-Enums should include domain-specific helper methods that encapsulate logic:
+Every enum should provide an individual `is*()` method for **each case**. This makes calling code more readable:
+
+```php
+// ✅ Readable
+if ($action->isUpload()) { ... }
+
+// ❌ Verbose — avoid in calling code
+if ($action->isEqual(ActionType::Upload)) { ... }
+```
+
+Implementation: each `is*()` delegates to `isEqual()`:
+
+```php
+public function isUpload(): bool { return $this->isEqual(self::Upload); }
+public function isEnable(): bool { return $this->isEqual(self::Enable); }
+```
+
+### Group helper methods
+
+When multiple cases share a domain concept, add a group helper:
 
 | Pattern | Example |
 |---------|---------|
+| Prefix-based groups | `isSnapshot()` → `str_starts_with($this->value, 'Snapshot')` |
+| Explicit groups | `isLifecycle()` → `isAnyOf(Enable, Disable, Delete)` |
 | Computed values | `EndpointType::route()` → prepends `/` to the value |
-| Composite strings | `PluginConfigType::apiFullNamespace()` → combines namespace + version |
-| Category checks | `LogLevelType::isError()` → returns true for Error level |
 | Builder patterns | `HookType::ajax($action)` → builds `wp_ajax_` prefix |
 
 ---
