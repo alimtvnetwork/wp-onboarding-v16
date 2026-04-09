@@ -27,14 +27,12 @@ Core enums in the `RiseupAsia\Enums` namespace include:
 - **ActionType**: Administrative actions (Enable, Disable, Delete, SnapshotSettingsUpdate).
 - **AgentStatusType**, **PostStatusType**, **StatusType**, **SnapshotTriggerType**, **SyncEntryStatusType**: Domain-specific statuses and triggers.
 
-## Enum Metadata Pattern (Info-Object)
+## Enum Metadata Pattern (match-based)
 
-Enums with rich metadata (label + details + optional fields) MUST use the info-object pattern:
-- Define `EnumInfo` readonly class with `label`, `details`, and optional fields
-- Define `private static infoMap()` returning `array<string, EnumInfo>`
-- `info()` looks up `$this->value` in the map
-- `label()` delegates to `$this->info()->label`
-- Never use `match`/`switch` for metadata when info-object pattern applies
+PHP enums use `match` expressions for metadata — no `EnumInfo` class or lookup maps:
+- Each metadata field (label, icon, cssClass) is a separate method using `match`
+- Every enum must include per-case `is*()` helpers and standard comparison methods (`isEqual`, `isOtherThan`, `isAnyOf`)
+- Go and TypeScript use info-object pattern instead (different spec)
 
-Full spec: `spec/18-how-to-write-wordpress-plugin/02-enums-and-coding-style/02-enum-info-object-pattern.md`
-Reference implementation: `SelfUpdateStatusType` in `03-self-update-status-enum.md`
+Full spec: `spec/18-how-to-write-wordpress-plugin/02-enums-and-coding-style/02-enum-metadata-pattern.md`
+Reference implementations: `SelfUpdateStatusType` (03), `ActionType` (04)
