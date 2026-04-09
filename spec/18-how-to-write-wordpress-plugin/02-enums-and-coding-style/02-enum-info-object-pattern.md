@@ -275,7 +275,31 @@ public function label(): string { return match ($this) { ... }; }
 
 If the enum uses the info-object pattern, every case must have a corresponding entry in `infoMap()`. Missing entries cause runtime errors.
 
-### R4: Info Class is `readonly`
+### R4: Static Caching is Mandatory
+
+`infoMap()` must use a `static` local variable so the array and all `EnumInfo` instances are constructed **once per request**, not on every call. Without caching, each call to `info()` or `label()` rebuilds the entire map — unacceptable for enums with 10+ cases.
+
+```php
+// ✅ Correct — built once, reused
+private static function infoMap(): array
+{
+    static $map = null;
+
+    if ($map === null) {
+        $map = [ /* ... */ ];
+    }
+
+    return $map;
+}
+
+// ❌ Forbidden — rebuilds on every call
+private static function infoMap(): array
+{
+    return [ /* ... */ ];  // 40 new EnumInfo() every time
+}
+```
+
+### R5: Info Class is `readonly`
 
 The `EnumInfo` class (or equivalent) must be `readonly` to prevent accidental mutation.
 
