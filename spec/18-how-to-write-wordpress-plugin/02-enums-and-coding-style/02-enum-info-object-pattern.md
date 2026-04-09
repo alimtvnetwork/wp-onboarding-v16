@@ -303,7 +303,7 @@ private static function infoMap(): array
 
 The `EnumInfo` class (or equivalent) must be `readonly` to prevent accidental mutation.
 
-### R5: Extending the Info Object
+### R6: Extending the Info Object
 
 When a new metadata field is needed:
 
