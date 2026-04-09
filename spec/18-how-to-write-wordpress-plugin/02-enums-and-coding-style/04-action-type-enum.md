@@ -111,7 +111,13 @@ enum ActionType: string
      */
     private static function infoMap(): array
     {
-        return [
+        static $map = null;
+
+        if ($map !== null) {
+            return $map;
+        }
+
+        $map = [
             // Core plugin actions
             self::Upload->value           => new EnumInfo(
                 label: 'Plugin uploaded',
@@ -270,6 +276,8 @@ enum ActionType: string
                 label: 'Cloud storage account removed',
             ),
         ];
+
+        return $map;
     }
 
     // ── Public API ──────────────────────────────────────────

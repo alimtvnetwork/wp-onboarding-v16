@@ -76,61 +76,67 @@ enum SelfUpdateStatusType: string
      */
     private static function infoMap(): array
     {
-        return [
-            self::Success->value              => new EnumInfo(
-                label: 'Self-update completed successfully',
-            ),
-            self::RolledBack->value           => new EnumInfo(
-                label: 'Self-update failed; previous version restored',
-            ),
-            self::RollbackFailed->value       => new EnumInfo(
-                label: 'Self-update failed; rollback also failed',
-                details: 'Manual intervention required — restore from backup.',
-            ),
-            self::BackupCreationFailed->value => new EnumInfo(
-                label: 'Failed to create pre-update backup',
-                details: 'Update aborted before any files were modified.',
-            ),
-            self::ExtractionFailed->value     => new EnumInfo(
-                label: 'ZIP extraction failed during self-update',
-            ),
-            self::ValidationFailed->value     => new EnumInfo(
-                label: 'Pre-activation validation failed',
-            ),
-            self::ActivationException->value  => new EnumInfo(
-                label: 'Plugin activation threw an uncaught exception',
-            ),
-            self::ActivationWpError->value    => new EnumInfo(
-                label: 'Plugin activation returned a WordPress error',
-            ),
-            self::HealthCheckFailed->value    => new EnumInfo(
-                label: 'Post-activation health check detected issues',
-            ),
-            self::PluginFileNotFound->value   => new EnumInfo(
-                label: 'Main plugin file not found after extraction',
-            ),
-            self::CriticalFileMissing->value  => new EnumInfo(
-                label: 'A critical file is missing from the new version',
-            ),
-            self::SyntaxError->value          => new EnumInfo(
-                label: 'PHP syntax error detected in the new version',
-            ),
-            self::FileUnreadable->value       => new EnumInfo(
-                label: 'A PHP file could not be read for validation',
-            ),
-            self::DirectoryMissing->value     => new EnumInfo(
-                label: 'Plugin directory missing after extraction',
-            ),
-            self::BootErrorDetected->value    => new EnumInfo(
-                label: 'Boot errors captured during activation',
-            ),
-            self::CriticalClassMissing->value => new EnumInfo(
-                label: 'A critical class was not loaded after activation',
-            ),
-            self::RestHookMissing->value      => new EnumInfo(
-                label: 'REST API hooks not registered after activation',
-            ),
-        ];
+        static $map = null;
+
+        if ($map === null) {
+            $map = [
+                self::Success->value              => new EnumInfo(
+                    label: 'Self-update completed successfully',
+                ),
+                self::RolledBack->value           => new EnumInfo(
+                    label: 'Self-update failed; previous version restored',
+                ),
+                self::RollbackFailed->value       => new EnumInfo(
+                    label: 'Self-update failed; rollback also failed',
+                    details: 'Manual intervention required — restore from backup.',
+                ),
+                self::BackupCreationFailed->value => new EnumInfo(
+                    label: 'Failed to create pre-update backup',
+                    details: 'Update aborted before any files were modified.',
+                ),
+                self::ExtractionFailed->value     => new EnumInfo(
+                    label: 'ZIP extraction failed during self-update',
+                ),
+                self::ValidationFailed->value     => new EnumInfo(
+                    label: 'Pre-activation validation failed',
+                ),
+                self::ActivationException->value  => new EnumInfo(
+                    label: 'Plugin activation threw an uncaught exception',
+                ),
+                self::ActivationWpError->value    => new EnumInfo(
+                    label: 'Plugin activation returned a WordPress error',
+                ),
+                self::HealthCheckFailed->value    => new EnumInfo(
+                    label: 'Post-activation health check detected issues',
+                ),
+                self::PluginFileNotFound->value   => new EnumInfo(
+                    label: 'Main plugin file not found after extraction',
+                ),
+                self::CriticalFileMissing->value  => new EnumInfo(
+                    label: 'A critical file is missing from the new version',
+                ),
+                self::SyntaxError->value          => new EnumInfo(
+                    label: 'PHP syntax error detected in the new version',
+                ),
+                self::FileUnreadable->value       => new EnumInfo(
+                    label: 'A PHP file could not be read for validation',
+                ),
+                self::DirectoryMissing->value     => new EnumInfo(
+                    label: 'Plugin directory missing after extraction',
+                ),
+                self::BootErrorDetected->value    => new EnumInfo(
+                    label: 'Boot errors captured during activation',
+                ),
+                self::CriticalClassMissing->value => new EnumInfo(
+                    label: 'A critical class was not loaded after activation',
+                ),
+                self::RestHookMissing->value      => new EnumInfo(
+                    label: 'REST API hooks not registered after activation',
+                ),
+            ];
+        }
+
+        return $map;
     }
 
     // ── Public API ──────────────────────────────────────────

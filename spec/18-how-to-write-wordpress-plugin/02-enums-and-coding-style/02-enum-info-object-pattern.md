@@ -95,7 +95,7 @@ final readonly class EnumInfo
 
 ### Step 2: Define the Map
 
-Inside the enum, create a `private static` method that returns an associative array mapping enum values to their info objects:
+Inside the enum, create a `private static` method that returns an associative array mapping enum values to their info objects. **Use a `static` local variable** so the array and its `EnumInfo` instances are constructed only once per request:
 
 ```php
 enum SomeStatusType: string
@@ -106,25 +106,32 @@ enum SomeStatusType: string
 
     /**
      * Centralised metadata map — single source of truth.
+     * Built once per request via static local variable.
      *
      * @return array<string, EnumInfo>
      */
     private static function infoMap(): array
     {
-        return [
-            self::Active->value   => new EnumInfo(
-                label: 'Currently active',
-                details: 'This item is live and visible to users.',
-            ),
-            self::Inactive->value => new EnumInfo(
-                label: 'Inactive',
-                details: 'This item is disabled but can be re-activated.',
-            ),
-            self::Archived->value => new EnumInfo(
-                label: 'Archived',
-                details: 'This item has been archived and is read-only.',
-            ),
-        ];
+        static $map = null;
+
+        if ($map === null) {
+            $map = [
+                self::Active->value   => new EnumInfo(
+                    label: 'Currently active',
+                    details: 'This item is live and visible to users.',
+                ),
+                self::Inactive->value => new EnumInfo(
+                    label: 'Inactive',
+                    details: 'This item is disabled but can be re-activated.',
+                ),
+                self::Archived->value => new EnumInfo(
+                    label: 'Archived',
+                    details: 'This item has been archived and is read-only.',
+                ),
+            ];
+        }
+
+        return $map;
     }
 }
 ```
@@ -195,20 +202,26 @@ enum SomeStatusType: string
      */
     private static function infoMap(): array
     {
-        return [
-            self::Active->value   => new EnumInfo(
-                label: 'Currently active',
-                details: 'This item is live and visible.',
-            ),
-            self::Inactive->value => new EnumInfo(
-                label: 'Inactive',
-                details: 'Disabled but can be re-activated.',
-            ),
-            self::Archived->value => new EnumInfo(
-                label: 'Archived',
-                details: 'Read-only, cannot be modified.',
-            ),
-        ];
+        static $map = null;
+
+        if ($map === null) {
+            $map = [
+                self::Active->value   => new EnumInfo(
+                    label: 'Currently active',
+                    details: 'This item is live and visible.',
+                ),
+                self::Inactive->value => new EnumInfo(
+                    label: 'Inactive',
+                    details: 'Disabled but can be re-activated.',
+                ),
+                self::Archived->value => new EnumInfo(
+                    label: 'Archived',
+                    details: 'Read-only, cannot be modified.',
+                ),
+            ];
+        }
+
+        return $map;
     }
 
     public function info(): EnumInfo
