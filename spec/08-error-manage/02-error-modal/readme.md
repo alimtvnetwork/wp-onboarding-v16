@@ -1,7 +1,7 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 2.3.0  
-> **Updated:** 2026-03-03  
+> **Version:** 2.4.0  
+> **Updated:** 2026-04-09  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
 > **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → Delegated Server request chain.
