@@ -125,9 +125,9 @@ Some deployment pipelines validate PHP files using `token_get_all()` before acti
 
 **Safe functions** (tokenize as T_STRING, no issues): `in_array()`, `array_merge()`, `array_filter()`, `array_map()`, `array_key_exists()`, `array_slice()`, `array_pop()`.
 
-### PhpNativeType Enum — matches() Method
+### PhpNativeType Enum — isMatches() Method
 
-The enum itself also provides a `matches()` method for standalone use outside classes (e.g., in helpers):
+The enum itself also provides an `isMatches()` method for standalone use outside classes (e.g., in helpers):
 
 ```
 enum PhpNativeType: string
@@ -141,7 +141,7 @@ enum PhpNativeType: string
     case PhpNull    = 'NULL';
 
     /** Check if a value's type matches this enum case. */
-    public function matches(mixed $value): bool
+    public function isMatches(mixed $value): bool
     {
         return gettype($value) === $this->value;
     }
@@ -150,8 +150,32 @@ enum PhpNativeType: string
 
 **Usage in helpers (static context where traits are unavailable):**
 ```
-$isValid = PhpNativeType::PhpArray->matches($input);
+$isValid = PhpNativeType::PhpArray->isMatches($input);
 ```
+
+### PHP Exception — `match` Expressions for Metadata
+
+PHP enums may use `match` expressions (or `switch`) for mapping cases to metadata values. This is an **exception** to the general rule against `match`/`switch` in other languages (Go, TypeScript), where the info-object pattern with lookup maps is preferred.
+
+**Rationale:** PHP's `match` expression is compile-time optimized, concise, and idiomatic for enum-to-value mapping. The overhead of building an associative array and `EnumInfo` objects is not always justified for simple label-only metadata.
+
+**When to use `match` in PHP enums:**
+```php
+public function label(): string
+{
+    return match ($this) {
+        self::Upload         => 'Upload',
+        self::Enable         => 'Enable',
+        self::Disable        => 'Disable',
+    };
+}
+```
+
+**When to use the info-object pattern instead:**
+- When the enum has **10+ cases** with metadata — static cached map scales better
+- When metadata has **multiple fields** beyond just `label`
+
+**Other languages (Go, TypeScript):** Always use the info-object / lookup-map pattern. `switch`/`match` for metadata is prohibited.
 
 ---
 

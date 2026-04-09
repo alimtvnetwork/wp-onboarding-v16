@@ -25,4 +25,10 @@ enum PhpNativeType: string
     case PhpBoolean = 'boolean';
     case PhpObject  = 'object';
     case PhpNull    = 'NULL';
+
+    /** Check if a value's type matches this enum case. */
+    public function isMatches(mixed $value): bool
+    {
+        return gettype($value) === $this->value;
+    }
 }
