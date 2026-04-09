@@ -407,90 +407,15 @@ $defaults = [
 9. On success → backup retained for manual rollback window
 ```
 
-### SelfUpdateStatusType enum
+### SelfUpdateStatusType Enum
 
-Track every possible outcome with a backed enum:
+> **Full definition:** [Phase 2 — 03-self-update-status-enum.md](02-enums-and-coding-style/03-self-update-status-enum.md)
 
-```php
-namespace PluginName\Enums;
+This enum tracks every possible outcome of the self-update lifecycle. It uses the **info-object pattern** (see [02-enum-info-object-pattern.md](02-enums-and-coding-style/02-enum-info-object-pattern.md)) with a centralised map for labels and details instead of scattered `match` statements.
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+Key cases: `Success`, `RolledBack`, `RollbackFailed`, `BackupCreationFailed`, `ExtractionFailed`, `ValidationFailed`, `ActivationException`, `ActivationWpError`, `HealthCheckFailed`, `PluginFileNotFound`, `CriticalFileMissing`, `SyntaxError`, `FileUnreadable`, `DirectoryMissing`, `BootErrorDetected`, `CriticalClassMissing`, `RestHookMissing`.
 
-enum SelfUpdateStatusType: string
-{
-    // ── Outcomes ────────────────────────────────────────────
-    case Success              = 'SelfUpdateSuccess';
-    case RolledBack           = 'SelfUpdateRolledBack';
-    case RollbackFailed       = 'SelfUpdateRollbackFailed';
-
-    // ── Rollback Reasons ────────────────────────────────────
-    case BackupCreationFailed = 'BackupCreationFailed';
-    case ExtractionFailed     = 'ExtractionFailed';
-    case ValidationFailed     = 'ValidationFailed';
-    case ActivationException  = 'ActivationException';
-    case ActivationWpError    = 'ActivationWpError';
-    case HealthCheckFailed    = 'HealthCheckFailed';
-    case PluginFileNotFound   = 'PluginFileNotFound';
-
-    // ── Validation Errors ───────────────────────────────────
-    case CriticalFileMissing  = 'CriticalFileMissing';
-    case SyntaxError          = 'SyntaxError';
-    case FileUnreadable       = 'FileUnreadable';
-    case DirectoryMissing     = 'DirectoryMissing';
-
-    // ── Health Check Errors ─────────────────────────────────
-    case BootErrorDetected    = 'BootErrorDetected';
-    case CriticalClassMissing = 'CriticalClassMissing';
-    case RestHookMissing      = 'RestHookMissing';
-
-    public function isRollbackReason(): bool
-    {
-        return match ($this) {
-            self::ExtractionFailed,
-            self::ValidationFailed,
-            self::ActivationException,
-            self::ActivationWpError,
-            self::HealthCheckFailed,
-            self::PluginFileNotFound => true,
-            default => false,
-        };
-    }
-
-    public function isSuccess(): bool
-    {
-        return $this === self::Success;
-    }
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::Success              => 'Self-update completed successfully',
-            self::RolledBack           => 'Self-update failed; previous version restored',
-            self::RollbackFailed       => 'Self-update failed; rollback also failed',
-            self::BackupCreationFailed => 'Failed to create pre-update backup',
-            self::ExtractionFailed     => 'ZIP extraction failed during self-update',
-            self::ValidationFailed     => 'Pre-activation validation failed',
-            self::ActivationException  => 'Plugin activation threw an uncaught exception',
-            self::ActivationWpError    => 'Plugin activation returned a WordPress error',
-            self::HealthCheckFailed    => 'Post-activation health check detected issues',
-            self::PluginFileNotFound   => 'Main plugin file not found after extraction',
-            self::CriticalFileMissing  => 'A critical file is missing from the new version',
-            self::SyntaxError          => 'PHP syntax error detected in the new version',
-            self::FileUnreadable       => 'A PHP file could not be read for validation',
-            self::DirectoryMissing     => 'Plugin directory missing after extraction',
-            self::BootErrorDetected    => 'Boot errors captured during activation',
-            self::CriticalClassMissing => 'A critical class was not loaded after activation',
-            self::RestHookMissing      => 'REST API hooks not registered after activation',
-        };
-    }
-
-    public function isEqual(self $other): bool { return $this === $other; }
-    public function isOtherThan(self $other): bool { return $this !== $other; }
-    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
-}
-```
+Domain helpers: `isRollbackReason()`, `isSuccess()`, `label()`, `info()`.
 
 ### Pre-activation validation (SelfUpdateValidator)
 
@@ -848,23 +773,12 @@ trait UpdateResolverUrlTrait
 
 ## 10.7 UpdateConfigType Enum
 
-```php
-namespace PluginName\Enums;
+> **Pattern:** Config enums (int-backed, no metadata) — do NOT use info-object pattern. See [01-enum-architecture.md §2.1](02-enums-and-coding-style/01-enum-architecture.md).
 
-if (!defined('ABSPATH')) {
-    exit;
-}
-
-enum UpdateConfigType: int
-{
-    case CacheDaysDefault = 7;       // Days to cache resolved update URL
-    case MaxRedirects     = 5;       // Maximum 301/302 redirects to follow
-
-    public function isEqual(self $other): bool { return $this === $other; }
-    public function isOtherThan(self $other): bool { return $this !== $other; }
-    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
-}
-```
+| Case | Value | Purpose |
+|------|-------|---------|
+| `CacheDaysDefault` | `7` | Days to cache resolved update URL |
+| `MaxRedirects` | `5` | Maximum 301/302 redirects to follow |
 
 ---
 

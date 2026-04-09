@@ -1,5 +1,5 @@
 # Memory: architecture/php/core-enum-inventory
-Updated: 2026-03-03
+Updated: 2026-04-09
 
 Core enums in the `RiseupAsia\Enums` namespace include:
 
@@ -26,3 +26,15 @@ Core enums in the `RiseupAsia\Enums` namespace include:
   All `wp_remote_get`, `wp_remote_post`, `wp_remote_head`, and `wp_remote_request` calls must use these factories — inline magic arrays are prohibited.
 - **ActionType**: Administrative actions (Enable, Disable, Delete, SnapshotSettingsUpdate).
 - **AgentStatusType**, **PostStatusType**, **StatusType**, **SnapshotTriggerType**, **SyncEntryStatusType**: Domain-specific statuses and triggers.
+
+## Enum Metadata Pattern (Info-Object)
+
+Enums with rich metadata (label + details + optional fields) MUST use the info-object pattern:
+- Define `EnumInfo` readonly class with `label`, `details`, and optional fields
+- Define `private static infoMap()` returning `array<string, EnumInfo>`
+- `info()` looks up `$this->value` in the map
+- `label()` delegates to `$this->info()->label`
+- Never use `match`/`switch` for metadata when info-object pattern applies
+
+Full spec: `spec/18-how-to-write-wordpress-plugin/02-enums-and-coding-style/02-enum-info-object-pattern.md`
+Reference implementation: `SelfUpdateStatusType` in `03-self-update-status-enum.md`

@@ -21,6 +21,7 @@ This specification defines the **universal enum pattern** for all Go-based CLI a
 | [02-required-methods.md](02-required-methods.md) | Mandatory methods for all enums |
 | [03-folder-structure.md](03-folder-structure.md) | Directory layout standard |
 | [04-validation-checklist.md](04-validation-checklist.md) | Compliance audit checklist |
+| [05-info-object-pattern.md](05-info-object-pattern.md) | Map-based metadata pattern with `Info()` and `Label()` delegation |
 
 ---
 

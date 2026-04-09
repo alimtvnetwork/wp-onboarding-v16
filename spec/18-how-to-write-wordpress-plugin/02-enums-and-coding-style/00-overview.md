@@ -1,0 +1,47 @@
+# Phase 2 — Enums and Coding Style
+
+> **Purpose:** Define enum patterns, coding style, and naming conventions for WordPress plugins.
+
+---
+
+## Index
+
+| File | Purpose |
+|------|---------|
+| [01-enum-architecture.md](01-enum-architecture.md) | Core enum pattern, standard categories, comparison methods, coding style, naming |
+| [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) | Map-based metadata pattern with `info()` and `label()` delegation |
+| [03-self-update-status-enum.md](03-self-update-status-enum.md) | `SelfUpdateStatusType` — full reference enum using the info-object pattern |
+
+---
+
+## Quick Reference
+
+### Standard Enum Template
+
+```php
+enum ExampleType: string
+{
+    case SomeName = 'some_value';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+}
+```
+
+### Info-Object Pattern (Preferred for Rich Metadata)
+
+```php
+$info = SelfUpdateStatusType::Success->info();
+$label = SelfUpdateStatusType::Success->label();  // Delegates to info()->label
+```
+
+See [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) for the full pattern.
+
+---
+
+## Cross-References
+
+- [Go Enum Specification](../../06-golang-standards/01-enum-specification/00-overview.md) — equivalent pattern for Go
+- [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-info-object-pattern.md) — Go version of the metadata pattern
+- [Phase 10 — Deployment Patterns](../10-deployment-patterns.md) — uses `SelfUpdateStatusType`
