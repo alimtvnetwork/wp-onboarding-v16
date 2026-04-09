@@ -222,7 +222,7 @@ func (v Variant) Label() string { switch v { ... } }
 
 - [01-enum-pattern.md](01-enum-pattern.md) — core byte-based enum pattern
 - [02-required-methods.md](02-required-methods.md) — mandatory methods
-- [PHP Info-Object Pattern](../../18-how-to-write-wordpress-plugin/02-enums-and-coding-style/02-enum-info-object-pattern.md) — same pattern for PHP
+- [PHP Metadata Pattern](../../18-how-to-write-wordpress-plugin/02-enums-and-coding-style/02-enum-metadata-pattern.md) — PHP uses `match` expressions instead of info-object
 
 ---
 
