@@ -1,6 +1,6 @@
 # Enum Info-Object Pattern
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Status:** Complete
 **Updated:** 2026-04-09
 
@@ -16,9 +16,9 @@ This pattern applies to **any language** — PHP, Go, TypeScript. Language-speci
 
 ## Problem
 
-When an enum needs labels, descriptions, icons, or other metadata, the naive approach duplicates logic:
+When an enum needs labels or other metadata, the naive approach duplicates logic:
 
-### ❌ Anti-Pattern — Separate Switch/Match per Field
+### ❌ Anti-Pattern — Separate Match per Field
 
 ```php
 enum StatusType: string
@@ -43,15 +43,6 @@ enum StatusType: string
             self::Failed  => '❌',
         };
     }
-
-    // ❌ Yet another match for CSS class
-    public function cssClass(): string
-    {
-        return match ($this) {
-            self::Success => 'text-green-600',
-            self::Failed  => 'text-red-600',
-        };
-    }
 }
 ```
 
@@ -59,7 +50,6 @@ enum StatusType: string
 - Every new metadata field requires a new `match` block
 - Adding a new enum case requires updating N separate methods
 - Metadata is scattered, not centralised
-- High risk of forgetting a case in one of the match blocks
 
 ---
 
@@ -67,7 +57,7 @@ enum StatusType: string
 
 ### Step 1: Define the Info Class
 
-Create a simple value object to hold all metadata for one enum case:
+A simple, immutable value object holding metadata for one enum case. **Only `label` is required** — keep it minimal.
 
 ```php
 namespace PluginName\Enums;
@@ -86,16 +76,15 @@ final readonly class EnumInfo
 {
     public function __construct(
         public string $label,
-        public string $details = '',
     ) {}
 }
 ```
 
-> **Extensibility:** Add fields as needed — `icon`, `cssClass`, `severity`, `sortOrder`, `isTerminal`, etc. The class is `readonly` to prevent mutation after construction.
+> **Extensibility:** If a future enum genuinely needs additional fields (e.g. `icon`, `cssClass`), add them with defaults. But start with `label` only — most enums don't need more.
 
 ### Step 2: Define the Map
 
-Inside the enum, create a `private static` method that returns an associative array mapping enum values to their info objects. **Use a `static` local variable** so the array and its `EnumInfo` instances are constructed only once per request:
+Inside the enum, create a `private static` method that returns an associative array mapping enum values to their info objects. **Use a `static` local variable** so the array is constructed only once per request:
 
 ```php
 enum SomeStatusType: string
@@ -116,18 +105,9 @@ enum SomeStatusType: string
 
         if ($map === null) {
             $map = [
-                self::Active->value   => new EnumInfo(
-                    label: 'Currently active',
-                    details: 'This item is live and visible to users.',
-                ),
-                self::Inactive->value => new EnumInfo(
-                    label: 'Inactive',
-                    details: 'This item is disabled but can be re-activated.',
-                ),
-                self::Archived->value => new EnumInfo(
-                    label: 'Archived',
-                    details: 'This item has been archived and is read-only.',
-                ),
+                self::Active->value   => new EnumInfo(label: 'Currently active'),
+                self::Inactive->value => new EnumInfo(label: 'Inactive'),
+                self::Archived->value => new EnumInfo(label: 'Archived'),
             ];
         }
 
@@ -166,11 +146,9 @@ enum SomeStatusType: string
 
 ```
 ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  Enum Value   │────▶│  info()           │────▶│  Info Object  │
+│  Enum Value   │────▶│  info()           │────▶│  EnumInfo     │
 │  (e.g. Active)│     │  Lookup in map    │     │  .label       │
-└──────────────┘     └──────────────────┘     │  .details     │
-                                               │  .icon (opt)  │
-                                               └──────────────┘
+└──────────────┘     └──────────────────┘     └──────────────┘
                                                       │
                       ┌──────────────────┐            │
                       │  label()          │◀───────────┘
@@ -179,6 +157,55 @@ enum SomeStatusType: string
 ```
 
 **Key principle:** `label()` never contains its own logic. It always calls `info()` and reads `->label`.
+
+---
+
+## Individual `is*()` Methods — Per-Case Helpers
+
+For enums where callers frequently check specific cases, **add an `is*()` method for every case**. This makes code more readable and avoids raw comparison calls scattered through the codebase.
+
+### Rule: Every case gets its own `is*()` method
+
+```php
+enum SomeStatusType: string
+{
+    case Active   = 'Active';
+    case Inactive = 'Inactive';
+    case Archived = 'Archived';
+
+    // ── Per-Case Helpers ────────────────────────────────────
+    public function isActive(): bool   { return $this->isEqual(self::Active); }
+    public function isInactive(): bool { return $this->isEqual(self::Inactive); }
+    public function isArchived(): bool { return $this->isEqual(self::Archived); }
+
+    // ── Group Helpers ───────────────────────────────────────
+    public function isDisabled(): bool
+    {
+        return $this->isAnyOf(self::Inactive, self::Archived);
+    }
+
+    // ── Standard Comparison Methods ─────────────────────────
+    public function isEqual(self $other): bool { return $this === $other; }
+    public function isOtherThan(self $other): bool { return $this !== $other; }
+    public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
+}
+```
+
+### Why
+
+| Without `is*()` | With `is*()` |
+|-----------------|-------------|
+| `$status->isEqual(SomeStatusType::Active)` | `$status->isActive()` |
+| `$status->isAnyOf(StatusType::Inactive, StatusType::Archived)` | `$status->isDisabled()` |
+
+The per-case methods make domain logic read naturally and remove the need for callers to import and reference enum cases.
+
+### When to add group helpers
+
+Group helpers (`isDisabled()`, `isRollbackReason()`, `isLifecycle()`) should be added when:
+- Multiple cases share a **domain concept** (e.g. "these 3 cases all mean the item is not active")
+- The combination appears in **2+ call sites**
+- The prefix-based shortcut (`str_starts_with`) is applicable for enums with consistent naming
 
 ---
 
@@ -206,18 +233,9 @@ enum SomeStatusType: string
 
         if ($map === null) {
             $map = [
-                self::Active->value   => new EnumInfo(
-                    label: 'Currently active',
-                    details: 'This item is live and visible.',
-                ),
-                self::Inactive->value => new EnumInfo(
-                    label: 'Inactive',
-                    details: 'Disabled but can be re-activated.',
-                ),
-                self::Archived->value => new EnumInfo(
-                    label: 'Archived',
-                    details: 'Read-only, cannot be modified.',
-                ),
+                self::Active->value   => new EnumInfo(label: 'Currently active'),
+                self::Inactive->value => new EnumInfo(label: 'Inactive'),
+                self::Archived->value => new EnumInfo(label: 'Archived'),
             ];
         }
 
@@ -234,7 +252,18 @@ enum SomeStatusType: string
         return $this->info()->label;
     }
 
-    // Standard comparison methods (always required)
+    // ── Per-Case Helpers ────────────────────────────────────
+    public function isActive(): bool   { return $this->isEqual(self::Active); }
+    public function isInactive(): bool { return $this->isEqual(self::Inactive); }
+    public function isArchived(): bool { return $this->isEqual(self::Archived); }
+
+    // ── Group Helpers ───────────────────────────────────────
+    public function isDisabled(): bool
+    {
+        return $this->isAnyOf(self::Inactive, self::Archived);
+    }
+
+    // ── Standard Comparison Methods ─────────────────────────
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
@@ -248,8 +277,7 @@ enum SomeStatusType: string
 | Scenario | Use Info-Object? | Why |
 |----------|-----------------|-----|
 | Enum has only `label()` | Optional | Simple `match` is acceptable for ≤5 cases |
-| Enum has `label()` + `details()` | ✅ Yes | Avoids duplicate match blocks |
-| Enum has 3+ metadata fields | ✅ Mandatory | Scattered matches become unmaintainable |
+| Enum has 2+ metadata fields | ✅ Yes | Avoids duplicate match blocks |
 | Enum has 10+ cases | ✅ Mandatory | Map is easier to audit than long match chains |
 | Config enums (int-backed values) | ❌ No | No metadata needed — just `->value` |
 
@@ -277,7 +305,7 @@ If the enum uses the info-object pattern, every case must have a corresponding e
 
 ### R4: Static Caching is Mandatory
 
-`infoMap()` must use a `static` local variable so the array and all `EnumInfo` instances are constructed **once per request**, not on every call. Without caching, each call to `info()` or `label()` rebuilds the entire map — unacceptable for enums with 10+ cases.
+`infoMap()` must use a `static` local variable so the array and all `EnumInfo` instances are constructed **once per request**, not on every call.
 
 ```php
 // ✅ Correct — built once, reused
@@ -295,67 +323,26 @@ private static function infoMap(): array
 // ❌ Forbidden — rebuilds on every call
 private static function infoMap(): array
 {
-    return [ /* ... */ ];  // 40 new EnumInfo() every time
+    return [ /* ... */ ];
 }
 ```
 
 ### R5: Info Class is `readonly`
 
-The `EnumInfo` class (or equivalent) must be `readonly` to prevent accidental mutation.
+The `EnumInfo` class must be `final readonly` to prevent mutation after construction.
 
-### R6: Extending the Info Object
+### R6: Per-Case `is*()` Methods
 
-When a new metadata field is needed:
-
-1. Add the field to `EnumInfo` (with a default value for backward compatibility)
-2. Update relevant `infoMap()` entries
-3. Add accessor method on the enum if needed (delegate to `info()->newField`)
-
----
-
-## Anti-Patterns
-
-### ❌ Switch Statement for Metadata
-
-```php
-// FORBIDDEN — use map instead
-public function label(): string
-{
-    return match ($this) {
-        self::Success => 'Completed',
-        self::Failed  => 'Failed',
-    };
-}
-```
-
-### ❌ External Metadata Maps
-
-```php
-// FORBIDDEN — metadata belongs inside the enum
-$labels = [
-    SomeStatusType::Active->value   => 'Active',
-    SomeStatusType::Inactive->value => 'Inactive',
-];
-```
-
-### ❌ Separate Methods Without Info Delegation
-
-```php
-// FORBIDDEN — scattered logic
-public function label(): string { return match ($this) { ... }; }
-public function icon(): string  { return match ($this) { ... }; }  // Duplicate branching
-```
+Every enum should provide individual `is*()` methods for each case. Group helpers should be added when a domain concept spans multiple cases.
 
 ---
 
 ## Cross-Language Application
 
-This pattern is universal. The design principle stays the same — only syntax changes.
-
 | Language | Info Type | Map Structure | Lookup |
 |----------|----------|---------------|--------|
 | PHP 8.1+ | `readonly class EnumInfo` | `array<string, EnumInfo>` | `$map[$this->value]` |
-| Go | `struct EnumInfo` | `map[Variant]EnumInfo` or `[...]EnumInfo` array | `infoMap[v]` |
+| Go | `struct EnumInfo` | `map[Variant]EnumInfo` | `infoMap[v]` |
 | TypeScript | `interface EnumInfo` | `Record<EnumValue, EnumInfo>` | `infoMap[value]` |
 
 See [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-info-object-pattern.md) for the Go-specific implementation.
@@ -365,7 +352,8 @@ See [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-
 ## Cross-References
 
 - [01-enum-architecture.md](01-enum-architecture.md) — core enum structure and comparison methods
-- [03-self-update-status-enum.md](03-self-update-status-enum.md) — real-world example using this pattern
+- [03-self-update-status-enum.md](03-self-update-status-enum.md) — reference impl (17 cases, deployment domain)
+- [04-action-type-enum.md](04-action-type-enum.md) — reference impl (40+ cases, transaction logging)
 - [Go Info-Object Pattern](../../06-golang-standards/01-enum-specification/05-info-object-pattern.md)
 
 ---
