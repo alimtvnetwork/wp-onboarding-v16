@@ -411,7 +411,7 @@ $defaults = [
 
 > **Full definition:** [Phase 2 — 03-self-update-status-enum.md](02-enums-and-coding-style/03-self-update-status-enum.md)
 
-This enum tracks every possible outcome of the self-update lifecycle. It uses the **info-object pattern** (see [02-enum-info-object-pattern.md](02-enums-and-coding-style/02-enum-info-object-pattern.md)) with a centralised map for labels and details instead of scattered `match` statements.
+This enum tracks every possible outcome of the self-update lifecycle. It uses `match`-based metadata methods (see [02-enum-metadata-pattern.md](02-enums-and-coding-style/02-enum-metadata-pattern.md)) with per-case `is*()` helpers.
 
 Key cases: `Success`, `RolledBack`, `RollbackFailed`, `BackupCreationFailed`, `ExtractionFailed`, `ValidationFailed`, `ActivationException`, `ActivationWpError`, `HealthCheckFailed`, `PluginFileNotFound`, `CriticalFileMissing`, `SyntaxError`, `FileUnreadable`, `DirectoryMissing`, `BootErrorDetected`, `CriticalClassMissing`, `RestHookMissing`.
 
