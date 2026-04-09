@@ -26,6 +26,7 @@
 | 15 | [15-generic-enforce/](./15-generic-enforce/) | Cross-language generic/type enforcement patterns | `readme.md` |
 | 16 | [16-user-management/](./16-user-management/) | User management features | — |
 | 17 | [17-parallel-powershell-scripts/](./17-parallel-powershell-scripts/) | Parallel PowerShell script execution | `00-overview.md` |
+| 18 | [18-how-to-write-wordpress-plugin/](./18-how-to-write-wordpress-plugin/) | Gold Standard WordPress plugin development guide — 18 phases covering architecture, enums, traits, logging, validation, deployment, UI, REST API, settings | `README.md` |
 
 ### WordPress Subfolder Structure (`09-wordpress/`)
 
