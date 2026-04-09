@@ -1,9 +1,9 @@
-# ActionType — Info-Object Reference Implementation
+# ActionType — Reference Implementation
 
-**Version:** 1.1.0
+**Version:** 2.0.0
 **Updated:** 2026-04-09
 
-> **Purpose:** Second reference implementation of the info-object pattern, demonstrating a large enum (40+ cases) with per-case and group helpers.
+> **Purpose:** Second reference implementation using `match`-based metadata. Demonstrates a large enum (40+ cases) with per-case and group helpers.
 
 ---
 
@@ -76,77 +76,54 @@ enum ActionType: string
     case CloudStorageAccountAdd    = 'CloudStorageAccountAdd';
     case CloudStorageAccountRemove = 'CloudStorageAccountRemove';
 
-    // ── Info Map ────────────────────────────────────────────
-
-    /**
-     * @return array<string, EnumInfo>
-     */
-    private static function infoMap(): array
-    {
-        static $map = null;
-
-        if ($map !== null) {
-            return $map;
-        }
-
-        $map = [
-            self::Upload->value           => new EnumInfo(label: 'Plugin uploaded'),
-            self::UploadActive->value     => new EnumInfo(label: 'Active plugin uploaded'),
-            self::UploadInitiated->value  => new EnumInfo(label: 'Upload initiated'),
-            self::Enable->value           => new EnumInfo(label: 'Plugin enabled'),
-            self::Disable->value          => new EnumInfo(label: 'Plugin disabled'),
-            self::Delete->value           => new EnumInfo(label: 'Plugin deleted'),
-            self::FileReplace->value      => new EnumInfo(label: 'File replaced'),
-            self::FileDelete->value       => new EnumInfo(label: 'File deleted'),
-            self::Sync->value             => new EnumInfo(label: 'Sync executed'),
-            self::SyncDelete->value       => new EnumInfo(label: 'Sync delete executed'),
-            self::PostCreate->value       => new EnumInfo(label: 'Post created'),
-            self::PostUpdate->value       => new EnumInfo(label: 'Post updated'),
-            self::CategoryCreate->value   => new EnumInfo(label: 'Category created'),
-            self::MediaUpload->value      => new EnumInfo(label: 'Media uploaded'),
-            self::AuthFailed->value       => new EnumInfo(label: 'Authentication failed'),
-            self::ExportSelf->value       => new EnumInfo(label: 'Self-export executed'),
-            self::ExportPlugin->value     => new EnumInfo(label: 'Plugin export executed'),
-            self::PluginBackup->value        => new EnumInfo(label: 'Plugin backup created'),
-            self::PluginBackupRestore->value => new EnumInfo(label: 'Plugin backup restored'),
-            self::PluginBackupDelete->value  => new EnumInfo(label: 'Plugin backup deleted'),
-            self::AgentAdd->value           => new EnumInfo(label: 'Agent added'),
-            self::AgentRemove->value        => new EnumInfo(label: 'Agent removed'),
-            self::AgentTest->value          => new EnumInfo(label: 'Agent connection tested'),
-            self::AgentSync->value          => new EnumInfo(label: 'Agent sync executed'),
-            self::AgentApiError->value      => new EnumInfo(label: 'Agent API error'),
-            self::SnapshotCreate->value          => new EnumInfo(label: 'Snapshot created'),
-            self::SnapshotRestore->value         => new EnumInfo(label: 'Snapshot restored'),
-            self::SnapshotDelete->value          => new EnumInfo(label: 'Snapshot deleted'),
-            self::SnapshotExport->value          => new EnumInfo(label: 'Snapshot exported'),
-            self::SnapshotImport->value          => new EnumInfo(label: 'Snapshot imported'),
-            self::SnapshotCleanup->value         => new EnumInfo(label: 'Snapshot cleanup executed'),
-            self::SnapshotFullBackup->value      => new EnumInfo(label: 'Full snapshot backup created'),
-            self::SnapshotIncremental->value     => new EnumInfo(label: 'Incremental snapshot created'),
-            self::SnapshotSettingsUpdate->value  => new EnumInfo(label: 'Snapshot settings updated'),
-            self::SnapshotZipBuild->value        => new EnumInfo(label: 'Snapshot ZIP built'),
-            self::SnapshotZipExpire->value       => new EnumInfo(label: 'Snapshot ZIP expired'),
-            self::SnapshotZipDownload->value     => new EnumInfo(label: 'Snapshot ZIP downloaded'),
-            self::CloudStorageUpload->value        => new EnumInfo(label: 'Cloud storage upload'),
-            self::CloudStorageDelete->value        => new EnumInfo(label: 'Cloud storage file deleted'),
-            self::CloudStorageRotation->value      => new EnumInfo(label: 'Cloud storage rotation executed'),
-            self::CloudStorageAccountAdd->value    => new EnumInfo(label: 'Cloud storage account added'),
-            self::CloudStorageAccountRemove->value => new EnumInfo(label: 'Cloud storage account removed'),
-        ];
-
-        return $map;
-    }
-
-    // ── Public API ──────────────────────────────────────────
-
-    public function info(): EnumInfo
-    {
-        return self::infoMap()[$this->value];
-    }
+    // ── Metadata ───────────────────────────────────────────
 
     public function label(): string
     {
-        return $this->info()->label;
+        return match ($this) {
+            self::Upload           => 'Plugin uploaded',
+            self::UploadActive     => 'Active plugin uploaded',
+            self::UploadInitiated  => 'Upload initiated',
+            self::Enable           => 'Plugin enabled',
+            self::Disable          => 'Plugin disabled',
+            self::Delete           => 'Plugin deleted',
+            self::FileReplace      => 'File replaced',
+            self::FileDelete       => 'File deleted',
+            self::Sync             => 'Sync executed',
+            self::SyncDelete       => 'Sync delete executed',
+            self::PostCreate       => 'Post created',
+            self::PostUpdate       => 'Post updated',
+            self::CategoryCreate   => 'Category created',
+            self::MediaUpload      => 'Media uploaded',
+            self::AuthFailed       => 'Authentication failed',
+            self::ExportSelf       => 'Self-export executed',
+            self::ExportPlugin     => 'Plugin export executed',
+            self::PluginBackup        => 'Plugin backup created',
+            self::PluginBackupRestore => 'Plugin backup restored',
+            self::PluginBackupDelete  => 'Plugin backup deleted',
+            self::AgentAdd           => 'Agent added',
+            self::AgentRemove        => 'Agent removed',
+            self::AgentTest          => 'Agent connection tested',
+            self::AgentSync          => 'Agent sync executed',
+            self::AgentApiError      => 'Agent API error',
+            self::SnapshotCreate          => 'Snapshot created',
+            self::SnapshotRestore         => 'Snapshot restored',
+            self::SnapshotDelete          => 'Snapshot deleted',
+            self::SnapshotExport          => 'Snapshot exported',
+            self::SnapshotImport          => 'Snapshot imported',
+            self::SnapshotCleanup         => 'Snapshot cleanup executed',
+            self::SnapshotFullBackup      => 'Full snapshot backup created',
+            self::SnapshotIncremental     => 'Incremental snapshot created',
+            self::SnapshotSettingsUpdate  => 'Snapshot settings updated',
+            self::SnapshotZipBuild        => 'Snapshot ZIP built',
+            self::SnapshotZipExpire       => 'Snapshot ZIP expired',
+            self::SnapshotZipDownload     => 'Snapshot ZIP downloaded',
+            self::CloudStorageUpload        => 'Cloud storage upload',
+            self::CloudStorageDelete        => 'Cloud storage file deleted',
+            self::CloudStorageRotation      => 'Cloud storage rotation executed',
+            self::CloudStorageAccountAdd    => 'Cloud storage account added',
+            self::CloudStorageAccountRemove => 'Cloud storage account removed',
+        };
     }
 
     // ── Per-Case Helpers ────────────────────────────────────
@@ -240,7 +217,7 @@ $action->isUpload();             // false
 $action->isSnapshot();           // true
 $action->isLifecycle();          // false
 
-// Label via info delegation
+// Label via match
 $action->label();
 // → "Snapshot ZIP expired"
 ```
@@ -249,10 +226,10 @@ $action->label();
 
 ## Cross-References
 
-- [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) — the pattern specification
+- [02-enum-metadata-pattern.md](02-enum-metadata-pattern.md) — the pattern specification
 - [03-self-update-status-enum.md](03-self-update-status-enum.md) — first reference implementation (17 cases)
 - [01-enum-architecture.md](01-enum-architecture.md) — core enum rules and comparison methods
 
 ---
 
-*Second reference implementation — large enum (40+ cases) with info-object pattern.*
+*Second reference implementation — large enum (40+ cases) with match-based metadata.*
