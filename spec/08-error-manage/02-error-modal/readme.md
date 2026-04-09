@@ -1305,25 +1305,34 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `src/stores/errorStore.ts` | 674 | Central error store (Zustand): CapturedError type, capture pipeline, queue management |
-| `src/components/errors/GlobalErrorModal.tsx` | 239 | Modal shell: header, section toggle, footer actions |
-| `src/components/errors/BackendSection.tsx` | 721 | Backend tabs: Overview, Log, Execution, Stack, Session, Request, Traversal |
-| `src/components/errors/FrontendSection.tsx` | 328 | Frontend tabs: Overview, Stack, Context, Fixes |
-| `src/components/errors/RequestDetails.tsx` | 176 | Request chain visualization (React → Go → Delegated, 3-hop) |
-| `src/components/errors/TraversalDetails.tsx` | 149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
-| `src/components/errors/SessionLogsTab.tsx` | 443 | Session diagnostics: logs, request, response, stack traces |
-| `src/components/errors/ErrorModalActions.tsx` | 194 | Download and Copy dropdown menus |
-| `src/components/errors/errorReportGenerator.ts` | 185 | Pure function: Markdown report generation (compact + full) + suggested fixes |
-| `src/components/errors/errorLogAdapter.ts` | 22 | Maps backend `ErrorLog` → `CapturedError` for ErrorDetailModal report generation |
-| `src/components/errors/ErrorModalTypes.ts` | 26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps, DelegatedRequestServer |
+| `src/stores/errorStore.ts` | ~674 | Central error store (Zustand): CapturedError type, capture pipeline, queue management |
+| `src/components/errors/GlobalErrorModal.tsx` | ~347 | Modal shell: header, 3-section toggle (Backend/Frontend/Delegated), footer actions |
+| `src/components/errors/BackendSection.tsx` | ~620 | Backend tabs: Overview, Log, Execution, Stack, Session (conditional), Request, Traversal (conditional) |
+| `src/components/errors/FrontendSection.tsx` | ~328 | Frontend tabs: Overview, Stack, Context, Fixes |
+| `src/components/errors/DelegatedSection.tsx` | ~321 | Delegated logs: synthesized log, PHP stack frames, DelegatedRequestServer details, remote response body |
+| `src/components/errors/delegatedLogFormatter.ts` | — | Pure function: builds synthesized delegated server log from error + session diagnostics |
+| `src/components/errors/RequestDetails.tsx` | ~176 | Request chain visualization (React → Go → Delegated, 3-hop) |
+| `src/components/errors/TraversalDetails.tsx` | ~149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
+| `src/components/errors/SessionLogsTab.tsx` | ~443 | Session diagnostics: logs, request, response, stack traces (4 sub-tabs) |
+| `src/components/errors/ErrorModalActions.tsx` | ~194 | Download and Copy dropdown menus (Split Button pattern) |
+| `src/components/errors/errorReportGenerator.ts` | ~185 | Pure function: Markdown report generation (compact + full) + suggested fixes |
+| `src/components/errors/errorLogAdapter.ts` | ~22 | Maps backend `ErrorLog` → `CapturedError` for ErrorDetailModal report generation |
+| `src/components/errors/ErrorModalTypes.ts` | ~26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps |
 | `src/components/errors/ErrorDetailModal.tsx` | — | Standalone error detail viewer (Split Button copy + DownloadDropdown) |
 | `src/components/errors/ErrorHistoryDrawer.tsx` | — | Error history browser drawer |
 | `src/components/errors/ErrorQueueBadge.tsx` | — | Error queue indicator badge |
-| `src/components/errors/AppErrorBoundary.tsx` | — | React error boundary wrapping the app |
+| `src/components/errors/AppErrorBoundary.tsx` | ~63 | React error boundary wrapping the app |
 | `src/hooks/useSessionDiagnostics.ts` | — | Hook for auto-fetching session-level diagnostics |
 | `src/hooks/useClickTracker.ts` | — | Click path tracking for error context |
 | `src/hooks/useExecutionLogger.ts` | — | React execution logger (debug mode) |
+| `src/hooks/useDraggable.ts` | — | Makes the modal draggable (header drag handle) |
 | `src/lib/api/envelope.ts` | — | Envelope parsing and error extraction (incl. DelegatedRequestServer) |
+
+### Screenshots
+
+| File | Description |
+|------|-------------|
+| `screenshots/error-modal-overview-e9005.png` | Backend section, Overview tab, E9005 error (API returned HTML instead of JSON) |
 
 ---
 
@@ -1343,4 +1352,4 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 ---
 
-*Error Modal specification v2.2.0 — updated: 2026-03-03*
+*Error Modal specification v2.4.0 — updated: 2026-04-09*

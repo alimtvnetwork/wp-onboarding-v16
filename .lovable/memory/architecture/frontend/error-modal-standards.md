@@ -2,14 +2,34 @@
 
 ## Modal Layout
 
-The Global Error Modal uses a **7-tab interface**:
-1. **Overview** - Summary, trigger context, message
-2. **Session** - Full session logs fetched from backend (if sessionId available)
-3. **Backend** - Execution logs and Go stack trace
-4. **Request** - Endpoint, method, URL
-5. **Stack** - Frontend parsed stack frames
-6. **Context** - Full JSON context with syntax highlighting
-7. **Fixes** - Suggested fixes based on error code
+The Global Error Modal uses a **3-section architecture** with conditional tabs:
+
+### Top-Level Sections (Section Toggle)
+1. **Backend** — Primary diagnostic view (default active)
+2. **Frontend** — JS/React error details
+3. **Delegated Logs** — Remote WordPress server diagnostics (orange-themed)
+
+### Backend Section Tabs
+- **Overview** — Summary, error message, request info, timing, badges (ALWAYS visible)
+- **Log** — `error.log.txt` viewer with auto-fetch (ALWAYS visible)
+- **Execution** — Go call chain table + session execution logs (ALWAYS visible)
+- **Stack** — Go/PHP/Delegated stack traces (ALWAYS visible)
+- **Session** — Full session diagnostics with 4 sub-tabs (CONDITIONAL: only when `sessionId` exists)
+- **Request** — 3-hop request chain visualization (ALWAYS visible)
+- **Traversal** — Endpoint flow + methods stack (CONDITIONAL: only when `envelopeErrors || envelopeMethodsStack || requestedAt` exists)
+
+### Frontend Section Tabs
+- **Overview** — Trigger context, click path, call chain
+- **Stack** — Parsed/raw JS stack frames + execution chain
+- **Context** — Full JSON context with syntax highlighting
+- **Fixes** — Suggested fixes by error code
+
+### Error Source Badge (Header)
+| Badge | Condition | Color |
+|-------|-----------|-------|
+| `Delegated Remote` | Has delegated data (requestDelegatedAt, DelegatedRequestServer, phpStackFrames, etc.) | Orange |
+| `Frontend` | No endpoint + no envelope + has parsed JS frames | Blue |
+| `Local Backend` | Default | Green |
 
 ## Critical Requirements
 
@@ -19,24 +39,10 @@ The Global Error Modal uses a **7-tab interface**:
 - Error location section must NEVER be hidden
 - All modals must support vertical scrolling with `max-h-[90vh]` and `overflow-y-auto`
 
-### Tabs for Complex Dialogs
-Any dialog with more than 3 sections MUST use tabs:
-- `PublishProgressDialog`: Progress | Logs | Settings
-- `BackupProgressDialog`: Progress | Logs
-- `SyncProgressDialog`: Progress | Logs
-- `GlobalErrorModal`: Overview | Session | Backend | Request | Stack | Context | Fixes
-
 ### Maximum Heights
 ```tsx
 <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
 ```
-
-### Log Display
-Use `LogViewer` component with:
-- Dedicated tab (not inline)
-- Badge showing log count
-- Copy button for all logs
-- Auto-scroll to latest
 
 ### Multiline Content
 - If log content includes embedded `\\n` sequences (common in stack traces/response bodies), the UI MUST render them as real line breaks (`whitespace-pre-wrap` / `<br/>`).
@@ -47,14 +53,10 @@ Use `LogViewer` component with:
 - Error location visible at top, not hidden below fold
 - File paths should include full relative paths from `internal/` or `pkg/`
 
-### Session Logs Tab
-The Session tab uses the `SessionLogsTab` component which:
-- Fetches logs from `/api/v1/sessions/{id}/logs` endpoint
-- Provides syntax highlighting for stage headers, errors, warnings
-- Includes Copy, Download, and Refresh buttons
-- Shows loading/error states with retry functionality
-- Displays session ID badge and type
+## Visual Reference
+
+See `spec/08-error-manage/02-error-modal/screenshots/error-modal-overview-e9005.png` for the canonical screenshot.
 
 ---
 
-*Last Updated: 2026-02-05*
+*Last Updated: 2026-04-09*
