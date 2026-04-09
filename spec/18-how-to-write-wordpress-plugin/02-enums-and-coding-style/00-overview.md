@@ -10,7 +10,8 @@
 |------|---------|
 | [01-enum-architecture.md](01-enum-architecture.md) | Core enum pattern, standard categories, comparison methods, coding style, naming |
 | [02-enum-info-object-pattern.md](02-enum-info-object-pattern.md) | Map-based metadata pattern with `info()` and `label()` delegation |
-| [03-self-update-status-enum.md](03-self-update-status-enum.md) | `SelfUpdateStatusType` — full reference enum using the info-object pattern |
+| [03-self-update-status-enum.md](03-self-update-status-enum.md) | `SelfUpdateStatusType` — reference impl (17 cases, deployment domain) |
+| [04-action-type-enum.md](04-action-type-enum.md) | `ActionType` — reference impl (40+ cases, transaction logging domain) |
 
 ---
 
