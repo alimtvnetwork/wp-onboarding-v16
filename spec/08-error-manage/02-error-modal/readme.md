@@ -1,7 +1,7 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 2.3.0  
-> **Updated:** 2026-03-03  
+> **Version:** 2.4.0  
+> **Updated:** 2026-04-09  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
 > **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → Delegated Server request chain.
@@ -386,31 +386,53 @@ The Universal Response Envelope provides six top-level blocks. The error modal c
 
 ## 5. Modal Structure & Components
 
+### Visual Reference
+
+> **Screenshot:** The error modal displaying a simple E9005 "API returned HTML instead of JSON" error with the Backend section active and Overview tab selected.
+
+![Error Modal — Backend Overview (E9005)](./screenshots/error-modal-overview-e9005.png)
+
+**Key visual elements visible in the screenshot:**
+1. **Header row**: "Error Details" title + `E9005` code badge (red) + `Local Backend` source badge (green) + close (×) button
+2. **Subtitle**: Timestamp (`2026-04-09 05:50:11`) + app version (`WP Publish v2.31.0`)
+3. **Section Toggle**: Three buttons — `Backend` (active/filled), `Frontend` (outline), `Delegated Logs` (orange-outlined)
+4. **Tab Bar** (inside Backend section): `Overview` | `Log` | `Execution` | `Stack` | `Request` — note: **Session** and **Traversal** tabs are absent because this error has no `sessionId` and no envelope data
+5. **Overview content**: Error message banner ("API returned HTML instead of JSON") with badges (E9005, timestamp, HTTP 200)
+6. **Request block**: `GET` method badge + full request URL
+7. **Footer**: `Download ▼` dropdown, `Close` button, `Copy ▼` split button (green)
+
 ### Component Hierarchy
 
 ```
 GlobalErrorModal.tsx
-├── DialogHeader (error code, timestamp, queue navigation)
-├── Section Toggle (Backend / Frontend buttons)
+├── DialogHeader (error code badge, source badge, timestamp, app version, queue navigation)
+├── Section Toggle (Backend / Frontend / Delegated Logs — 3 buttons)
 ├── ScrollArea
 │   ├── BackendSection.tsx (when activeSection === "backend")
-│   │   ├── Tabs
-│   │   │   ├── Overview (error message, request, timing, badges)
-│   │   │   ├── Log (error.log.txt content)
-│   │   │   ├── Execution (Go call chain table + session logs)
-│   │   │   ├── Stack (Go + PHP stack traces, session diagnostics)
-│   │   │   ├── Session (SessionLogsTab — logs, request, response, stack trace)
-│   │   │   ├── Request (RequestDetails — request chain visualization)
-│   │   │   └── Traversal (TraversalDetails — endpoint flow + methods stack)
+│   │   ├── Tabs (some conditionally shown)
+│   │   │   ├── Overview (error message, request, timing, badges) — ALWAYS
+│   │   │   ├── Log (error.log.txt content) — ALWAYS
+│   │   │   ├── Execution (Go call chain table + session logs) — ALWAYS
+│   │   │   ├── Stack (Go + PHP stack traces, session diagnostics) — ALWAYS
+│   │   │   ├── Session (SessionLogsTab) — CONDITIONAL: only when error.sessionId exists
+│   │   │   ├── Request (RequestDetails — 3-hop chain) — ALWAYS
+│   │   │   └── Traversal (TraversalDetails) — CONDITIONAL: only when envelopeErrors || envelopeMethodsStack || requestedAt exists
 │   │   └── (Internal sub-components: OverviewContent, ErrorLogContent, etc.)
 │   │
-│   └── FrontendSection.tsx (when activeSection === "frontend")
-│       ├── Tabs
-│       │   ├── Overview (trigger context, message, call chain, click path)
-│       │   ├── Stack (parsed/raw JS stack, React execution chain)
-│       │   ├── Context (full error context JSON)
-│       │   └── Fixes (suggested fixes by error code)
-│       └── (Internal sub-components)
+│   ├── FrontendSection.tsx (when activeSection === "frontend")
+│   │   ├── Tabs
+│   │   │   ├── Overview (trigger context, message, call chain, click path)
+│   │   │   ├── Stack (parsed/raw JS stack, React execution chain)
+│   │   │   ├── Context (full error context JSON)
+│   │   │   └── Fixes (suggested fixes by error code)
+│   │   └── (Internal sub-components)
+│   │
+│   └── DelegatedSection.tsx (when activeSection === "delegated")
+│       ├── Delegated Server Log (synthesized from session diagnostics + envelope)
+│       ├── PHP Stack Trace Frames (structured table, orange-themed)
+│       ├── DelegatedRequestServer details (endpoint, method, status, response)
+│       ├── Delegated Service Error Stack (legacy PHP error lines)
+│       └── Remote Response Body (raw JSON viewer)
 │
 ├── DialogFooter
 │   ├── DownloadDropdown (ZIP bundle, error.log.txt, log.txt, report.md)
@@ -427,15 +449,15 @@ GlobalErrorModal.tsx
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ ┌─ DialogHeader ──────────────────────────────────────────────────┐ │
-│ │ [E5001]  Failed to enable plugin   2026-02-09 14:32:01         │ │
-│ │                                          [◀ 1/3 ▶] [Copy All] │ │
+│ │ ⚠ Error Details [E5001] [Local Backend]              [× Close] │ │
+│ │ 2026-02-09 14:32:01 • WP Publish v2.31.0   [◀ 1/3 ▶] [All]   │ │
 │ └─────────────────────────────────────────────────────────────────┘ │
-│ ┌─ Section Toggle ────────────────────────────────────────────────┐ │
-│ │  [ ● Backend ]  [ ○ Frontend ]                                 │ │
+│ ┌─ Section Toggle (3 buttons) ────────────────────────────────────┐ │
+│ │  [ ● Backend ]  [ ○ Frontend ]  [ ○ Delegated Logs ]           │ │
 │ └─────────────────────────────────────────────────────────────────┘ │
 │ ┌─ ScrollArea (flex-1) ──────────────────────────────────────────┐ │
-│ │ ┌─ Tab Bar ──────────────────────────────────────────────────┐ │ │
-│ │ │ Overview │ Log │ Execution │ Stack │ Session │ Request │ Traversal │
+│ │ ┌─ Tab Bar (conditional tabs shown/hidden) ──────────────────┐ │ │
+│ │ │ Overview │ Log │ Execution │ Stack │ [Session]? │ Request │ [Traversal]? │
 │ │ └────────────────────────────────────────────────────────────┘ │ │
 │ │                                                                │ │
 │ │  ┌─ Active Tab Content ─────────────────────────────────────┐  │ │
@@ -449,6 +471,28 @@ GlobalErrorModal.tsx
 │ └─────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+#### Conditional Tab Visibility Rules
+
+| Tab | Condition | Data Source |
+|-----|-----------|-------------|
+| Overview | **Always visible** | `CapturedError` core fields |
+| Log | **Always visible** | `api.getBackendErrorLog()` auto-fetched |
+| Execution | **Always visible** | `envelopeMethodsStack.Backend` + `backendLogs[]` |
+| Stack | **Always visible** | `envelopeErrors.Backend` + `phpStackFrames` + session diagnostics |
+| Session | **Conditional**: `error.sessionId` must exist | `api.getSessionLogs()` + `api.getSessionDiagnostics()` |
+| Request | **Always visible** | `endpoint`, `method`, `requestedAt`, `requestDelegatedAt` |
+| Traversal | **Conditional**: `envelopeErrors \|\| envelopeMethodsStack \|\| requestedAt` must exist | Envelope fields |
+
+#### Error Source Badge Classification
+
+The header shows a source badge determined by the error data:
+
+| Badge | Condition | Color |
+|-------|-----------|-------|
+| `Delegated Remote` | Has `requestDelegatedAt`, `DelegatedRequestServer`, `DelegatedServiceErrorStack`, `phpStackFrames`, or `remoteResponseBody` | Orange |
+| `Frontend` | No endpoint + no envelope errors + has parsed JS frames | Blue |
+| `Local Backend` | Everything else (default) | Green |
 
 #### Backend Section — Overview Tab
 
@@ -1261,25 +1305,34 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `src/stores/errorStore.ts` | 674 | Central error store (Zustand): CapturedError type, capture pipeline, queue management |
-| `src/components/errors/GlobalErrorModal.tsx` | 239 | Modal shell: header, section toggle, footer actions |
-| `src/components/errors/BackendSection.tsx` | 721 | Backend tabs: Overview, Log, Execution, Stack, Session, Request, Traversal |
-| `src/components/errors/FrontendSection.tsx` | 328 | Frontend tabs: Overview, Stack, Context, Fixes |
-| `src/components/errors/RequestDetails.tsx` | 176 | Request chain visualization (React → Go → Delegated, 3-hop) |
-| `src/components/errors/TraversalDetails.tsx` | 149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
-| `src/components/errors/SessionLogsTab.tsx` | 443 | Session diagnostics: logs, request, response, stack traces |
-| `src/components/errors/ErrorModalActions.tsx` | 194 | Download and Copy dropdown menus |
-| `src/components/errors/errorReportGenerator.ts` | 185 | Pure function: Markdown report generation (compact + full) + suggested fixes |
-| `src/components/errors/errorLogAdapter.ts` | 22 | Maps backend `ErrorLog` → `CapturedError` for ErrorDetailModal report generation |
-| `src/components/errors/ErrorModalTypes.ts` | 26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps, DelegatedRequestServer |
+| `src/stores/errorStore.ts` | ~674 | Central error store (Zustand): CapturedError type, capture pipeline, queue management |
+| `src/components/errors/GlobalErrorModal.tsx` | ~347 | Modal shell: header, 3-section toggle (Backend/Frontend/Delegated), footer actions |
+| `src/components/errors/BackendSection.tsx` | ~620 | Backend tabs: Overview, Log, Execution, Stack, Session (conditional), Request, Traversal (conditional) |
+| `src/components/errors/FrontendSection.tsx` | ~328 | Frontend tabs: Overview, Stack, Context, Fixes |
+| `src/components/errors/DelegatedSection.tsx` | ~321 | Delegated logs: synthesized log, PHP stack frames, DelegatedRequestServer details, remote response body |
+| `src/components/errors/delegatedLogFormatter.ts` | — | Pure function: builds synthesized delegated server log from error + session diagnostics |
+| `src/components/errors/RequestDetails.tsx` | ~176 | Request chain visualization (React → Go → Delegated, 3-hop) |
+| `src/components/errors/TraversalDetails.tsx` | ~149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
+| `src/components/errors/SessionLogsTab.tsx` | ~443 | Session diagnostics: logs, request, response, stack traces (4 sub-tabs) |
+| `src/components/errors/ErrorModalActions.tsx` | ~194 | Download and Copy dropdown menus (Split Button pattern) |
+| `src/components/errors/errorReportGenerator.ts` | ~185 | Pure function: Markdown report generation (compact + full) + suggested fixes |
+| `src/components/errors/errorLogAdapter.ts` | ~22 | Maps backend `ErrorLog` → `CapturedError` for ErrorDetailModal report generation |
+| `src/components/errors/ErrorModalTypes.ts` | ~26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps |
 | `src/components/errors/ErrorDetailModal.tsx` | — | Standalone error detail viewer (Split Button copy + DownloadDropdown) |
 | `src/components/errors/ErrorHistoryDrawer.tsx` | — | Error history browser drawer |
 | `src/components/errors/ErrorQueueBadge.tsx` | — | Error queue indicator badge |
-| `src/components/errors/AppErrorBoundary.tsx` | — | React error boundary wrapping the app |
+| `src/components/errors/AppErrorBoundary.tsx` | ~63 | React error boundary wrapping the app |
 | `src/hooks/useSessionDiagnostics.ts` | — | Hook for auto-fetching session-level diagnostics |
 | `src/hooks/useClickTracker.ts` | — | Click path tracking for error context |
 | `src/hooks/useExecutionLogger.ts` | — | React execution logger (debug mode) |
+| `src/hooks/useDraggable.ts` | — | Makes the modal draggable (header drag handle) |
 | `src/lib/api/envelope.ts` | — | Envelope parsing and error extraction (incl. DelegatedRequestServer) |
+
+### Screenshots
+
+| File | Description |
+|------|-------------|
+| `screenshots/error-modal-overview-e9005.png` | Backend section, Overview tab, E9005 error (API returned HTML instead of JSON) |
 
 ---
 
@@ -1299,4 +1352,4 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 ---
 
-*Error Modal specification v2.2.0 — updated: 2026-03-03*
+*Error Modal specification v2.4.0 — updated: 2026-04-09*
