@@ -405,3 +405,240 @@ $rootDb->updateStats($pdo, count($exportedTables), $totalRows);
 | Separate PDO per manifest | `RootDb::create()` | Each snapshot gets its own independent `a-root.db` |
 | Legacy compatibility | `resolveRootDbTableName()` | Always check PascalCase first, then fall back to snake_case |
 | Error swallowing | `findMany()`, `count()`, `save()` | ORM catches exceptions and returns empty/zero/false — never throws |
+| Typed result wrappers | `TypedQuery` | Never return raw arrays — wrap in `DbResult<T>` / `DbResultSet<T>` / `DbExecResult` |
+| Closure mappers | `TypedQuery::queryOne()` | Caller supplies a `Closure(array): T` — like Go's scanner functions |
+| Trait decomposition | `FileCache` | Shell class with `FileCacheScanTrait` + `FileCacheStoreTrait` |
+
+---
+
+## 19.9 TypedQuery — Go-Style Typed Database Results
+
+`TypedQuery` provides a **type-safe alternative to the fluent ORM** for cases where you need explicit SQL control with structured result handling. It mirrors Go's `dbutil.Result[T]` pattern.
+
+### Architecture
+
+```
+Database/
+├── TypedQuery.php       ← Query executor with closure-based row mapping
+├── DbResult.php         ← Single-row result wrapper (value | empty | error)
+├── DbResultSet.php      ← Multi-row result wrapper (items | error)
+└── DbExecResult.php     ← Mutation result wrapper (affectedRows, lastInsertId | error)
+```
+
+### TypedQuery class
+
+Takes a PDO instance (not static like Orm) and provides three methods:
+
+```php
+final class TypedQuery {
+    public function __construct(private readonly PDO $pdo) {}
+
+    /** @return DbResult<T> */
+    public function queryOne(string $sql, array $params, Closure $mapper): DbResult;
+
+    /** @return DbResultSet<T> */
+    public function queryMany(string $sql, array $params, Closure $mapper): DbResultSet;
+
+    /** Non-query (INSERT/UPDATE/DELETE) */
+    public function exec(string $sql, array $params = []): DbExecResult;
+}
+```
+
+**Key difference from Orm:** TypedQuery uses raw SQL + closure mappers. The caller controls the SQL; TypedQuery handles error wrapping and row-to-object mapping.
+
+### Result wrappers
+
+#### DbResult\<T\> — Single row
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `DbResult::of($value)` | `self<T>` | Successful result with mapped value |
+| `DbResult::empty()` | `self<T>` | No row found (not an error) |
+| `DbResult::error($e)` | `self<T>` | Query or mapping failed |
+| `->isDefined()` | `bool` | True when a row was mapped |
+| `->isEmpty()` | `bool` | True when no row found |
+| `->hasError()` | `bool` | True when query failed |
+| `->isSafe()` | `bool` | True when defined AND no error |
+| `->value()` | `T\|null` | The mapped value |
+| `->getError()` | `?Throwable` | The underlying error |
+| `->stackTrace()` | `string` | Captured stack trace |
+
+#### DbResultSet\<T\> — Multiple rows
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `DbResultSet::of($items)` | `self<T>` | Successful result set |
+| `DbResultSet::error($e)` | `self<T>` | Query or mapping failed |
+| `->items()` | `array<T>` | The mapped items |
+| `->count()` | `int` | Number of items |
+| `->hasAny()` | `bool` | True when at least one item |
+| `->isEmpty()` | `bool` | True when zero items |
+| `->first()` | `DbResult<T>` | First item as a DbResult |
+| `->isSafe()` | `bool` | True when no error |
+
+#### DbExecResult — Mutations
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `DbExecResult::of($affected, $lastId)` | `self` | Successful mutation |
+| `DbExecResult::error($e)` | `self` | Mutation failed |
+| `->affectedRows()` | `int` | Rows changed |
+| `->lastInsertId()` | `int` | Auto-increment ID |
+| `->isEmpty()` | `bool` | True when zero rows affected |
+| `->isSafe()` | `bool` | True when no error |
+
+### Usage example
+
+```php
+$query = new TypedQuery($pdo);
+
+// Single row with mapper closure
+$result = $query->queryOne(
+    "SELECT Id, Name, Version FROM Plugins WHERE Slug = ?",
+    [$slug],
+    fn(array $row) => new PluginInfo(
+        id: (int) $row['Id'],
+        name: $row['Name'],
+        version: $row['Version'],
+    ),
+);
+
+if ($result->isSafe()) {
+    $plugin = $result->value();  // PluginInfo instance
+}
+
+// Multi-row
+$resultSet = $query->queryMany(
+    "SELECT * FROM Transactions WHERE Status = ? ORDER BY CreatedAt DESC",
+    ['Success'],
+    fn(array $row) => TransactionDto::fromRow($row),
+);
+
+if ($resultSet->hasAny()) {
+    foreach ($resultSet->items() as $tx) { /* ... */ }
+}
+
+// Mutation
+$execResult = $query->exec(
+    "UPDATE Plugins SET Version = ? WHERE Slug = ?",
+    [$newVersion, $slug],
+);
+
+if ($execResult->isSafe()) {
+    $affected = $execResult->affectedRows();
+}
+```
+
+### When to use TypedQuery vs Orm
+
+| Use case | Tool |
+|----------|------|
+| Simple CRUD, pagination, filters | `Orm::forTable()` fluent builder |
+| Complex SQL (JOINs, subqueries, CTEs) | `TypedQuery` with raw SQL |
+| Need typed return objects (not arrays) | `TypedQuery` with closure mappers |
+| Quick counts, existence checks | `Orm::forTable()->count()` |
+| Mutation with affected-row tracking | `TypedQuery::exec()` → `DbExecResult` |
+
+---
+
+## 19.10 FileCache — SQLite-Backed File Hash Cache
+
+`FileCache` manages MD5-based file hash caching for efficient sync comparisons. It follows the standard **shell class + trait decomposition** pattern.
+
+### Architecture
+
+```
+Database/
+├── FileCache.php                     ← Shell class (singleton)
+└── Traits/
+    ├── FileCacheScanTrait.php        ← Directory scanning, manifest building, reconciliation
+    └── FileCacheStoreTrait.php       ← Cache CRUD (load, upsert, delete, invalidate)
+```
+
+### Shell class
+
+```php
+class FileCache {
+    use FileCacheScanTrait;
+    use FileCacheStoreTrait;
+
+    private static ?FileCache $instance = null;
+    private FileLogger $logger;
+    private Database $db;
+
+    public static function getInstance(FileLogger $logger, Database $db): static;
+}
+```
+
+**Dependencies:** Takes both `FileLogger` (for logging) and `Database` (for PDO access and readiness check).
+
+### FileCacheScanTrait — Manifest building
+
+The primary method is `getManifest()`, which builds a complete file manifest for a plugin:
+
+```php
+$manifest = $fileCache->getManifest($pluginSlug, $pluginDir, $ignoreRules);
+// Returns: [
+//   'Files'    => [ ['path' => '...', 'hash' => '...', 'modifiedAt' => '...', 'size' => 123], ... ],
+//   'Cached'   => 42,    // Files resolved from cache (fast)
+//   'Computed'  => 3,     // Files that needed fresh MD5 computation
+//   'Removed'   => 1,     // Stale cache entries pruned
+// ]
+```
+
+#### Reconciliation flow
+
+1. **Load cached entries** from SQLite (keyed by `RelativePath`)
+2. **Scan directory** recursively, respecting `.riseupuploadignore` rules
+3. **For each file on disk:**
+   - If cache hit (same `ModifiedAt` + `FileSize`) → use cached hash (fast path)
+   - If cache miss → compute `md5_file()`, upsert cache entry (slow path)
+4. **Prune stale entries** — cached files no longer on disk are deleted
+
+#### Graceful degradation
+
+```php
+$isDbUnavailable = ($this->db->isReady() === false);
+if ($isDbUnavailable) {
+    return $this->fullScan($pluginDir, $ignore);  // No cache, compute all hashes
+}
+```
+
+If the database isn't ready, `getManifest()` falls back to a full scan without caching — ensuring the feature always works.
+
+### FileCacheStoreTrait — Cache CRUD
+
+| Method | Purpose |
+|--------|---------|
+| `invalidate($pluginSlug)` | Delete all cache entries for a plugin (returns count) |
+| `loadCachedEntries($pluginSlug)` | Load all cached entries as `path → row` map |
+| `upsertCacheEntry(...)` | INSERT OR REPLACE a cache entry |
+| `deleteCacheEntry($pluginSlug, $path)` | Remove a single stale entry |
+
+**Note:** `invalidate()` and `loadCachedEntries()` use the **Orm fluent builder**, while `upsertCacheEntry()` uses **raw PDO** for the `INSERT OR REPLACE` syntax that the Orm doesn't support. This demonstrates the practical coexistence of both database access patterns.
+
+### Cache table schema
+
+```sql
+CREATE TABLE IF NOT EXISTS FileCache (
+    Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    PluginSlug   TEXT NOT NULL,
+    RelativePath TEXT NOT NULL,
+    Md5Hash      TEXT NOT NULL,
+    ModifiedAt   TEXT NOT NULL,
+    FileSize     INTEGER DEFAULT 0,
+    CachedAt     TEXT NOT NULL,
+    UNIQUE(PluginSlug, RelativePath)
+);
+```
+
+### Key patterns demonstrated
+
+| Pattern | Implementation |
+|---------|---------------|
+| Graceful degradation | Falls back to full scan when DB unavailable |
+| Cache invalidation | `invalidate($slug)` clears all entries for a plugin |
+| Stale entry pruning | `pruneStaleEntries()` removes files no longer on disk |
+| Mixed DB access | Orm for queries, raw PDO for `INSERT OR REPLACE` |
+| Semantic guards | `BooleanHelpers::isKeyMissing()` for stale path detection |
+| ResponseKeyType enums | All response keys use backed enums — no magic strings |
