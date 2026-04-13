@@ -53,6 +53,7 @@
 6. **Phases 8–10** — WordPress integration, testing, deployment
 7. **Phases 11–13** — frontend templates, design system, UI patterns
 8. **Phases 14–18** — REST API, settings, error diagnostics, data files, JS patterns
+9. **Phase 19** — micro-ORM query builder and cross-plugin Root Database
 
 ---
 
