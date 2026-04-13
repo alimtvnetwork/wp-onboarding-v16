@@ -29,7 +29,7 @@
 | 16 | [16-error-handling-extraction.md](16-error-handling-extraction.md) | Error Handling & Diagnostics | `ErrorType` classification, bootstrap vs FileLogger capture, `safeExecute` wrapper, admin error sessions, flash banners |
 | 17 | [17-data-file-patterns.md](17-data-file-patterns.md) | Data File Patterns | JSON schemas for `colors.json`/`endpoints.json`/`openapi.json`, enum-driven access via `ColorGroupType`, static caching, validation |
 | 18 | [18-frontend-javascript-patterns.md](18-frontend-javascript-patterns.md) | Frontend JavaScript Patterns | Localized object pattern (`wp_localize_script`), button state management, modal interactions, table rendering, i18n conventions |
-| 19 | [19-micro-orm-and-root-db.md](19-micro-orm-and-root-db.md) | Micro-ORM & Root Database | Fluent query builder (OrmWhereTrait, OrmQueryTrait, OrmMutationTrait), cross-plugin RootDb manifest with schema, registration, and legacy compatibility |
+| 19 | [19-micro-orm-and-root-db.md](19-micro-orm-and-root-db.md) | Micro-ORM & Root Database | Fluent query builder, TypedQuery with Go-style DbResult/DbResultSet/DbExecResult wrappers, FileCache with scan/store trait decomposition, cross-plugin RootDb manifest |
 
 ---
 
