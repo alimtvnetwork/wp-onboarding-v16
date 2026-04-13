@@ -13,9 +13,12 @@ Helpers are **stateless static utility classes**. They never hold instance state
 | Helper | Responsibility |
 |--------|---------------|
 | `DateHelper` | All timestamp formatting and timezone conversion (see Phase 4, §4.13) |
-| `PathHelper` | File path resolution, directory creation, uploads dir resolution |
+| `PathHelper` | File path resolution, directory creation, uploads dir resolution (§5.1) |
+| `BooleanHelpers` | Semantic boolean guards — readable negation wrappers (§5.1.1) |
+| `InitHelpers` | Bootstrap initialization, SQLite connection, component tracking (§5.1.2) |
 | `ErrorLogHelper` | Native `error_log()` wrapper with stack traces (see Phase 4, §4.11) |
-| `EnvelopeBuilder` | Constructs the standard API response envelope |
+| `EnvelopeBuilder` | Constructs the standard API response envelope (§5.3) |
+| `HttpConfigType` | HTTP request option factories for `wp_remote_*()` (§5.1.3) — note: this is an enum with static factory methods |
 | `TypeCheckerTrait` | Syntax-validator-safe type checking (see Phase 3, §3.8) — note: this is a trait, not a helper, because it needs `$this` context |
 
 ### PathHelper specification
