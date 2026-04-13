@@ -20,20 +20,280 @@ Helpers are **stateless static utility classes**. They never hold instance state
 
 ### PathHelper specification
 
-PathHelper centralises all file system path resolution:
+PathHelper centralises all file system path resolution. It uses trait decomposition for large helpers:
+
+```
+Helpers/
+├── PathHelper.php              ← Shell class, composes 3 traits
+└── Traits/
+    ├── PathHelperCoreTrait.php  ← Base dir, join(), typed accessors
+    ├── PathHelperDirTrait.php   ← Directory guards, creation, security files
+    └── PathHelperFileTrait.php  ← File guards, delete, relative paths
+```
+
+#### Core methods (PathHelperCoreTrait)
 
 | Method | Returns |
 |--------|---------|
-| `getBaseDir()` | `wp-content/uploads/{plugin-slug}` |
-| `getLogsDir()` | `{baseDir}/logs` |
-| `getTempDir()` | `{baseDir}/temp` |
+| `join(string ...$segments)` | Normalised path from segments (forward slashes, no doubles) |
+| `getBaseDir()` | `wp-content/uploads/{plugin-slug}` via `wp_upload_dir()` |
+| `getLogsDir()` | `{baseDir}/logs` — uses `PathSubdirType::Logs` enum |
+| `getTempDir()` | `{baseDir}/temp` — uses `PathSubdirType::Temp` enum |
+| `getDbPath()` | `{baseDir}/riseup-asia-uploader.db` — uses `PathDatabaseType::Plugin` enum |
+| `getPluginDir()` | `WP_PLUGIN_DIR/{slug}` |
+| `getPluginMainFile()` | `{pluginDir}/{slug}.php` |
+| `getConstantsFile()` | `{pluginDir}/includes/constants.php` |
+| `getEndpointsJsonPath()` | `{pluginDir}/data/endpoints.json` |
+
+#### Directory methods (PathHelperDirTrait)
+
+| Method | Purpose |
+|--------|---------|
+| `isDirExists($path)` | Guard: non-empty and `is_dir()` |
+| `isDirMissing($path)` | Negation of `isDirExists()` |
+| `isDirWritable($path)` | Guard: exists and writable |
+| `isDirReadonly($path)` | Negation of `isDirWritable()` |
+| `makeDirectory($path, $secure)` | Creates dir via `wp_mkdir_p()`, optionally adds security files |
+| `addSecurityFiles($path)` | Creates `.htaccess` (deny all) and `index.php` (silence) |
 | `ensureDirectory($dir)` | Recursively creates directory if missing; returns `bool` |
 | `ensureFileParentDirectory($filePath)` | Ensures parent dir exists for a file path |
-| `isFileMissing($path)` | Negation wrapper around `file_exists()` |
+| `isSafePath($path, $basePath)` | Path traversal guard — prevents `../` attacks |
+| `isDirEmpty($path)` | True when directory has no entries |
+
+#### File methods (PathHelperFileTrait)
+
+| Method | Purpose |
+|--------|---------|
+| `isFileExists($path)` | Guard: non-empty and `file_exists()` |
+| `isFileMissing($path)` | Negation wrapper |
+| `isFileUnreadable($path)` | Missing or not readable |
+| `deleteFile($path)` | Safe unlink with chmod retry and clearstatcache |
+| `deleteDir($path)` | Recursive directory removal |
+| `getRelativePath($fullPath)` | Strips base dir prefix |
+| `formatBytes($bytes)` | Human-readable file size |
+
+#### Typed path accessors via enums
+
+All subdirectory names and database file names come from enums — no magic strings:
+
+```php
+enum PathSubdirType: string {
+    case Logs      = '/logs';
+    case Temp      = '/temp';
+    case Snapshots = '/snapshots';
+    case Exports   = '/exports';
+    case Backups   = '/backups';
+}
+
+enum PathDatabaseType: string {
+    case Root     = '/a-root.db';
+    case Activity = '/activity.db';
+    case Snapshot = '/snapshots.db';
+    case Plugin   = '/riseup-asia-uploader.db';
+}
+```
+
+Usage: `self::join(self::getBaseDir(), PathSubdirType::Logs->value)` — never hardcode `/logs`.
 
 ### Key design principle
 
 Path resolution uses `wp_upload_dir()` for the base and caches the result. If `wp_upload_dir()` returns an invalid result, it falls back to `WP_CONTENT_DIR . '/uploads'`.
+
+---
+
+## 5.1.1 BooleanHelpers — Semantic Guard Class
+
+BooleanHelpers is a **static utility class** providing readable boolean checks for common conditions. It eliminates negation-heavy code like `!class_exists()` and `!function_exists()` in favour of intention-revealing method names.
+
+### Structure
+
+```
+Helpers/
+├── BooleanHelpers.php           ← Shell class, composes trait
+└── Traits/
+    └── BooleanDomainTrait.php   ← All boolean methods
+```
+
+### Method categories
+
+#### Environment guards
+
+| Method | Replaces |
+|--------|----------|
+| `isClassExists($name)` | `class_exists($name)` |
+| `isClassMissing($name)` | `!class_exists($name)` |
+| `isClassUnregistered($name)` | `!class_exists($name, false)` — no autoload |
+| `isFuncExists($name)` | `function_exists($name)` |
+| `isFuncMissing($name)` | `!function_exists($name)` |
+| `isExtensionLoaded($name)` | `extension_loaded($name)` |
+| `isExtensionMissing($name)` | `!extension_loaded($name)` |
+| `isConstantMissing($name)` | `!defined($name)` |
+
+#### Data guards
+
+| Method | Replaces |
+|--------|----------|
+| `isKeySet($data, $key)` | `isset($data[$key])` |
+| `isKeyMissing($data, $key)` | `!isset($data[$key])` |
+| `hasValue($value)` | `!empty($value)` |
+| `isValueEmpty($value)` | `empty($value)` |
+| `isNull($value)` | `$value === null` |
+| `isAbsentFromList($needle, $haystack)` | `!in_array($needle, $haystack)` |
+
+#### String inspection
+
+| Method | Replaces |
+|--------|----------|
+| `hasSubstring($haystack, $needle)` | `str_contains()` |
+| `lacksSubstring($haystack, $needle)` | `!str_contains()` |
+| `hasPrefix($haystack, $prefix)` | `str_starts_with()` |
+| `hasSuffix($haystack, $suffix)` | `str_ends_with()` |
+| `isStringPopulated($value)` | `$value !== ''` |
+| `isStringEmpty($value)` | `$value === ''` |
+
+#### WordPress guards
+
+| Method | Replaces |
+|--------|----------|
+| `isWpScheduleMissing($hook)` | `!wp_next_scheduled($hook)` |
+| `isCapabilityMissing($cap)` | `!current_user_can($cap)` |
+| `isDbConnected($db)` | Checks `$db !== null && $db->isReady()` |
+| `isDbDisconnected($db)` | Negation of connected check |
+
+### Usage pattern
+
+```php
+// Before (negation-heavy, easy to misread)
+if (!class_exists('PDO')) { return null; }
+if (!extension_loaded('pdo_sqlite')) { return null; }
+
+// After (intention-revealing)
+if (BooleanHelpers::isClassMissing('PDO')) { return null; }
+if (BooleanHelpers::isExtensionMissing('pdo_sqlite')) { return null; }
+```
+
+---
+
+## 5.1.2 InitHelpers — Bootstrap Initialization
+
+InitHelpers handles early-boot operations where `FileLogger` may not yet be available. It uses two traits:
+
+```
+Helpers/
+├── InitHelpers.php           ← Shell class, composes 2 traits
+└── Traits/
+    ├── InitDirTrait.php      ← Directory creation with fallback chain
+    └── InitStartupTrait.php  ← Component startup tracking and diagnostics
+```
+
+### Core methods (InitHelpers shell)
+
+| Method | Purpose |
+|--------|---------|
+| `initSqliteConnection($dbPath, $logger)` | Creates PDO connection with WAL mode and pragmas |
+| `errorLogWithPrefix($message)` | Native `error_log()` with plugin prefix — use before FileLogger is available |
+| `errorLog($e, $context)` | Log exception to native `error_log()` |
+| `errorLogAndThrow($e, $context)` | Log then re-throw — for boot failures that must propagate |
+
+### InitDirTrait — Directory creation
+
+| Method | Purpose |
+|--------|---------|
+| `makeDirectory($path, $secure)` | Creates directory with deduplication cache; delegates to PathHelper when available, falls back to native `mkdir()` |
+| `makeSubDirectory($baseDir, $subDir, $secure)` | Creates parent + child directory in one call |
+| `resolveBaseDir()` | Resolves uploads base dir with `wp_upload_dir()` fallback |
+| `addSecurityFiles($path)` | Creates `.htaccess` and `index.php` security files |
+
+### InitStartupTrait — Component tracking
+
+| Method | Purpose |
+|--------|---------|
+| `initComponent($name, $initFn)` | Wraps a boot callable with timing, error capture, and verbose logging |
+| `getStartupResults()` | Returns all tracked component results |
+| `getFailedStartups()` | Returns only failed components |
+| `allStartupsSucceeded()` | Boolean: true if no failures |
+| `logStartupSummary($logger)` | Logs total count, failures, and elapsed time |
+
+### Boot verbose mode
+
+Add `define('PLUGINNAME_DEBUG_BOOT', true)` to `wp-config.php` to enable per-component init logging for troubleshooting startup issues. The `isBootVerbose()` method gates these detailed log entries.
+
+### SQLite connection pattern
+
+```php
+$pdo = InitHelpers::initSqliteConnection($dbPath, $logger);
+// Internally:
+// 1. Checks PDO class exists (BooleanHelpers::isClassMissing)
+// 2. Checks pdo_sqlite extension loaded (BooleanHelpers::isExtensionMissing)
+// 3. Creates PDO with 'sqlite:' DSN
+// 4. Sets ERRMODE_EXCEPTION and FETCH_ASSOC
+// 5. Applies PRAGMA journal_mode = WAL and auto_vacuum = INCREMENTAL
+// 6. Returns PDO or null on failure
+```
+
+---
+
+## 5.1.3 HttpConfigType — HTTP Request Factories
+
+`HttpConfigType` is a backed enum that centralises HTTP timeout values and provides static factory methods for `wp_remote_get()` / `wp_remote_request()` option arrays.
+
+```php
+enum HttpConfigType: int {
+    case TimeoutDefault = 30;
+    case TimeoutShort   = 15;
+
+    public static function headRedirectOptions(): array {
+        return [
+            'timeout'     => self::TimeoutShort->value,
+            'redirection' => 0,
+            'sslverify'   => true,
+        ];
+    }
+
+    public static function defaultGetOptions(): array {
+        return [
+            'timeout'   => self::TimeoutDefault->value,
+            'sslverify' => true,
+        ];
+    }
+
+    public static function authenticatedOptions(string $method, string $authHeader): array {
+        return [
+            'method'    => strtoupper($method),
+            'timeout'   => self::TimeoutDefault->value,
+            'headers'   => [
+                'Authorization' => $authHeader,
+                'Content-Type'  => ContentTypeValueType::Json->value,
+            ],
+            'sslverify' => true,
+        ];
+    }
+}
+```
+
+### Usage
+
+```php
+// HEAD request (no redirects, short timeout)
+$response = wp_remote_head($url, HttpConfigType::headRedirectOptions());
+
+// Standard GET
+$response = wp_remote_get($url, HttpConfigType::defaultGetOptions());
+
+// Authenticated API call
+$response = wp_remote_request($url, HttpConfigType::authenticatedOptions('POST', $authHeader));
+```
+
+### Supporting enum — ContentTypeValueType
+
+```php
+enum ContentTypeValueType: string {
+    case Json     = 'application/json';
+    case JsonUtf8 = 'application/json; charset=utf-8';
+}
+```
+
+All MIME types used in HTTP headers come from this enum — never hardcode `'application/json'`.
 
 ---
 
