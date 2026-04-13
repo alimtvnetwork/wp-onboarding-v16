@@ -72,6 +72,7 @@
 | Phase 13 | Phase 12 | Design system tokens |
 | Phase 14 | Phases 3, 4, 5, 6 | Trait anatomy, error handling, envelope, validation |
 | Phase 15 | Phases 12, 13 | Design system + UI patterns for settings pages |
+| Phase 19 | Phase 5, §5.5/§5.5.1 | ORM integrates with Database trait decomposition and Split DB |
 
 ---
 
