@@ -67,6 +67,45 @@ plugin-slug/
 | Color format | 6-digit hex with `#` prefix, lowercase hex digits |
 | Naming | camelCase for group keys and color names; PascalCase for log level names (matches enum case names) |
 
+### Formal JSON Schema
+
+The `colors.json` file MUST conform to this schema. Use it for CI validation and AI code generation:
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Plugin Color Tokens",
+    "description": "UI color tokens grouped by purpose. Each top-level key maps to a ColorGroupType enum case.",
+    "type": "object",
+    "additionalProperties": {
+        "type": "object",
+        "description": "A color group — keys are token names, values are hex colors.",
+        "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "6-digit hex color with # prefix."
+        },
+        "minProperties": 1
+    },
+    "minProperties": 1,
+    "examples": [
+        {
+            "logLevel": { "Error": "#dc3545", "Info": "#0d6efd" },
+            "status": { "success": "#46b450", "error": "#dc3232" }
+        }
+    ]
+}
+```
+
+### Validation Rules
+
+| Rule | Detail |
+|------|--------|
+| Every top-level key | MUST have a matching `ColorGroupType` enum case |
+| Every value | MUST be a 6-digit hex string matching `^#[0-9a-fA-F]{6}$` |
+| No empty groups | Each group must contain at least one color token |
+| No duplicate keys | JSON parsing naturally prevents this, but CI should verify |
+
 ### Enum-Driven Access
 
 ```php
@@ -77,22 +116,126 @@ enum ColorGroupType: string {
 }
 ```
 
-### Reading Colors in PHP
+### ColorConfig — Static Cache Helper
+
+Instead of reading `colors.json` inline, use a dedicated helper class with static caching:
 
 ```php
-$colorsPath = plugin_dir_path(__FILE__) . '../data/colors.json';
-$colors = json_decode(file_get_contents($colorsPath), true);
+namespace PluginName\Helpers;
 
-// Access by enum
-$logColors = $colors[ColorGroupType::LogLevel->value];
-$errorColor = $logColors['Error'];  // '#dc3545'
+use PluginName\Enums\ColorGroupType;
+
+class ColorConfig
+{
+    /** @var array<string, array<string, string>>|null */
+    private static ?array $colors = null;
+
+    /** Default fallback color (muted gray). */
+    private const FALLBACK = '#6c757d';
+
+    /** Load and cache the colors.json file. */
+    private static function load(): array
+    {
+        $isLoaded = (self::$colors !== null);
+
+        if ($isLoaded) {
+            return self::$colors;
+        }
+
+        $path = PathHelper::getColorsJsonPath();
+        $isFileMissing = PathHelper::isFileMissing($path);
+
+        if ($isFileMissing) {
+            self::$colors = [];
+            return self::$colors;
+        }
+
+        $json = @file_get_contents($path);
+
+        if ($json === false) {
+            self::$colors = [];
+            return self::$colors;
+        }
+
+        $decoded = json_decode($json, true);
+        $isDecodeFailed = ($decoded === null);
+
+        if ($isDecodeFailed) {
+            self::$colors = [];
+            return self::$colors;
+        }
+
+        self::$colors = $decoded;
+        return self::$colors;
+    }
+
+    /** Get a color by group and key. */
+    public static function get(ColorGroupType $group, string $key, string $fallback = self::FALLBACK): string
+    {
+        $colors = self::load();
+        $g = $group->value;
+        $hasGroup = isset($colors[$g]);
+
+        if ($hasGroup) {
+            $hasKey = isset($colors[$g][$key]);
+            if ($hasKey) {
+                return $colors[$g][$key];
+            }
+        }
+
+        return $fallback;
+    }
+
+    /** Get an entire color group as an associative array. */
+    public static function getGroup(ColorGroupType $group): array
+    {
+        $colors = self::load();
+        $g = $group->value;
+
+        return isset($colors[$g]) ? $colors[$g] : [];
+    }
+
+    /** Convenience: Get a log level color. */
+    public static function logLevel(string $level): string
+    {
+        return self::get(ColorGroupType::LogLevel, $level);
+    }
+
+    /** Convenience: Get a status color. */
+    public static function status(string $status): string
+    {
+        return self::get(ColorGroupType::Status, $status);
+    }
+
+    /** Reset the static cache (for testing). */
+    public static function reset(): void
+    {
+        self::$colors = null;
+    }
+}
+```
+
+### Usage Examples
+
+```php
+// Direct access via ColorConfig
+$errorColor = ColorConfig::logLevel('Error');          // '#dc3545'
+$successColor = ColorConfig::status('success');        // '#46b450'
+$primary = ColorConfig::get(ColorGroupType::WpAdmin, 'primary');  // '#2271b1'
+
+// Get full group for iteration (e.g., building a legend)
+$logColors = ColorConfig::getGroup(ColorGroupType::LogLevel);
+foreach ($logColors as $level => $hex) {
+    echo "<span style=\"color:{$hex}\">{$level}</span>";
+}
 ```
 
 ### Adding a New Color Group
 
 1. Add the group object to `colors.json`
 2. Add a matching case to `ColorGroupType` enum
-3. Reference via `ColorGroupType::NewGroup->value` — never hardcode the string key
+3. Optionally add a convenience method to `ColorConfig`
+4. Reference via `ColorGroupType::NewGroup->value` — never hardcode the string key
 
 ---
 

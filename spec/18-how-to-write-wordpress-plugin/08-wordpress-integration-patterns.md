@@ -144,6 +144,70 @@ if (!$isValidNonce) {
 | User lacks capability | `wp_die()` with friendly message — never show partial page |
 | Settings page renders with PHP warnings | Wrap all rendering in try-catch, log errors, show fallback message |
 
+### Admin Menu Error Count Badge
+
+When the plugin has unseen errors, display a count badge on the admin menu item. This uses WordPress's built-in `<span class="update-plugins">` pattern.
+
+```php
+trait AdminPageTrait
+{
+    public function registerAdminPages(): void
+    {
+        // Get unseen error count for badge
+        $unseenCount = $this->getUnseenErrorCount();
+        $menuTitle = PluginConfigType::ShortName->value;
+
+        $hasBadge = ($unseenCount > 0);
+
+        if ($hasBadge) {
+            $menuTitle .= sprintf(
+                ' <span class="update-plugins count-%d"><span class="plugin-count">%d</span></span>',
+                $unseenCount,
+                $unseenCount,
+            );
+        }
+
+        add_menu_page(
+            PluginConfigType::Name->value,
+            $menuTitle,                                            // Menu title with badge
+            CapabilityType::ManageOptions->value,
+            PluginConfigType::Slug->value,
+            [$this, 'renderSettingsPage'],
+            'dashicons-admin-generic',
+            80,
+        );
+    }
+
+    /**
+     * Get count of unseen error sessions.
+     * Uses wp_options for fast retrieval without DB query on every admin page load.
+     */
+    private function getUnseenErrorCount(): int
+    {
+        $optionKey = PluginConfigType::Slug->value . '_unseen_error_count';
+        $count = get_option($optionKey, 0);
+
+        return (int) $count;
+    }
+}
+```
+
+#### Badge update flow
+
+| Event | Action |
+|-------|--------|
+| New error logged | `update_option($optionKey, $currentCount + 1)` in error handler |
+| Admin views error page | `update_option($optionKey, 0)` — clears badge |
+| Flash banner dismissed | `update_option($optionKey, 0)` — clears badge via AJAX |
+| Plugin deactivated | `delete_option($optionKey)` in `Deactivator` |
+
+#### Rules
+
+1. Badge count stored in `wp_options` — NOT computed via DB query on every page load
+2. The `update-plugins` class is a WordPress convention that styles the red bubble automatically
+3. Badge is cleared when admin navigates to the error page OR dismisses the flash banner
+4. The `count-{N}` class is required for WordPress core CSS to render correctly
+
 ---
 
 ## 8.2 AJAX Handlers (Non-REST)
