@@ -1,6 +1,6 @@
 # How to Write a WordPress Plugin — Gold Standard Specification
 
-> **Updated:** 2026-04-09  
+> **Updated:** 2026-04-14  
 > **Purpose:** Comprehensive, self-contained guide for building WordPress plugins following the Gold Standard architecture.  
 > **Audience:** AI code generators and human developers.
 
@@ -30,6 +30,7 @@
 | 17 | [17-data-file-patterns.md](17-data-file-patterns.md) | Data File Patterns | JSON schemas for `colors.json`/`endpoints.json`/`openapi.json`, enum-driven access via `ColorGroupType`, static caching, validation |
 | 18 | [18-frontend-javascript-patterns.md](18-frontend-javascript-patterns.md) | Frontend JavaScript Patterns | Localized object pattern (`wp_localize_script`), button state management, modal interactions, table rendering, i18n conventions |
 | 19 | [19-micro-orm-and-root-db.md](19-micro-orm-and-root-db.md) | Micro-ORM & Root Database | Fluent query builder, TypedQuery with Go-style DbResult/DbResultSet/DbExecResult wrappers, FileCache with scan/store trait decomposition, cross-plugin RootDb manifest |
+| 20 | [20-end-to-end-walkthrough.md](20-end-to-end-walkthrough.md) | **End-to-End Walkthrough** | Complete "Task Tracker" plugin built from scratch — 14 steps covering all 19 phases, with phase coverage matrix and final checklist |
 
 ---
 
@@ -55,6 +56,7 @@
 7. **Phases 11–13** — frontend templates, design system, UI patterns
 8. **Phases 14–18** — REST API, settings, error diagnostics, data files, JS patterns
 9. **Phase 19** — micro-ORM query builder and cross-plugin Root Database
+10. **Phase 20** — end-to-end walkthrough (ties everything together with a working plugin)
 
 ---
 

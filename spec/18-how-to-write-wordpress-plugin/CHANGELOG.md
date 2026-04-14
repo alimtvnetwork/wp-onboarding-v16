@@ -4,6 +4,17 @@ All notable changes to the WordPress plugin development specification.
 
 ---
 
+## [1.3.0] — 2026-04-14
+
+### Added
+
+- Phase 20: End-to-End Walkthrough (`20-end-to-end-walkthrough.md`)
+- Complete "Task Tracker" plugin built from scratch in 14 steps
+- Phase coverage matrix mapping all 19 phases to walkthrough steps
+- Final "Is My Plugin Gold Standard?" checklist
+
+---
+
 ## [1.2.0] — 2026-04-14
 
 ### Priority 1 Fixes
