@@ -308,6 +308,53 @@ Every public REST handler method must be wrapped in `$this->safeExecute()`. Dire
 
 Error responses include structured stack trace frames **only when debug mode is enabled**. In production, the `Errors.Backend` field is omitted entirely to prevent information leakage.
 
+### Rule 6: No error swallowed — Forbidden Patterns
+
+The following patterns are **critical defects**. They MUST never appear in any plugin codebase.
+
+```php
+// ❌ NEVER: Empty catch — error is silently lost
+catch (Throwable $e) {
+}
+
+// ❌ NEVER: Catch without logging — error is silently lost
+catch (Throwable $e) {
+    return false;
+}
+
+// ❌ NEVER: Log message without stack trace
+catch (Throwable $e) {
+    error_log($e->getMessage());  // Missing: "\n" . $e->getTraceAsString()
+}
+
+// ❌ NEVER: Catch Exception instead of Throwable
+catch (Exception $e) {   // Misses TypeError, Error, ParseError
+    // ...
+}
+
+// ❌ NEVER: Swallow error in boolean/null return without logging
+catch (Throwable $e) {
+    return null;
+}
+
+// ❌ NEVER: Generic error_log without context prefix
+catch (Throwable $e) {
+    error_log($e->getMessage() . "\n" . $e->getTraceAsString());
+    // Missing: '[PluginName] Context:' prefix
+}
+```
+
+### Correct patterns for every scenario
+
+| Scenario | Pattern |
+|----------|---------|
+| REST endpoint handler | `$this->safeExecute(fn() => ..., 'endpoint-name')` |
+| Non-endpoint method with FileLogger | `ErrorResponse::logAndReturn($this->fileLogger, $e, 'Context')` |
+| Non-endpoint returning false | `ErrorResponse::logAndReturnFalse($this->fileLogger, $e, 'Context')` |
+| Non-endpoint returning WP_Error | `ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Context')` |
+| Bootstrap / no FileLogger | `ErrorLogHelper::log($e, '[PluginName] Context:')` |
+| Infrastructure (must re-throw) | `ErrorLogHelper::logAndThrow($e, '[PluginName] Context:')` |
+
 ---
 
 ## 4.9 safeExecute() — Complete Specification
@@ -418,7 +465,134 @@ private function formatStackFrames(Throwable $e): array
 
 ---
 
-## 4.10 API Error Response Format — Complete Examples
+## 4.10 Structured Stack Trace Transport Format
+
+When the Go backend or any REST consumer parses error responses, stack trace frames MUST use a structured array format — not just the raw string from `getTraceAsString()`. This enables structured display in error modals and log viewers.
+
+### Frame Structure (PascalCase keys)
+
+Each frame in the `StackTraceFrames` array contains:
+
+```json
+{
+  "File": "/var/www/html/wp-content/plugins/my-plugin/includes/Traits/ActivateHandlerTrait.php",
+  "FileBase": "ActivateHandlerTrait.php",
+  "Line": 78,
+  "Function": "executeActivation",
+  "Class": "PluginName\\Traits\\Activate\\ActivateHandlerTrait"
+}
+```
+
+| Field | Type | Source | Description |
+|-------|------|--------|-------------|
+| `File` | string | `$frame['file']` | Full absolute path |
+| `FileBase` | string | `basename($frame['file'])` | Filename only — for compact display |
+| `Line` | int | `$frame['line']` | Line number in source file |
+| `Function` | string | `$frame['function']` | Method or function name |
+| `Class` | string\|null | `$frame['class']` | Fully-qualified class name (null for global functions) |
+
+### Debug mode ON — response with structured frames
+
+```json
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 500,
+    "Message": "Cannot connect to remote endpoint: Connection refused",
+    "Timestamp": "2026-04-07T14:30:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/my-plugin-api/v1/activate",
+    "TotalRecords": 0
+  },
+  "Results": [],
+  "Errors": {
+    "BackendMessage": "Cannot connect to remote endpoint: Connection refused",
+    "ExceptionType": "RuntimeException",
+    "Backend": [
+      "#0 ActivateHandlerTrait.php(78): PluginName\\Traits\\Activate\\ActivateHandlerTrait->executeActivation()",
+      "#1 ResponseTrait.php(35): PluginName\\Traits\\Core\\ResponseTrait->safeExecute()"
+    ],
+    "StackTraceFrames": [
+      {
+        "File": "/var/www/html/wp-content/plugins/my-plugin/includes/Traits/Activate/ActivateHandlerTrait.php",
+        "FileBase": "ActivateHandlerTrait.php",
+        "Line": 78,
+        "Function": "executeActivation",
+        "Class": "PluginName\\Traits\\Activate\\ActivateHandlerTrait"
+      },
+      {
+        "File": "/var/www/html/wp-content/plugins/my-plugin/includes/Traits/Core/ResponseTrait.php",
+        "FileBase": "ResponseTrait.php",
+        "Line": 35,
+        "Function": "safeExecute",
+        "Class": "PluginName\\Traits\\Core\\ResponseTrait"
+      }
+    ]
+  }
+}
+```
+
+### Debug mode OFF — no Errors key at all
+
+```json
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 500,
+    "Message": "An internal error occurred",
+    "Timestamp": "2026-04-07T14:30:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/my-plugin-api/v1/activate",
+    "TotalRecords": 0
+  },
+  "Results": []
+}
+```
+
+### Frame extraction implementation
+
+```php
+/**
+ * Extract structured stack trace frames from an exception.
+ *
+ * @return array<int, array{File: string, FileBase: string, Line: int, Function: string, Class: string|null}>
+ */
+private function extractStructuredFrames(Throwable $e): array
+{
+    $trace = $e->getTrace();
+    $frames = [];
+
+    foreach ($trace as $frame) {
+        $hasFile = isset($frame['file']);
+
+        $frames[] = [
+            'File'     => $hasFile ? $frame['file'] : '[internal]',
+            'FileBase' => $hasFile ? basename($frame['file']) : '[internal]',
+            'Line'     => $frame['line'] ?? 0,
+            'Function' => $frame['function'] ?? '',
+            'Class'    => $frame['class'] ?? null,
+        ];
+    }
+
+    return $frames;
+}
+```
+
+### Rules
+
+1. `Errors.Backend` (string array) is ALWAYS included for backward compatibility when debug mode is ON
+2. `Errors.StackTraceFrames` (object array) is the **preferred** format for structured consumers
+3. Both fields are omitted entirely when debug mode is OFF
+4. Frame extraction uses `$e->getTrace()` (structured), not `$e->getTraceAsString()` (string)
+5. `FileBase` is always computed — never trust the consumer to parse paths
+
+---
+
+## 4.11 API Error Response Format — Additional Examples
 
 ### Debug mode ON — full details
 
@@ -497,7 +671,7 @@ Validation errors (400, 401, 403, 404) always include a descriptive message rega
 
 ---
 
-## 4.11 ErrorLogHelper — Complete Specification
+## 4.12 ErrorLogHelper — Complete Specification
 
 A minimal static class for Tier 1 logging when FileLogger is unavailable.
 
@@ -556,7 +730,7 @@ class ErrorLogHelper
 
 ---
 
-## 4.12 Shutdown Handler (Fatal Errors)
+## 4.13 Shutdown Handler (Fatal Errors)
 
 Register a global shutdown handler to catch fatal errors that bypass try-catch:
 
@@ -603,7 +777,7 @@ register_shutdown_function(function (): void {
 
 ---
 
-## 4.13 DateHelper — Timestamp Specification
+## 4.14 DateHelper — Timestamp Specification
 
 All timestamps flow through a centralised `DateHelper` class:
 
@@ -623,7 +797,7 @@ All timestamps flow through a centralised `DateHelper` class:
 
 ---
 
-## 4.14 Complete Error Handling Flow — End to End
+## 4.15 Complete Error Handling Flow — End to End
 
 This shows exactly what happens when an exception occurs during an API request:
 
