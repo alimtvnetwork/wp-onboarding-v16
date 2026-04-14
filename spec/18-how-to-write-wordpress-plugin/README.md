@@ -76,4 +76,10 @@
 
 ---
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and all P1/P2 fixes applied.
+
+---
+
 *Maintain this index when adding or renaming spec phases.*
