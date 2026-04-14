@@ -671,7 +671,7 @@ Validation errors (400, 401, 403, 404) always include a descriptive message rega
 
 ---
 
-## 4.11 ErrorLogHelper — Complete Specification
+## 4.12 ErrorLogHelper — Complete Specification
 
 A minimal static class for Tier 1 logging when FileLogger is unavailable.
 
@@ -730,7 +730,7 @@ class ErrorLogHelper
 
 ---
 
-## 4.12 Shutdown Handler (Fatal Errors)
+## 4.13 Shutdown Handler (Fatal Errors)
 
 Register a global shutdown handler to catch fatal errors that bypass try-catch:
 
@@ -777,7 +777,7 @@ register_shutdown_function(function (): void {
 
 ---
 
-## 4.13 DateHelper — Timestamp Specification
+## 4.14 DateHelper — Timestamp Specification
 
 All timestamps flow through a centralised `DateHelper` class:
 
@@ -797,7 +797,7 @@ All timestamps flow through a centralised `DateHelper` class:
 
 ---
 
-## 4.14 Complete Error Handling Flow — End to End
+## 4.15 Complete Error Handling Flow — End to End
 
 This shows exactly what happens when an exception occurs during an API request:
 
