@@ -70,6 +70,49 @@ All colors, radii, shadows, and transitions are defined as CSS variables with `-
 - Pattern: `--{slug}-{category}-{modifier}`
 - Examples: `--riseup-primary`, `--riseup-text-muted`, `--riseup-shadow-md`
 
+### 2.4 Slug Substitution Guide
+
+All examples in this design system use the `riseup` prefix from the reference implementation. When building a new plugin, **replace every occurrence** with your plugin's kebab-case slug.
+
+#### What to replace
+
+| Category | Reference pattern | Your plugin (`my-tool`) |
+|----------|------------------|------------------------|
+| CSS custom properties | `--riseup-primary` | `--my-tool-primary` |
+| CSS class prefixes | `.riseup-admin`, `.riseup-card` | `.my-tool-admin`, `.my-tool-card` |
+| CSS file scoping | `.riseup-admin.riseup-agents` | `.my-tool-admin.my-tool-agents` |
+| Keyframe names | `@keyframes riseupFadeIn` | `@keyframes myToolFadeIn` |
+| JS localized objects | `window.RiseupErrors` | `window.MyToolErrors` |
+| AJAX action prefixes | `riseup_dismiss_error_flash` | `my_tool_dismiss_error_flash` |
+
+#### Derivation rules
+
+| Plugin name | Kebab slug | CSS/property prefix | Class prefix |
+|-------------|-----------|---------------------|--------------|
+| Riseup Asia Uploader | `riseup` | `--riseup-` | `.riseup-` |
+| QUpload | `qupload` | `--qupload-` | `.qupload-` |
+| My Custom Plugin | `my-custom` | `--my-custom-` | `.my-custom-` |
+
+#### How to derive your slug
+
+1. Take the value of `PluginConfigType::Slug` (e.g., `'my-custom-plugin'`)
+2. For CSS: use the slug directly as the prefix → `--my-custom-plugin-primary`
+3. For classes: use the slug directly → `.my-custom-plugin-admin`
+4. Alternatively, use a shortened form if the slug is long — define it once in your shared CSS and use consistently
+
+#### ❌ Common mistakes
+
+```css
+/* ❌ WRONG — using reference prefix in a different plugin */
+.riseup-admin { background: var(--riseup-bg, #f8fafc); }
+
+/* ❌ WRONG — mixing prefixes */
+.my-tool-admin { background: var(--riseup-bg, #f8fafc); }
+
+/* ✅ CORRECT — consistent prefix throughout */
+.my-tool-admin { background: var(--my-tool-bg, #f8fafc); }
+```
+
 ---
 
 ## 3. Color System
