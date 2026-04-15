@@ -11,18 +11,18 @@ final class AgentSiteTest extends TestCase {
 
     private function sampleRow(): array {
         return [
-            'id'                   => '42',
-            'name'                 => 'Test Site',
-            'url'                  => 'https://example.com',
-            'username'             => 'admin',
-            'redirect_url'         => 'https://redirect.example.com',
-            'redirect_resolved'    => 'https://resolved.example.com',
-            'redirect_resolved_at' => '2026-01-15T10:00:00Z',
-            'status'               => 'connected',
-            'last_sync'            => '2026-01-15T12:00:00Z',
-            'last_error'           => null,
-            'created_at'           => '2026-01-01T00:00:00Z',
-            'updated_at'           => '2026-01-10T00:00:00Z',
+            'Id'                  => '42',
+            'Name'                => 'Test Site',
+            'Url'                 => 'https://example.com',
+            'Username'            => 'admin',
+            'RedirectUrl'         => 'https://redirect.example.com',
+            'RedirectResolved'    => 'https://resolved.example.com',
+            'RedirectResolvedAt'  => '2026-01-15T10:00:00Z',
+            'Status'              => 'connected',
+            'LastSync'            => '2026-01-15T12:00:00Z',
+            'LastError'           => null,
+            'CreatedAt'           => '2026-01-01T00:00:00Z',
+            'UpdatedAt'           => '2026-01-10T00:00:00Z',
         ];
     }
 
@@ -46,11 +46,11 @@ final class AgentSiteTest extends TestCase {
 
     public function testFromRowHandlesMinimalRow(): void {
         $row = [
-            'id'         => '1',
-            'name'       => 'Minimal',
-            'url'        => 'https://min.test',
-            'username'   => 'user',
-            'created_at' => '2026-02-01T00:00:00Z',
+            'Id'        => '1',
+            'Name'      => 'Minimal',
+            'Url'       => 'https://min.test',
+            'Username'  => 'user',
+            'CreatedAt' => '2026-02-01T00:00:00Z',
         ];
 
         $site = AgentSite::fromRow($row);
@@ -59,7 +59,7 @@ final class AgentSiteTest extends TestCase {
         $this->assertNull($site->redirectUrl);
         $this->assertNull($site->redirectResolved);
         $this->assertNull($site->redirectResolvedAt);
-        $this->assertSame('pending', $site->status);
+        $this->assertSame('Pending', $site->status);
         $this->assertNull($site->lastSync);
         $this->assertNull($site->lastError);
         $this->assertNull($site->updatedAt);
@@ -68,7 +68,7 @@ final class AgentSiteTest extends TestCase {
 
     public function testFromRowCastsIdToInt(): void {
         $row = $this->sampleRow();
-        $row['id'] = '99';
+        $row['Id'] = '99';
 
         $site = AgentSite::fromRow($row);
 
@@ -80,7 +80,7 @@ final class AgentSiteTest extends TestCase {
 
         $arr = $site->toArray();
 
-        $this->assertArrayNotHasKey('app_password', $arr);
+        $this->assertArrayNotHasKey('appPassword', $arr);
         $this->assertSame(42, $arr['id']);
         $this->assertSame('https://example.com', $arr['url']);
         $this->assertSame('connected', $arr['status']);
@@ -91,15 +91,15 @@ final class AgentSiteTest extends TestCase {
 
         $arr = $site->toArray();
 
-        $this->assertArrayHasKey('app_password', $arr);
-        $this->assertSame('pw123', $arr['app_password']);
+        $this->assertArrayHasKey('appPassword', $arr);
+        $this->assertSame('pw123', $arr['appPassword']);
     }
 
-    public function testToArrayUsesSnakeCaseKeys(): void {
+    public function testToArrayUsesExpectedKeys(): void {
         $site = AgentSite::fromRow($this->sampleRow());
         $arr = $site->toArray();
 
-        $expected = ['id', 'name', 'url', 'username', 'redirect_url', 'status', 'last_sync', 'last_error', 'created_at', 'updated_at'];
+        $expected = ['id', 'name', 'url', 'username', 'redirectUrl', 'status', 'lastSync', 'lastError', 'createdAt', 'updatedAt'];
         foreach ($expected as $key) {
             $this->assertArrayHasKey($key, $arr, "Missing key: {$key}");
         }
@@ -109,7 +109,7 @@ final class AgentSiteTest extends TestCase {
         $site = AgentSite::fromRow($this->sampleRow());
         $arr = $site->toArray();
 
-        $this->assertArrayNotHasKey('redirect_resolved', $arr);
-        $this->assertArrayNotHasKey('redirect_resolved_at', $arr);
+        $this->assertArrayNotHasKey('redirectResolved', $arr);
+        $this->assertArrayNotHasKey('redirectResolvedAt', $arr);
     }
 }

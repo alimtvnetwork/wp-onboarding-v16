@@ -147,7 +147,7 @@ class LicenseLifecycleTest extends TestCase
 
         $isLicensed = $this->manager->isLicensed();
 
-        $this->assertFalse($isLicensed, 'Validation returns valid=true but isLicensed checks the result array');
+        $this->assertTrue($isLicensed, 'Stale cache re-validates and API returns valid=true, so isLicensed should be true');
         $this->assertGreaterThanOrEqual(1, $this->apiCallCount, 'Stale cache should trigger API call');
     }
 

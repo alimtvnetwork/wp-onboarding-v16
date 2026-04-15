@@ -33,13 +33,27 @@ final class AgentRemoteActionTraitTest extends TestCase {
     }
 
     private function makeAgent(array $overrides = []): AgentSite {
-        return AgentSite::fromRow(array_merge([
-            'id'         => '1',
-            'name'       => 'Test',
-            'url'        => 'https://example.com',
-            'username'   => 'admin',
-            'created_at' => '2026-01-01T00:00:00Z',
-        ], $overrides));
+        $base = [
+            'Id'        => '1',
+            'Name'      => 'Test',
+            'Url'       => 'https://example.com',
+            'Username'  => 'admin',
+            'CreatedAt' => '2026-01-01T00:00:00Z',
+        ];
+
+        foreach ($overrides as $key => $value) {
+            $pascalKey = match ($key) {
+                'redirect_url'         => 'RedirectUrl',
+                'redirect_resolved'    => 'RedirectResolved',
+                'redirect_resolved_at' => 'RedirectResolvedAt',
+                'status'               => 'Status',
+                'username'             => 'Username',
+                default                => $key,
+            };
+            $base[$pascalKey] = $value;
+        }
+
+        return AgentSite::fromRow($base);
     }
 
     public function testRedirectCacheInvalidWhenNoResolved(): void {
