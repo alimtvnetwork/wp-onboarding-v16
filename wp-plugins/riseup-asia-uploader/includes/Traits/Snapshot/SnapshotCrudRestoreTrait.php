@@ -61,6 +61,13 @@ trait SnapshotCrudRestoreTrait {
         return $this->safeExecute(function() use ($request): WP_REST_Response {
             $body = $request->get_json_params();
             $id = isset($body[ResponseKeyType::Id->value]) ? (int) $body[ResponseKeyType::Id->value] : (int) $request->get_param('id');
+
+            $isIdInvalid = ($id <= 0);
+
+            if ($isIdInvalid) {
+                return $this->validationError('Snapshot ID must be a positive integer', $request);
+            }
+
             $options = $this->parseRestoreOptions($body);
 
             $this->logger->logPluginAction(ActionType::SnapshotRestore->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
