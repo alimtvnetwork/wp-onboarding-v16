@@ -756,11 +756,6 @@ parameters:
 			count: 1
 			path: includes/Core/Plugin.php
 
-		-
-			message: '#^Access to undefined constant RiseupAsia\\Enums\\HttpStatusType\:\:ServerError\.$#'
-			identifier: classConstant.notFound
-			count: 0
-			path: includes/Core/Plugin.php
 
 		-
 			message: '#^Anonymous function has an unused use \$request\.$#'
