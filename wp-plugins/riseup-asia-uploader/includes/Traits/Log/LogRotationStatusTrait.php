@@ -22,26 +22,28 @@ trait LogRotationStatusTrait
 {
     /** Handle GET /logs/rotation-status — return rotation config and current archive state. */
     public function handleLogsRotationStatus(WP_REST_Request $request): WP_REST_Response {
-        $config = $this->fileLogger->getRotationConfig();
-        $logsDir = $this->fileLogger->getLogsDir();
-        $archiveDir = $logsDir . '/archive';
+        return $this->safeExecute(function() use ($request) {
+            $config = $this->fileLogger->getRotationConfig();
+            $logsDir = $this->fileLogger->getLogsDir();
+            $archiveDir = $logsDir . '/archive';
 
-        $archiveCount = $this->countRotationArchiveFolders($archiveDir);
-        $oldestArchive = $this->getOldestArchiveTimestamp($archiveDir);
-        $newestArchive = $this->getNewestArchiveTimestamp($archiveDir);
+            $archiveCount = $this->countRotationArchiveFolders($archiveDir);
+            $oldestArchive = $this->getOldestArchiveTimestamp($archiveDir);
+            $newestArchive = $this->getNewestArchiveTimestamp($archiveDir);
 
-        return new WP_REST_Response(
-            [
-                ResponseKeyType::Success->value => true,
-                'rotation' => [
-                    'config'          => $config,
-                    'archive_count'   => $archiveCount,
-                    'oldest_archive'  => $oldestArchive,
-                    'newest_archive'  => $newestArchive,
+            return new WP_REST_Response(
+                [
+                    ResponseKeyType::Success->value => true,
+                    'rotation' => [
+                        'config'          => $config,
+                        'archive_count'   => $archiveCount,
+                        'oldest_archive'  => $oldestArchive,
+                        'newest_archive'  => $newestArchive,
+                    ],
                 ],
-            ],
-            HttpStatusType::Ok->value,
-        );
+                HttpStatusType::Ok->value,
+            );
+        }, 'logs-rotation-status');
     }
 
     /** Count subdirectories in the archive folder. */

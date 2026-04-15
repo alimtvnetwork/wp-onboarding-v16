@@ -30,7 +30,7 @@ trait CloudStorageUploadTrait {
     /** POST /cloud-storage/upload */
     public function handleCloudStorageUpload(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -93,21 +93,7 @@ trait CloudStorageUploadTrait {
                 ResponseKeyType::RotationApplied->value => $rotationResult['applied'] ?? false,
                 ResponseKeyType::FilesDeleted->value    => $rotationResult['deleted'] ?? 0,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Cloud storage upload failed');
-
-            if (isset($accountId)) {
-                $this->updateAccountLastUsed($accountId, [
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => $e->getMessage(),
-                ]);
-            }
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'cloud-storage-upload');
     }
 
     /** Apply rotation if enabled for the account's provider. */

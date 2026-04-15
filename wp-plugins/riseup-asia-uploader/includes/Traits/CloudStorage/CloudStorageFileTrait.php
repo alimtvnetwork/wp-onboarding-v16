@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\CloudStorageProviderType;
 use RiseupAsia\Enums\HttpStatusType;
@@ -26,7 +25,7 @@ trait CloudStorageFileTrait {
     /** GET /cloud-storage/files */
     public function handleListCloudStorageFiles(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $accountId = (int) $request->get_param('account_id');
             $path      = $request->get_param('path') ?? '';
             $account   = $this->getCloudStorageAccountById($accountId);
@@ -55,20 +54,13 @@ trait CloudStorageFileTrait {
                 ResponseKeyType::Files->value   => $files,
                 ResponseKeyType::Total->value   => count($files),
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to list cloud storage files');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'list-cloud-storage-files');
     }
 
     /** DELETE /cloud-storage/delete */
     public function handleDeleteCloudStorageFile(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -109,14 +101,7 @@ trait CloudStorageFileTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Deleted->value => $deleted,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to delete cloud storage file');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'delete-cloud-storage-file');
     }
 
     /** Apply rotation: delete oldest files exceeding retention count. */

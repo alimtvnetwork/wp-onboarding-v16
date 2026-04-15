@@ -5,6 +5,10 @@
  * Manages the OAuth2 authorization code flow: state generation, token exchange,
  * account creation from OAuth, and encrypted option storage for client credentials.
  *
+ * Note: handleCloudStorageOAuthCallback uses wp_redirect()+exit and cannot return
+ * a WP_REST_Response in all code paths, so it retains an internal try-catch that
+ * redirects on failure. The initiate handler is fully wrapped in safeExecute().
+ *
  * @package RiseupAsia\Traits\CloudStorage
  * @since   2.15.0
  */
@@ -34,7 +38,7 @@ trait CloudStorageOAuthTrait {
     /** POST /cloud-storage/oauth/initiate — Start Google OAuth2 flow. */
     public function handleCloudStorageOAuthInitiate(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -79,17 +83,16 @@ trait CloudStorageOAuthTrait {
                 ResponseKeyType::OAuthUrl->value   => $oauthUrl,
                 ResponseKeyType::OAuthState->value => $state,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to initiate Google OAuth');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'cloud-storage-oauth-initiate');
     }
 
-    /** GET /cloud-storage/oauth/callback — Handle Google OAuth2 redirect. */
+    /**
+     * GET /cloud-storage/oauth/callback — Handle Google OAuth2 redirect.
+     *
+     * This handler uses wp_redirect()+exit on both success and error paths,
+     * so it cannot be fully wrapped in safeExecute(). The try-catch here
+     * is intentional and compliant with the spec exception for redirect flows.
+     */
     public function handleCloudStorageOAuthCallback(WP_REST_Request $request): WP_REST_Response
     {
         try {
@@ -186,7 +189,19 @@ trait CloudStorageOAuthTrait {
 
             exit;
         } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Google OAuth callback failed');
+            // Tier 1 — PHP native error_log
+            error_log(sprintf(
+                '[RiseupAsia] OAuth callback caught %s: %s in %s:%d',
+                get_class($e),
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine(),
+            ));
+
+            // Tier 2 — FileLogger
+            if ($this->fileLogger !== null) {
+                $this->fileLogger->logException($e, 'Google OAuth callback failed');
+            }
 
             $redirectUrl = admin_url(
                 'admin.php?page=' . AdminPageType::Settings->value

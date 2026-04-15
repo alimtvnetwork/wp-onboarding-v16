@@ -28,25 +28,27 @@ use RiseupAsia\Helpers\EnvelopeBuilder;
 trait PluginLifecycleDeleteTrait {
 
     public function handleDeletePlugin(WP_REST_Request $request): WP_REST_Response {
-        $loadError = $this->loadPluginFunctions(true);
+        return $this->safeExecute(function() use ($request) {
+            $loadError = $this->loadPluginFunctions(true);
 
-        if ($loadError) {
-            return $loadError;
-        }
+            if ($loadError) {
+                return $loadError;
+            }
 
-        $resolved = $this->resolvePluginFromRequest($request);
+            $resolved = $this->resolvePluginFromRequest($request);
 
-        if ($resolved instanceof WP_REST_Response) {
-            return $resolved;
-        }
+            if ($resolved instanceof WP_REST_Response) {
+                return $resolved;
+            }
 
-        $deactivation = $this->deactivateBeforeDelete($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+            $deactivation = $this->deactivateBeforeDelete($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
 
-        if ($deactivation instanceof WP_REST_Response) {
-            return $deactivation;
-        }
+            if ($deactivation instanceof WP_REST_Response) {
+                return $deactivation;
+            }
 
-        return $this->tryDeletePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+            return $this->tryDeletePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+        }, 'delete-plugin');
     }
 
     private function deactivateBeforeDelete(string $slug, string $pluginFile): bool|WP_REST_Response {
