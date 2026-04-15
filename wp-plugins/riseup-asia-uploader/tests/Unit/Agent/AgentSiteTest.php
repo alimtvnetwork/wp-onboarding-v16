@@ -59,7 +59,7 @@ final class AgentSiteTest extends TestCase {
         $this->assertNull($site->redirectUrl);
         $this->assertNull($site->redirectResolved);
         $this->assertNull($site->redirectResolvedAt);
-        $this->assertSame('pending', $site->status);
+        $this->assertSame('Pending', $site->status);
         $this->assertNull($site->lastSync);
         $this->assertNull($site->lastError);
         $this->assertNull($site->updatedAt);
@@ -80,7 +80,7 @@ final class AgentSiteTest extends TestCase {
 
         $arr = $site->toArray();
 
-        $this->assertArrayNotHasKey('app_password', $arr);
+        $this->assertArrayNotHasKey('appPassword', $arr);
         $this->assertSame(42, $arr['id']);
         $this->assertSame('https://example.com', $arr['url']);
         $this->assertSame('connected', $arr['status']);
@@ -91,15 +91,15 @@ final class AgentSiteTest extends TestCase {
 
         $arr = $site->toArray();
 
-        $this->assertArrayHasKey('app_password', $arr);
-        $this->assertSame('pw123', $arr['app_password']);
+        $this->assertArrayHasKey('appPassword', $arr);
+        $this->assertSame('pw123', $arr['appPassword']);
     }
 
-    public function testToArrayUsesSnakeCaseKeys(): void {
+    public function testToArrayUsesExpectedKeys(): void {
         $site = AgentSite::fromRow($this->sampleRow());
         $arr = $site->toArray();
 
-        $expected = ['id', 'name', 'url', 'username', 'redirect_url', 'status', 'last_sync', 'last_error', 'created_at', 'updated_at'];
+        $expected = ['id', 'name', 'url', 'username', 'redirectUrl', 'status', 'lastSync', 'lastError', 'createdAt', 'updatedAt'];
         foreach ($expected as $key) {
             $this->assertArrayHasKey($key, $arr, "Missing key: {$key}");
         }
@@ -109,7 +109,7 @@ final class AgentSiteTest extends TestCase {
         $site = AgentSite::fromRow($this->sampleRow());
         $arr = $site->toArray();
 
-        $this->assertArrayNotHasKey('redirect_resolved', $arr);
-        $this->assertArrayNotHasKey('redirect_resolved_at', $arr);
+        $this->assertArrayNotHasKey('redirectResolved', $arr);
+        $this->assertArrayNotHasKey('redirectResolvedAt', $arr);
     }
 }
