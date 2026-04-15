@@ -21,7 +21,7 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\ResultHelper;
 
 trait ManagerCoreTrait {
-    public function getProvider(): ?\RiseupSnapshotProviderInterface {
+    public function getProvider(): ?\RiseupAsia\Snapshot\SnapshotProviderInterface {
         $providerId = $this->detector->getActiveProvider();
 
         return $this->detector->getProviderInstance($providerId, $this->logger, $this->db);
