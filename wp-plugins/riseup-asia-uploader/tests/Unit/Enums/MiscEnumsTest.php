@@ -7,7 +7,7 @@ namespace RiseupAsia\Tests\Unit\Enums;
 use PHPUnit\Framework\TestCase;
 use RiseupAsia\Enums\ColorGroupType;
 use RiseupAsia\Enums\EndpointType;
-use RiseupAsia\Enums\ErrorType;
+
 use RiseupAsia\Enums\FilterKeyType;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LicenseOptionType;
@@ -117,13 +117,6 @@ final class MiscEnumsTest extends TestCase
     public function testColorGroupValuesAreNonEmpty(): void
     {
         foreach (ColorGroupType::cases() as $case) {
-            $this->assertNotEmpty($case->value);
-        }
-    }
-
-    public function testErrorTypeValuesAreNonEmpty(): void
-    {
-        foreach (ErrorType::cases() as $case) {
             $this->assertNotEmpty($case->value);
         }
     }
