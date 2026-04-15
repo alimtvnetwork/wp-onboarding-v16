@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Skip directories that are exempt from the limit.
-EXCLUDE_DIRS=("vendor" "node_modules" ".git")
+EXCLUDE_DIRS=("vendor" "node_modules" ".git" "unused")
 
 EXCLUDE_ARGS=()
 for dir in "${EXCLUDE_DIRS[@]}"; do
