@@ -26,12 +26,15 @@ trait NativeSnapshotCreateTrait {
     /**
      * Creates a new snapshot.
      *
-     * @param string $scope  The scope of the snapshot (full, database, plugins).
-     * @param string $trigger The trigger for the snapshot (manual, scheduled).
+     * @param array $options Snapshot options with 'Scope', 'Trigger', and optional 'Tables'.
      *
      * @return array The result of the snapshot creation.
      */
-    public function createSnapshot(string $scope, string $trigger): array {
+    public function createSnapshot(array $options): array {
+        $scope   = $options[ResponseKeyType::Scope->value]   ?? SnapshotScopeType::Database->value;
+        $trigger = $options[ResponseKeyType::Trigger->value] ?? SnapshotTriggerType::Manual->value;
+        $tables  = $options[ResponseKeyType::Tables->value]  ?? [];
+
         $this->log(LogLevelType::Info->value, 'Snapshot creation requested', [
             'scope'   => $scope,
             'trigger' => $trigger,
@@ -67,23 +70,39 @@ trait NativeSnapshotCreateTrait {
             return $this->error(SnapshotErrorType::AlreadyRunning, 'A snapshot is already running');
         }
 
-        return $this->scheduleOrExecute($scope, $trigger);
+        return $this->scheduleOrExecute($scope, $trigger, $tables);
     }
 
     /**
      * Schedules or executes the snapshot creation based on the scope.
      *
-     * @param string $scope   The scope of the snapshot (full, database, plugins).
-     * @param string $trigger The trigger for the snapshot (manual, scheduled).
+     * @param string $scope   The scope of the snapshot.
+     * @param string $trigger The trigger for the snapshot.
+     * @param array  $tables  Optional list of specific tables to export.
      *
      * @return array The result of the snapshot creation.
      */
-    private function scheduleOrExecute(string $scope, string $trigger): array {
+    private function scheduleOrExecute(string $scope, string $trigger, array $tables): array {
         if ($scope === SnapshotScopeType::Full->value) {
             return $this->error(SnapshotErrorType::InvalidScope, 'Full snapshot scope is not supported for native provider');
         }
 
-        return $this->executeSnapshot($scope, $trigger);
+        if (empty($tables)) {
+            $availableTables = $this->getAvailableTables();
+            $tables = array_column($availableTables, ResponseKeyType::Name->value);
+        }
+
+        $sequence = time();
+        $filename = sprintf('snapshot-%s-%d', $scope, $sequence);
+        $filepath = $this->getSnapshotsDir() . DIRECTORY_SEPARATOR . $filename . '.sqlite';
+
+        $snapshotId = $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
+
+        if ($snapshotId === false) {
+            return $this->error(SnapshotErrorType::RecordCreationFailed, 'Failed to create snapshot record');
+        }
+
+        return $this->executeSnapshot((int) $snapshotId, $tables);
     }
 
     /**
