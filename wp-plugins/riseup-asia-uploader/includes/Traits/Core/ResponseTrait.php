@@ -75,7 +75,7 @@ trait ResponseTrait {
     }
 
     /** Create an error response with optional exception details. */
-    private function errorResponse(
+    protected function errorResponse(
         string $message,
         int $status,
         ?Throwable $exception = null,
