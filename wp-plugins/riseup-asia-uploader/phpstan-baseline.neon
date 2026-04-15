@@ -759,7 +759,7 @@ parameters:
 		-
 			message: '#^Access to undefined constant RiseupAsia\\Enums\\HttpStatusType\:\:ServerError\.$#'
 			identifier: classConstant.notFound
-			count: 28
+			count: 0
 			path: includes/Core/Plugin.php
 
 		-
@@ -3852,11 +3852,6 @@ parameters:
 			count: 1
 			path: includes/Enums/HttpConfigType.php
 
-		-
-			message: '#^Access to undefined constant RiseupAsia\\Enums\\HttpStatusType\:\:ServerError\.$#'
-			identifier: classConstant.notFound
-			count: 1
-			path: includes/Enums/HttpStatusType.php
 
 		-
 			message: '#^Strict comparison using \!\=\= between \$this\(RiseupAsia\\Enums\\PathConfigType\) and RiseupAsia\\Enums\\PathConfigType will always evaluate to false\.$#'
@@ -7989,7 +7984,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:error\(\)\.$#'
 			identifier: method.notFound
-			count: 5
+			count: 6
 			path: includes/Snapshot/SnapshotProviderNative.php
 
 		-
@@ -8310,17 +8305,6 @@ parameters:
 			count: 1
 			path: includes/Snapshot/SnapshotProviderNative.php
 
-		-
-			message: '#^Parameter \#1 \$snapshotId of method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:executeSnapshot\(\) expects int, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/Snapshot/SnapshotProviderNative.php
-
-		-
-			message: '#^Parameter \#2 \$tables of method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:executeSnapshot\(\) expects array, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/Snapshot/SnapshotProviderNative.php
 
 		-
 			message: '#^Parameter \#2 \$where of method RiseupAsia\\Database\\Database\:\:delete\(\) expects string, array\<string, int\> given\.$#'
