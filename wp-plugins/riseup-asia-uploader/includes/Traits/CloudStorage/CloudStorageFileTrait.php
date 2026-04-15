@@ -69,9 +69,15 @@ trait CloudStorageFileTrait {
     public function handleDeleteCloudStorageFile(WP_REST_Request $request): WP_REST_Response
     {
         try {
-            $params     = $request->get_json_params();
-            $accountId  = (int) ($params[ResponseKeyType::AccountId->value] ?? 0);
-            $remotePath = $params[ResponseKeyType::RemotePath->value] ?? '';
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
+
+            $accountId  = (int) ($body[ResponseKeyType::AccountId->value] ?? 0);
+            $remotePath = $body[ResponseKeyType::RemotePath->value] ?? '';
             $account    = $this->getCloudStorageAccountById($accountId);
 
             $isNotFound = ($account === false);

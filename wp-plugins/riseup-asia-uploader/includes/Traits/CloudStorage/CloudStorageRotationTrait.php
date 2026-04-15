@@ -80,8 +80,14 @@ trait CloudStorageRotationTrait {
     public function handleCloudStorageRotate(WP_REST_Request $request): WP_REST_Response
     {
         try {
-            $params    = $request->get_json_params();
-            $accountId = (int) ($params[ResponseKeyType::AccountId->value] ?? 0);
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
+
+            $accountId = (int) ($body[ResponseKeyType::AccountId->value] ?? 0);
             $account   = $this->getCloudStorageAccountById($accountId);
 
             $isNotFound = ($account === false);

@@ -35,8 +35,14 @@ trait CloudStorageOAuthTrait {
     public function handleCloudStorageOAuthInitiate(WP_REST_Request $request): WP_REST_Response
     {
         try {
-            $params       = $request->get_json_params();
-            $accountLabel = sanitize_text_field($params['AccountLabel'] ?? 'Google Drive');
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
+
+            $accountLabel = sanitize_text_field($body['AccountLabel'] ?? 'Google Drive');
 
             $clientId = $this->getEncryptedOption('riseup_google_oauth_client_id');
             $isClientMissing = empty($clientId);
