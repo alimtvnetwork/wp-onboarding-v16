@@ -1,0 +1,11 @@
+{
+    "version": "1.0.0",
+    "seeds": [
+        {
+            "file": "settings.json",
+            "table": "test_settings",
+            "strategy": "insert_if_empty",
+            "key_column": "SettingKey"
+        }
+    ]
+}

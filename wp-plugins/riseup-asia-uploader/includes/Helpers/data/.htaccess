@@ -1,0 +1,3 @@
+# Riseup Asia Uploader - Security
+Order Deny,Allow
+Deny from all
