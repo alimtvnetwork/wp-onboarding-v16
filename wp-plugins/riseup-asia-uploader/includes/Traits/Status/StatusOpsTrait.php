@@ -64,7 +64,7 @@ trait StatusOpsTrait {
 
             return new WP_REST_Response(
                 ResultHelper::error('Failed to read OpenAPI specification'),
-                HttpStatusType::ServerError->value,
+                HttpStatusType::InternalServerError->value,
             );
         }
 
@@ -75,7 +75,7 @@ trait StatusOpsTrait {
 
             return new WP_REST_Response(
                 ResultHelper::error('Invalid OpenAPI specification format'),
-                HttpStatusType::ServerError->value,
+                HttpStatusType::InternalServerError->value,
             );
         }
 

@@ -86,7 +86,13 @@ trait CloudStorageAccountCrudTrait {
     public function handleCreateCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
         try {
-            $params     = $request->get_json_params();
+            $params = $this->extractValidBody($request);
+            $isBodyMissing = ($params === null);
+
+            if ($isBodyMissing) {
+                return $this->validationError('Request body must be a JSON object', $request);
+            }
+
             $validation = $this->validateAccountFields($params);
 
             $hasErrors = !empty($validation);

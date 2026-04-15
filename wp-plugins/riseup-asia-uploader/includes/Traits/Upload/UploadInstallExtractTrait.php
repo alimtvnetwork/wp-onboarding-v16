@@ -91,7 +91,7 @@ trait UploadInstallExtractTrait
             if ($context[ResponseKeyType::IsSelfUpdate->value] && $backupDir === false) {
                 return $this->errorResponse(
                     SelfUpdateStatusType::BackupCreationFailed->label(),
-                    HttpStatusType::ServerError->value,
+                    HttpStatusType::InternalServerError->value,
                 );
             }
 
@@ -401,7 +401,7 @@ trait UploadInstallExtractTrait
             ? ResponseKeyType::HealthCheck->value
             : ResponseKeyType::Validation->value;
 
-        return EnvelopeBuilder::error($reason->label(), HttpStatusType::ServerError->value)
+        return EnvelopeBuilder::error($reason->label(), HttpStatusType::InternalServerError->value)
             ->setRequestedAt($requestedAt)
             ->setSingleResult([
                 ResponseKeyType::SelfUpdateStatus->value => $outcome->value,
@@ -439,7 +439,7 @@ trait UploadInstallExtractTrait
             $this->deleteDirectory($tempExtractDir);
             $this->logger->logUploadFailed($slug, 'No folder found in extracted ZIP');
 
-            return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
+            return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::InternalServerError->value);
         }
 
         $isMoved = $this->moveExtractedPlugin($extractedFolders[0], $targetDir);
@@ -448,7 +448,7 @@ trait UploadInstallExtractTrait
         if ($isMoved === false) {
             $this->logger->logUploadFailed($slug, 'Failed to move plugin to target directory');
 
-            return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to move plugin to target directory', HttpStatusType::InternalServerError->value);
         }
 
         return true;
@@ -462,7 +462,7 @@ trait UploadInstallExtractTrait
             $this->fileLogger->error('Temp ZIP file does not exist', ['path' => $tempFile]);
             $this->deleteDirectory($tempExtractDir);
 
-            return $this->errorResponse('Failed to open ZIP for extraction — file does not exist', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to open ZIP for extraction — file does not exist', HttpStatusType::InternalServerError->value);
         }
 
         $tempFileSize = @filesize($tempFile);
@@ -491,7 +491,7 @@ trait UploadInstallExtractTrait
 
             $detail = "Failed to open ZIP for extraction — {$errorMsg} (code: {$openResult}), fileSize: {$tempFileSize} bytes";
 
-            return $this->errorResponse($detail, HttpStatusType::ServerError->value);
+            return $this->errorResponse($detail, HttpStatusType::InternalServerError->value);
         }
 
         $isExtracted = $zip->extractTo($tempExtractDir);
@@ -502,7 +502,7 @@ trait UploadInstallExtractTrait
             $this->deleteDirectory($tempExtractDir);
             $this->fileLogger->error('ZIP extraction failed');
 
-            return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to extract ZIP contents', HttpStatusType::InternalServerError->value);
         }
 
         return null;

@@ -34,6 +34,8 @@ trait SnapshotImportStreamTrait {
         }
 
         $this->streamZipFile($validated['exportId'], $validated['export']);
+
+        return null;
     }
 
     private function validateAndResolveExport(WP_REST_Request $request): array|WP_REST_Response {

@@ -38,7 +38,7 @@ trait SyncManifestTrait
         try {
             return $this->generateSyncManifest($slug);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 

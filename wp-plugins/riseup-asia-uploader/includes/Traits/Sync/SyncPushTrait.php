@@ -60,7 +60,7 @@ trait SyncPushTrait
 
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
         } catch (Throwable $e) {
-            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 

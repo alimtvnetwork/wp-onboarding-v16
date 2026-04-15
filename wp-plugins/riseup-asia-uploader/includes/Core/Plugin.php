@@ -63,6 +63,7 @@ use RiseupAsia\Traits\CloudStorage\CloudStorageTrait;
 use RiseupAsia\Traits\SiteSettings\SiteSettingsTrait;
 use RiseupAsia\Traits\SiteSettings\SiteHealthSummaryTrait;
 use RiseupAsia\Traits\Debug\DebugRoutesTrait;
+use RiseupAsia\Helpers\Traits\TypeCheckerTrait;
 
 class Plugin {
     // Wave 1 traits
@@ -110,6 +111,7 @@ class Plugin {
     use SiteSettingsTrait;
     use SiteHealthSummaryTrait;
     use DebugRoutesTrait;
+    use TypeCheckerTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
