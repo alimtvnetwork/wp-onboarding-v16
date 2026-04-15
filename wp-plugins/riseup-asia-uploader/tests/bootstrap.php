@@ -68,6 +68,41 @@ if (!class_exists('WP_Error')) {
     }
 }
 
+// Stub WordPress hook functions.
+if (!function_exists('add_action')) {
+    function add_action(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): true {
+        return true;
+    }
+}
+
+if (!function_exists('remove_action')) {
+    function remove_action(string $hook, callable $callback, int $priority = 10): bool {
+        return true;
+    }
+}
+
+if (!function_exists('add_filter')) {
+    function add_filter(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): true {
+        return true;
+    }
+}
+
+if (!function_exists('remove_filter')) {
+    function remove_filter(string $hook, callable $callback, int $priority = 10): bool {
+        return true;
+    }
+}
+
+if (!function_exists('do_action')) {
+    function do_action(string $hook, mixed ...$args): void {}
+}
+
+if (!function_exists('apply_filters')) {
+    function apply_filters(string $hook, mixed $value, mixed ...$args): mixed {
+        return $value;
+    }
+}
+
 // Stub WordPress functions used by the traits.
 if (!function_exists('is_wp_error')) {
     function is_wp_error($thing): bool {
