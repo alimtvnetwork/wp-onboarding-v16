@@ -28,7 +28,8 @@ enum SnapshotErrorType: string
     case IncrementalNoParent = 'IncrementalNoParent';
     case ExportNotFound      = 'ExportNotFound';
     case ExportBuildFailed   = 'ExportBuildFailed';
-    case ExportTokenInvalid  = 'ExportTokenInvalid';
+    case ExportTokenInvalid    = 'ExportTokenInvalid';
+    case RecordCreationFailed = 'RecordCreationFailed';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
