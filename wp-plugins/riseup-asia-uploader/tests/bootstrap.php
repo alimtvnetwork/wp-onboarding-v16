@@ -92,6 +92,20 @@ if (!function_exists('wp_cache_delete')) {
     }
 }
 
+// Minimal WP_REST_Response stub.
+if (!class_exists('WP_REST_Response')) {
+    class WP_REST_Response {
+        public mixed $data;
+        public int $status;
+        public function __construct(mixed $data = null, int $status = 200) {
+            $this->data = $data;
+            $this->status = $status;
+        }
+        public function get_data(): mixed { return $this->data; }
+        public function get_status(): int { return $this->status; }
+    }
+}
+
 // Minimal WP_Error stub.
 if (!class_exists('WP_Error')) {
     class WP_Error {
