@@ -149,7 +149,7 @@ class FatalErrorHandler
 
         if ($isHeadersUnsent) {
             header('Content-Type: ' . ContentTypeValueType::JsonUtf8->value);
-            http_response_code(HttpStatusType::ServerError->value);
+            http_response_code(HttpStatusType::InternalServerError->value);
         }
 
         $frameData = FrameBuilder::buildFatalFrames($error);

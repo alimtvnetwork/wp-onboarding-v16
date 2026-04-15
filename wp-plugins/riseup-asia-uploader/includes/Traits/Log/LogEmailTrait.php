@@ -94,7 +94,7 @@ trait LogEmailTrait
         $isSendFailed = ($wasSent === false);
 
         if ($isSendFailed) {
-            return $this->buildLogErrorResponse('wp_mail_failed', 'wp_mail_failed', HttpStatusType::ServerError, 'Failed to send email. Ensure WordPress has email sending configured (e.g., GoSMTP, WP Mail SMTP).');
+            return $this->buildLogErrorResponse('wp_mail_failed', 'wp_mail_failed', HttpStatusType::InternalServerError, 'Failed to send email. Ensure WordPress has email sending configured (e.g., GoSMTP, WP Mail SMTP).');
         }
 
         $this->incrementEmailCount();

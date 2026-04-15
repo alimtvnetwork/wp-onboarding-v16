@@ -15,6 +15,10 @@ if (!defined('ABSPATH')) {
 enum SnapshotErrorType: string
 {
     case LockExists          = 'LockExists';
+    case AlreadyRunning      = 'AlreadyRunning';
+    case InvalidScope        = 'InvalidScope';
+    case InvalidTrigger      = 'InvalidTrigger';
+    case ProviderMissing     = 'ProviderMissing';
     case NotFound            = 'NotFound';
     case Corrupt             = 'Corrupt';
     case TooLarge            = 'TooLarge';

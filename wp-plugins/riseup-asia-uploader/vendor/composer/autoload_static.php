@@ -13,35 +13,43 @@ class ComposerStaticInit9875428878355b88429aceca3a7b1929
     );
 
     public static $prefixLengthsPsr4 = array (
-        'R' =>
+        'S' => 
+        array (
+            'SzepeViktor\\PHPStan\\WordPress\\' => 30,
+        ),
+        'R' => 
         array (
             'RiseupAsia\\Tests\\' => 17,
             'RiseupAsia\\' => 11,
         ),
-        'P' =>
+        'P' => 
         array (
             'PhpParser\\' => 10,
         ),
-        'D' =>
+        'D' => 
         array (
             'DeepCopy\\' => 9,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'RiseupAsia\\Tests\\' =>
+        'SzepeViktor\\PHPStan\\WordPress\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/szepeviktor/phpstan-wordpress/src',
+        ),
+        'RiseupAsia\\Tests\\' => 
         array (
             0 => __DIR__ . '/../..' . '/tests',
         ),
-        'RiseupAsia\\' =>
+        'RiseupAsia\\' => 
         array (
             0 => __DIR__ . '/../..' . '/includes',
         ),
-        'PhpParser\\' =>
+        'PhpParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
         ),
-        'DeepCopy\\' =>
+        'DeepCopy\\' => 
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),

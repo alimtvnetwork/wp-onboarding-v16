@@ -35,11 +35,11 @@ enum HttpStatusType: int
     case TooManyRequests = 429;
 
     // ── Server Error ────────────────────────────────────────────────
-    case ServerError = 500;
-    case NotImplemented = 501;
-    case BadGateway  = 502;
+    case InternalServerError = 500;
+    case NotImplemented     = 501;
+    case BadGateway         = 502;
     case ServiceUnavailable = 503;
-    case GatewayTimeout = 504;
+    case GatewayTimeout     = 504;
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

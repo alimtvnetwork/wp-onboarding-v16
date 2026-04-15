@@ -37,7 +37,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ]);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
     }
 
     public function handleCreatePost(WP_REST_Request $request): WP_REST_Response {
@@ -58,7 +58,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ]);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
     }
 
     public function handleCreateCategory(WP_REST_Request $request): WP_REST_Response {

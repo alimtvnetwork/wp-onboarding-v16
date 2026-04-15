@@ -57,7 +57,7 @@ class ErrorResponse {
         FileLogger $logger,
         Throwable $e,
         string $context = '',
-        int $status = HttpStatusType::ServerError->value,
+        int $status = HttpStatusType::InternalServerError->value,
     ): WP_REST_Response {
         $logger->logException($e, $context);
 
@@ -73,7 +73,7 @@ class ErrorResponse {
         Throwable $e,
         string $context = '',
         string $code = 'InternalError', // Matches WpErrorCodeType::InternalError->value; literal required for default
-        int $status = HttpStatusType::ServerError->value,
+        int $status = HttpStatusType::InternalServerError->value,
     ): WP_Error {
         $logger->logException($e, $context);
 

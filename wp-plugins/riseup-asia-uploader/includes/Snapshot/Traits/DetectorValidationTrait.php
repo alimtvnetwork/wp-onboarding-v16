@@ -102,7 +102,7 @@ trait DetectorValidationTrait {
             $settings[SettingsKeyType::ScheduleTime->value] = '03:00';
         }
 
-        $isCustomTablesInvalid = (gettype($settings[SettingsKeyType::CustomTables->value]) === PhpNativeType::PhpArray->value === false);
+        $isCustomTablesInvalid = (gettype($settings[SettingsKeyType::CustomTables->value]) !== PhpNativeType::PhpArray->value);
 
         if ($isCustomTablesInvalid) {
             $settings[SettingsKeyType::CustomTables->value] = [];

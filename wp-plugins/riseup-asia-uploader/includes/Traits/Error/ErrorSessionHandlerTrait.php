@@ -32,7 +32,7 @@ trait ErrorSessionHandlerTrait {
             $isPdoMissing = ($pdo === null);
 
             if ($isPdoMissing) {
-                return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
+                return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::InternalServerError->value);
             }
 
             $isTableMissing = ($this->isTableExists($pdo, 'error_sessions') === false);

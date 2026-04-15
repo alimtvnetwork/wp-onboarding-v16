@@ -46,7 +46,7 @@ trait ResponseTrait {
 
             return $this->errorResponse(
                 "Error in {$context}: " . $e->getMessage(),
-                HttpStatusType::ServerError->value,
+                HttpStatusType::InternalServerError->value,
                 $e
             );
         }

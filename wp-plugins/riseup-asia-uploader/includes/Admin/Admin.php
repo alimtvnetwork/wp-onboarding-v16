@@ -28,6 +28,7 @@ use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Enums\PhpNativeType;
 
 /**
  * Class Admin
@@ -44,7 +45,7 @@ class Admin {
     use AdminFeedbackAjaxTrait;
     use AdminLicensePageTrait;
     use AdminLicenseAjaxTrait;
-use RiseupAsia\Enums\PhpNativeType;
+
 
     /**
      * Default settings.
