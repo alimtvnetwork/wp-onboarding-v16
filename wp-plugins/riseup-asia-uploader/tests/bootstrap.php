@@ -386,6 +386,65 @@ if (!function_exists('sanitize_user')) {
     }
 }
 
+// --- Transient stubs (in-memory) ---
+global $_wp_test_transients;
+$_wp_test_transients = [];
+
+if (!function_exists('get_transient')) {
+    function get_transient(string $key): mixed {
+        global $_wp_test_transients;
+        if (!isset($_wp_test_transients[$key])) {
+            return false;
+        }
+        $entry = $_wp_test_transients[$key];
+        if ($entry['expires'] > 0 && time() > $entry['expires']) {
+            unset($_wp_test_transients[$key]);
+            return false;
+        }
+        return $entry['value'];
+    }
+}
+
+if (!function_exists('set_transient')) {
+    function set_transient(string $key, mixed $value, int $expiration = 0): bool {
+        global $_wp_test_transients;
+        $_wp_test_transients[$key] = [
+            'value'   => $value,
+            'expires' => $expiration > 0 ? time() + $expiration : 0,
+        ];
+        return true;
+    }
+}
+
+if (!function_exists('delete_transient')) {
+    function delete_transient(string $key): bool {
+        global $_wp_test_transients;
+        unset($_wp_test_transients[$key]);
+        return true;
+    }
+}
+
+// --- Mail stubs ---
+if (!function_exists('wp_mail')) {
+    function wp_mail(string|array $to, string $subject, string $message, string|array $headers = '', array $attachments = []): bool {
+        return true;
+    }
+}
+
+if (!function_exists('get_bloginfo')) {
+    function get_bloginfo(string $show = ''): string {
+        return match ($show) {
+            'name'      => 'Test Site',
+            'admin_email' => 'admin@example.com',
+            default     => '',
+        };
+    }
+}
+
+if (!function_exists('get_option')) {
+    // already defined above
+}
+
 if (!function_exists('esc_url_raw')) {
     function esc_url_raw(string $url): string {
         return filter_var($url, FILTER_SANITIZE_URL) ?: '';

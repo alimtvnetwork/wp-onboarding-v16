@@ -16,9 +16,10 @@ class BootErrorCollectorTest extends TestCase
     {
         // Reset singleton for each test
         $ref = new \ReflectionClass(BootErrorCollector::class);
-        $prop = $ref->getProperty('instance');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+
+        $instanceProp = $ref->getProperty('instance');
+        $instanceProp->setAccessible(true);
+        $instanceProp->setValue(null, null);
     }
 
     public function testGetInstanceReturnsSameObject(): void
@@ -35,10 +36,9 @@ class BootErrorCollectorTest extends TestCase
         $collector->addError('autoloader', 'Class not found');
         $collector->addError('plugin_init', 'Init failed');
 
-        $ref = new \ReflectionClass($collector);
-        $prop = $ref->getProperty('errors');
-        $prop->setAccessible(true);
-        $errors = $prop->getValue($collector);
+        $this->assertTrue($collector->hasErrors());
+
+        $errors = $collector->getErrors();
 
         $this->assertCount(2, $errors);
         $this->assertSame('autoloader', $errors[0]['context']);
@@ -49,11 +49,8 @@ class BootErrorCollectorTest extends TestCase
     {
         $collector = BootErrorCollector::getInstance();
 
-        $ref = new \ReflectionClass($collector);
-        $prop = $ref->getProperty('errors');
-        $prop->setAccessible(true);
-
-        $this->assertCount(0, $prop->getValue($collector));
+        $this->assertFalse($collector->hasErrors());
+        $this->assertCount(0, $collector->getErrors());
     }
 
     public function testErrorContainsTimestamp(): void
@@ -61,10 +58,7 @@ class BootErrorCollectorTest extends TestCase
         $collector = BootErrorCollector::getInstance();
         $collector->addError('test', 'Test error');
 
-        $ref = new \ReflectionClass($collector);
-        $prop = $ref->getProperty('errors');
-        $prop->setAccessible(true);
-        $errors = $prop->getValue($collector);
+        $errors = $collector->getErrors();
 
         $this->assertArrayHasKey('timestamp', $errors[0]);
         $this->assertNotEmpty($errors[0]['timestamp']);
@@ -75,11 +69,31 @@ class BootErrorCollectorTest extends TestCase
         $collector = BootErrorCollector::getInstance();
         $collector->addError('ctx', 'Specific message');
 
-        $ref = new \ReflectionClass($collector);
-        $prop = $ref->getProperty('errors');
-        $prop->setAccessible(true);
-        $errors = $prop->getValue($collector);
+        $errors = $collector->getErrors();
 
         $this->assertSame('Specific message', $errors[0]['message']);
+    }
+
+    public function testFlushClearsErrors(): void
+    {
+        $collector = BootErrorCollector::getInstance();
+        $collector->addError('test', 'Will be flushed');
+
+        $this->assertTrue($collector->hasErrors());
+
+        $collector->flush();
+
+        $this->assertFalse($collector->hasErrors());
+        $this->assertCount(0, $collector->getErrors());
+    }
+
+    public function testFlushDoesNothingWhenEmpty(): void
+    {
+        $collector = BootErrorCollector::getInstance();
+
+        // Should not throw
+        $collector->flush();
+
+        $this->assertFalse($collector->hasErrors());
     }
 }
