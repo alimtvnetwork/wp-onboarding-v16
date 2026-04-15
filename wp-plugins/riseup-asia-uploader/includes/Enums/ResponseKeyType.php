@@ -347,7 +347,7 @@ enum ResponseKeyType: string
     /** Plugin archive keys. */
     case Zip            = 'Zip';
     case ZipFile        = 'ZipFile';
-    case ArchiveFileSizeBytes = 'FileSizeBytes';
+    case ArchiveFileSizeBytes = 'ArchiveFileSizeBytes';
     case ChecksumMd5    = 'ChecksumMd5';
     case PluginName     = 'PluginName';
 
@@ -405,7 +405,6 @@ enum ResponseKeyType: string
     case MaxSizeMB         = 'MaxSizeMB';
     case IsOverLimit       = 'IsOverLimit';
     case NextAction        = 'NextAction';
-    case Applied           = 'Applied';
     case FilesMoved        = 'FilesMoved';
     case DeletedFiles      = 'DeletedFiles';
     case MovedFiles        = 'MovedFiles';
