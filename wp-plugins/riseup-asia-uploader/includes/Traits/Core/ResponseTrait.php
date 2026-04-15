@@ -18,7 +18,6 @@ use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
-use RiseupAsia\Enums\PhpNativeType;
 
 trait ResponseTrait {
 
