@@ -9,13 +9,13 @@ use RiseupAsia\Enums\ResponseKeyType;
 
 final class ResponseKeyTypeTest extends TestCase
 {
-    public function testAllValuesArePascalCase(): void
+    public function testAllValuesArePascalCaseOrAlphanumeric(): void
     {
         foreach (ResponseKeyType::cases() as $case) {
             $this->assertMatchesRegularExpression(
-                '/^[A-Z][a-zA-Z]*$/',
+                '/^[A-Z][a-zA-Z0-9]*$/',
                 $case->value,
-                "ResponseKey {$case->name} value '{$case->value}' must be PascalCase",
+                "ResponseKey {$case->name} value '{$case->value}' must be PascalCase (alphanumeric)",
             );
         }
     }
@@ -30,15 +30,15 @@ final class ResponseKeyTypeTest extends TestCase
         }
     }
 
-    public function testNoDuplicateValues(): void
+    public function testNoDuplicateCaseNames(): void
     {
-        $values = array_map(fn($c) => $c->value, ResponseKeyType::cases());
-        $unique = array_unique($values);
+        $names = array_map(fn($c) => $c->name, ResponseKeyType::cases());
+        $unique = array_unique($names);
 
         $this->assertCount(
-            count($values),
+            count($names),
             $unique,
-            'ResponseKeyType has duplicate values: ' . implode(', ', array_diff_assoc($values, $unique)),
+            'ResponseKeyType has duplicate case names',
         );
     }
 

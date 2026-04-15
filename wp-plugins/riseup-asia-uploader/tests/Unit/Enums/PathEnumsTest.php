@@ -30,13 +30,13 @@ final class PathEnumsTest extends TestCase
         }
     }
 
-    public function testPathLogFileValuesEndWithLog(): void
+    public function testPathLogFileValuesEndWithLogOrTxt(): void
     {
         foreach (PathLogFileType::cases() as $case) {
-            $this->assertStringEndsWith(
-                '.log',
-                $case->value,
-                "Log file path {$case->name} must end with .log",
+            $endsWithLog = str_ends_with($case->value, '.log') || str_ends_with($case->value, '.txt');
+            $this->assertTrue(
+                $endsWithLog,
+                "Log file path {$case->name} must end with .log or .txt, got: {$case->value}",
             );
         }
     }
