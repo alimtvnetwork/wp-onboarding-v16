@@ -45,7 +45,7 @@ class Admin {
     use AdminFeedbackAjaxTrait;
     use AdminLicensePageTrait;
     use AdminLicenseAjaxTrait;
-use RiseupAsia\Enums\PhpNativeType;
+
 
     /**
      * Default settings.
