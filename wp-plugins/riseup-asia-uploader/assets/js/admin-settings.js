@@ -9,6 +9,7 @@
 jQuery(document).ready(function($) {
     var C = window.RiseupSettings;
     var ajaxNonce = C.nonce;
+    var LABELS = C.i18n;
 
     // =========================================================================
     // AUTO-UPDATE SECTION
@@ -35,10 +36,10 @@ jQuery(document).ready(function($) {
                     $('#resolved_url_display').text(response.data.resolved_url);
                 }
             } else {
-                showStatus('✗ ' + (response.data.message || 'Connection failed'), true);
+                showStatus('✗ ' + (response.data.message || LABELS.connectionFailed), true);
             }
         }).fail(function() {
-            showStatus('✗ Request failed', true);
+            showStatus('✗ ' + LABELS.requestFailed, true);
         }).always(function() {
             $btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-yes-alt');
         });
@@ -56,10 +57,10 @@ jQuery(document).ready(function($) {
                 showStatus('✓ ' + response.data.message, false);
                 $('#resolved_url_display').text('');
             } else {
-                showStatus('✗ ' + (response.data.message || 'Failed to clear cache'), true);
+                showStatus('✗ ' + (response.data.message || LABELS.clearCacheFailed), true);
             }
         }).fail(function() {
-            showStatus('✗ Request failed', true);
+            showStatus('✗ ' + LABELS.requestFailed, true);
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -80,10 +81,10 @@ jQuery(document).ready(function($) {
                 }
                 showStatus('✓ ' + msg, false);
             } else {
-                showStatus('✗ ' + (response.data.message || 'Update check failed'), true);
+                showStatus('✗ ' + (response.data.message || LABELS.updateCheckFailed), true);
             }
         }).fail(function() {
-            showStatus('✗ Request failed', true);
+            showStatus('✗ ' + LABELS.requestFailed, true);
         }).always(function() {
             $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
         });
@@ -140,16 +141,18 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 var d = response.data;
-                var info = d.total_snapshots + ' snapshots, ' + d.total_size_formatted + ' used';
+                var info = LABELS.snapshotsInfo
+                    .replace('%1$d', d.total_snapshots)
+                    .replace('%2$s', d.total_size_formatted);
                 if (d.disk_free_formatted) {
-                    info += ' (' + d.disk_free_formatted + ' free)';
+                    info += ' ' + LABELS.snapshotsInfoFree.replace('%s', d.disk_free_formatted);
                 }
                 $('#snap_storage_info').html(info);
             } else {
-                $('#snap_storage_info').html('<em>Unable to load stats</em>');
+                $('#snap_storage_info').html('<em>' + LABELS.unableToLoadStats + '</em>');
             }
         }).fail(function() {
-            $('#snap_storage_info').html('<em>Unable to load stats</em>');
+            $('#snap_storage_info').html('<em>' + LABELS.unableToLoadStats + '</em>');
         });
     }
     loadStorageStats();
@@ -177,9 +180,9 @@ jQuery(document).ready(function($) {
             storage_mode: $('input[name="snap_storage_mode"]:checked').val(),
             worker_pool_size: $('#snap_worker_pool_size').val()
         }, function(response) {
-            showSnapStatus('✓ ' + (response.data ? response.data.message : 'Saved'), false);
+            showSnapStatus('✓ ' + (response.data ? response.data.message : LABELS.saved), false);
         }).fail(function() {
-            showSnapStatus('✗ Failed to save settings', true);
+            showSnapStatus('✗ ' + LABELS.failedToSave, true);
         }).always(function() {
             $btn.prop('disabled', false);
         });
@@ -198,10 +201,10 @@ jQuery(document).ready(function($) {
                 showSnapStatus('✓ ' + response.data.message, false);
                 loadStorageStats();
             } else {
-                showSnapStatus('✗ ' + (response.data ? response.data.message : 'Cleanup failed'), true);
+                showSnapStatus('✗ ' + (response.data ? response.data.message : LABELS.cleanupFailed), true);
             }
         }).fail(function() {
-            showSnapStatus('✗ Request failed', true);
+            showSnapStatus('✗ ' + LABELS.requestFailed, true);
         }).always(function() {
             $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
         });
