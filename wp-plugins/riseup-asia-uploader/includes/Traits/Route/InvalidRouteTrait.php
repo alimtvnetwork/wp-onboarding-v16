@@ -104,7 +104,7 @@ trait InvalidRouteTrait
         }
 
         $data = $response->get_data();
-        $isDataInvalid = (gettype($data) === PhpNativeType::PhpArray->value === false);
+        $isDataInvalid = (gettype($data) !== PhpNativeType::PhpArray->value);
 
         if ($isDataInvalid) {
 

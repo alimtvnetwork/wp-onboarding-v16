@@ -86,7 +86,7 @@ class AdminMailer {
         ];
 
         $stored = get_option(OptionNameType::ErrorNotification->value, []);
-        $isStoredEmpty = (gettype($stored) === PhpNativeType::PhpArray->value === false || count($stored) === 0);
+        $isStoredEmpty = (gettype($stored) !== PhpNativeType::PhpArray->value || count($stored) === 0);
         if ($isStoredEmpty) {
             return $defaults;
         }
