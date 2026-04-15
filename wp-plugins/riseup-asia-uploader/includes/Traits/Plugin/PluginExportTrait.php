@@ -36,7 +36,7 @@ trait PluginExportTrait
             $zipContent = $this->createPluginZip($pluginDir, PluginConfigType::Slug->value, $ignore);
 
             if ($zipContent === null) {
-                return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
+                return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::InternalServerError->value);
             }
 
             $this->logger->logPluginAction(ActionType::ExportSelf->value, PluginConfigType::Slug->value, StatusType::Success->value, [
@@ -51,7 +51,7 @@ trait PluginExportTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
 
-            return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 
@@ -108,7 +108,7 @@ trait PluginExportTrait
         $zipContent = $this->createPluginZip($pluginDir, $slug . '-backup', $ignore);
 
         if ($zipContent === null) {
-            return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::InternalServerError->value);
         }
 
         $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, [

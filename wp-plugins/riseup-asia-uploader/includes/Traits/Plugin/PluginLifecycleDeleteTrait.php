@@ -57,7 +57,7 @@ trait PluginLifecycleDeleteTrait {
 
             return true;
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 
@@ -69,12 +69,12 @@ trait PluginLifecycleDeleteTrait {
             if ($error) {
                 $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, ['error' => $error]);
 
-                return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::ServerError->value);
+                return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::InternalServerError->value);
             }
         } catch (Throwable $e) {
             $this->logPluginLifecycleException($e, ActionType::Delete->value, $slug);
 
-            return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
 
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
