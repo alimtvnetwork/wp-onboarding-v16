@@ -378,9 +378,23 @@ trait AdminMenuTrait {
     private function enqueueSnapshotsAssets(string $pluginFile, string $version, string $pluginSlug): void {
         wp_enqueue_style('riseup-admin-shared', plugins_url('assets/css/admin-shared.css', $pluginFile), [], $version);
         wp_enqueue_style('riseup-admin-snapshots', plugins_url('assets/css/admin-snapshots.css', $pluginFile), ['riseup-admin-shared'], $version);
-        wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), ['jquery'], $version, true);
 
-        wp_localize_script('riseup-admin-snapshots', 'RiseupSnapshots', [
+        // Module chain: utils → progress → list/actions/settings → analytics → orchestrator
+        wp_enqueue_script('riseup-admin-snapshots-utils', plugins_url('assets/js/admin-snapshots-utils.js', $pluginFile), ['jquery'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-progress', plugins_url('assets/js/admin-snapshots-progress.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-list', plugins_url('assets/js/admin-snapshots-list.js', $pluginFile), ['riseup-admin-snapshots-progress'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-actions', plugins_url('assets/js/admin-snapshots-actions.js', $pluginFile), ['riseup-admin-snapshots-progress'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-modals', plugins_url('assets/js/admin-snapshots-modals.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-settings', plugins_url('assets/js/admin-snapshots-settings.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-analytics', plugins_url('assets/js/admin-snapshots-analytics.js', $pluginFile), ['riseup-admin-snapshots-settings'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), [
+            'riseup-admin-snapshots-list',
+            'riseup-admin-snapshots-actions',
+            'riseup-admin-snapshots-modals',
+            'riseup-admin-snapshots-analytics',
+        ], $version, true);
+
+        wp_localize_script('riseup-admin-snapshots-utils', 'RiseupSnapshots', [
             'nonce'           => wp_create_nonce(NonceType::Admin->value),
             'restNonce'       => wp_create_nonce(NonceType::WpRest->value),
             'restBase'        => esc_url(rest_url(PluginConfigType::apiFullNamespace())),
