@@ -18,6 +18,14 @@ if (!defined('WPINC')) {
     define('WPINC', 'wp-includes');
 }
 
+if (!defined('AUTH_KEY')) {
+    define('AUTH_KEY', 'phpstan-stub-auth-key');
+}
+
+if (!defined('SECURE_AUTH_KEY')) {
+    define('SECURE_AUTH_KEY', 'phpstan-stub-secure-auth-key');
+}
+
 // Stub WP_User if not available
 if (!class_exists('WP_User')) {
     class WP_User {
