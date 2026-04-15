@@ -45,7 +45,7 @@ trait SnapshotCrudListTrait {
      */
     public function handleGetSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
 
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);

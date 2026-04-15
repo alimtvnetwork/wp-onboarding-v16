@@ -35,7 +35,13 @@ trait SyncPushTrait
 {
     /** Handle sync push endpoint. */
     public function handleSyncPush(WP_REST_Request $request): WP_REST_Response {
-        $body = $request->get_json_params();
+        $body = $this->extractValidBody($request);
+        $isBodyInvalid = ($body === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
+
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
         $files = isset($body[ResponseKeyType::Files->value]) ? $body[ResponseKeyType::Files->value] : [];
 

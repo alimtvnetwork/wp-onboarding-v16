@@ -32,7 +32,7 @@ trait SnapshotBackupOpsTrait {
 
     public function handleExportPertable(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $analyzer = DependencyAnalyzer::getInstance($this->fileLogger);
             $rootDb = RootDb::getInstance($this->fileLogger, $analyzer);
             $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
@@ -50,7 +50,7 @@ trait SnapshotBackupOpsTrait {
 
     public function handleSnapshotCleanup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $cleaner = SnapshotFactory::cleaner($this->fileLogger, $this->db);
             $result = $cleaner->execute($this->extractCleanupOptions($body));
 
@@ -62,7 +62,7 @@ trait SnapshotBackupOpsTrait {
 
     public function handleSnapshotProgress(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $jobId = $body[ResponseKeyType::JobId->value] ?? null;
 
             if (empty($jobId)) {
