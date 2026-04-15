@@ -53,7 +53,7 @@ enum HttpStatusType: int
     {
         return $this->isAnyOf(
             self::RequestTimeout, self::TooManyRequests,
-            self::ServerError, self::BadGateway,
+            self::InternalServerError, self::BadGateway,
             self::ServiceUnavailable, self::GatewayTimeout,
         );
     }

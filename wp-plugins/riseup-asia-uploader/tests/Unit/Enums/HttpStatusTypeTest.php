@@ -34,7 +34,7 @@ final class HttpStatusTypeTest extends TestCase
     public function testServerErrorCodesAreInRange(): void
     {
         $serverErrors = [
-            HttpStatusType::ServerError, HttpStatusType::BadGateway,
+            HttpStatusType::InternalServerError, HttpStatusType::BadGateway,
             HttpStatusType::ServiceUnavailable, HttpStatusType::GatewayTimeout,
         ];
 
@@ -47,7 +47,7 @@ final class HttpStatusTypeTest extends TestCase
     {
         $retryable = [
             HttpStatusType::RequestTimeout, HttpStatusType::TooManyRequests,
-            HttpStatusType::ServerError, HttpStatusType::BadGateway,
+            HttpStatusType::InternalServerError, HttpStatusType::BadGateway,
             HttpStatusType::ServiceUnavailable, HttpStatusType::GatewayTimeout,
         ];
         $nonRetryable = [HttpStatusType::BadRequest, HttpStatusType::NotFound, HttpStatusType::Ok];
