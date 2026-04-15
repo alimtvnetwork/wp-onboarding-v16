@@ -69,20 +69,25 @@ final class SyncPushTraitTest extends TestCase
 
     public function testGuardReturnsNullForValidInput(): void
     {
-        $ignore = new class {
-            public function shouldIgnore(string $path): bool { return false; }
-        };
+        $ignore = $this->createIgnoreStub(false);
 
         $result = $this->stub->guardSyncFile('test.php', SyncActionType::Replace->value, $this->testDir, $ignore);
 
         $this->assertNull($result);
     }
 
+    private function createIgnoreStub(bool $shouldIgnore): \RiseupAsia\Upload\UploadIgnore
+    {
+        return new class($shouldIgnore) extends \RiseupAsia\Upload\UploadIgnore {
+            private bool $ignore;
+            public function __construct(bool $ignore) { $this->ignore = $ignore; }
+            public function shouldIgnore(string $path): bool { return $this->ignore; }
+        };
+    }
+
     public function testGuardReturnsSkippedForMissingPath(): void
     {
-        $ignore = new class {
-            public function shouldIgnore(string $path): bool { return false; }
-        };
+        $ignore = $this->createIgnoreStub(false);
 
         $result = $this->stub->guardSyncFile('', SyncActionType::Replace->value, $this->testDir, $ignore);
 
@@ -92,9 +97,7 @@ final class SyncPushTraitTest extends TestCase
 
     public function testGuardReturnsSkippedForMissingAction(): void
     {
-        $ignore = new class {
-            public function shouldIgnore(string $path): bool { return false; }
-        };
+        $ignore = $this->createIgnoreStub(false);
 
         $result = $this->stub->guardSyncFile('test.php', '', $this->testDir, $ignore);
 
@@ -104,9 +107,7 @@ final class SyncPushTraitTest extends TestCase
 
     public function testGuardReturnsIgnoredForIgnoredFile(): void
     {
-        $ignore = new class {
-            public function shouldIgnore(string $path): bool { return true; }
-        };
+        $ignore = $this->createIgnoreStub(true);
 
         $result = $this->stub->guardSyncFile('vendor/autoload.php', SyncActionType::Replace->value, $this->testDir, $ignore);
 
