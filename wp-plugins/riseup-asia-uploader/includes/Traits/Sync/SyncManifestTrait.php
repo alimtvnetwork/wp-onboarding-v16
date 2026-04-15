@@ -28,18 +28,16 @@ use RiseupAsia\Upload\UploadIgnore;
 trait SyncManifestTrait
 {
     public function handleSyncManifest(WP_REST_Request $request): WP_REST_Response {
-        $body = $this->extractValidBody($request);
-        $slug = ($body !== null && isset($body['plugin'])) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        return $this->safeExecute(function() use ($request) {
+            $body = $this->extractValidBody($request);
+            $slug = ($body !== null && isset($body['plugin'])) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
 
-        if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
-        }
+            if (empty($slug)) {
+                return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+            }
 
-        try {
             return $this->generateSyncManifest($slug);
-        } catch (Throwable $e) {
-            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'sync-manifest');
     }
 
     private function generateSyncManifest(string $slug): WP_REST_Response {

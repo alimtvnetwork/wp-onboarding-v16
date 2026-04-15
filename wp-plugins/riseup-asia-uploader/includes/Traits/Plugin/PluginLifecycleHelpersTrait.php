@@ -38,32 +38,34 @@ trait PluginLifecycleHelpersTrait
      */
     public function handlePluginExists(WP_REST_Request $request): WP_REST_Response
     {
-        $loadError = $this->loadPluginFunctions();
+        return $this->safeExecute(function() use ($request) {
+            $loadError = $this->loadPluginFunctions();
 
-        if ($loadError) {
-            return $loadError;
-        }
+            if ($loadError) {
+                return $loadError;
+            }
 
-        $slug = sanitize_text_field($request->get_param('plugin_slug') ?? '');
+            $slug = sanitize_text_field($request->get_param('plugin_slug') ?? '');
 
-        if (empty($slug)) {
-            return $this->errorResponse(
-                ResponseMessageType::MissingPluginSlug->value,
-                HttpStatusType::BadRequest->value
-            );
-        }
+            if (empty($slug)) {
+                return $this->errorResponse(
+                    ResponseMessageType::MissingPluginSlug->value,
+                    HttpStatusType::BadRequest->value
+                );
+            }
 
-        $plugins    = get_plugins();
-        $pluginFile = $this->findPluginFileBySlug($slug, $plugins);
-        $exists     = $pluginFile !== null;
-        $isActive   = $exists && is_plugin_active($pluginFile);
+            $plugins    = get_plugins();
+            $pluginFile = $this->findPluginFileBySlug($slug, $plugins);
+            $exists     = $pluginFile !== null;
+            $isActive   = $exists && is_plugin_active($pluginFile);
 
-        return new WP_REST_Response([
-            ResponseKeyType::Slug->value   => $slug,
-            'exists'                       => $exists,
-            'active'                       => $isActive,
-            ResponseKeyType::PluginFile->value => $pluginFile ?? '',
-        ], HttpStatusType::Ok->value);
+            return new WP_REST_Response([
+                ResponseKeyType::Slug->value   => $slug,
+                'exists'                       => $exists,
+                'active'                       => $isActive,
+                ResponseKeyType::PluginFile->value => $pluginFile ?? '',
+            ], HttpStatusType::Ok->value);
+        }, 'plugin-exists');
     }
 
     /**

@@ -35,27 +35,27 @@ trait SyncPushTrait
 {
     /** Handle sync push endpoint. */
     public function handleSyncPush(WP_REST_Request $request): WP_REST_Response {
-        $body = $this->extractValidBody($request);
-        $isBodyInvalid = ($body === null);
+        return $this->safeExecute(function() use ($request) {
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
-        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
-        $files = isset($body[ResponseKeyType::Files->value]) ? $body[ResponseKeyType::Files->value] : [];
+            $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
+            $files = isset($body[ResponseKeyType::Files->value]) ? $body[ResponseKeyType::Files->value] : [];
 
-        if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
-        }
+            if (empty($slug)) {
+                return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+            }
 
-        $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || gettype($files) !== PhpNativeType::PhpArray->value);
+            $isFilesInvalid = (BooleanHelpers::isValueEmpty($files) || gettype($files) !== PhpNativeType::PhpArray->value);
 
-        if ($isFilesInvalid) {
-            return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
-        }
+            if ($isFilesInvalid) {
+                return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
+            }
 
-        try {
             $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
 
             if (PathHelper::isDirMissing($pluginDir)) {
@@ -65,9 +65,7 @@ trait SyncPushTrait
             $result = $this->executeSyncPush($slug, $files, $pluginDir);
 
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'sync-push');
     }
 
     private function executeSyncPush(

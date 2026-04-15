@@ -29,46 +29,50 @@ trait PluginLifecycleEnableTrait {
 
     /** Handle enable (activate) plugin request. */
     public function handleEnablePlugin($request) {
-        $loadError = $this->loadPluginFunctions();
+        return $this->safeExecute(function() use ($request) {
+            $loadError = $this->loadPluginFunctions();
 
-        if ($loadError) {
-            return $loadError;
-        }
+            if ($loadError) {
+                return $loadError;
+            }
 
-        $resolved = $this->resolvePluginFromRequest($request);
+            $resolved = $this->resolvePluginFromRequest($request);
 
-        if ($resolved instanceof WP_REST_Response) {
-            return $resolved;
-        }
+            if ($resolved instanceof WP_REST_Response) {
+                return $resolved;
+            }
 
-        if (is_plugin_active($resolved[ResponseKeyType::PluginFile->value])) {
-            return $this->buildAlreadyActiveResponse($resolved[ResponseKeyType::Slug->value]);
-        }
+            if (is_plugin_active($resolved[ResponseKeyType::PluginFile->value])) {
+                return $this->buildAlreadyActiveResponse($resolved[ResponseKeyType::Slug->value]);
+            }
 
-        return $this->tryActivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+            return $this->tryActivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+        }, 'enable-plugin');
     }
 
     /** Handle disable (deactivate) plugin request. */
     public function handleDisablePlugin($request) {
-        $loadError = $this->loadPluginFunctions();
+        return $this->safeExecute(function() use ($request) {
+            $loadError = $this->loadPluginFunctions();
 
-        if ($loadError) {
-            return $loadError;
-        }
+            if ($loadError) {
+                return $loadError;
+            }
 
-        $resolved = $this->resolvePluginFromRequest($request);
+            $resolved = $this->resolvePluginFromRequest($request);
 
-        if ($resolved instanceof WP_REST_Response) {
-            return $resolved;
-        }
+            if ($resolved instanceof WP_REST_Response) {
+                return $resolved;
+            }
 
-        $isPluginInactive = (is_plugin_active($resolved[ResponseKeyType::PluginFile->value]) === false);
+            $isPluginInactive = (is_plugin_active($resolved[ResponseKeyType::PluginFile->value]) === false);
 
-        if ($isPluginInactive) {
-            return $this->buildAlreadyInactiveResponse($resolved[ResponseKeyType::Slug->value]);
-        }
+            if ($isPluginInactive) {
+                return $this->buildAlreadyInactiveResponse($resolved[ResponseKeyType::Slug->value]);
+            }
 
-        return $this->tryDeactivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+            return $this->tryDeactivatePlugin($resolved[ResponseKeyType::Slug->value], $resolved[ResponseKeyType::PluginFile->value]);
+        }, 'disable-plugin');
     }
 
     /** Build response for already-active plugin. */
