@@ -78,6 +78,58 @@ trait OrmMutationTrait {
         return (int) self::$pdo->lastInsertId();
     }
 
+    /** Perform INSERT OR REPLACE (SQLite upsert). */
+    public function insertOrReplace(): int|false {
+        if (!self::$pdo || empty($this->data)) {
+            return false;
+        }
+
+        try {
+            $columns = array_keys($this->data);
+            $placeholders = array_map(fn($col) => ':' . $col, $columns);
+
+            $sql = sprintf(
+                "INSERT OR REPLACE INTO %s (%s) VALUES (%s)",
+                $this->tableName,
+                implode(', ', $columns),
+                implode(', ', $placeholders),
+            );
+
+            $params = [];
+            foreach ($this->data as $col => $val) {
+                $params[':' . $col] = $val;
+            }
+
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($params);
+
+            return (int) self::$pdo->lastInsertId();
+        } catch (PDOException $e) {
+            InitHelpers::errorLog($e, 'Orm::insertOrReplace() failed:');
+
+            return false;
+        }
+    }
+
+    /** Delete all records from the table (no WHERE required). */
+    public function deleteAll(): int {
+        if (!self::$pdo) {
+            return 0;
+        }
+
+        try {
+            $sql = "DELETE FROM {$this->tableName}";
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute();
+
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            InitHelpers::errorLog($e, 'Orm::deleteAll() failed:');
+
+            return 0;
+        }
+    }
+
     /**
      * Perform UPDATE.
      *

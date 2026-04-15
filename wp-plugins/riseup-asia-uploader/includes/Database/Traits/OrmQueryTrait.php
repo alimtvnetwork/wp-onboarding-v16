@@ -106,6 +106,29 @@ trait OrmQueryTrait {
         }
     }
 
+    /** Find the first record matching current WHERE/ORDER clauses. */
+    public function findFirst(): ?array {
+        $isPdoMissing = (self::$pdo === null);
+
+        if ($isPdoMissing) {
+            return null;
+        }
+
+        $this->limitValue = 1;
+        $sql = $this->buildSelectSql();
+
+        try {
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($this->whereParams);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return $result ?: null;
+        } catch (Throwable $e) {
+            InitHelpers::errorLog($e, 'OrmQueryTrait::findFirst() failed:');
+            return null;
+        }
+    }
+
     /** Find multiple records. */
     public function findMany(): array {
         $isPdoMissing = (self::$pdo === null);
