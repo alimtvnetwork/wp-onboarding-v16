@@ -307,5 +307,87 @@ if (!function_exists('wp_send_json_error')) {
     }
 }
 
+// Stub is_plugin_active / is_plugin_active_for_network.
+if (!function_exists('is_plugin_active')) {
+    function is_plugin_active(string $plugin): bool {
+        return false;
+    }
+}
+
+if (!function_exists('is_plugin_active_for_network')) {
+    function is_plugin_active_for_network(string $plugin): bool {
+        return false;
+    }
+}
+
+// Stub current_time.
+if (!function_exists('current_time')) {
+    function current_time(string $type, bool $gmt = false): int|string {
+        if ($type === 'timestamp') {
+            return time();
+        }
+        return date('Y-m-d H:i:s');
+    }
+}
+
+// Stub __ (i18n).
+if (!function_exists('__')) {
+    function __(string $text, string $domain = 'default'): string {
+        return $text;
+    }
+}
+
+// Stub sanitize_key / sanitize_user / esc_url_raw.
+if (!function_exists('sanitize_key')) {
+    function sanitize_key(string $key): string {
+        return preg_replace('/[^a-z0-9_\-]/', '', strtolower($key));
+    }
+}
+
+if (!function_exists('sanitize_user')) {
+    function sanitize_user(string $username): string {
+        return trim($username);
+    }
+}
+
+if (!function_exists('esc_url_raw')) {
+    function esc_url_raw(string $url): string {
+        return filter_var($url, FILTER_SANITIZE_URL) ?: '';
+    }
+}
+
+// Time constants.
+if (!defined('HOUR_IN_SECONDS')) {
+    define('HOUR_IN_SECONDS', 3600);
+}
+
+if (!defined('WEEK_IN_SECONDS')) {
+    define('WEEK_IN_SECONDS', 604800);
+}
+
+// Auth key constants for AgentManager encryption tests.
+if (!defined('AUTH_KEY')) {
+    define('AUTH_KEY', 'test-auth-key-for-unit-tests-only');
+}
+
+if (!defined('SECURE_AUTH_KEY')) {
+    define('SECURE_AUTH_KEY', 'test-secure-auth-key-for-unit-tests-only');
+}
+
+// Minimal wpdb stub.
+if (!class_exists('wpdb')) {
+    class wpdb {
+        public string $prefix = 'wp_';
+        public function prepare(string $query, ...$args): string {
+            return vsprintf(str_replace('%s', "'%s'", $query), $args);
+        }
+    }
+}
+
+// Global $wpdb for classes that reference it.
+if (!isset($GLOBALS['wpdb'])) {
+    $GLOBALS['wpdb'] = new wpdb();
+}
+
 // PSR-4 autoloader via Composer.
 require_once __DIR__ . '/../vendor/autoload.php';
