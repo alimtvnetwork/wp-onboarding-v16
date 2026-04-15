@@ -284,6 +284,20 @@ trait AdminMenuTrait {
                 'saveSettings' => AjaxActionType::SaveSnapshotSettings->value,
                 'runCleanup'   => AjaxActionType::RunSnapshotCleanup->value,
             ],
+            'i18n'          => [
+                'connectionFailed'    => __('Connection failed', $pluginSlug),
+                'requestFailed'       => __('Request failed', $pluginSlug),
+                'clearCacheFailed'    => __('Failed to clear cache', $pluginSlug),
+                'updateCheckFailed'   => __('Update check failed', $pluginSlug),
+                'snapshotsInfo'       => /* translators: %1$d: count, %2$s: size, %3$s: free space */
+                                         __('%1$d snapshots, %2$s used', $pluginSlug),
+                'snapshotsInfoFree'   => /* translators: %s: free space */
+                                         __('(%s free)', $pluginSlug),
+                'unableToLoadStats'   => __('Unable to load stats', $pluginSlug),
+                'saved'               => __('Saved', $pluginSlug),
+                'failedToSave'        => __('Failed to save settings', $pluginSlug),
+                'cleanupFailed'       => __('Cleanup failed', $pluginSlug),
+            ],
         ]);
     }
 

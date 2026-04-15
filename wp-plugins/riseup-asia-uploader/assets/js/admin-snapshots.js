@@ -1170,6 +1170,26 @@ jQuery(document).ready(function($) {
     snapshotObserver.observe(document.getElementById('snapshots_tbody'), { childList: true });
 
     // =========================================================================
+    // ESCAPE KEY — CLOSE VISIBLE MODALS
+    // =========================================================================
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if ($('#restore_modal:visible').length) {
+                $('#restore_modal').hide();
+                currentRestoreId = null;
+            }
+            if ($('#download_error_modal:visible').length) {
+                $('#download_error_modal').hide();
+            }
+            if ($('#delete_modal:visible').length) {
+                $('#delete_modal').hide();
+                currentDeleteId = null;
+            }
+        }
+    });
+
+    // =========================================================================
     // INITIAL LOAD
     // =========================================================================
 
