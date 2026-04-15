@@ -405,7 +405,6 @@ enum ResponseKeyType: string
     case MaxSizeMB         = 'MaxSizeMB';
     case IsOverLimit       = 'IsOverLimit';
     case NextAction        = 'NextAction';
-    case RotationApplied   = 'RotationApplied';
     case FilesMoved        = 'FilesMoved';
     case DeletedFiles      = 'DeletedFiles';
     case MovedFiles        = 'MovedFiles';
