@@ -255,12 +255,7 @@ final class SelfUpdateValidatorTest extends TestCase
 
     private function createStubLogger(): FileLogger
     {
-        $stub = $this->createStub(FileLogger::class);
-        $stub->method('info')->willReturn(null);
-        $stub->method('warn')->willReturn(null);
-        $stub->method('error')->willReturn(null);
-
-        return $stub;
+        return $this->createStub(FileLogger::class);
     }
 
     private function recursiveDelete(string $dir): void
