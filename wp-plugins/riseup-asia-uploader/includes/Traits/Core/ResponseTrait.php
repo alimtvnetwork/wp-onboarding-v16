@@ -24,36 +24,58 @@ trait ResponseTrait {
 
     /**
      * Safely execute a callable with comprehensive error handling.
-     * Catches both Exception and Error (Throwable) for complete coverage.
+     *
+     * This is the **only** place where endpoint-level exceptions are caught.
+     * Individual handler traits must NOT have their own try-catch blocks
+     * around the entire handler — they delegate to safeExecute().
+     *
+     * Two-tier logging:
+     *   Tier 1 — PHP error_log() (always available, even if FileLogger fails)
+     *   Tier 2 — FileLogger::logException() (structured, file-based)
+     *
+     * @param callable $callback The business logic to execute.
+     * @param string   $context  Human-readable label for log messages.
      */
-    private function safeExecute(
+    protected function safeExecute(
         callable $callback,
         string $context = 'operation',
-        array $logContext = [],
     ): WP_REST_Response {
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
-            $this->fileLogger->logException($e, "Throwable in {$context}");
+            // Tier 1 — PHP native error_log (guaranteed available)
+            error_log(sprintf(
+                '[RiseupAsia] safeExecute caught %s in %s: %s in %s:%d',
+                get_class($e),
+                $context,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine(),
+            ));
 
-            $this->fileLogger->error("safeExecute caught Throwable", array_merge($logContext, [
-                'context'   => $context,
-                'exception' => get_class($e),
-                'message'   => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-            ]));
+            // Tier 2 — FileLogger (may be null during bootstrap failures)
+            if ($this->fileLogger !== null) {
+                $this->fileLogger->logException($e, "Throwable in {$context}");
+
+                $this->fileLogger->error("safeExecute caught Throwable", [
+                    'context'   => $context,
+                    'exception' => get_class($e),
+                    'message'   => $e->getMessage(),
+                    'file'      => $e->getFile(),
+                    'line'      => $e->getLine(),
+                ]);
+            }
 
             return $this->errorResponse(
                 "Error in {$context}: " . $e->getMessage(),
                 HttpStatusType::InternalServerError->value,
-                $e
+                $e,
             );
         }
     }
 
     /** Create an error response with optional exception details. */
-    private function errorResponse(
+    protected function errorResponse(
         string $message,
         int $status,
         ?Throwable $exception = null,
@@ -74,6 +96,12 @@ trait ResponseTrait {
         int $status,
         ?Throwable $exception,
     ): void {
+        if ($this->fileLogger === null) {
+            error_log(sprintf('[RiseupAsia] errorResponse: %s (HTTP %d)', $message, $status));
+
+            return;
+        }
+
         if ($exception instanceof Throwable) {
             $this->fileLogger->logException($exception, $message);
 
