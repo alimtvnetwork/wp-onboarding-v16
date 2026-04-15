@@ -58,7 +58,7 @@ trait UploadParserTrait {
 
         if ($zipContent === false) {
             $this->fileLogger->error('Failed to read uploaded file');
-            return $this->errorResponse('Failed to read uploaded file', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to read uploaded file', HttpStatusType::InternalServerError->value);
         }
 
         $bodyParams = $request->get_body_params();

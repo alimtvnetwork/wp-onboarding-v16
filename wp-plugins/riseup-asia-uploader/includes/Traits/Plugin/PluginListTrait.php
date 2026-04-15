@@ -52,7 +52,7 @@ trait PluginListTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'List plugins error');
 
-            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 
@@ -156,7 +156,7 @@ trait PluginListTrait
             return $this->scanPluginFilesWithCache($slug);
         } catch (Throwable $e) {
 
-            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 
@@ -217,7 +217,7 @@ trait PluginListTrait
             return $this->readAndReturnFile($validation[ResponseKeyType::RealPath->value], $validation[ResponseKeyType::FilePath->value]);
         } catch (Throwable $e) {
 
-            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
     }
 
@@ -279,7 +279,7 @@ trait PluginListTrait
         $content = @file_get_contents($realPath);
         if ($content === false) {
 
-            return $this->errorResponse('Failed to read file', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Failed to read file', HttpStatusType::InternalServerError->value);
         }
 
         return new WP_REST_Response([

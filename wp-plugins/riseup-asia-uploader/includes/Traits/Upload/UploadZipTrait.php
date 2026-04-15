@@ -56,7 +56,7 @@ trait UploadZipTrait
             $this->fileLogger->error('Failed to write temp file');
             $this->logger->logUploadFailed($slug, 'Failed to write temp file');
 
-            return $this->errorResponse(ResponseMessageType::UploadFailed->value, HttpStatusType::ServerError->value);
+            return $this->errorResponse(ResponseMessageType::UploadFailed->value, HttpStatusType::InternalServerError->value);
         }
 
         return $tempFile;

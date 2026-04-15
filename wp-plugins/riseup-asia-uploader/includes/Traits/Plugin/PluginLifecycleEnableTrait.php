@@ -95,12 +95,12 @@ trait PluginLifecycleEnableTrait {
             if (is_wp_error($result)) {
                 $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, ['error' => $result->get_error_message()]);
 
-                return $this->errorResponse(ResponseMessageType::ActivationFailed->value . ': ' . $result->get_error_message(), HttpStatusType::ServerError->value);
+                return $this->errorResponse(ResponseMessageType::ActivationFailed->value . ': ' . $result->get_error_message(), HttpStatusType::InternalServerError->value);
             }
         } catch (Throwable $e) {
             $this->logPluginLifecycleException($e, ActionType::Enable->value, $slug);
 
-            return $this->errorResponse('Exception during activation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Exception during activation: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
 
         $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Success->value);
@@ -118,13 +118,13 @@ trait PluginLifecycleEnableTrait {
         } catch (Throwable $e) {
             $this->logPluginLifecycleException($e, ActionType::Disable->value, $slug);
 
-            return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
         }
 
         if (is_plugin_active($pluginFile)) {
             $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, ['error' => 'Plugin remained active']);
 
-            return $this->errorResponse(ResponseMessageType::DeactivationFailed->value . ': Plugin remained active', HttpStatusType::ServerError->value);
+            return $this->errorResponse(ResponseMessageType::DeactivationFailed->value . ': Plugin remained active', HttpStatusType::InternalServerError->value);
         }
 
         $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Success->value);

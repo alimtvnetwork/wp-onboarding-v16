@@ -111,7 +111,7 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::Errors->value     => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Error->value      => $result[ResponseKeyType::Error->value] ?? null,
             ResponseKeyType::Phase->value      => $result[ResponseKeyType::Phase->value] ?? null,
-        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::InternalServerError->value);
     }
 
     private function resolveIncrementalMasterDir(array $body): string|WP_REST_Response {
@@ -166,6 +166,6 @@ trait SnapshotBackupExecTrait {
             ResponseKeyType::Duration->value      => $result[ResponseKeyType::Duration->value] ?? 0,
             ResponseKeyType::Errors->value        => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Error->value         => $result[ResponseKeyType::Error->value] ?? null,
-        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::InternalServerError->value);
     }
 }

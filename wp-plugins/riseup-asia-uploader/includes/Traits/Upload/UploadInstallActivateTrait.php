@@ -45,7 +45,7 @@ trait UploadInstallActivateTrait
         if ($isPluginFileMissing) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
 
-            return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::ServerError->value);
+            return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::InternalServerError->value);
         }
 
         return $pluginFile;

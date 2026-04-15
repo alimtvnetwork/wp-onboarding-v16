@@ -93,7 +93,7 @@ trait SnapshotBackupOpsTrait {
             ResponseKeyType::Errors->value    => $result[ResponseKeyType::Errors->value] ?? [],
             ResponseKeyType::Duration->value  => $result[ResponseKeyType::Duration->value] ?? 0,
             ResponseKeyType::Error->value     => $result[ResponseKeyType::Error->value] ?? null,
-        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
+        ], $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
     }
 
     /** Extract cleanup options from body. */

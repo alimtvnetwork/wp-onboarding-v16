@@ -52,7 +52,7 @@ trait SnapshotCrudListTrait {
             $provider = $manager->getProvider();
             $isProviderMissing = ($provider === null);
             if ($isProviderMissing) {
-                return $this->errorResponse(ResponseMessageType::SnapshotProviderMissing->value, HttpStatusType::ServerError->value);
+                return $this->errorResponse(ResponseMessageType::SnapshotProviderMissing->value, HttpStatusType::InternalServerError->value);
             }
 
             $snapshot = $provider->getSnapshot($id);

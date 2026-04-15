@@ -55,7 +55,7 @@ trait SnapshotCrudCreateTrait {
 
             $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? SnapshotWorkerModeType::PerTable->value : SnapshotWorkerModeType::Legacy->value, $result);
 
-            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::ServerError->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::InternalServerError->value);
         }, 'create_snapshot');
     }
 

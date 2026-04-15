@@ -63,7 +63,7 @@ trait SnapshotExportHandlerTrait {
                     'Export file not found'
                 );
 
-                return $this->errorResponse('Export file not found', HttpStatusType::ServerError->value);
+                return $this->errorResponse('Export file not found', HttpStatusType::InternalServerError->value);
             }
 
             $this->logger->logPluginAction(
