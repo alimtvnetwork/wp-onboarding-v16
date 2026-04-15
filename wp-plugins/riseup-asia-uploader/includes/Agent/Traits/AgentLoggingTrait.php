@@ -12,28 +12,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use PDO;
 use PDOException;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\ResponseKeyType;
+use RiseupAsia\Enums\TableType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
-
 use RiseupAsia\Helpers\DateHelper;
 
 trait AgentLoggingTrait {
-    private const ACTION_INSERT_QUERY = <<<'SQL'
-        INSERT INTO AgentActions
-            (AgentSiteId, Action, TargetPlugin, Status, Details, ErrorMsg, CreatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    SQL;
 
-    private const ACTION_COUNT_QUERY = 'SELECT COUNT(*) as total FROM AgentActions WHERE AgentSiteId = ?';
-
-    private const ACTION_LIST_QUERY = <<<'SQL'
-        SELECT * FROM AgentActions
-        WHERE AgentSiteId = ?
-        ORDER BY CreatedAt DESC
-        LIMIT ? OFFSET ?
-    SQL;
+    private const AGENT_ACTIONS_TABLE = 'AgentActions';
 
     public function logAction(
         int $agentId,
@@ -51,42 +39,23 @@ trait AgentLoggingTrait {
                 return false;
             }
 
-            return $this->insertActionRecord(
-                $pdo,
-                $agentId,
-                sanitize_key($action),
-                $plugin !== null ? sanitize_text_field($plugin) : null,
-                sanitize_key($status),
-                $details,
-                $errorMsg !== null ? sanitize_text_field($errorMsg) : null,
-            );
+            $hasDetails = !empty($details);
+
+            $result = Orm::forTable(self::AGENT_ACTIONS_TABLE)
+                ->create()
+                ->set('AgentSiteId', $agentId)
+                ->set('Action', sanitize_key($action))
+                ->set('TargetPlugin', $plugin !== null ? sanitize_text_field($plugin) : null)
+                ->set('Status', sanitize_key($status))
+                ->set('Details', $hasDetails ? json_encode($details) : null)
+                ->set('ErrorMsg', $errorMsg !== null ? sanitize_text_field($errorMsg) : null)
+                ->set('CreatedAt', DateHelper::nowUtc())
+                ->save();
+
+            return $result;
         } catch (PDOException $e) {
             return ErrorResponse::logAndReturnFalse($this->fileLogger, $e, 'Failed to log agent action');
         }
-    }
-
-    private function insertActionRecord(
-        PDO $pdo,
-        int $agentId,
-        string $action,
-        ?string $plugin,
-        string $status,
-        ?array $details,
-        ?string $errorMsg,
-    ): int {
-        $stmt = $pdo->prepare(self::ACTION_INSERT_QUERY);
-
-        $stmt->execute([
-            $agentId,
-            $action,
-            $plugin,
-            $status,
-            $details ? json_encode($details) : null,
-            $errorMsg,
-            DateHelper::nowUtc(),
-        ]);
-
-        return (int) $pdo->lastInsertId();
     }
 
     public function getActionHistory(
@@ -105,8 +74,17 @@ trait AgentLoggingTrait {
                 return [$totalKey => 0, $actionsKey => []];
             }
 
-            $total = $this->countAgentActions($pdo, $agentId);
-            $actions = $this->fetchAgentActions($pdo, $agentId, $limit, $offset);
+            $total = Orm::forTable(self::AGENT_ACTIONS_TABLE)
+                ->where('AgentSiteId', $agentId)
+                ->count();
+
+            $actions = Orm::forTable(self::AGENT_ACTIONS_TABLE)
+                ->where('AgentSiteId', $agentId)
+                ->orderByDesc('CreatedAt')
+                ->limit($limit)
+                ->offset($offset)
+                ->findMany();
+
             $this->decodeActionDetails($actions);
 
             return [$totalKey => $total, $actionsKey => $actions];
@@ -115,29 +93,6 @@ trait AgentLoggingTrait {
 
             return [$totalKey => 0, $actionsKey => []];
         }
-    }
-
-    private function countAgentActions(PDO $pdo, int $agentId): int {
-        $stmt = $pdo->prepare(self::ACTION_COUNT_QUERY);
-        $stmt->execute([$agentId]);
-
-        return (int) $stmt->fetch(PDO::FETCH_ASSOC)[ResponseKeyType::Total->value];
-    }
-
-    private function fetchAgentActions(
-        PDO $pdo,
-        int $agentId,
-        int $limit,
-        int $offset,
-    ): array {
-        $stmt = $pdo->prepare(self::ACTION_LIST_QUERY);
-        $stmt->execute([
-            $agentId,
-            $limit,
-            $offset,
-        ]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     private function decodeActionDetails(array &$actions): void {

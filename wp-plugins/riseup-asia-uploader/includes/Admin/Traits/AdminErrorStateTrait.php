@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\AdminPageType;
@@ -25,18 +26,17 @@ trait AdminErrorStateTrait {
     private function getUnseenErrorCount(): int {
         try {
             $db = Database::getInstance();
-            $pdo = $db->getPdo();
-            $isPdoMissing = ($pdo === null);
+            $isPdoMissing = ($db->getPdo() === null);
 
             if ($isPdoMissing) {
                 return 0;
             }
 
             $lastSeen = $this->getFlashValue('last_seen_error_id', 0);
-            $stmt = $pdo->prepare('SELECT COUNT(*) FROM ' . TableType::ErrorSessions->value . ' WHERE Id > ?');
-            $stmt->execute([$lastSeen]);
 
-            return (int) $stmt->fetchColumn();
+            return Orm::forTable(TableType::ErrorSessions->value)
+                ->whereGt('Id', $lastSeen)
+                ->count();
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'AdminErrorStateTrait::getUnseenErrorCount() failed:');
             return 0;
@@ -47,19 +47,20 @@ trait AdminErrorStateTrait {
     private function getFlashValue(string $key, string|int $default = ''): string|int {
         try {
             $db = Database::getInstance();
-            $pdo = $db->getPdo();
-            $isPdoMissing = ($pdo === null);
+            $isPdoMissing = ($db->getPdo() === null);
 
             if ($isPdoMissing) {
                 return $default;
             }
 
-            $stmt = $pdo->prepare('SELECT Value FROM ' . TableType::FlashState->value . ' WHERE Key = ?');
-            $stmt->execute([$key]);
-            $val = $stmt->fetchColumn();
-            $isFound = ($val !== false);
+            $row = Orm::forTable(TableType::FlashState->value)
+                ->selectColumn('Value')
+                ->where('Key', $key)
+                ->findFirst();
 
-            return $isFound ? $val : $default;
+            $isFound = ($row !== null);
+
+            return $isFound ? $row['Value'] : $default;
         } catch (Throwable $e) {
             InitHelpers::errorLog($e, 'AdminErrorStateTrait::getFlashValue() failed:');
             return $default;

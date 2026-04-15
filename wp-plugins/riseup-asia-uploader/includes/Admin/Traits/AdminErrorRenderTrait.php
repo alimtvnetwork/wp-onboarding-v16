@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use RiseupAsia\Database\Database;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
@@ -81,67 +82,59 @@ trait AdminErrorRenderTrait {
             return $defaults;
         }
 
-        return $this->queryErrorPage($pdo, $defaults);
+        return $this->queryErrorPage($defaults);
     }
 
     /** Query error sessions for page rendering. */
-    private function queryErrorPage(PDO $pdo, array $defaults): array {
+    private function queryErrorPage(array $defaults): array {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $perPage = PaginationConfigType::DefaultLimit->value;
         $offset = ($page - 1) * $perPage;
 
-        $filter = $this->buildErrorFilters($defaults);
-        $total = $this->countFilteredErrors($pdo, $filter);
+        $total = $this->countFilteredErrors($defaults);
         $totalPages = max(1, ceil($total / $perPage));
-        $errors = $this->fetchFilteredErrors($pdo, $filter, $perPage, $offset);
+        $errors = $this->fetchFilteredErrors($defaults, $perPage, $offset);
 
         return $this->assembleErrorPageResult($errors, $total, $totalPages, $page, $defaults);
     }
 
-    /** Build WHERE clause and params from filter defaults. */
-    private function buildErrorFilters(array $defaults): array {
-        $where = [];
-        $params = [];
-
+    /** Apply error page filters to an Orm query. */
+    private function applyErrorPageFilters(Orm $query, array $defaults): void {
         $hasLevelFilter = !empty($defaults['filterLevel']);
 
         if ($hasLevelFilter) {
-            $where[] = 'Level = ?';
-            $params[] = $defaults['filterLevel'];
+            $query->where('Level', $defaults['filterLevel']);
         }
 
         $hasSearchFilter = !empty($defaults['filterSearch']);
 
         if ($hasSearchFilter) {
-            $where[] = 'Message LIKE ?';
-            $params[] = '%' . $defaults['filterSearch'] . '%';
+            $query->whereLike('Message', '%' . $defaults['filterSearch'] . '%');
         }
-
-        $hasWhereClause = !empty($where);
-        $whereSql = $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '';
-
-        return ['whereSql' => $whereSql, 'params' => $params];
     }
 
     /** Count total filtered error sessions. */
-    private function countFilteredErrors(PDO $pdo, array $filter): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$filter['whereSql']}");
-        $stmt->execute($filter['params']);
+    private function countFilteredErrors(array $defaults): int {
+        $query = Orm::forTable(TableType::ErrorSessions->value);
+        $this->applyErrorPageFilters($query, $defaults);
 
-        return (int) $stmt->fetchColumn();
+        return $query->count();
     }
 
     /** Fetch paginated filtered error sessions. */
     private function fetchFilteredErrors(
-        PDO $pdo,
-        array $filter,
+        array $defaults,
         int $perPage,
         int $offset,
     ): array {
-        $stmt = $pdo->prepare("SELECT * FROM " . TableType::ErrorSessions->value . " {$filter['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?");
-        $stmt->execute(array_merge($filter['params'], [$perPage, $offset]));
+        $query = Orm::forTable(TableType::ErrorSessions->value);
+        $this->applyErrorPageFilters($query, $defaults);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $query
+            ->orderByDesc('Id')
+            ->limit($perPage)
+            ->offset($offset)
+            ->findMany();
     }
 
     /** Assemble the final error page result array. */
