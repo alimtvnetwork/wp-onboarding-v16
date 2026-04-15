@@ -78,28 +78,17 @@ trait FileCacheStoreTrait {
         int $size,
     ): void {
         try {
-            $pdo = $this->db->getPdo();
-            $isPdoMissing = ($pdo === null);
-
-            if ($isPdoMissing) {
-                return;
-            }
-
             $now = DateHelper::nowUtc();
 
-            $stmt = $pdo->prepare(
-                "INSERT OR REPLACE INTO " . TableType::FileCache->value .
-                " (PluginSlug, RelativePath, Md5Hash, ModifiedAt, FileSize, CachedAt)" .
-                " VALUES (?, ?, ?, ?, ?, ?)"
-            );
-            $stmt->execute([
-                $pluginSlug,
-                $path,
-                $hash,
-                $modifiedAt,
-                $size,
-                $now,
-            ]);
+            Orm::forTable(TableType::FileCache->value)
+                ->create()
+                ->set('PluginSlug', $pluginSlug)
+                ->set('RelativePath', $path)
+                ->set('Md5Hash', $hash)
+                ->set('ModifiedAt', $modifiedAt)
+                ->set('FileSize', $size)
+                ->set('CachedAt', $now)
+                ->insertOrReplace();
         } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to upsert', [
                 'path'  => $path,

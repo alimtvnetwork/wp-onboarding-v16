@@ -21,6 +21,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
