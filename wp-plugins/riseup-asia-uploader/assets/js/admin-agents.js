@@ -298,6 +298,13 @@ jQuery(document).ready(function($) {
         }
     });
 
+    // Escape key closes visible modals
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            $('.riseup-modal:visible').hide();
+        }
+    });
+
     // Initial load
     loadAgents();
 });
