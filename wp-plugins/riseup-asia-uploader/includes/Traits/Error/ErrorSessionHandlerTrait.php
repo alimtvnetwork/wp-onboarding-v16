@@ -15,11 +15,12 @@ use WP_REST_Request;
 use WP_REST_Response;
 use PDO;
 use Throwable;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\HttpStatusType;
-use RiseupAsia\Helpers\EnvelopeBuilder;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Database\Database;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Database\Database;
 
 trait ErrorSessionHandlerTrait {
 
@@ -43,8 +44,8 @@ trait ErrorSessionHandlerTrait {
             }
 
             $query   = $this->buildErrorSessionQuery($request);
-            $total   = $this->countErrorSessions($pdo, $query);
-            $rows    = $this->fetchErrorSessions($pdo, $query);
+            $total   = $this->countErrorSessions($query);
+            $rows    = $this->fetchErrorSessions($query);
             $entries = $this->enrichErrorEntries($rows);
 
             return EnvelopeBuilder::success()
@@ -69,34 +70,51 @@ trait ErrorSessionHandlerTrait {
         $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
         $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
 
-        $where  = [];
-        $params = [];
-        if (!empty($level))  { $where[] = 'Level = ?';      $params[] = strtoupper($level); }
-        if (!empty($search)) { $where[] = 'Message LIKE ?'; $params[] = '%' . $search . '%'; }
-        if ($sinceId > 0)   { $where[] = 'Id > ?';         $params[] = $sinceId; }
-
-        $hasWhereClause = !empty($where);
         return [
-            'whereSql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
-            'params' => $params, 'limit' => $limit, 'offset' => $offset,
+            'level' => $level, 'search' => $search, 'sinceId' => $sinceId,
+            'limit' => $limit, 'offset' => $offset,
         ];
     }
 
-    /** Count total error sessions matching the query. */
-    private function countErrorSessions(PDO $pdo, array $query): int {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM " . TableType::ErrorSessions->value . " {$query['whereSql']}");
-        $stmt->execute($query['params']);
+    /** Apply error session filters to an Orm query. */
+    private function applyErrorSessionFilters(Orm $query, array $params): void {
+        $hasLevel = !empty($params['level']);
 
-        return (int) $stmt->fetchColumn();
+        if ($hasLevel) {
+            $query->where('Level', strtoupper($params['level']));
+        }
+
+        $hasSearch = !empty($params['search']);
+
+        if ($hasSearch) {
+            $query->whereLike('Message', '%' . $params['search'] . '%');
+        }
+
+        $hasSinceId = ($params['sinceId'] ?? 0) > 0;
+
+        if ($hasSinceId) {
+            $query->whereGt('Id', $params['sinceId']);
+        }
+    }
+
+    /** Count total error sessions matching the query. */
+    private function countErrorSessions(array $query): int {
+        $countQuery = Orm::forTable(TableType::ErrorSessions->value);
+        $this->applyErrorSessionFilters($countQuery, $query);
+
+        return $countQuery->count();
     }
 
     /** Fetch error sessions matching the query. */
-    private function fetchErrorSessions(PDO $pdo, array $query): array {
-        $sql = "SELECT * FROM " . TableType::ErrorSessions->value . " {$query['whereSql']} ORDER BY Id DESC LIMIT ? OFFSET ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(array_merge($query['params'], [$query['limit'], $query['offset']]));
+    private function fetchErrorSessions(array $query): array {
+        $dataQuery = Orm::forTable(TableType::ErrorSessions->value);
+        $this->applyErrorSessionFilters($dataQuery, $query);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $dataQuery
+            ->orderByDesc('Id')
+            ->limit($query['limit'])
+            ->offset($query['offset'])
+            ->findMany();
     }
 
     /** Enrich raw error session rows with parsed context and stack trace frames. */
@@ -129,12 +147,11 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Count errors with id > lastSeenId. */
-    private function countUnseenErrors(PDO $pdo, int $lastSeenId): int {
+    private function countUnseenErrors(int $lastSeenId): int {
         try {
-            $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
-            $stmt->execute([$lastSeenId]);
-
-            return (int) $stmt->fetchColumn();
+            return Orm::forTable(TableType::ErrorSessions->value)
+                ->whereGt('Id', $lastSeenId)
+                ->count();
         } catch (Throwable $e) {
             $this->fileLogger->warn('Failed to count unseen errors', [
                 'exception' => $e->getMessage(),

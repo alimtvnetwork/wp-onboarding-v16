@@ -21,6 +21,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 
 use RiseupAsia\Database\Database;
+use RiseupAsia\Database\Orm;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
@@ -244,10 +245,10 @@ trait LogClearingTrait
                 return $result;
             }
 
-            $pdo->exec('DELETE FROM ' . TableType::Transactions->value);
+            Orm::forTable(TableType::Transactions->value)->deleteAll();
             $result['activity_log'] = true;
 
-            $pdo->exec('DELETE FROM ' . TableType::ErrorSessions->value);
+            Orm::forTable(TableType::ErrorSessions->value)->deleteAll();
             $result['error_sessions'] = true;
         } catch (\Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to clear database tables during remote log clear');
@@ -271,12 +272,14 @@ trait LogClearingTrait
             $now = DateHelper::nowUtc();
             $details = $this->buildAuditDetails($clientIp, $now, $clearResult);
 
-            $stmt = $pdo->prepare(
-                'INSERT INTO ' . TableType::Transactions->value .
-                ' (Action, Status, SourceMachine, Details, CreatedAt) VALUES (?, ?, ?, ?, ?)'
-            );
-
-            $stmt->execute(['logs_cleared', 'success', $machineName, $details, $now]);
+            Orm::forTable(TableType::Transactions->value)
+                ->create()
+                ->set('Action', 'logs_cleared')
+                ->set('Status', 'success')
+                ->set('SourceMachine', $machineName)
+                ->set('Details', $details)
+                ->set('CreatedAt', $now)
+                ->save();
         } catch (\Throwable $e) {
             // Silently fail — we're in the logger scope
         }
