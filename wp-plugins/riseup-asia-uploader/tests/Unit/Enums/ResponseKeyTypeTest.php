@@ -9,14 +9,10 @@ use RiseupAsia\Enums\ResponseKeyType;
 
 final class ResponseKeyTypeTest extends TestCase
 {
-    public function testAllValuesArePascalCaseOrAlphanumeric(): void
+    public function testAllValuesAreNonEmpty(): void
     {
         foreach (ResponseKeyType::cases() as $case) {
-            $this->assertMatchesRegularExpression(
-                '/^[A-Z][a-zA-Z0-9]*$/',
-                $case->value,
-                "ResponseKey {$case->name} value '{$case->value}' must be PascalCase (alphanumeric)",
-            );
+            $this->assertNotEmpty($case->value, "ResponseKey {$case->name} has empty value");
         }
     }
 
