@@ -384,11 +384,13 @@ trait AdminMenuTrait {
         wp_enqueue_script('riseup-admin-snapshots-progress', plugins_url('assets/js/admin-snapshots-progress.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
         wp_enqueue_script('riseup-admin-snapshots-list', plugins_url('assets/js/admin-snapshots-list.js', $pluginFile), ['riseup-admin-snapshots-progress'], $version, true);
         wp_enqueue_script('riseup-admin-snapshots-actions', plugins_url('assets/js/admin-snapshots-actions.js', $pluginFile), ['riseup-admin-snapshots-progress'], $version, true);
+        wp_enqueue_script('riseup-admin-snapshots-modals', plugins_url('assets/js/admin-snapshots-modals.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
         wp_enqueue_script('riseup-admin-snapshots-settings', plugins_url('assets/js/admin-snapshots-settings.js', $pluginFile), ['riseup-admin-snapshots-utils'], $version, true);
         wp_enqueue_script('riseup-admin-snapshots-analytics', plugins_url('assets/js/admin-snapshots-analytics.js', $pluginFile), ['riseup-admin-snapshots-settings'], $version, true);
         wp_enqueue_script('riseup-admin-snapshots', plugins_url('assets/js/admin-snapshots.js', $pluginFile), [
             'riseup-admin-snapshots-list',
             'riseup-admin-snapshots-actions',
+            'riseup-admin-snapshots-modals',
             'riseup-admin-snapshots-analytics',
         ], $version, true);
 
