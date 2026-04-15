@@ -21,6 +21,61 @@ if (!defined('WP_CONTENT_DIR')) {
     define('WP_CONTENT_DIR', sys_get_temp_dir() . '/wp-content-test');
 }
 
+// Stub WordPress string/path functions.
+if (!function_exists('trailingslashit')) {
+    function trailingslashit(string $value): string {
+        return rtrim($value, '/\\') . '/';
+    }
+}
+
+if (!function_exists('untrailingslashit')) {
+    function untrailingslashit(string $value): string {
+        return rtrim($value, '/\\');
+    }
+}
+
+if (!function_exists('absint')) {
+    function absint(mixed $value): int {
+        return abs((int) $value);
+    }
+}
+
+if (!function_exists('esc_html')) {
+    function esc_html(string $text): string {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_attr')) {
+    function esc_attr(string $text): string {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_url')) {
+    function esc_url(string $url): string {
+        return filter_var($url, FILTER_SANITIZE_URL) ?: '';
+    }
+}
+
+if (!function_exists('wp_slash')) {
+    function wp_slash(mixed $value): mixed {
+        if (gettype($value) === 'string') {
+            return addslashes($value);
+        }
+        return $value;
+    }
+}
+
+if (!function_exists('wp_unslash')) {
+    function wp_unslash(mixed $value): mixed {
+        if (gettype($value) === 'string') {
+            return stripslashes($value);
+        }
+        return $value;
+    }
+}
+
 // Stub WordPress filesystem functions.
 if (!function_exists('wp_mkdir_p')) {
     function wp_mkdir_p(string $target): bool {
