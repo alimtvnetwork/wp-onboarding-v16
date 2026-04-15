@@ -96,6 +96,12 @@ trait ResponseTrait {
         int $status,
         ?Throwable $exception,
     ): void {
+        if ($this->fileLogger === null) {
+            error_log(sprintf('[RiseupAsia] errorResponse: %s (HTTP %d)', $message, $status));
+
+            return;
+        }
+
         if ($exception instanceof Throwable) {
             $this->fileLogger->logException($exception, $message);
 
