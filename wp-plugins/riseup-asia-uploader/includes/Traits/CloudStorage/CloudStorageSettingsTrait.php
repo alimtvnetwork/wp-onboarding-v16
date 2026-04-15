@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\CloudStorageProviderType;
 use RiseupAsia\Enums\HttpStatusType;
@@ -26,7 +25,7 @@ trait CloudStorageSettingsTrait {
     /** GET /cloud-storage/settings */
     public function handleGetCloudStorageSettings(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $table = TableType::CloudStorageSettings->value;
             $rows  = $this->db->queryAll("SELECT * FROM {$table} ORDER BY Provider ASC");
 
@@ -40,20 +39,13 @@ trait CloudStorageSettingsTrait {
                 ResponseKeyType::Success->value          => true,
                 ResponseKeyType::ProviderSettings->value => $settings,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to get cloud storage settings');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'get-cloud-storage-settings');
     }
 
     /** PUT /cloud-storage/settings/{provider} */
     public function handleUpdateCloudStorageSettings(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $providerParam = $request->get_param('provider');
             $providerType  = CloudStorageProviderType::tryFrom($providerParam);
 
@@ -97,14 +89,7 @@ trait CloudStorageSettingsTrait {
                 ResponseKeyType::Success->value          => true,
                 ResponseKeyType::ProviderSettings->value => $this->formatSettingsRow($row),
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to update cloud storage settings');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'update-cloud-storage-settings');
     }
 
     /** Format a settings row for API response. */

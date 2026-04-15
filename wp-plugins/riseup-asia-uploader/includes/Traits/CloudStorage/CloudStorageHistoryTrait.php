@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\CloudStorageBackupStatusType;
 use RiseupAsia\Enums\CloudStorageBackupType;
@@ -27,7 +26,7 @@ trait CloudStorageHistoryTrait {
     /** GET /cloud-storage/backup-history */
     public function handleListBackupHistory(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $accountId = (int) $request->get_param('account_id');
             $page      = max(1, (int) ($request->get_param('page') ?? 1));
             $perPage   = max(1, min(100, (int) ($request->get_param('per_page') ?? 20)));
@@ -55,21 +54,13 @@ trait CloudStorageHistoryTrait {
                 'Page'                          => $page,
                 'PerPage'                       => $perPage,
             ], HttpStatusType::Ok->value);
-
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to list backup history');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'list-backup-history');
     }
 
     /** GET /cloud-storage/backup-history/{id} */
     public function handleGetBackupHistoryRecord(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $id    = (int) $request->get_param('id');
             $table = TableType::CloudStorageBackupHistory->value;
             $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", ['id' => $id]);
@@ -87,21 +78,13 @@ trait CloudStorageHistoryTrait {
                 ResponseKeyType::Success->value => true,
                 'Backup'                        => $row,
             ], HttpStatusType::Ok->value);
-
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to get backup history record');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'get-backup-history-record');
     }
 
     /** DELETE /cloud-storage/backup-history/{id} */
     public function handleDeleteBackupHistoryRecord(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $id    = (int) $request->get_param('id');
             $table = TableType::CloudStorageBackupHistory->value;
             $row   = $this->db->queryOne("SELECT * FROM {$table} WHERE Id = :id", ['id' => $id]);
@@ -121,15 +104,7 @@ trait CloudStorageHistoryTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Backup record deleted',
             ], HttpStatusType::Ok->value);
-
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to delete backup history record');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'delete-backup-history-record');
     }
 
     // ── Internal helpers ─────────────────────────────────────────

@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\CloudStorageProviderType;
@@ -27,7 +26,7 @@ trait CloudStorageRotationTrait {
     /** GET /cloud-storage/rotation-status */
     public function handleCloudStorageRotationStatus(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $accountId = (int) $request->get_param('account_id');
             $account   = $this->getCloudStorageAccountById($accountId);
 
@@ -66,20 +65,13 @@ trait CloudStorageRotationTrait {
                 ResponseKeyType::IsOverLimit->value   => $isOverLimit,
                 ResponseKeyType::NextAction->value    => $nextAction,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to get rotation status');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'cloud-storage-rotation-status');
     }
 
     /** POST /cloud-storage/rotate */
     public function handleCloudStorageRotate(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -126,14 +118,7 @@ trait CloudStorageRotationTrait {
                 ResponseKeyType::MovedFiles->value   => $result['movedFiles'],
                 ResponseKeyType::Message->value      => sprintf('Rotation complete: %d deleted, %d moved', $result['deleted'], $result['moved']),
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Cloud storage rotation failed');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'cloud-storage-rotate');
     }
 
     /** Get rotation settings for a given provider. */

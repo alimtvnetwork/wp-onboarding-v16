@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\CloudStorageProviderType;
 use RiseupAsia\Enums\CloudStorageAccountFieldType;
@@ -29,7 +28,7 @@ trait CloudStorageAccountCrudTrait {
     /** GET /cloud-storage/accounts */
     public function handleListCloudStorageAccounts(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $table = TableType::CloudStorageAccounts->value;
             $rows  = $this->db->queryAll("SELECT * FROM {$table} ORDER BY CreatedAt DESC");
 
@@ -42,20 +41,13 @@ trait CloudStorageAccountCrudTrait {
                 ResponseKeyType::Success->value  => true,
                 ResponseKeyType::Accounts->value => $accounts,
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to list cloud storage accounts');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'list-cloud-storage-accounts');
     }
 
     /** GET /cloud-storage/accounts/{id} */
     public function handleGetCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $id      = (int) $request->get_param('id');
             $account = $this->getCloudStorageAccountById($id);
 
@@ -72,20 +64,13 @@ trait CloudStorageAccountCrudTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($account),
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to get cloud storage account');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'get-cloud-storage-account');
     }
 
     /** POST /cloud-storage/accounts */
     public function handleCreateCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $params = $this->extractValidBody($request);
             $isBodyMissing = ($params === null);
 
@@ -128,20 +113,13 @@ trait CloudStorageAccountCrudTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($account),
             ], HttpStatusType::Created->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to create cloud storage account');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'create-cloud-storage-account');
     }
 
     /** PUT /cloud-storage/accounts/{id} */
     public function handleUpdateCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $id       = (int) $request->get_param('id');
             $existing = $this->getCloudStorageAccountById($id);
 
@@ -182,20 +160,13 @@ trait CloudStorageAccountCrudTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Account->value => $this->formatAccountForResponse($updated),
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to update cloud storage account');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'update-cloud-storage-account');
     }
 
     /** DELETE /cloud-storage/accounts/{id} */
     public function handleDeleteCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $id       = (int) $request->get_param('id');
             $existing = $this->getCloudStorageAccountById($id);
 
@@ -228,20 +199,13 @@ trait CloudStorageAccountCrudTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Account deleted',
             ], HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to delete cloud storage account');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'delete-cloud-storage-account');
     }
 
     /** POST /cloud-storage/accounts/test */
     public function handleTestCloudStorageAccount(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -274,14 +238,7 @@ trait CloudStorageAccountCrudTrait {
             $this->updateAccountLastUsed($accountId, $result);
 
             return new WP_REST_Response($result, HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Failed to test cloud storage connection');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'test-cloud-storage-account');
     }
 
     // ── Private helpers ─────────────────────────────────────────────

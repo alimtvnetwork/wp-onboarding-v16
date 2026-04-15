@@ -33,7 +33,7 @@ trait CloudStorageRestoreTrait {
     /** POST /cloud-storage/restore */
     public function handleCloudStorageRestore(WP_REST_Request $request): WP_REST_Response
     {
-        try {
+        return $this->safeExecute(function() use ($request) {
             $body = $this->extractValidBody($request);
             $isBodyInvalid = ($body === null);
 
@@ -83,15 +83,7 @@ trait CloudStorageRestoreTrait {
                 ResponseKeyType::Success->value => true,
                 ResponseKeyType::Message->value => 'Backup restored successfully',
             ], HttpStatusType::Ok->value);
-
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, '[CLOUD-RESTORE] Restore failed');
-
-            return new WP_REST_Response([
-                ResponseKeyType::Success->value => false,
-                ResponseKeyType::Error->value   => $e->getMessage(),
-            ], HttpStatusType::InternalServerError->value);
-        }
+        }, 'cloud-storage-restore');
     }
 
     /**
