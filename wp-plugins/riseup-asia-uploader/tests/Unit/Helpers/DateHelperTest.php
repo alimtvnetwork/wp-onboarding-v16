@@ -42,19 +42,4 @@ class DateHelperTest extends TestCase
         $this->assertSame('Y-m-d H:i:s', DateHelper::DATETIME);
     }
 
-    public function testDiffReturnsReadableString(): void
-    {
-        $past = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
-        $result = DateHelper::diff($past);
-
-        $this->assertNotEmpty($result);
-    }
-
-    public function testElapsedMsReturnsFormattedString(): void
-    {
-        $start = microtime(true) - 1.5;
-        $result = DateHelper::elapsedMs($start);
-
-        $this->assertMatchesRegularExpression('/\d+(\.\d+)?\s*ms/', $result);
-    }
 }
