@@ -41,20 +41,22 @@ trait LogClearingTrait
 
     /** Handle DELETE /logs/clear — validate machine, issue confirmation token. */
     public function handleLogsClearRequest(WP_REST_Request $request): WP_REST_Response {
-        $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $machineError = $this->validateMachineHeader($machineName);
+        return $this->safeExecute(function() use ($request) {
+            $machineName = $request->get_header('X-Riseup-Source-Machine');
+            $machineError = $this->validateMachineHeader($machineName);
 
-        if ($machineError !== null) {
-            return $machineError;
-        }
+            if ($machineError !== null) {
+                return $machineError;
+            }
 
-        $isRateLimited = $this->isLogClearRateLimited($machineName);
+            $isRateLimited = $this->isLogClearRateLimited($machineName);
 
-        if ($isRateLimited) {
-            return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::MAX_CLEARS_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
-        }
+            if ($isRateLimited) {
+                return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::MAX_CLEARS_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
+            }
 
-        return $this->issueClearToken($machineName);
+            return $this->issueClearToken($machineName);
+        }, 'logs-clear-request');
     }
 
     /** Generate a clear token, store it as a transient, and return the response. */
@@ -96,30 +98,32 @@ trait LogClearingTrait
 
     /** Handle POST /logs/clear/confirm — validate token, execute log and DB clearing. */
     public function handleLogsClearConfirm(WP_REST_Request $request): WP_REST_Response {
-        $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $isMachineMissing = empty($machineName);
+        return $this->safeExecute(function() use ($request) {
+            $machineName = $request->get_header('X-Riseup-Source-Machine');
+            $isMachineMissing = empty($machineName);
 
-        if ($isMachineMissing) {
-            return $this->buildLogErrorResponse('X-Riseup-Source-Machine header is required', 'machine_header_missing', HttpStatusType::BadRequest);
-        }
+            if ($isMachineMissing) {
+                return $this->buildLogErrorResponse('X-Riseup-Source-Machine header is required', 'machine_header_missing', HttpStatusType::BadRequest);
+            }
 
-        $body = $this->extractValidBody($request);
-        $isBodyInvalid = ($body === null);
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
-        $token = $body['token'] ?? '';
-        $tokenError = $this->validateStoredClearToken($machineName, $token);
+            $token = $body['token'] ?? '';
+            $tokenError = $this->validateStoredClearToken($machineName, $token);
 
-        if ($tokenError !== null) {
-            return $tokenError;
-        }
+            if ($tokenError !== null) {
+                return $tokenError;
+            }
 
-        $type = $body['type'] ?? 'all';
+            $type = $body['type'] ?? 'all';
 
-        return $this->executeClearConfirm($machineName, $type);
+            return $this->executeClearConfirm($machineName, $type);
+        }, 'logs-clear-confirm');
     }
 
     /** Validate the clear token against stored transient data. */

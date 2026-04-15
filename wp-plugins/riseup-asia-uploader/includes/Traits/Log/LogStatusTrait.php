@@ -25,28 +25,30 @@ trait LogStatusTrait
 {
     /** Handle GET /logs/status — return log file sizes, line counts, archive info, DB counts. */
     public function handleLogsStatus(WP_REST_Request $request): WP_REST_Response {
-        $logsDir = $this->fileLogger->getLogsDir();
+        return $this->safeExecute(function() use ($request) {
+            $logsDir = $this->fileLogger->getLogsDir();
 
-        $logStatus = $this->buildFileStatus($logsDir . '/log.txt');
-        $errorStatus = $this->buildFileStatus($logsDir . '/error.txt');
-        $stacktraceStatus = $this->buildFileStatus($logsDir . '/stacktrace.txt');
+            $logStatus = $this->buildFileStatus($logsDir . '/log.txt');
+            $errorStatus = $this->buildFileStatus($logsDir . '/error.txt');
+            $stacktraceStatus = $this->buildFileStatus($logsDir . '/stacktrace.txt');
 
-        $archiveCount = $this->countArchiveFolders($logsDir . '/archive');
-        $dbCounts = $this->getDatabaseCounts();
+            $archiveCount = $this->countArchiveFolders($logsDir . '/archive');
+            $dbCounts = $this->getDatabaseCounts();
 
-        return new WP_REST_Response(
-            [
-                ResponseKeyType::Success->value => true,
-                'logs' => [
-                    'log_file'        => $logStatus,
-                    'error_file'      => $errorStatus,
-                    'stacktrace_file' => $stacktraceStatus,
-                    'archive_count'   => $archiveCount,
+            return new WP_REST_Response(
+                [
+                    ResponseKeyType::Success->value => true,
+                    'logs' => [
+                        'log_file'        => $logStatus,
+                        'error_file'      => $errorStatus,
+                        'stacktrace_file' => $stacktraceStatus,
+                        'archive_count'   => $archiveCount,
+                    ],
+                    'database' => $dbCounts,
                 ],
-                'database' => $dbCounts,
-            ],
-            HttpStatusType::Ok->value,
-        );
+                HttpStatusType::Ok->value,
+            );
+        }, 'logs-status');
     }
 
     /** Build metadata array for a single log file. */

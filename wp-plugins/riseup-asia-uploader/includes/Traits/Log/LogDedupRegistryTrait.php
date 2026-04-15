@@ -26,14 +26,16 @@ trait LogDedupRegistryTrait
      * Handle GET|DELETE /logs/dedup-registry — view or clear the persistent dedup registry.
      */
     public function handleLogsDedupRegistry(WP_REST_Request $request): WP_REST_Response {
-        $method = $request->get_method();
-        $isDelete = ($method === HttpMethodType::Delete->value);
+        return $this->safeExecute(function() use ($request) {
+            $method = $request->get_method();
+            $isDelete = ($method === HttpMethodType::Delete->value);
 
-        if ($isDelete) {
-            return $this->handleLogsDedupRegistryClear();
-        }
+            if ($isDelete) {
+                return $this->handleLogsDedupRegistryClear();
+            }
 
-        return $this->handleLogsDedupRegistryGet();
+            return $this->handleLogsDedupRegistryGet();
+        }, 'logs-dedup-registry');
     }
 
     /** Return the dedup registry contents and metadata. */

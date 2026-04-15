@@ -35,20 +35,22 @@ trait LogEmailTrait
 
     /** Handle POST /logs/email — collect log files and email them as attachments. */
     public function handleLogsEmail(WP_REST_Request $request): WP_REST_Response {
-        $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $machineError = $this->validateMachineHeader($machineName);
+        return $this->safeExecute(function() use ($request) {
+            $machineName = $request->get_header('X-Riseup-Source-Machine');
+            $machineError = $this->validateMachineHeader($machineName);
 
-        if ($machineError !== null) {
-            return $machineError;
-        }
+            if ($machineError !== null) {
+                return $machineError;
+            }
 
-        $isRateLimited = $this->isEmailRateLimited();
+            $isRateLimited = $this->isEmailRateLimited();
 
-        if ($isRateLimited) {
-            return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::EMAIL_MAX_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
-        }
+            if ($isRateLimited) {
+                return $this->buildLogErrorResponse('Rate limit exceeded (max ' . self::EMAIL_MAX_PER_HOUR . '/hour)', 'rate_limited', HttpStatusType::TooManyRequests);
+            }
 
-        return $this->processEmailRequest($request, $machineName);
+            return $this->processEmailRequest($request, $machineName);
+        }, 'logs-email');
     }
 
     /** Parse the request body, collect log files, and delegate to send. */

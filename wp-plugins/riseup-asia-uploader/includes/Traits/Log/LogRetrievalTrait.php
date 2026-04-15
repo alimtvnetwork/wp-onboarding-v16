@@ -27,47 +27,49 @@ trait LogRetrievalTrait
     /** Handle GET /logs/retrieve — return log file contents. */
     public function handleLogsRetrieve(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('Logs retrieve endpoint called', ['endpoint' => 'logs/retrieve']);
+        return $this->safeExecute(function() use ($request) {
+            $this->fileLogger->info('Logs retrieve endpoint called', ['endpoint' => 'logs/retrieve']);
 
-        $settings = $this->resolveRetrievalSettings($request);
-        $logsDir  = $this->fileLogger->getLogsDir();
+            $settings = $this->resolveRetrievalSettings($request);
+            $logsDir  = $this->fileLogger->getLogsDir();
 
-        $result = [
-            ResponseKeyType::Success->value     => true,
-            ResponseKeyType::Version->value     => PluginConfigType::Version->value,
-            'RequestedAt'                        => gmdate('Y-m-d\TH:i:s.v\Z'),
-            ResponseKeyType::Settings->value     => $settings,
-        ];
+            $result = [
+                ResponseKeyType::Success->value     => true,
+                ResponseKeyType::Version->value     => PluginConfigType::Version->value,
+                'RequestedAt'                        => gmdate('Y-m-d\TH:i:s.v\Z'),
+                ResponseKeyType::Settings->value     => $settings,
+            ];
 
-        $isInfoLogRequested = $settings['include_info_log'];
+            $isInfoLogRequested = $settings['include_info_log'];
 
-        if ($isInfoLogRequested) {
-            $result['InfoLog'] = $this->readLogFileTail(
-                $logsDir . '/log.txt',
-                $settings['max_lines'],
-            );
-        }
+            if ($isInfoLogRequested) {
+                $result['InfoLog'] = $this->readLogFileTail(
+                    $logsDir . '/log.txt',
+                    $settings['max_lines'],
+                );
+            }
 
-        $isErrorLogRequested = $settings['include_error_log'];
+            $isErrorLogRequested = $settings['include_error_log'];
 
-        if ($isErrorLogRequested) {
-            $result[ResponseKeyType::ErrorLog->value] = $this->readLogFileTail(
-                $logsDir . '/error.txt',
-                $settings['max_lines'],
-            );
-        }
+            if ($isErrorLogRequested) {
+                $result[ResponseKeyType::ErrorLog->value] = $this->readLogFileTail(
+                    $logsDir . '/error.txt',
+                    $settings['max_lines'],
+                );
+            }
 
-        $isStacktraceRequested = $settings['include_stacktrace'];
+            $isStacktraceRequested = $settings['include_stacktrace'];
 
-        if ($isStacktraceRequested) {
-            $result[ResponseKeyType::StacktraceLog->value] = $this->readLogFileTail(
-                $logsDir . '/stacktrace.txt',
-                $settings['max_lines'],
-            );
-        }
+            if ($isStacktraceRequested) {
+                $result[ResponseKeyType::StacktraceLog->value] = $this->readLogFileTail(
+                    $logsDir . '/stacktrace.txt',
+                    $settings['max_lines'],
+                );
+            }
 
-        // Flat response — NOT envelope-wrapped (Go backend unmarshals directly)
-        return new WP_REST_Response($result, HttpStatusType::Ok->value);
+            // Flat response — NOT envelope-wrapped (Go backend unmarshals directly)
+            return new WP_REST_Response($result, HttpStatusType::Ok->value);
+        }, 'logs-retrieve');
     }
 
     /** Resolve retrieval settings from query params with defaults. */

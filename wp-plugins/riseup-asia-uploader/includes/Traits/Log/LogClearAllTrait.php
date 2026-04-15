@@ -2,9 +2,6 @@
 /**
  * LogClearAllTrait — Single-call clearing of logs for both plugins (Riseup Asia + QUpload).
  *
- * Clears file logs for both plugins and database tables for Riseup Asia.
- * QUpload logs are cleared directly via its FileLogger if available on the same site.
- *
  * @package RiseupAsia\Traits\Log
  * @since   2.30.0
  */
@@ -24,43 +21,41 @@ use RiseupAsia\Logging\FileLogger;
 
 trait LogClearAllTrait
 {
-    /**
-     * Handle DELETE /logs/clear-all — clear logs for both Riseup Asia and QUpload plugins.
-     *
-     * Requires machine validation (reused from LogClearingTrait).
-     */
+    /** Handle DELETE /logs/clear-all — clear logs for both Riseup Asia and QUpload plugins. */
     public function handleLogsClearAll(WP_REST_Request $request): WP_REST_Response {
-        $machineName = $request->get_header('X-Riseup-Source-Machine');
-        $machineError = $this->validateMachineHeader($machineName);
+        return $this->safeExecute(function() use ($request) {
+            $machineName = $request->get_header('X-Riseup-Source-Machine');
+            $machineError = $this->validateMachineHeader($machineName);
 
-        if ($machineError !== null) {
-            return $machineError;
-        }
+            if ($machineError !== null) {
+                return $machineError;
+            }
 
-        $riseupResult = $this->clearRiseupLogs();
-        $quploadResult = $this->clearQUploadLogs();
-        $clientIp = $this->resolveClientIp();
+            $riseupResult = $this->clearRiseupLogs();
+            $quploadResult = $this->clearQUploadLogs();
+            $clientIp = $this->resolveClientIp();
 
-        $this->fileLogger->info('Clear-all executed for both plugins', [
-            'machine' => $machineName,
-            'ip'      => $clientIp,
-            'riseup'  => $riseupResult,
-            'qupload' => $quploadResult,
-        ]);
+            $this->fileLogger->info('Clear-all executed for both plugins', [
+                'machine' => $machineName,
+                'ip'      => $clientIp,
+                'riseup'  => $riseupResult,
+                'qupload' => $quploadResult,
+            ]);
 
-        return new WP_REST_Response(
-            [
-                ResponseKeyType::Success->value => true,
-                'riseup'                        => $riseupResult,
-                'qupload'                       => $quploadResult,
-                'cleared_by'                    => [
-                    'machine'   => $machineName,
-                    'ip'        => $clientIp,
-                    'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+            return new WP_REST_Response(
+                [
+                    ResponseKeyType::Success->value => true,
+                    'riseup'                        => $riseupResult,
+                    'qupload'                       => $quploadResult,
+                    'cleared_by'                    => [
+                        'machine'   => $machineName,
+                        'ip'        => $clientIp,
+                        'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+                    ],
                 ],
-            ],
-            HttpStatusType::Ok->value,
-        );
+                HttpStatusType::Ok->value,
+            );
+        }, 'logs-clear-all');
     }
 
     /**
