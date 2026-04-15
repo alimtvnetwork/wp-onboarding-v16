@@ -47,6 +47,7 @@ enum HookType: string
     case CronSnapshotRestore     = 'riseup_snapshot_restore';
     case CronSnapshotIncremental = 'riseup_snapshot_incremental';
     case CronLicenseRevalidate   = 'riseup_license_revalidate';
+    case CleanupSnapshots        = 'riseup_cleanup_snapshots';
 
     // ── Cloud Storage Cron Hooks ────────────────────────────────
     case CronCloudFullBackup        = 'riseup_cloud_full_backup';

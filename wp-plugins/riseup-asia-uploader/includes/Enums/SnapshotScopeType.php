@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
 enum SnapshotScopeType: string
 {
     case All       = 'All';
+    case Full      = 'Full';
+    case Database  = 'Database';
+    case Plugins   = 'Plugins';
     case WordPress = 'WordPress';
     case Content   = 'Content';
     case Custom    = 'Custom';
