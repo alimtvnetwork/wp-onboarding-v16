@@ -8300,6 +8300,17 @@ parameters:
 			count: 1
 			path: includes/Snapshot/SnapshotProviderNative.php
 
+		-
+			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:createSnapshot\(\) has parameter \$options with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Snapshot/SnapshotProviderNative.php
+
+		-
+			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:scheduleOrExecute\(\) has parameter \$tables with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Snapshot/SnapshotProviderNative.php
 
 		-
 			message: '#^Parameter \#2 \$where of method RiseupAsia\\Database\\Database\:\:delete\(\) expects string, array\<string, int\> given\.$#'
