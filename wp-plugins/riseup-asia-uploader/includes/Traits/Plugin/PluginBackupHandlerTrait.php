@@ -44,7 +44,13 @@ trait PluginBackupHandlerTrait
     public function handlePluginBackup(WP_REST_Request $request): WP_REST_Response
     {
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Plugin slug is required (invalid JSON body)', $request);
+            }
+
             $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
 
             if (empty($slug)) {
@@ -144,7 +150,13 @@ trait PluginBackupHandlerTrait
     public function handlePluginBackupRestore(WP_REST_Request $request): WP_REST_Response
     {
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Plugin slug and backup filename required (invalid JSON body)', $request);
+            }
+
             $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
             $filename = isset($body['filename']) ? sanitize_file_name($body['filename']) : '';
 
@@ -296,7 +308,13 @@ trait PluginBackupHandlerTrait
     public function handlePluginBackupDelete(WP_REST_Request $request): WP_REST_Response
     {
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Plugin slug and backup filename required (invalid JSON body)', $request);
+            }
+
             $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
             $filename = isset($body['filename']) ? sanitize_file_name($body['filename']) : '';
 

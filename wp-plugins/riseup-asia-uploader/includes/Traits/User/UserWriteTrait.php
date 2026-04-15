@@ -29,7 +29,12 @@ trait UserWriteTrait {
         $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users']);
 
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
             $username = sanitize_user($body['Username'] ?? '');
             $email    = sanitize_email($body['Email'] ?? '');
@@ -155,7 +160,12 @@ trait UserWriteTrait {
                     ->toResponse();
             }
 
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
             $modified = [];
             $userdata = ['ID' => $userId];
 
