@@ -756,7 +756,6 @@ parameters:
 			count: 1
 			path: includes/Core/Plugin.php
 
-
 		-
 			message: '#^Anonymous function has an unused use \$request\.$#'
 			identifier: closure.unusedUse
@@ -778,7 +777,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method RiseupAsia\\Logging\\FileLogger\:\:warning\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: includes/Core/Plugin.php
 
 		-
@@ -1510,6 +1509,12 @@ parameters:
 		-
 			message: '#^Method RiseupAsia\\Core\\Plugin\:\:extractToPluginsDir\(\) has parameter \$tempFile with no type specified\.$#'
 			identifier: missingType.parameter
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: '#^Method RiseupAsia\\Core\\Plugin\:\:extractValidBody\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
 			count: 1
 			path: includes/Core/Plugin.php
 
@@ -2619,6 +2624,18 @@ parameters:
 
 		-
 			message: '#^Method RiseupAsia\\Core\\Plugin\:\:removeSingleDuplicate\(\) has parameter \$pdata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: '#^Method RiseupAsia\\Core\\Plugin\:\:requireInteger\(\) has parameter \$body with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: '#^Method RiseupAsia\\Core\\Plugin\:\:requireString\(\) has parameter \$body with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: includes/Core/Plugin.php
@@ -3846,7 +3863,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: includes/Enums/HttpConfigType.php
-
 
 		-
 			message: '#^Strict comparison using \!\=\= between \$this\(RiseupAsia\\Enums\\PathConfigType\) and RiseupAsia\\Enums\\PathConfigType will always evaluate to false\.$#'
@@ -8067,6 +8083,12 @@ parameters:
 			path: includes/Snapshot/SnapshotProviderNative.php
 
 		-
+			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:createSnapshot\(\) has parameter \$options with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Snapshot/SnapshotProviderNative.php
+
+		-
 			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:createSnapshot\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -8277,6 +8299,12 @@ parameters:
 			path: includes/Snapshot/SnapshotProviderNative.php
 
 		-
+			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:scheduleOrExecute\(\) has parameter \$tables with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: includes/Snapshot/SnapshotProviderNative.php
+
+		-
 			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:scheduleOrExecute\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -8296,18 +8324,6 @@ parameters:
 
 		-
 			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:sumTableCounts\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: includes/Snapshot/SnapshotProviderNative.php
-
-		-
-			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:createSnapshot\(\) has parameter \$options with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: includes/Snapshot/SnapshotProviderNative.php
-
-		-
-			message: '#^Method RiseupAsia\\Snapshot\\SnapshotProviderNative\:\:scheduleOrExecute\(\) has parameter \$tables with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: includes/Snapshot/SnapshotProviderNative.php
