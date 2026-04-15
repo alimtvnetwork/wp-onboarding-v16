@@ -11,18 +11,18 @@ final class AgentSiteTest extends TestCase {
 
     private function sampleRow(): array {
         return [
-            'id'                   => '42',
-            'name'                 => 'Test Site',
-            'url'                  => 'https://example.com',
-            'username'             => 'admin',
-            'redirect_url'         => 'https://redirect.example.com',
-            'redirect_resolved'    => 'https://resolved.example.com',
-            'redirect_resolved_at' => '2026-01-15T10:00:00Z',
-            'status'               => 'connected',
-            'last_sync'            => '2026-01-15T12:00:00Z',
-            'last_error'           => null,
-            'created_at'           => '2026-01-01T00:00:00Z',
-            'updated_at'           => '2026-01-10T00:00:00Z',
+            'Id'                  => '42',
+            'Name'                => 'Test Site',
+            'Url'                 => 'https://example.com',
+            'Username'            => 'admin',
+            'RedirectUrl'         => 'https://redirect.example.com',
+            'RedirectResolved'    => 'https://resolved.example.com',
+            'RedirectResolvedAt'  => '2026-01-15T10:00:00Z',
+            'Status'              => 'connected',
+            'LastSync'            => '2026-01-15T12:00:00Z',
+            'LastError'           => null,
+            'CreatedAt'           => '2026-01-01T00:00:00Z',
+            'UpdatedAt'           => '2026-01-10T00:00:00Z',
         ];
     }
 
@@ -46,11 +46,11 @@ final class AgentSiteTest extends TestCase {
 
     public function testFromRowHandlesMinimalRow(): void {
         $row = [
-            'id'         => '1',
-            'name'       => 'Minimal',
-            'url'        => 'https://min.test',
-            'username'   => 'user',
-            'created_at' => '2026-02-01T00:00:00Z',
+            'Id'        => '1',
+            'Name'      => 'Minimal',
+            'Url'       => 'https://min.test',
+            'Username'  => 'user',
+            'CreatedAt' => '2026-02-01T00:00:00Z',
         ];
 
         $site = AgentSite::fromRow($row);
@@ -68,7 +68,7 @@ final class AgentSiteTest extends TestCase {
 
     public function testFromRowCastsIdToInt(): void {
         $row = $this->sampleRow();
-        $row['id'] = '99';
+        $row['Id'] = '99';
 
         $site = AgentSite::fromRow($row);
 
