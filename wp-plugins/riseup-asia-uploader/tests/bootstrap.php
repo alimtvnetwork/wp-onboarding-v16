@@ -92,6 +92,28 @@ if (!function_exists('wp_cache_delete')) {
     }
 }
 
+// Minimal WP_REST_Request stub.
+if (!class_exists('WP_REST_Request')) {
+    class WP_REST_Request {
+        private array $params = [];
+        private array $jsonParams = [];
+        private array $headers = [];
+        private string $method = 'GET';
+        private string $route = '/';
+
+        public function set_param(string $key, mixed $value): void { $this->params[$key] = $value; }
+        public function get_param(string $key): mixed { return $this->params[$key] ?? null; }
+        public function set_json_params(array $params): void { $this->jsonParams = $params; }
+        public function get_json_params(): ?array { return $this->jsonParams; }
+        public function set_header(string $key, string $value): void { $this->headers[strtolower($key)] = $value; }
+        public function get_header(string $key): ?string { return $this->headers[strtolower($key)] ?? null; }
+        public function get_method(): string { return $this->method; }
+        public function set_method(string $method): void { $this->method = $method; }
+        public function get_route(): string { return $this->route; }
+        public function set_route(string $route): void { $this->route = $route; }
+    }
+}
+
 // Minimal WP_REST_Response stub.
 if (!class_exists('WP_REST_Response')) {
     class WP_REST_Response {
