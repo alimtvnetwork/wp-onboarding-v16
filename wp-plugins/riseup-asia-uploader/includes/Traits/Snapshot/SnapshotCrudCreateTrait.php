@@ -40,8 +40,20 @@ trait SnapshotCrudCreateTrait {
      */
     public function handleCreateSnapshot($request) {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyMissing = ($body === null);
+
+            if ($isBodyMissing) {
+                return $this->validationError('Request body must be a JSON object', $request);
+            }
+
             $scope = isset($body[ResponseKeyType::Scope->value]) ? sanitize_key($body[ResponseKeyType::Scope->value]) : SnapshotScopeType::All->value;
+
+            $isScopeInvalid = (!$this->isNonEmptyString($scope));
+
+            if ($isScopeInvalid) {
+                return $this->validationError('Field "Scope" must be a non-empty string', $request);
+            }
 
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, LogCategoryType::Snapshot->value, StatusType::Success->value,
                 [ResponseKeyType::Scope->value => $scope, ResponseKeyType::Trigger->value => 'api', ResponseKeyType::Phase->value => SnapshotPhaseType::Initiated->value]);

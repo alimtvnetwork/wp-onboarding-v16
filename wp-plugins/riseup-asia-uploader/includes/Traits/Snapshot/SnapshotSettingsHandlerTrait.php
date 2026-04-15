@@ -41,7 +41,13 @@ trait SnapshotSettingsHandlerTrait {
     /** Handle updating snapshot settings. */
     public function handleUpdateSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyMissing = ($body === null);
+
+            if ($isBodyMissing) {
+                return $this->validationError('Request body must be a JSON object', $request);
+            }
+
             $this->fileLogger->info('Updating snapshot settings', ['keys' => array_keys($body)]);
             $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
