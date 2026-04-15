@@ -32,7 +32,7 @@ trait SnapshotCrudRestoreTrait {
 
     public function handleDeleteSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request): WP_REST_Response {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $id = isset($body[ResponseKeyType::Id->value]) ? (int) $body[ResponseKeyType::Id->value] : (int) $request->get_param('id');
 
             $isIdInvalid = ($id <= 0);
@@ -66,7 +66,7 @@ trait SnapshotCrudRestoreTrait {
 
     public function handleRestoreSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request): WP_REST_Response {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $id = isset($body[ResponseKeyType::Id->value]) ? (int) $body[ResponseKeyType::Id->value] : (int) $request->get_param('id');
 
             $isIdInvalid = ($id <= 0);

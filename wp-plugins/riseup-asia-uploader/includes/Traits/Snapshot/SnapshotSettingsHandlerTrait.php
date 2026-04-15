@@ -96,7 +96,7 @@ trait SnapshotSettingsHandlerTrait {
     /** Handle dependency analysis request. */
     public function handleAnalyzeDependencies(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $scope = isset($body[ResponseKeyType::Scope->value]) ? $body[ResponseKeyType::Scope->value] : 'all';
             $analyzer = DependencyAnalyzer::getInstance($this->fileLogger);
             $analysis = $analyzer->analyze($scope);
