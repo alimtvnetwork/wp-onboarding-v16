@@ -111,6 +111,7 @@ class Plugin {
     use SiteSettingsTrait;
     use SiteHealthSummaryTrait;
     use DebugRoutesTrait;
+    use TypeCheckerTrait;
 
     private FileLogger $fileLogger;
     private ?Logger $logger = null;
