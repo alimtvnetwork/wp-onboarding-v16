@@ -32,7 +32,7 @@ trait SnapshotBackupExecTrait {
 
     public function handleFullBackup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $this->logBackupInitiated(ActionType::SnapshotFullBackup->value, $body);
             $orchestrator = $this->createFullBackupOrchestrator();
             $result = $orchestrator->executeFullBackup($this->extractFullBackupOptions($body));
@@ -44,7 +44,7 @@ trait SnapshotBackupExecTrait {
 
     public function handleIncrementalBackup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
             $masterDir = $this->resolveIncrementalMasterDir($body);
 

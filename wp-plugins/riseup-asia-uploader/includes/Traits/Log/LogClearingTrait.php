@@ -102,7 +102,13 @@ trait LogClearingTrait
             return $this->buildLogErrorResponse('X-Riseup-Source-Machine header is required', 'machine_header_missing', HttpStatusType::BadRequest);
         }
 
-        $body = $request->get_json_params();
+        $body = $this->extractValidBody($request);
+        $isBodyInvalid = ($body === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
+
         $token = $body['token'] ?? '';
         $tokenError = $this->validateStoredClearToken($machineName, $token);
 

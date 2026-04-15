@@ -34,8 +34,14 @@ trait CloudStorageRestoreTrait {
     public function handleCloudStorageRestore(WP_REST_Request $request): WP_REST_Response
     {
         try {
-            $params   = $request->get_json_params();
-            $backupId = (int) ($params[ResponseKeyType::BackupId->value] ?? 0);
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
+
+            $backupId = (int) ($body[ResponseKeyType::BackupId->value] ?? 0);
             $backup   = $this->getBackupHistoryById($backupId);
 
             $isNotFound = ($backup === false);

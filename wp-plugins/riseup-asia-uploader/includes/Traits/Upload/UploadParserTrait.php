@@ -73,7 +73,7 @@ trait UploadParserTrait {
      * @return array|WP_REST_Response Parsed input or error response.
      */
     private function parseBase64Input($request) {
-        $data = $request->get_json_params();
+        $data = $this->extractValidBody($request) ?? [];
 
         if (empty($data[RequestFieldType::PluginZip->value])) {
             $this->fileLogger->warn('Upload failed: plugin_zip required');

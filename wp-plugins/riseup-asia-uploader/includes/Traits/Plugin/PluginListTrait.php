@@ -64,8 +64,8 @@ trait PluginListTrait
      */
     public function handlePluginInfo(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
-            $slug = isset($body['slug']) ? sanitize_text_field($body['slug']) : '';
+            $body = $this->extractValidBody($request);
+            $slug = ($body !== null && isset($body['slug'])) ? sanitize_text_field($body['slug']) : '';
 
             if (empty($slug)) {
 
@@ -143,8 +143,8 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     public function handlePluginFiles($request) {
-        $body = $request->get_json_params();
-        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        $body = $this->extractValidBody($request);
+        $slug = ($body !== null && isset($body['plugin'])) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
 
         if (empty($slug)) {
 
@@ -197,8 +197,8 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     public function handlePluginFileContent($request) {
-        $json = $request->get_json_params();
-        $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
+        $json = $this->extractValidBody($request);
+        $slug = ($json !== null && isset($json['plugin'])) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
 
         if (empty($slug)) {
 

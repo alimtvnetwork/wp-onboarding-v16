@@ -66,7 +66,12 @@ trait CloudStorageSettingsTrait {
                 ], HttpStatusType::BadRequest->value);
             }
 
-            $params = $request->get_json_params();
+            $params = $this->extractValidBody($request);
+            $isBodyInvalid = ($params === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
             $table  = TableType::CloudStorageSettings->value;
             $sets   = [];
             $values = [];

@@ -53,7 +53,12 @@ trait LogEmailTrait
 
     /** Parse the request body, collect log files, and delegate to send. */
     private function processEmailRequest(WP_REST_Request $request, string $machineName): WP_REST_Response {
-        $body = $request->get_json_params();
+        $body = $this->extractValidBody($request);
+        $isBodyInvalid = ($body === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
         $recipient = $this->resolveEmailRecipient($body);
         $includeArchives = (bool) ($body['include_archives'] ?? false);
         $logTypes = $body['log_types'] ?? self::LOG_FILE_NAMES;

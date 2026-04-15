@@ -27,7 +27,12 @@ trait UserAppPasswordTrait {
         $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'POST /users/app-password']);
 
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
             $userId = (int) ($body['UserId'] ?? 0);
             $name   = sanitize_text_field($body['Name'] ?? 'API Access');
@@ -97,7 +102,12 @@ trait UserAppPasswordTrait {
         $this->fileLogger->info('User endpoint accessed', ['endpoint' => 'DELETE /users/app-password']);
 
         return $this->safeExecute(function () use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
+
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
             $userId = (int) ($body['UserId'] ?? 0);
             $uuid   = sanitize_text_field($body['Uuid'] ?? '');

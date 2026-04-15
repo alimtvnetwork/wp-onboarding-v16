@@ -32,7 +32,7 @@ trait SnapshotExportHandlerTrait {
 
     public function handleExportSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->fileLogger->info('Exporting snapshot', ['id' => $id]);
 
@@ -82,7 +82,7 @@ trait SnapshotExportHandlerTrait {
 
     public function handleSnapshotDownload(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
-            $body = $request->get_json_params();
+            $body = $this->extractValidBody($request) ?? [];
             $snapshotId = isset($body['snapshot_id']) ? (int) $body['snapshot_id'] : 0;
 
             if ($snapshotId <= 0) {

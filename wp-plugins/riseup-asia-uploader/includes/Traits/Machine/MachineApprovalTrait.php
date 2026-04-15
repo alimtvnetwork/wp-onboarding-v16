@@ -32,7 +32,13 @@ trait MachineApprovalTrait
      */
     public function handleApproveMachine(WP_REST_Request $request): WP_REST_Response
     {
-        $body = $request->get_json_params();
+        $body = $this->extractValidBody($request);
+        $isBodyInvalid = ($body === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
+
         $machineName = trim($body['machine'] ?? '');
         $isMachineEmpty = ($machineName === '');
 

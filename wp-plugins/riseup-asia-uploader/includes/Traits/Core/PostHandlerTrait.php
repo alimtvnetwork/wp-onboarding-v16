@@ -43,7 +43,13 @@ trait PostHandlerTrait
     public function handleCreatePost(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Create post endpoint called');
 
-        $data   = $request->get_json_params();
+        $data = $this->extractValidBody($request);
+        $isBodyInvalid = ($data === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
+
         $result = $this->postManager->createPost($data);
 
         return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
@@ -64,7 +70,13 @@ trait PostHandlerTrait
     public function handleCreateCategory(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Create category endpoint called');
 
-        $data   = $request->get_json_params();
+        $data = $this->extractValidBody($request);
+        $isBodyInvalid = ($data === null);
+
+        if ($isBodyInvalid) {
+            return $this->validationError('Invalid or missing JSON body', $request);
+        }
+
         $result = $this->postManager->createCategory($data);
 
         return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
