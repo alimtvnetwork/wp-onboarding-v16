@@ -39,7 +39,7 @@ class SqliteSchemaConverter {
         '/\bYEAR\s*\((\d+)\)/i'       => 'INTEGER',
         '/\bBOOLEAN\b/i'            => 'INTEGER',
         '/\bBOOL\b/i'               => 'INTEGER',
-    );
+    ];
 
     public static function convert(string $mysqlCreate, string $table): string {
         $sql = self::removeEngineAttributes($mysqlCreate);

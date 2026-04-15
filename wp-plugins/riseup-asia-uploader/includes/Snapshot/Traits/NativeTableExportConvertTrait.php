@@ -79,7 +79,7 @@ trait NativeTableExportConvertTrait {
             '/\bYEAR\s*\(\d+\)/i'         => 'INTEGER',
             '/\bBOOLEAN\b/i'              => 'INTEGER',
             '/\bBOOL\b/i'                 => 'INTEGER',
-        );
+        ];
 
         foreach ($typeMap as $pattern => $replacement) {
             $sql = preg_replace($pattern, $replacement, $sql);
