@@ -35,7 +35,6 @@ enum HttpStatusType: int
     case TooManyRequests = 429;
 
     // ── Server Error ────────────────────────────────────────────────
-    case ServerError        = 500;
     case InternalServerError = 500;
     case NotImplemented     = 501;
     case BadGateway         = 502;
