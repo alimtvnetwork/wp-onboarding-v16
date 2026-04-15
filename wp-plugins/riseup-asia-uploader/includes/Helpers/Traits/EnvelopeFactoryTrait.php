@@ -30,7 +30,7 @@ trait EnvelopeFactoryTrait {
 
     public static function error(
         string $message,
-        int $code = HttpStatusType::ServerError->value,
+        int $code = HttpStatusType::InternalServerError->value,
         ?Throwable $exception = null,
     ): static {
         $builder = new self();

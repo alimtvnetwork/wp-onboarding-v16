@@ -88,7 +88,7 @@ trait PluginBackupHandlerTrait
             if ($openResult !== true) {
                 return $this->errorResponse(
                     'Failed to create backup archive',
-                    HttpStatusType::ServerError->value,
+                    HttpStatusType::InternalServerError->value,
                 );
             }
 
@@ -182,7 +182,7 @@ trait PluginBackupHandlerTrait
             if ($openResult !== true) {
                 return $this->errorResponse(
                     'Failed to open backup archive',
-                    HttpStatusType::ServerError->value,
+                    HttpStatusType::InternalServerError->value,
                 );
             }
 
@@ -192,7 +192,7 @@ trait PluginBackupHandlerTrait
             if (!$extractResult) {
                 return $this->errorResponse(
                     'Failed to extract backup archive',
-                    HttpStatusType::ServerError->value,
+                    HttpStatusType::InternalServerError->value,
                 );
             }
 
@@ -327,7 +327,7 @@ trait PluginBackupHandlerTrait
             if (!$deleted) {
                 return $this->errorResponse(
                     'Failed to delete backup file',
-                    HttpStatusType::ServerError->value,
+                    HttpStatusType::InternalServerError->value,
                 );
             }
 
