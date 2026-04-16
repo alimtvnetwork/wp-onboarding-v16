@@ -445,4 +445,10 @@ const (
 	// Cross-plugin clear-all keys.
 	Riseup
 	Qupload
+
+	// Debug route keys.
+	Namespace
+	TotalRoutes
+	Routes
+	Pattern
 )
