@@ -39,6 +39,8 @@ function Configure-PnpmStore {
             pnpm config set --location=project store-dir $PnpmStorePath 2>$null
         } else {
             Write-Host "  WARNING: Drive '$storeDriveRoot' not found — skipping store-dir config ($PnpmStorePath). Using pnpm default store." -ForegroundColor Yellow
+            # Override any storeDir in pnpm-workspace.yaml by unsetting project-level store-dir
+            pnpm config delete --location=project store-dir 2>$null
         }
     }
 
