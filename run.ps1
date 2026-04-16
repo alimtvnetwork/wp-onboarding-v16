@@ -51,7 +51,8 @@ param(
     [string]$setval = "",
     [Alias('ucp')][string]$uploadcustomplugin = "",
     [Alias('a')][switch]$allcustomsites,
-    [Alias('ap')][switch]$allplugins
+    [Alias('ap')][switch]$allplugins,
+    [switch]$skipgitpull
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -680,6 +681,7 @@ if ($uploadcustomplugin -ne "" -or $uploadcustomplugin -eq "" -and $MyInvocation
             -PluginSlug $ucpSlugValue `
             -AllSites:$allcustomsites `
             -AllPlugins:$allplugins `
+            -SkipGitPull:$skipgitpull `
             -SiteName $site `
             -ListPlugins:$isListMode `
             -VerboseMode:$verbose

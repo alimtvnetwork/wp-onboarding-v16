@@ -11,7 +11,8 @@ function Invoke-CustomPluginUploadMode {
         [string]$SiteName = "",
         [switch]$ListPlugins = $false,
         [switch]$ShowHelp = $false,
-        [switch]$VerboseMode = $false
+        [switch]$VerboseMode = $false,
+        [switch]$SkipGitPull = $false
     )
 
     $customUploadScript = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "upload-custom-plugin.ps1"
@@ -89,6 +90,10 @@ function Invoke-CustomPluginUploadMode {
 
         if ($VerboseMode) {
             $scriptArgs += "-VerboseOutput"
+        }
+
+        if ($SkipGitPull) {
+            $scriptArgs += "-SkipGitPull"
         }
 
         & $customUploadScript @scriptArgs

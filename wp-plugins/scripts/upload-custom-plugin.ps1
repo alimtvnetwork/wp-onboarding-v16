@@ -34,6 +34,9 @@ param(
     [switch]$VerboseOutput = $false,
 
     [Parameter(Mandatory=$false)]
+    [switch]$SkipGitPull = $false,
+
+    [Parameter(Mandatory=$false)]
     [switch]$Help = $false
 )
 
@@ -261,7 +264,40 @@ if ($pingEndpoint -ne "") {
 }
 Write-Host ""
 
-# Create temp ZIP
+# Start total timer
+$totalWatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+# ============================================================================
+# GIT PULL (auto-detected)
+# ============================================================================
+if ($SkipGitPull) {
+    Write-Host "  Git pull skipped (-skipgitpull)" -ForegroundColor DarkGray
+} else {
+    $gitCommand = Get-Command git -ErrorAction SilentlyContinue
+    if ($null -ne $gitCommand) {
+        $gitCheckOutput = & git -C $pluginFolderPath rev-parse --is-inside-work-tree 2>&1
+        if ($LASTEXITCODE -eq 0 -and $gitCheckOutput -eq "true") {
+            $gitWatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $branchName = & git -C $pluginFolderPath rev-parse --abbrev-ref HEAD 2>&1
+            Write-Host "  Git repo detected (branch: $branchName)" -ForegroundColor DarkCyan
+            Write-Host "  Running git pull --rebase..." -ForegroundColor Yellow
+
+            $gitOutput = & git -C $pluginFolderPath pull --rebase 2>&1
+            $gitExitCode = $LASTEXITCODE
+            $gitWatch.Stop()
+            $gitElapsed = [math]::Round($gitWatch.Elapsed.TotalSeconds, 1)
+
+            if ($gitExitCode -eq 0) {
+                $shortHash = & git -C $pluginFolderPath rev-parse --short HEAD 2>&1
+                Write-Host "  Git pull OK ($branchName @ $shortHash) - ${gitElapsed}s" -ForegroundColor Green
+            } else {
+                Write-Host "  Git pull WARNING: $($gitOutput | Out-String)" -ForegroundColor DarkYellow
+                Write-Host "  Continuing with upload... - ${gitElapsed}s" -ForegroundColor DarkYellow
+            }
+        }
+    }
+}
+
 $tempDir = if ($isWindows) { $env:TEMP } else { "/tmp" }
 $zipFileName = "$Slug.zip"
 $zipPath = Join-Path $tempDir $zipFileName
@@ -277,6 +313,7 @@ if (Test-Path $zipPath) {
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
 
 if ($null -ne $phpCommand) {
+    $phpWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  PHP syntax check..." -ForegroundColor Yellow
 
     $skipFolders = @("vendor")
@@ -325,12 +362,15 @@ if ($null -ne $phpCommand) {
         exit 4
     }
 
+    $phpWatch.Stop()
+    $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
     $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in vendor)" } else { "" }
-    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel" -ForegroundColor Green
+    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel - ${phpElapsed}s" -ForegroundColor Green
 } else {
     Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
 }
 
+$zipWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "  Zipping with SmallestSize compression..." -ForegroundColor Yellow
 
 try {
@@ -341,10 +381,11 @@ try {
         [System.IO.Compression.CompressionLevel]::SmallestSize,
         $true  # includeBaseDirectory — root folder = slug name
     )
-    
+    $zipWatch.Stop()
+    $zipElapsed = [math]::Round($zipWatch.Elapsed.TotalSeconds, 1)
     $zipSize = (Get-Item $zipPath).Length
     $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Host "  ZIP created: $zipPath ($zipSizeMB MB)" -ForegroundColor Green
+    Write-Host "  ZIP created: $zipPath ($zipSizeMB MB) - ${zipElapsed}s" -ForegroundColor Green
 } catch {
     Write-Host "  ERROR: ZIP creation failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 4
@@ -427,6 +468,7 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
     $targetSite = $targetSites[$idx]
     $siteLabel = if ($totalSites -gt 1) { "[$($idx+1)/$totalSites] " } else { "" }
     
+    $siteWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  ${siteLabel}Uploading to $($targetSite.name) ($($targetSite.url))..." -ForegroundColor Yellow
 
     # Decode credentials
@@ -450,7 +492,9 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
         $uploadExitCode = $LASTEXITCODE
         
         if ($uploadExitCode -eq 0) {
-            Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name)" -ForegroundColor Green
+            $siteWatch.Stop()
+            $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
+            Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name) - ${siteElapsed}s" -ForegroundColor Green
             $successCount++
 
             # Post-upload ping verification
@@ -489,12 +533,16 @@ if ($failCount -gt 0 -and (Test-Path $zipPath)) {
 # ============================================================================
 # SUMMARY
 # ============================================================================
+$totalWatch.Stop()
+$totalElapsed = [math]::Round($totalWatch.Elapsed.TotalSeconds, 1)
+
 Write-Host "========================================" -ForegroundColor Cyan
 if ($failCount -eq 0) {
     Write-Host "  ${Slug}: $successCount/$totalSites sites completed successfully" -ForegroundColor Green
 } else {
     Write-Host "  ${Slug}: $successCount succeeded, $failCount failed (out of $totalSites)" -ForegroundColor Red
 }
+Write-Host "  Total elapsed: ${totalElapsed}s" -ForegroundColor DarkGray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
