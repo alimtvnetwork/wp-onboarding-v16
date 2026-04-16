@@ -34,6 +34,9 @@ param(
     [switch]$VerboseOutput = $false,
 
     [Parameter(Mandatory=$false)]
+    [switch]$SkipGitPull = $false,
+
+    [Parameter(Mandatory=$false)]
     [switch]$Help = $false
 )
 
