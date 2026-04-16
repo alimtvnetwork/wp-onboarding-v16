@@ -1589,15 +1589,19 @@ if (-not $uploadSuccess -or $null -eq $response) {
                 
                 if ($deployedVersion -eq $LocalVersion) {
                     Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Server confirmed v$deployedVersion"
                 } else {
                     Write-Status "      ⚠ Server still reports v$deployedVersion (OPcache may need manual reset)" -Color Yellow
                     Write-Status "        Files ARE on disk (v$LocalVersion). OPcache TTL will expire shortly." -Color DarkGray
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Server reports v$deployedVersion; OPcache TTL pending"
                 }
             } else {
                 Write-Status "      ⚠ Verification blocked — check WP admin manually" -Color Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification blocked"
             }
         } catch {
             Write-Status "      ⚠ Verification failed: $($_.Exception.Message)" -Color Yellow
+            Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification failed: $($_.Exception.Message)"
         }
     } elseif ($isSelfUpdate -and $responseVersion -eq $LocalVersion) {
         # =================================================================
@@ -1606,6 +1610,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
         # =================================================================
         Write-Status ""
         Write-Status "[8/8] Self-update verified — server already reports v$responseVersion ✓" -Color Green
+        Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Self-update confirmed v$responseVersion"
     } else {
         # =================================================================
         # NON-SELF-UPDATE: Standard post-upload verification
