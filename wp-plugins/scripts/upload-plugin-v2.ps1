@@ -1155,8 +1155,12 @@ try {
     Write-Status "      Path: $OutputZipPath" -Color Gray
     Write-Status "      Cache: $cacheDir" -Color Gray
     Write-Status "      Files: $totalFiles" -Color Gray
+    Set-V2DiagnosticSection -Section $v2Diag.ZIP -Status "OK" -Summary "ZIP created: ${zipSizeKB} KB ($totalFiles files, ${ratio}% ratio)"
+    Add-V2DiagnosticDetail -Section $v2Diag.ZIP -Detail "Path: $OutputZipPath"
 } catch {
     Write-Host "      Error creating ZIP: $_" -ForegroundColor Red
+    Set-V2DiagnosticSection -Section $v2Diag.ZIP -Status "FAIL" -Summary "ZIP creation failed: $_"
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
