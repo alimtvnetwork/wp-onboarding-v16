@@ -798,14 +798,18 @@ if (-not $SkipGitPull) {
             git pull 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "  WARNING: git pull failed, continuing anyway..." -ForegroundColor Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Git -Status "WARN" -Summary "Git pull failed; continuing"
+                Add-V2DiagnosticDetail -Section $v2Diag.Git -Detail "Branch: $branch"
             } else {
                 Write-Status "      ✓ Git pull complete" -Color Green
+                Set-V2DiagnosticSection -Section $v2Diag.Git -Status "OK" -Summary "Git pull succeeded on $branch"
             }
         } finally {
             Pop-Location
         }
     } else {
         Write-Status "      Skipping git pull (no .git found)" -Color Gray
+        Set-V2DiagnosticSection -Section $v2Diag.Git -Status "SKIP" -Summary "No .git directory found"
     }
 } else {
     Write-Status "[1/8] Skipping git pull (-SkipGitPull)" -Color Gray
