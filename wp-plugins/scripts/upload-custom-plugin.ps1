@@ -264,7 +264,40 @@ if ($pingEndpoint -ne "") {
 }
 Write-Host ""
 
-# Create temp ZIP
+# Start total timer
+$totalWatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+# ============================================================================
+# GIT PULL (auto-detected)
+# ============================================================================
+if ($SkipGitPull) {
+    Write-Host "  Git pull skipped (-skipgitpull)" -ForegroundColor DarkGray
+} else {
+    $gitCommand = Get-Command git -ErrorAction SilentlyContinue
+    if ($null -ne $gitCommand) {
+        $gitCheckOutput = & git -C $pluginFolderPath rev-parse --is-inside-work-tree 2>&1
+        if ($LASTEXITCODE -eq 0 -and $gitCheckOutput -eq "true") {
+            $gitWatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $branchName = & git -C $pluginFolderPath rev-parse --abbrev-ref HEAD 2>&1
+            Write-Host "  Git repo detected (branch: $branchName)" -ForegroundColor DarkCyan
+            Write-Host "  Running git pull --rebase..." -ForegroundColor Yellow
+
+            $gitOutput = & git -C $pluginFolderPath pull --rebase 2>&1
+            $gitExitCode = $LASTEXITCODE
+            $gitWatch.Stop()
+            $gitElapsed = [math]::Round($gitWatch.Elapsed.TotalSeconds, 1)
+
+            if ($gitExitCode -eq 0) {
+                $shortHash = & git -C $pluginFolderPath rev-parse --short HEAD 2>&1
+                Write-Host "  Git pull OK ($branchName @ $shortHash) - ${gitElapsed}s" -ForegroundColor Green
+            } else {
+                Write-Host "  Git pull WARNING: $($gitOutput | Out-String)" -ForegroundColor DarkYellow
+                Write-Host "  Continuing with upload... - ${gitElapsed}s" -ForegroundColor DarkYellow
+            }
+        }
+    }
+}
+
 $tempDir = if ($isWindows) { $env:TEMP } else { "/tmp" }
 $zipFileName = "$Slug.zip"
 $zipPath = Join-Path $tempDir $zipFileName
