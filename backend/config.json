@@ -123,7 +123,7 @@
       },
       {
         "Name": "Plugins Onboard",
-        "WindowsPath": "D:\\wp-work\\riseup-asia\\wp-onboarding-v13\\wp-plugins\\plugins-onboard",
+        "WindowsPath": "D:\\wp-work\\riseup-asia\\wp-onboarding-v13\\wp-plugins\\ignored-plugins\\plugins-onboard",
         "UnixPath": "",
         "Category": "Development",
         "GitEnabled": true,
@@ -132,7 +132,7 @@
       },
       {
         "Name": "Category Generator",
-        "WindowsPath": "D:\\wp-work\\riseup-asia\\category-forge\\wordpress-plugin\\category-generator",
+        "WindowsPath": "D:\\wp-work\\riseup-asia\\wp-onboarding-v13\\wp-plugins\\category-generator",
         "UnixPath": "",
         "Category": "Development",
         "GitEnabled": true,
@@ -141,7 +141,7 @@
       },
       {
         "Name": "Link Manager",
-        "WindowsPath": "D:\\wp-work\\riseup-asia\\wp-link-manager\\link-manager",
+        "WindowsPath": "D:\\wp-work\\riseup-asia\\wp-onboarding-v13\\wp-plugins\\link-manager",
         "UnixPath": "",
         "Category": "Development",
         "GitEnabled": true,
