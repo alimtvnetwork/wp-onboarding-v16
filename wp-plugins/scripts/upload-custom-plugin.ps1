@@ -452,6 +452,17 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
         if ($uploadExitCode -eq 0) {
             Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name)" -ForegroundColor Green
             $successCount++
+
+            # Post-upload ping verification
+            if ($pingEndpoint -ne "") {
+                Invoke-PluginPing `
+                    -SiteUrl $targetSite.url `
+                    -Endpoint $pingEndpoint `
+                    -Username $targetSite.username `
+                    -Password $cleanPassword `
+                    -SiteName $targetSite.name `
+                    -Label $siteLabel
+            }
         } else {
             Write-Host "  ${siteLabel}FAILED - Exit code: $uploadExitCode" -ForegroundColor Red
             $failCount++
