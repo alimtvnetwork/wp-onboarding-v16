@@ -1,5 +1,5 @@
 # WordPress Plugin Uploader V2
-# Version: 2.8.0
+# Version: 2.9.0
 # Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
 #
@@ -248,6 +248,72 @@ function Write-ServerErrorBanner {
     Write-Host "  ║  4. Check server error logs (Apache/Nginx)             ║" -ForegroundColor White
     Write-Host "  ║  5. Ensure WP_DEBUG is enabled in wp-config.php        ║" -ForegroundColor White
     Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+    Write-Host ""
+}
+
+# ============================================================================
+# DIAGNOSTIC REPORTING FRAMEWORK
+# Tracks Git, Lint, ZIP, Upload, Verify sections for grouped failure output
+# ============================================================================
+function New-V2DiagnosticSection {
+    param([string]$Name)
+    return [ordered]@{
+        Name    = $Name
+        Status  = "PENDING"
+        Summary = "Not started"
+        Details = @()
+    }
+}
+
+function New-V2DiagnosticSet {
+    return [ordered]@{
+        Git    = (New-V2DiagnosticSection -Name "Git")
+        Lint   = (New-V2DiagnosticSection -Name "Lint")
+        ZIP    = (New-V2DiagnosticSection -Name "ZIP")
+        Upload = (New-V2DiagnosticSection -Name "Upload")
+        Verify = (New-V2DiagnosticSection -Name "Verify")
+    }
+}
+
+function Set-V2DiagnosticSection {
+    param($Section, [string]$Status, [string]$Summary)
+    $Section.Status = $Status
+    $Section.Summary = $Summary
+}
+
+function Add-V2DiagnosticDetail {
+    param($Section, [string]$Detail)
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) {
+        $Section.Details += $Detail
+    }
+}
+
+function Write-V2DiagnosticReport {
+    param($Diagnostics, [string]$PluginSlug, [string]$SiteUrl)
+
+    Write-Host ""
+    Write-Host "  ========================================" -ForegroundColor Cyan
+    Write-Host "  Failure Diagnostics ($PluginSlug)" -ForegroundColor Cyan
+    if ($SiteUrl -ne "") {
+        Write-Host "  Site: $SiteUrl" -ForegroundColor Gray
+    }
+    Write-Host "  ========================================" -ForegroundColor Cyan
+
+    foreach ($name in @("Git", "Lint", "ZIP", "Upload", "Verify")) {
+        $section = $Diagnostics[$name]
+        $color = switch ($section.Status) {
+            "OK"   { "Green" }
+            "WARN" { "Yellow" }
+            "FAIL" { "Red" }
+            "SKIP" { "DarkGray" }
+            default { "Gray" }
+        }
+        Write-Host "  [$name] $($section.Status): $($section.Summary)" -ForegroundColor $color
+        foreach ($detail in $section.Details) {
+            Write-Host "    - $detail" -ForegroundColor DarkGray
+        }
+    }
+
     Write-Host ""
 }
 
