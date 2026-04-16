@@ -135,11 +135,11 @@ if ($List) {
     Write-Host "Registered Custom Plugins:" -ForegroundColor Cyan
     Write-Host ("-" * 60) -ForegroundColor DarkGray
     
-    $isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
-    $osLabel = if ($isWindows) { "Windows" } else { "Unix" }
+    $isWin = ($IsWindows -or $env:OS -eq "Windows_NT")
+    $osLabel = if ($isWin) { "Windows" } else { "Unix" }
 
     foreach ($plugin in $config.plugins) {
-        $pathForOs = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
+        $pathForOs = if ($isWin) { $plugin.paths.windows } else { $plugin.paths.unix }
         $pathExists = $pathForOs -and (Test-Path $pathForOs)
         $statusIcon = if ($pathExists) { "[OK]" } else { "[!!]" }
         $statusColor = if ($pathExists) { "Green" } else { "Red" }
@@ -174,7 +174,7 @@ if ([string]::IsNullOrWhiteSpace($Slug)) {
     exit 2
 }
 
-$isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
+$isWin = ($IsWindows -or $env:OS -eq "Windows_NT")
 $isDirectPath = $false
 $pluginFolderPath = ""
 $pingEndpoint = ""
@@ -184,11 +184,11 @@ $plugin = $config.plugins | Where-Object { $_.slug -eq $Slug }
 
 if ($plugin) {
     # --- Found in config: resolve OS-aware path ---
-    $pluginFolderPath = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
+    $pluginFolderPath = if ($isWin) { $plugin.paths.windows } else { $plugin.paths.unix }
     $pingEndpoint = if ($plugin.pingEndpoint) { $plugin.pingEndpoint } else { "" }
 
     if ([string]::IsNullOrWhiteSpace($pluginFolderPath)) {
-        $osLabel = if ($isWindows) { "windows" } else { "unix" }
+        $osLabel = if ($isWin) { "windows" } else { "unix" }
         Write-Host "ERROR: No '$osLabel' path configured for plugin '$Slug'" -ForegroundColor Red
         exit 3
     }
@@ -298,7 +298,7 @@ if ($SkipGitPull) {
     }
 }
 
-$tempDir = if ($isWindows) { $env:TEMP } else { "/tmp" }
+$tempDir = if ($isWin) { $env:TEMP } else { "/tmp" }
 $zipFileName = "$Slug.zip"
 $zipPath = Join-Path $tempDir $zipFileName
 
