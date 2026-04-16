@@ -383,6 +383,12 @@ if ($help) {
     Write-Host "    .\run.ps1 -zq          # ZIP QUpload plugin"
     Write-Host "    .\run.ps1 -z -pp 'wp-plugins/qupload' # ZIP a specific plugin"
     Write-Host ""
+    Write-Host "  Custom plugin upload:" -ForegroundColor DarkGray
+    Write-Host "    .\run.ps1 -ucp alim                # Upload 'alim' to default site (Test V2)"
+    Write-Host "    .\run.ps1 -ucp alim -a             # Upload 'alim' to ALL sites"
+    Write-Host "    .\run.ps1 -ucp alim -site 'Test V1'  # Upload to specific site"
+    Write-Host "    .\run.ps1 -ucp -list               # List registered custom plugins"
+    Write-Host ""
     Write-Host "  Plugin status:" -ForegroundColor DarkGray
     Write-Host "    .\run.ps1 -ps                      # Status on default site"
     Write-Host "    .\run.ps1 -pas                     # Status on all sites"
@@ -659,6 +665,22 @@ Write-Host ""
 # ============================================================================
 # EARLY EXIT MODES (ZIP, Upload, etc.)
 # ============================================================================
+# Custom plugin upload (early exit)
+if ($uploadcustomplugin -ne "" -or $uploadcustomplugin -eq "" -and $MyInvocation.BoundParameters.ContainsKey('uploadcustomplugin')) {
+    $isUcpActive = $MyInvocation.BoundParameters.ContainsKey('uploadcustomplugin')
+    if ($isUcpActive) {
+        $ucpSlugValue = $uploadcustomplugin
+        $isListMode = $ucpSlugValue -eq "list" -or $ucpSlugValue -eq "-list"
+        
+        Invoke-CustomPluginUploadMode `
+            -PluginSlug $ucpSlugValue `
+            -AllSites:$allcustomsites `
+            -SiteName $site `
+            -ListPlugins:$isListMode `
+            -VerboseMode:$verbose
+    }
+}
+
 if ($zip) { Invoke-ZipMode }
 if ($za) { Invoke-ZipAllMode }
 if ($zas) { Invoke-ZipAllParallelMode }
