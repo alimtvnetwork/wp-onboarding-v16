@@ -122,6 +122,7 @@ $ModulesDir = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts"
 . (Join-Path $ModulesDir "mode-plugin-status.ps1")
 . (Join-Path $ModulesDir "mode-site-settings.ps1")
 . (Join-Path $ModulesDir "mode-custom-upload.ps1")
+. (Join-Path $ModulesDir "mode-wp-debug.ps1")
 . (Join-Path $ModulesDir "deploy-tracker.ps1")
 
 # ============================================================================
@@ -304,6 +305,16 @@ if ($help) {
     Write-Host "  -ss -set 'post-size' -setval '256M'     Set post_max_size"
     Write-Host "  -ss -set 'memory-limit' -setval '512M'  Set memory_limit"
     Write-Host "  -ss -v              Verbose: show raw JSON request/response"
+    Write-Host ""
+    Write-Host "WP DEBUG TOGGLE:" -ForegroundColor Yellow
+    Write-Host "  -wpd on             Enable WP_DEBUG on default site"
+    Write-Host "  -wpd off            Disable WP_DEBUG on default site"
+    Write-Host "  -wpd on -a          Enable WP_DEBUG on ALL sites"
+    Write-Host "  -wpd off -a         Disable WP_DEBUG on ALL sites"
+    Write-Host "  -wpd on -site 'n'   Enable on specific site"
+    Write-Host "  -wpd                Show current WP_DEBUG status"
+    Write-Host "  -wpd -a             Show status on all sites"
+    Write-Host "  -wpd help           Show WP debug help"
     Write-Host ""
     Write-Host "ZIP:" -ForegroundColor Yellow
     Write-Host "  -z,  -zip           ZIP default plugin (Riseup Asia). With -pp: specific plugin"
