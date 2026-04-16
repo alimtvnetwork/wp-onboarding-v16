@@ -7,6 +7,7 @@ function Invoke-CustomPluginUploadMode {
     param(
         [string]$PluginSlug = "",
         [switch]$AllSites = $false,
+        [switch]$AllPlugins = $false,
         [string]$SiteName = "",
         [switch]$ListPlugins = $false,
         [switch]$ShowHelp = $false,
@@ -31,9 +32,27 @@ function Invoke-CustomPluginUploadMode {
         exit 0
     }
 
+    # --- All plugins mode: load every slug from custom-plugins.json ---
+    if ($AllPlugins) {
+        $configPath = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts") "custom-plugins.json"
+        if (-not (Test-Path $configPath)) {
+            Write-Host "ERROR: custom-plugins.json not found at: $configPath" -ForegroundColor Red
+            exit 1
+        }
+        $config = Get-Content $configPath -Raw | ConvertFrom-Json
+        $allSlugs = $config.plugins | ForEach-Object { $_.slug }
+        if ($allSlugs.Count -eq 0) {
+            Write-Host "ERROR: No plugins defined in custom-plugins.json" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  --all-plugins: Found $($allSlugs.Count) plugin(s): $($allSlugs -join ', ')" -ForegroundColor Cyan
+        $PluginSlug = $allSlugs -join ','
+    }
+
     if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
         Write-Host "ERROR: Plugin slug required. Usage: .\run.ps1 -ucp <slug>" -ForegroundColor Red
         Write-Host "  Multiple: .\run.ps1 -ucp slug1,slug2" -ForegroundColor Yellow
+        Write-Host "  All:      .\run.ps1 -ucp -ap" -ForegroundColor Yellow
         Write-Host "  List:     .\run.ps1 -ucp -list" -ForegroundColor Yellow
         exit 2
     }
