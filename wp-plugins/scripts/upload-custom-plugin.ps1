@@ -470,37 +470,36 @@ Write-Host ""
 for ($idx = 0; $idx -lt $totalSites; $idx++) {
     $targetSite = $targetSites[$idx]
     $siteLabel = if ($totalSites -gt 1) { "[$($idx+1)/$totalSites] " } else { "" }
-    
+
     $siteWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  ${siteLabel}Uploading to $($targetSite.name) ($($targetSite.url))..." -ForegroundColor Yellow
 
-    # Decode credentials
     $cleanPassword = $targetSite.appPassword -replace '\s', ''
-
-    $uploadArgs = @(
-        "-PluginPath", $pluginFolderPath,
-        "-SiteUrl", $targetSite.url,
-        "-User", $targetSite.username,
-        "-Password", $cleanPassword,
-        "-Slug", $Slug,
-        "-Quiet",
-        "-DeleteZip"
-    )
-    
-    if ($shouldActivate) { $uploadArgs += "-Activate" }
-    if ($VerboseOutput) { $uploadArgs += "-VerboseOutput" }
+    $uploadConfig = @{
+        pluginFolderPath     = $pluginFolderPath
+        wordPressSiteURL     = $targetSite.url
+        username             = $targetSite.username
+        appPassword          = $cleanPassword
+        outputZipPath        = $zipPath
+        activateAfterInstall = $shouldActivate
+        deleteZipAfterUpload = $true
+        pluginSlug           = $Slug
+    } | ConvertTo-Json -Compress
 
     try {
-        & $uploadScript @uploadArgs
+        if ($VerboseOutput) {
+            & $uploadScript -JsonConfig $uploadConfig -SkipGitPull -DebugMode
+        } else {
+            & $uploadScript -JsonConfig $uploadConfig -SkipGitPull
+        }
         $uploadExitCode = $LASTEXITCODE
-        
+
         if ($uploadExitCode -eq 0) {
             $siteWatch.Stop()
             $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
             Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name) - ${siteElapsed}s" -ForegroundColor Green
             $successCount++
 
-            # Post-upload ping verification
             if ($pingEndpoint -ne "") {
                 Invoke-PluginPing `
                     -SiteUrl $targetSite.url `
@@ -515,10 +514,14 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
             $failCount++
         }
     } catch {
+        $siteWatch.Stop()
         Write-Host "  ${siteLabel}FAILED - $($_.Exception.Message)" -ForegroundColor Red
+        if ($_.ScriptStackTrace) {
+            Write-Host "  ${siteLabel}STACKTRACE: $($_.ScriptStackTrace)" -ForegroundColor DarkRed
+        }
         $failCount++
     }
-    
+
     Write-Host ""
 }
 
