@@ -148,6 +148,7 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 
 	patterns := headerPatterns()
 
+	// First pass: check .php files in the given directory
 	for _, entry := range entries {
 		isSkippable := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
 		if isSkippable {
@@ -156,6 +157,27 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 		info := s.parsePluginHeader(path, entry.Name(), patterns)
 		if info != nil {
 			return info, nil
+		}
+	}
+
+	// Second pass: check one level of subdirectories (e.g. repo-root/plugin-slug/)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		subPath := filepath.Join(path, entry.Name())
+		subEntries, subErr := os.ReadDir(subPath)
+		if subErr != nil {
+			continue
+		}
+		for _, subEntry := range subEntries {
+			if subEntry.IsDir() || !strings.HasSuffix(subEntry.Name(), ".php") {
+				continue
+			}
+			info := s.parsePluginHeader(subPath, subEntry.Name(), patterns)
+			if info != nil {
+				return info, nil
+			}
 		}
 	}
 
