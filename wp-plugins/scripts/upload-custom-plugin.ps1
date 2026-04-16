@@ -350,9 +350,9 @@ if ($failCount -gt 0 -and (Test-Path $zipPath)) {
 # ============================================================================
 Write-Host "========================================" -ForegroundColor Cyan
 if ($failCount -eq 0) {
-    Write-Host "  $Slug: $successCount/$totalSites sites completed successfully" -ForegroundColor Green
+    Write-Host "  ${Slug}: $successCount/$totalSites sites completed successfully" -ForegroundColor Green
 } else {
-    Write-Host "  $Slug: $successCount succeeded, $failCount failed (out of $totalSites)" -ForegroundColor Red
+    Write-Host "  ${Slug}: $successCount succeeded, $failCount failed (out of $totalSites)" -ForegroundColor Red
 }
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
