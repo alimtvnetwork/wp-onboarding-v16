@@ -28,21 +28,23 @@ trait StatusPayloadTrait {
 
     /** Handle status check. */
     public function handleStatus(WP_REST_Request $request): WP_REST_Response {
-        $liveVersion = $this->detectLiveVersion();
-        $dbAvailable = $this->db !== null;
+        return $this->safeExecute(function () use ($request) {
+            $liveVersion = $this->detectLiveVersion();
+            $dbAvailable = $this->db !== null;
 
-        $this->fileLogger->info('Status endpoint called', [
-            'endpoint'    => 'GET /' . EndpointType::Status->value,
-            'namespace'   => PluginConfigType::apiFullNamespace(),
-            'version'     => $liveVersion,
-            'dbAvailable' => $dbAvailable,
-            'requestedAt' => DateHelper::nowIso(),
-        ]);
+            $this->fileLogger->info('Status endpoint called', [
+                'endpoint'    => 'GET /' . EndpointType::Status->value,
+                'namespace'   => PluginConfigType::apiFullNamespace(),
+                'version'     => $liveVersion,
+                'dbAvailable' => $dbAvailable,
+                'requestedAt' => DateHelper::nowIso(),
+            ]);
 
-        return EnvelopeBuilder::success()
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
-            ->setSingleResult($this->buildStatusPayload($liveVersion, $dbAvailable))
-            ->toResponse();
+            return EnvelopeBuilder::success()
+                ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
+                ->setSingleResult($this->buildStatusPayload($liveVersion, $dbAvailable))
+                ->toResponse();
+        }, 'handleStatus');
     }
 
     /**

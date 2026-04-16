@@ -28,18 +28,20 @@ use RiseupAsia\Enums\PhpNativeType;
 trait InvalidRouteTrait
 {
     public function handleInvalidRoute(WP_REST_Request $request): WP_REST_Response {
-        $invalidPath = $request->get_param('invalid_path');
-        $method = $request->get_method();
+        return $this->safeExecute(function () use ($request) {
+            $invalidPath = $request->get_param('invalid_path');
+            $method = $request->get_method();
 
-        $this->fileLogger->warn('Invalid route requested', [ResponseKeyType::Path->value => $invalidPath, 'method' => $method]);
+            $this->fileLogger->warn('Invalid route requested', [ResponseKeyType::Path->value => $invalidPath, 'method' => $method]);
 
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-        $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+            $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
 
-        return EnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
-            ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
-            ->setErrors($trace)
-            ->toResponse();
+            return EnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
+                ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
+                ->setErrors($trace)
+                ->toResponse();
+        }, 'handleInvalidRoute');
     }
 
     private function buildInvalidRouteTrace(
