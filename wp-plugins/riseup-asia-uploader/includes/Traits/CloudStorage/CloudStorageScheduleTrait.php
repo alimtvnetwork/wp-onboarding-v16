@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use Throwable;
+
 
 use RiseupAsia\CloudStorage\BackupFolderResolver;
 use RiseupAsia\CloudStorage\ZipSplitter;
