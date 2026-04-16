@@ -1,5 +1,5 @@
 {
-  "pluginSlug": "riseup-asia-uploader",
+  "pluginSlug": "qupload",
   "versions": [
     {
       "commitSha": "27db7091389940f139e527cfaaf6abd7814e2ee2",
@@ -42,14 +42,14 @@
       "deployedAt": "2026-03-27T18:00:59Z"
     },
     {
-      "deployedAt": "2026-03-30T19:24:15Z",
-      "commitSha": "cae2c04c5fe13f7d62aea97401311f91968d19c9",
-      "version": "2.31.0"
-    },
-    {
       "deployedAt": "2026-04-01T07:44:14Z",
       "version": "2.31.0",
       "commitSha": "ed6afebabd971f0a148bebdf0fd45cd8e213c2cd"
+    },
+    {
+      "deployedAt": "2026-04-16T04:44:54Z",
+      "version": "2.31.0",
+      "commitSha": "b54500a1c0e906cc6586d652ff3c75e441db082e"
     }
   ]
 }
