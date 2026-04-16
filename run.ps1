@@ -48,7 +48,9 @@ param(
     [Alias('err')][switch]$errorlogs,
     [Alias('ss')][switch]$sitesettings,
     [string]$set = "",
-    [string]$setval = ""
+    [string]$setval = "",
+    [Alias('ucp')][string]$uploadcustomplugin = "",
+    [Alias('a')][switch]$allcustomsites
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -116,6 +118,7 @@ $ModulesDir = Join-Path (Join-Path (Join-Path $ScriptDir "wp-plugins") "scripts"
 . (Join-Path $ModulesDir "mode-check.ps1")
 . (Join-Path $ModulesDir "mode-plugin-status.ps1")
 . (Join-Path $ModulesDir "mode-site-settings.ps1")
+. (Join-Path $ModulesDir "mode-custom-upload.ps1")
 . (Join-Path $ModulesDir "deploy-tracker.ps1")
 
 # ============================================================================
