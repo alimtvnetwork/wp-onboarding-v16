@@ -1,20 +1,20 @@
 {
   "appName": "WP Publish",
-  "version": "2.35.0",
+  "version": "2.36.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.35.0",
-  "wpPluginVersion": "2.47.0",
-  "quploadVersion": "2.39.0",
+  "scriptVersion": "2.36.0",
+  "wpPluginVersion": "2.48.0",
+  "quploadVersion": "2.40.0",
   "changelog": [
     {
-      "version": "2.35.0",
+      "version": "2.36.0",
       "date": "2026-04-16",
-      "title": "V2 Uploader Grouped Failure Diagnostics",
+      "title": "WP Debug Toggle Command",
       "changes": [
-        "🧭 upload-plugin-v2.ps1 now tracks Git, Lint, ZIP, Upload, and Verify diagnostic sections",
-        "📋 On failure or fallback, a grouped diagnostic report prints status and details for each section",
+        "🐛 New -wpd (WP Debug) shortcut: toggle WP_DEBUG on/off per site or all sites",
+        "📋 Supports status check, enable, disable with -a, -site, -i targeting",
         "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
       ]
     },
