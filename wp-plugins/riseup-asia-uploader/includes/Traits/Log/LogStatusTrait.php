@@ -38,13 +38,13 @@ trait LogStatusTrait
             return new WP_REST_Response(
                 [
                     ResponseKeyType::Success->value => true,
-                    'logs' => [
-                        'log_file'        => $logStatus,
-                        'error_file'      => $errorStatus,
-                        'stacktrace_file' => $stacktraceStatus,
-                        'archive_count'   => $archiveCount,
+                    ResponseKeyType::Logs->value => [
+                        ResponseKeyType::LogFile->value        => $logStatus,
+                        ResponseKeyType::ErrorFile->value      => $errorStatus,
+                        ResponseKeyType::StacktraceFile->value => $stacktraceStatus,
+                        ResponseKeyType::ArchiveCount->value   => $archiveCount,
                     ],
-                    'database' => $dbCounts,
+                    ResponseKeyType::Database->value => $dbCounts,
                 ],
                 HttpStatusType::Ok->value,
             );
@@ -57,10 +57,10 @@ trait LogStatusTrait
 
         if ($isFileExists === false) {
             return [
-                'exists'        => false,
-                'size_bytes'    => 0,
-                'last_modified' => null,
-                'line_count'    => 0,
+                ResponseKeyType::Exists->value       => false,
+                ResponseKeyType::SizeBytes->value    => 0,
+                ResponseKeyType::LastModified->value => null,
+                ResponseKeyType::LineCount->value    => 0,
             ];
         }
 
@@ -69,10 +69,10 @@ trait LogStatusTrait
         $lineCount = $this->countFileLines($filePath);
 
         return [
-            'exists'        => true,
-            'size_bytes'    => ($size !== false) ? $size : 0,
-            'last_modified' => ($mtime !== false) ? gmdate('Y-m-d\TH:i:s\Z', $mtime) : null,
-            'line_count'    => $lineCount,
+            ResponseKeyType::Exists->value       => true,
+            ResponseKeyType::SizeBytes->value    => ($size !== false) ? $size : 0,
+            ResponseKeyType::LastModified->value => ($mtime !== false) ? gmdate('Y-m-d\TH:i:s\Z', $mtime) : null,
+            ResponseKeyType::LineCount->value    => $lineCount,
         ];
     }
 
@@ -132,9 +132,12 @@ trait LogStatusTrait
 
     /** Get transaction and error session counts from the database. */
     private function getDatabaseCounts(): array {
+        $txKey = ResponseKeyType::TransactionCount->value;
+        $esKey = ResponseKeyType::ErrorSessionCount->value;
+
         $result = [
-            'transaction_count'    => 0,
-            'error_session_count'  => 0,
+            $txKey => 0,
+            $esKey => 0,
         ];
 
         try {
@@ -150,14 +153,14 @@ trait LogStatusTrait
             $isTransactionCountReady = ($txStmt !== false);
 
             if ($isTransactionCountReady) {
-                $result['transaction_count'] = (int) $txStmt->fetchColumn();
+                $result[$txKey] = (int) $txStmt->fetchColumn();
             }
 
             $esStmt = $pdo->query('SELECT COUNT(*) FROM ' . TableType::ErrorSessions->value);
             $isErrorSessionCountReady = ($esStmt !== false);
 
             if ($isErrorSessionCountReady) {
-                $result['error_session_count'] = (int) $esStmt->fetchColumn();
+                $result[$esKey] = (int) $esStmt->fetchColumn();
             }
         } catch (\Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get database counts for log status');

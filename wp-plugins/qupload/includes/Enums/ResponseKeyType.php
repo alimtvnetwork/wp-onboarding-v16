@@ -70,6 +70,23 @@ enum ResponseKeyType: string
     case DbAvailable    = 'DbAvailable';
     case ServerTime     = 'ServerTime';
 
+    /** Log status keys. */
+    case Logs             = 'Logs';
+    case LogFile          = 'LogFile';
+    case ErrorFile        = 'ErrorFile';
+    case StacktraceFile   = 'StacktraceFile';
+    case ArchiveCount     = 'ArchiveCount';
+    case SizeBytes        = 'SizeBytes';
+    case LastModified     = 'LastModified';
+    case LineCount        = 'LineCount';
+    case File             = 'File';
+
+    /** Log retrieval settings keys. */
+    case IncludeInfoLog    = 'IncludeInfoLog';
+    case IncludeErrorLog   = 'IncludeErrorLog';
+    case IncludeStacktrace = 'IncludeStacktrace';
+    case MaxLines          = 'MaxLines';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
