@@ -69,6 +69,8 @@ enum ResponseKeyType: string
     case SiteUrl        = 'SiteUrl';
     case DbAvailable    = 'DbAvailable';
     case ServerTime     = 'ServerTime';
+    case Author         = 'Author';
+    case Company        = 'Company';
 
     /** Log status keys. */
     case Logs             = 'Logs';

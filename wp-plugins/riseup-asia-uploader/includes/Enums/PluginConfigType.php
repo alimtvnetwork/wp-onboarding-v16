@@ -25,6 +25,8 @@ enum PluginConfigType: string
     case LogPrefix       = '[Riseup Asia]';
     case IgnoreFilename  = '.uploadignore';
     case SettingsGroup   = 'riseup_asia_settings_group';
+    case Author          = 'Developers Organism';
+    case Company         = 'Riseup Asia';
 
     public static function uploadsSubdir(): string
     {
