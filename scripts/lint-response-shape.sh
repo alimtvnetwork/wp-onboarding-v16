@@ -91,13 +91,16 @@ function classify(expr,    t) {
   sub(/^[[:space:]]+/, "", expr)
   sub(/[[:space:]]+$/, "", expr)
 
-  # Empty slice nil-safe fallback
+  # Empty slice nil-safe fallback — any []T{} is treated as the
+  # nil-safe placeholder when paired with a populated slice elsewhere.
+  if (expr ~ /^\[\][A-Za-z_][A-Za-z0-9_.]*\{\}$/) return "empty_slice"
   if (expr ~ /^\[\]struct\{\}\{\}$/) return "empty_slice"
+  if (expr ~ /^\[\]any\{\}$/) return "empty_slice"
 
   # map literal:  map[...]...{
   if (expr ~ /^map\[/) return "map_literal|map"
 
-  # slice literal:  []T{...}
+  # non-empty slice literal:  []T{x,y,z}
   if (expr ~ /^\[\]/) return "slice_literal|slice"
 
   # pointer-to-struct literal:  &Foo{...}  or  &pkg.Foo{...}
