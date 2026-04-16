@@ -1627,6 +1627,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
 
             if ($null -eq $verifyResponse) {
                 Write-Status "      ⚠ Verification blocked by HTML challenge — check WP admin manually" -Color Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification blocked by HTML challenge"
             } else {
                 $verifyData = $verifyResponse
                 if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
