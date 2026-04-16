@@ -26,7 +26,9 @@ wp-plugins/scripts/
 ├── upload-plugin-v2.ps1       ← V2: Enhanced (Git Pull + Version Compare + OPcache Flush + Publish)
 ├── upload-plugin-v3.ps1       ← V3: Parallel multi-plugin wrapper around V2
 ├── upload-plugin-custom.ps1   ← Custom path wrapper around V2
-└── wp-plugin-config.json      ← Shared credentials config (not in git)
+├── upload-custom-plugin.ps1   ← External plugin ZIP + upload (reads custom-plugins.json)
+├── wp-plugin-config.json      ← Shared credentials config (not in git)
+└── custom-plugins.json        ← External plugin paths & sites config (not in git)
 ```
 
 ### Dependency Chain
@@ -34,6 +36,7 @@ wp-plugins/scripts/
 ```
 upload-plugin-v3.ps1 ───wraps──→ upload-plugin-v2.ps1 ───fallback──→ upload-plugin.ps1
 upload-plugin-custom.ps1 ──wraps──→ upload-plugin-v2.ps1
+upload-custom-plugin.ps1 ──wraps──→ upload-plugin-v2.ps1 (via custom-plugins.json)
 run.ps1 (project runner) ──calls──→ upload-plugin-v2.ps1
 ```
 
@@ -57,6 +60,7 @@ wp-content/plugins/riseup-asia-uploader/
 | [03-upload-plugin-v3.md](./03-upload-plugin-v3.md) | V3 script specification |
 | [04-upload-plugin-custom.md](./04-upload-plugin-custom.md) | Custom path wrapper specification |
 | [05-configuration.md](./05-configuration.md) | Shared configuration format |
+| [06-custom-plugin-upload.md](./06-custom-plugin-upload.md) | Custom (external) plugin ZIP & upload |
 
 ---
 
