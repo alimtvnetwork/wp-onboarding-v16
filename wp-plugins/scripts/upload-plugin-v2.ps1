@@ -864,11 +864,14 @@ if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
     Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
     Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
     Write-Host "      Continuing with upload anyway." -ForegroundColor DarkYellow
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "WARN" -Summary "PHP syntax warning; upload continued"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail "File: $($syntaxResult.FailedFile)"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail $syntaxResult.LintMessage
 }
 
-if ($isSyntaxChecked) {
+if ($isSyntaxChecked -and $isSyntaxSuccess) {
     Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
-} else {
+} elseif (-not $isSyntaxChecked) {
     Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
 }
 
@@ -881,6 +884,8 @@ if (-not $isEnumLintSuccess) {
         Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
     }
     Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "FAIL" -Summary "Duplicate backed enum values detected"
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
@@ -893,6 +898,9 @@ $isPhpstanSuccess = $phpstanResult.IsSuccess
 if ($isPhpstanChecked -and (-not $isPhpstanSuccess)) {
     Write-Host "      PHPStan analysis FAILED" -ForegroundColor Red
     Write-Host "      $($phpstanResult.AnalysisOutput)" -ForegroundColor Yellow
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "FAIL" -Summary "PHPStan analysis failed"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail $phpstanResult.AnalysisOutput
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
@@ -900,6 +908,15 @@ if ($isPhpstanChecked) {
     Write-Status "      $($phpstanResult.Message)" -Color Green
 } else {
     Write-Status "      PHPStan skipped: $($phpstanResult.Message)" -Color DarkYellow
+}
+
+# Finalize lint diagnostic if not already set to WARN/FAIL
+if ($v2Diag.Lint.Status -eq "PENDING") {
+    $lintChecks = @()
+    if ($isSyntaxChecked) { $lintChecks += "syntax" }
+    $lintChecks += "enum"
+    if ($isPhpstanChecked) { $lintChecks += "phpstan" }
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "OK" -Summary "All checks passed ($($lintChecks -join ', '))"
 }
 
 Write-Status ""
