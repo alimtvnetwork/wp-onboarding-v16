@@ -74,6 +74,47 @@ trait ResponseTrait {
         }
     }
 
+    /**
+     * Safely execute a void callable with comprehensive error handling.
+     *
+     * Designed for WP-Cron handlers that return void instead of WP_REST_Response.
+     * Uses the same two-tier logging as safeExecute().
+     *
+     * @param callable $callback The business logic to execute.
+     * @param string   $context  Human-readable label for log messages.
+     */
+    protected function safeExecuteVoid(
+        callable $callback,
+        string $context = 'operation',
+    ): void {
+        try {
+            call_user_func($callback);
+        } catch (Throwable $e) {
+            // Tier 1 — PHP native error_log (guaranteed available)
+            error_log(sprintf(
+                '[RiseupAsia] safeExecuteVoid caught %s in %s: %s in %s:%d',
+                get_class($e),
+                $context,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine(),
+            ));
+
+            // Tier 2 — FileLogger (may be null during bootstrap failures)
+            if ($this->fileLogger !== null) {
+                $this->fileLogger->logException($e, "Throwable in {$context}");
+
+                $this->fileLogger->error("safeExecuteVoid caught Throwable", [
+                    'context'   => $context,
+                    'exception' => get_class($e),
+                    'message'   => $e->getMessage(),
+                    'file'      => $e->getFile(),
+                    'line'      => $e->getLine(),
+                ]);
+            }
+        }
+    }
+
     /** Create an error response with optional exception details. */
     protected function errorResponse(
         string $message,

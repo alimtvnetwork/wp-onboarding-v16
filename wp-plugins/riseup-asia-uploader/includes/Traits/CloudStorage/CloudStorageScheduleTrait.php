@@ -140,37 +140,39 @@ trait CloudStorageScheduleTrait {
     /** Handle scheduled full backup cron event. */
     public function handleScheduledFullBackup(): void
     {
-        $this->fileLogger->info('[CLOUD-BACKUP] Starting scheduled full backup');
+        $this->safeExecuteVoid(function () {
+            $this->fileLogger->info('[CLOUD-BACKUP] Starting scheduled full backup');
 
-        $accounts = $this->getEnabledCloudStorageAccounts();
+            $accounts = $this->getEnabledCloudStorageAccounts();
 
-        foreach ($accounts as $account) {
-            try {
-                $this->executeFullBackupForAccount($account);
-            } catch (Throwable $e) {
-                $this->fileLogger->logException($e, '[CLOUD-BACKUP] Scheduled full backup failed for account ' . ($account['Id'] ?? '?'));
+            foreach ($accounts as $account) {
+                $this->safeExecuteVoid(
+                    fn() => $this->executeFullBackupForAccount($account),
+                    'cloud full backup account ' . ($account['Id'] ?? '?'),
+                );
             }
-        }
 
-        $this->fileLogger->info('[CLOUD-BACKUP] Scheduled full backup complete');
+            $this->fileLogger->info('[CLOUD-BACKUP] Scheduled full backup complete');
+        }, 'scheduled full backup');
     }
 
     /** Handle scheduled incremental backup cron event. */
     public function handleScheduledIncrementalBackup(): void
     {
-        $this->fileLogger->info('[CLOUD-BACKUP] Starting scheduled incremental backup');
+        $this->safeExecuteVoid(function () {
+            $this->fileLogger->info('[CLOUD-BACKUP] Starting scheduled incremental backup');
 
-        $accounts = $this->getEnabledCloudStorageAccounts();
+            $accounts = $this->getEnabledCloudStorageAccounts();
 
-        foreach ($accounts as $account) {
-            try {
-                $this->executeIncrementalBackupForAccount($account);
-            } catch (Throwable $e) {
-                $this->fileLogger->logException($e, '[CLOUD-BACKUP] Scheduled incremental backup failed for account ' . ($account['Id'] ?? '?'));
+            foreach ($accounts as $account) {
+                $this->safeExecuteVoid(
+                    fn() => $this->executeIncrementalBackupForAccount($account),
+                    'cloud incremental backup account ' . ($account['Id'] ?? '?'),
+                );
             }
-        }
 
-        $this->fileLogger->info('[CLOUD-BACKUP] Scheduled incremental backup complete');
+            $this->fileLogger->info('[CLOUD-BACKUP] Scheduled incremental backup complete');
+        }, 'scheduled incremental backup');
     }
 
     /**
@@ -180,19 +182,20 @@ trait CloudStorageScheduleTrait {
      */
     public function handleManualBackup(string $label): void
     {
-        $this->fileLogger->info('[CLOUD-BACKUP] Starting manual backup', ['label' => $label]);
+        $this->safeExecuteVoid(function () use ($label) {
+            $this->fileLogger->info('[CLOUD-BACKUP] Starting manual backup', ['label' => $label]);
 
-        $accounts = $this->getEnabledCloudStorageAccounts();
+            $accounts = $this->getEnabledCloudStorageAccounts();
 
-        foreach ($accounts as $account) {
-            try {
-                $this->executeFullBackupForAccount($account, $label);
-            } catch (Throwable $e) {
-                $this->fileLogger->logException($e, '[CLOUD-BACKUP] Manual backup failed for account ' . ($account['Id'] ?? '?'));
+            foreach ($accounts as $account) {
+                $this->safeExecuteVoid(
+                    fn() => $this->executeFullBackupForAccount($account, $label),
+                    'cloud manual backup account ' . ($account['Id'] ?? '?'),
+                );
             }
-        }
 
-        $this->fileLogger->info('[CLOUD-BACKUP] Manual backup complete', ['label' => $label]);
+            $this->fileLogger->info('[CLOUD-BACKUP] Manual backup complete', ['label' => $label]);
+        }, 'manual backup');
     }
 
     /** Execute a full backup for a single account. */
