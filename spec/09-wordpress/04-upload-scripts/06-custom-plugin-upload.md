@@ -271,13 +271,17 @@ The `-ucp` flag is handled via `mode-custom-upload.ps1` module (dot-sourced by `
 ```powershell
 # In run.ps1 param block:
 [Alias('ucp')][string]$uploadcustomplugin = "",
-[Alias('a')][switch]$allcustomsites
+[Alias('a')][switch]$allcustomsites,
+[Alias('ap')][switch]$allplugins,
+[switch]$skipgitpull
 
 # In run.ps1 early exit modes:
 if ($isUcpActive) {
     Invoke-CustomPluginUploadMode `
         -PluginSlug $ucpSlugValue `
         -AllSites:$allcustomsites `
+        -AllPlugins:$allplugins `
+        -SkipGitPull:$skipgitpull `
         -SiteName $site `
         -VerboseMode:$verbose
 }
