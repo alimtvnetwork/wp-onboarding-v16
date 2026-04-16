@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.38.0",
+  "version": "2.39.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.38.0",
+  "scriptVersion": "2.39.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.40.0",
   "changelog": [
+    {
+      "version": "2.39.0",
+      "date": "2026-04-16",
+      "title": "Lint: Response Shape Consistency Check",
+      "changes": [
+        "New scripts/lint-response-shape.sh: grep/awk-based check that flags Go HTTP handlers calling respondSuccess(w, X) with categorically different concrete types across branches of the same function (e.g. map literal vs struct literal vs nested wrapper).",
+        "Exempts the nil-safe empty-slice fallback ([]T{}, []any{}, []struct{}{}) which is functionally equivalent to a populated slice in JSON.",
+        "Wired into backend/Makefile (make lint-all, make lint-response-shape), .github/workflows/go-lint.yml (backend + licensing jobs), and scripts/pre-commit.sh.",
+        "Catches the v2.37.0-class regression where ScanDirectoryPath returned a flat object on one branch and a {Scan, IsDetectionCreated} envelope on another."
+      ]
+    },
     {
       "version": "2.38.0",
       "date": "2026-04-16",

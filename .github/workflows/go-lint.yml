@@ -65,6 +65,9 @@ jobs:
       - name: Lint — Typed-Nil (error ← AppError)
         run: bash scripts/lint-typed-nil.sh
 
+      - name: Lint — Response Shape Consistency
+        run: bash scripts/lint-response-shape.sh
+
       - name: Validate OpenAPI Spec
         working-directory: backend
         run: |
@@ -157,3 +160,6 @@ jobs:
 
       - name: Lint — Typed-Nil (error ← AppError)
         run: bash scripts/lint-typed-nil.sh --dir licensing
+
+      - name: Lint — Response Shape Consistency
+        run: bash scripts/lint-response-shape.sh --dir licensing

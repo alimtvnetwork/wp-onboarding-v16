@@ -51,6 +51,7 @@ if [[ -d "backend" ]]; then
   run_check "JSON tags"                      bash "$SCRIPT_DIR/lint-json-tags.sh"
   run_check "Inline if"                      bash "$SCRIPT_DIR/lint-inline-if.sh"
   run_check "Typed-nil (error ← AppError)"   bash "$SCRIPT_DIR/lint-typed-nil.sh"
+  run_check "Response shape consistency"     bash "$SCRIPT_DIR/lint-response-shape.sh"
   run_check "go vet"                         bash -c "cd backend && go vet ./..."
   echo ""
 fi
@@ -66,6 +67,7 @@ if [[ -d "licensing" ]]; then
   run_check "JSON tags"                      bash "$SCRIPT_DIR/lint-json-tags.sh" licensing
   run_check "Inline if"                      bash "$SCRIPT_DIR/lint-inline-if.sh" --dir licensing
   run_check "Typed-nil (error ← AppError)"   bash "$SCRIPT_DIR/lint-typed-nil.sh" --dir licensing
+  run_check "Response shape consistency"     bash "$SCRIPT_DIR/lint-response-shape.sh" --dir licensing
   run_check "go vet"                         bash -c "cd licensing && go vet ./..."
   echo ""
 fi
