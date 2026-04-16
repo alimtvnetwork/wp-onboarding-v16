@@ -87,6 +87,18 @@ enum ResponseKeyType: string
     case IncludeStacktrace = 'IncludeStacktrace';
     case MaxLines          = 'MaxLines';
 
+    /** Log clearing keys. */
+    case Cleared           = 'Cleared';
+    case ClearedBy         = 'ClearedBy';
+    case Machine           = 'Machine';
+    case Ip                = 'Ip';
+
+    /** Log rotation status keys. */
+    case Rotation          = 'Rotation';
+    case Config            = 'Config';
+    case OldestArchive     = 'OldestArchive';
+    case NewestArchive     = 'NewestArchive';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }

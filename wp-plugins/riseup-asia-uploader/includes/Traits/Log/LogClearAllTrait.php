@@ -44,13 +44,13 @@ trait LogClearAllTrait
 
             return new WP_REST_Response(
                 [
-                    ResponseKeyType::Success->value => true,
-                    'riseup'                        => $riseupResult,
-                    'qupload'                       => $quploadResult,
-                    'cleared_by'                    => [
-                        'machine'   => $machineName,
-                        'ip'        => $clientIp,
-                        'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+                    ResponseKeyType::Success->value    => true,
+                    ResponseKeyType::Riseup->value     => $riseupResult,
+                    ResponseKeyType::Qupload->value    => $quploadResult,
+                    ResponseKeyType::ClearedBy->value  => [
+                        ResponseKeyType::Machine->value   => $machineName,
+                        ResponseKeyType::Ip->value        => $clientIp,
+                        ResponseKeyType::Timestamp->value => gmdate('Y-m-d\TH:i:s\Z'),
                     ],
                 ],
                 HttpStatusType::Ok->value,
@@ -64,18 +64,23 @@ trait LogClearAllTrait
      * @return array{cleared: bool, files: bool, database: bool, error: string}
      */
     private function clearRiseupLogs(): array {
-        $result = ['cleared' => false, 'files' => false, 'database' => false, 'error' => ''];
+        $result = [
+            ResponseKeyType::Cleared->value  => false,
+            ResponseKeyType::Files->value    => false,
+            ResponseKeyType::Database->value => false,
+            ResponseKeyType::Error->value    => '',
+        ];
 
         try {
             $logger = FileLogger::getInstance();
             $logger->clearAllLogFiles();
-            $result['files'] = true;
+            $result[ResponseKeyType::Files->value] = true;
 
             $dbResult = $this->executeDatabaseClearing();
-            $result['database'] = ($dbResult['activity_log'] ?? false) || ($dbResult['error_sessions'] ?? false);
-            $result['cleared'] = true;
+            $result[ResponseKeyType::Database->value] = ($dbResult[ResponseKeyType::ActivityLog->value] ?? false) || ($dbResult[ResponseKeyType::ErrorSessions->value] ?? false);
+            $result[ResponseKeyType::Cleared->value] = true;
         } catch (\Throwable $e) {
-            $result['error'] = $e->getMessage();
+            $result[ResponseKeyType::Error->value] = $e->getMessage();
         }
 
         return $result;
@@ -87,13 +92,16 @@ trait LogClearAllTrait
      * @return array{cleared: bool, error: string}
      */
     private function clearQUploadLogs(): array {
-        $result = ['cleared' => false, 'error' => ''];
+        $result = [
+            ResponseKeyType::Cleared->value => false,
+            ResponseKeyType::Error->value   => '',
+        ];
 
         $quploadLoggerClass = 'QUpload\\Logging\\FileLogger';
         $isQUploadAvailable = class_exists($quploadLoggerClass);
 
         if ($isQUploadAvailable === false) {
-            $result['error'] = 'QUpload plugin not active or not installed';
+            $result[ResponseKeyType::Error->value] = 'QUpload plugin not active or not installed';
 
             return $result;
         }
@@ -101,9 +109,9 @@ trait LogClearAllTrait
         try {
             $quploadLogger = $quploadLoggerClass::getInstance();
             $quploadLogger->clearAllLogFiles();
-            $result['cleared'] = true;
+            $result[ResponseKeyType::Cleared->value] = true;
         } catch (\Throwable $e) {
-            $result['error'] = $e->getMessage();
+            $result[ResponseKeyType::Error->value] = $e->getMessage();
         }
 
         return $result;

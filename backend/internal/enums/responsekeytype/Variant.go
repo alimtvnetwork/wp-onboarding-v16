@@ -427,4 +427,22 @@ const (
 	Database
 	TransactionCount
 	ErrorSessionCount
+
+	// Log clearing keys.
+	Cleared
+	ClearedBy
+	Machine
+	Ip
+	ActivityLog
+	ErrorSessions
+
+	// Log rotation status keys.
+	Rotation
+	Config
+	OldestArchive
+	NewestArchive
+
+	// Cross-plugin clear-all keys.
+	Riseup
+	Qupload
 )

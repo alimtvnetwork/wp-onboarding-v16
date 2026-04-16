@@ -193,12 +193,12 @@ trait LogClearingTrait
     private function buildClearSuccessResponse(string $machineName, string $clientIp, array $clearResult): WP_REST_Response {
         return new WP_REST_Response(
             [
-                ResponseKeyType::Success->value => true,
-                'cleared'                       => $clearResult,
-                'cleared_by'                    => [
-                    'machine'   => $machineName,
-                    'ip'        => $clientIp,
-                    'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+                ResponseKeyType::Success->value   => true,
+                ResponseKeyType::Cleared->value    => $clearResult,
+                ResponseKeyType::ClearedBy->value  => [
+                    ResponseKeyType::Machine->value   => $machineName,
+                    ResponseKeyType::Ip->value        => $clientIp,
+                    ResponseKeyType::Timestamp->value => gmdate('Y-m-d\TH:i:s\Z'),
                 ],
             ],
             HttpStatusType::Ok->value,
@@ -217,21 +217,25 @@ trait LogClearingTrait
             $logger->clearAllLogFiles();
 
             return [
-                'log_file'        => true,
-                'error_file'      => true,
-                'stacktrace_file' => true,
+                ResponseKeyType::LogFile->value        => true,
+                ResponseKeyType::ErrorFile->value      => true,
+                ResponseKeyType::StacktraceFile->value => true,
             ];
         }
 
         // Selective clearing by type
-        $result = ['log_file' => false, 'error_file' => false, 'stacktrace_file' => false];
+        $result = [
+            ResponseKeyType::LogFile->value        => false,
+            ResponseKeyType::ErrorFile->value      => false,
+            ResponseKeyType::StacktraceFile->value => false,
+        ];
 
         if ($type === 'log') {
-            $result['log_file'] = $logger->clearLogFileByType('log');
+            $result[ResponseKeyType::LogFile->value] = $logger->clearLogFileByType('log');
         } elseif ($type === 'error') {
-            $result['error_file'] = $logger->clearLogFileByType('error');
+            $result[ResponseKeyType::ErrorFile->value] = $logger->clearLogFileByType('error');
         } elseif ($type === 'stacktrace') {
-            $result['stacktrace_file'] = $logger->clearLogFileByType('stacktrace');
+            $result[ResponseKeyType::StacktraceFile->value] = $logger->clearLogFileByType('stacktrace');
         }
 
         return $result;
@@ -239,7 +243,10 @@ trait LogClearingTrait
 
     /** Truncate Transactions and ErrorSessions tables. */
     private function executeDatabaseClearing(): array {
-        $result = ['activity_log' => false, 'error_sessions' => false];
+        $result = [
+            ResponseKeyType::ActivityLog->value    => false,
+            ResponseKeyType::ErrorSessions->value  => false,
+        ];
 
         try {
             $pdo = Database::getInstance()->getPdo();
@@ -250,10 +257,10 @@ trait LogClearingTrait
             }
 
             Orm::forTable(TableType::Transactions->value)->deleteAll();
-            $result['activity_log'] = true;
+            $result[ResponseKeyType::ActivityLog->value] = true;
 
             Orm::forTable(TableType::ErrorSessions->value)->deleteAll();
-            $result['error_sessions'] = true;
+            $result[ResponseKeyType::ErrorSessions->value] = true;
         } catch (\Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to clear database tables during remote log clear');
         }
