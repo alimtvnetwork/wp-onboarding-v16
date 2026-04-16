@@ -245,16 +245,20 @@ if ($All) {
 # ============================================================================
 # ZIP CREATION (SmallestSize compression)
 # ============================================================================
-$pluginDisplayName = if ($plugin.name) { $plugin.name } else { $Slug }
+$pluginDisplayName = if ($plugin -and $plugin.name) { $plugin.name } else { $Slug }
 $siteCountLabel = if ($targetSites.Count -eq 1) { $targetSites[0].name } else { "$($targetSites.Count) sites" }
+$sourceLabel = if ($isDirectPath) { " [DirectPath]" } else { "" }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Custom Plugin Upload" -ForegroundColor Cyan
+Write-Host "  Custom Plugin Upload$sourceLabel" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Plugin:  $pluginDisplayName ($Slug)" -ForegroundColor White
 Write-Host "  Path:    $pluginFolderPath" -ForegroundColor Gray
 Write-Host "  Target:  $siteCountLabel" -ForegroundColor Gray
+if ($pingEndpoint -ne "") {
+    Write-Host "  Ping:    $pingEndpoint" -ForegroundColor Gray
+}
 Write-Host ""
 
 # Create temp ZIP
@@ -357,8 +361,60 @@ if (-not (Test-Path $uploadScript)) {
 }
 
 $shouldActivate = $true
-if ($null -ne $plugin.activate) {
+if ($plugin -and $null -ne $plugin.activate) {
     $shouldActivate = $plugin.activate
+}
+
+# ============================================================================
+# PING FUNCTION — verifies plugin is active on the site after upload
+# ============================================================================
+function Invoke-PluginPing {
+    param(
+        [string]$SiteUrl,
+        [string]$Endpoint,
+        [string]$Username,
+        [string]$Password,
+        [string]$SiteName,
+        [string]$Label = ""
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Endpoint)) { return }
+
+    $pingUrl = $SiteUrl.TrimEnd('/') + $Endpoint
+    Write-Host "  ${Label}Pinging $pingUrl ..." -ForegroundColor DarkCyan
+
+    try {
+        $cleanPwd = $Password -replace '\s', ''
+        $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${cleanPwd}"))
+        $headers = @{
+            "Authorization" = "Basic $base64Auth"
+            "Accept" = "application/json"
+        }
+
+        $response = Invoke-RestMethod -Uri $pingUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+        Write-Host "  ${Label}PING OK - $SiteName responded" -ForegroundColor Green
+
+        # Show standard ping fields
+        $pingData = $response
+        if ($response.Results -and $response.Results.Count -gt 0) {
+            $pingData = $response.Results[0]
+        }
+        if ($pingData.Author) {
+            Write-Host "  ${Label}  Author:  $($pingData.Author)" -ForegroundColor DarkGray
+        }
+        if ($pingData.Company) {
+            Write-Host "  ${Label}  Company: $($pingData.Company)" -ForegroundColor DarkGray
+        }
+        if ($pingData.Version) {
+            Write-Host "  ${Label}  Version: $($pingData.Version)" -ForegroundColor DarkGray
+        }
+    } catch {
+        $statusCode = ""
+        if ($_.Exception.Response) {
+            $statusCode = " (HTTP $([int]$_.Exception.Response.StatusCode))"
+        }
+        Write-Host "  ${Label}PING FAILED$statusCode - $($_.Exception.Message)" -ForegroundColor DarkYellow
+    }
 }
 
 $successCount = 0
@@ -387,7 +443,7 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
     )
     
     if ($shouldActivate) { $uploadArgs += "-Activate" }
-    if ($Verbose) { $uploadArgs += "-Verbose" }
+    if ($VerboseOutput) { $uploadArgs += "-VerboseOutput" }
 
     try {
         & $uploadScript @uploadArgs
