@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
 
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\FilterKeyType;
@@ -22,70 +21,77 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseKeyType;
-use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PostHandlerTrait
 {
     public function handleListPosts(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->debug('List posts endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->debug('List posts endpoint called');
 
-        $result = $this->postManager->listPosts([
-            'status' => $request->get_param('status'),
-            'limit'  => $request->get_param('limit'),
-            'offset' => $request->get_param('offset'),
-            'search' => $request->get_param('search'),
-        ]);
+            $result = $this->postManager->listPosts([
+                'status' => $request->get_param('status'),
+                'limit'  => $request->get_param('limit'),
+                'offset' => $request->get_param('offset'),
+                'search' => $request->get_param('search'),
+            ]);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
+        }, 'handleListPosts');
     }
 
     public function handleCreatePost(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Create post endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('Create post endpoint called');
 
-        $data = $this->extractValidBody($request);
-        $isBodyInvalid = ($data === null);
+            $data = $this->extractValidBody($request);
+            $isBodyInvalid = ($data === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
-        $result = $this->postManager->createPost($data);
+            $result = $this->postManager->createPost($data);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+        }, 'handleCreatePost');
     }
 
     public function handleListCategories(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->debug('List categories endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->debug('List categories endpoint called');
 
-        $result = $this->postManager->listCategories([
-            'limit'  => $request->get_param('limit'),
-            'offset' => $request->get_param('offset'),
-            'search' => $request->get_param('search'),
-        ]);
+            $result = $this->postManager->listCategories([
+                'limit'  => $request->get_param('limit'),
+                'offset' => $request->get_param('offset'),
+                'search' => $request->get_param('search'),
+            ]);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Ok->value : HttpStatusType::InternalServerError->value);
+        }, 'handleListCategories');
     }
 
     public function handleCreateCategory(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Create category endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('Create category endpoint called');
 
-        $data = $this->extractValidBody($request);
-        $isBodyInvalid = ($data === null);
+            $data = $this->extractValidBody($request);
+            $isBodyInvalid = ($data === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
+            }
 
-        $result = $this->postManager->createCategory($data);
+            $result = $this->postManager->createCategory($data);
 
-        return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+            return new WP_REST_Response($result, $result[ResponseKeyType::Success->value] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
+        }, 'handleCreateCategory');
     }
 
     public function handleQueryLogs(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->debug('Query logs endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->debug('Query logs endpoint called');
 
-        try {
             $this->db->init();
             $filters = $this->buildLogQueryFilters($request);
             $limit  = $request->get_param('limit') ?? PaginationConfigType::DefaultLimit->value;
@@ -100,10 +106,7 @@ trait PostHandlerTrait
                 ->setResults($result[ResponseKeyType::Logs->value])
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
-        } catch (Throwable $e) {
-
-            return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to query logs');
-        }
+        }, 'handleQueryLogs');
     }
 
     private function buildLogQueryFilters(WP_REST_Request $request): array {
@@ -119,9 +122,9 @@ trait PostHandlerTrait
     }
 
     public function handleLogsStats(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->debug('Logs stats endpoint called');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->debug('Logs stats endpoint called');
 
-        try {
             $this->db->init();
             $stats = $this->db->getStats();
 
@@ -129,9 +132,6 @@ trait PostHandlerTrait
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::LogsStats->value)
                 ->setSingleResult($stats)
                 ->toResponse();
-        } catch (Throwable $e) {
-
-            return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to get stats');
-        }
+        }, 'handleLogsStats');
     }
 }

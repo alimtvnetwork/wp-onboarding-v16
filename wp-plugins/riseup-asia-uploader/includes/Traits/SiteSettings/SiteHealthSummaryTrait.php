@@ -32,19 +32,21 @@ trait SiteHealthSummaryTrait
      */
     public function handleSiteHealthSummary(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('Site health summary requested');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('Site health summary requested');
 
-        $payload = [
-            'system'          => $this->buildSystemInfo(),
-            'plugins'         => $this->buildPluginSummary(),
-            'integrations'    => $this->buildIntegrationsSummary(),
-            'users'           => $this->buildUserSummary(),
-            'database'        => $this->buildDatabaseSummary(),
-        ];
+            $payload = [
+                'system'          => $this->buildSystemInfo(),
+                'plugins'         => $this->buildPluginSummary(),
+                'integrations'    => $this->buildIntegrationsSummary(),
+                'users'           => $this->buildUserSummary(),
+                'database'        => $this->buildDatabaseSummary(),
+            ];
 
-        return EnvelopeBuilder::success()
-            ->setSingleResult($payload)
-            ->toResponse();
+            return EnvelopeBuilder::success()
+                ->setSingleResult($payload)
+                ->toResponse();
+        }, 'handleSiteHealthSummary');
     }
 
     /**

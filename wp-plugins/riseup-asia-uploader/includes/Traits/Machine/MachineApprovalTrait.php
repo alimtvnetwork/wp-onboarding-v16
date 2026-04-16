@@ -32,72 +32,74 @@ trait MachineApprovalTrait
      */
     public function handleApproveMachine(WP_REST_Request $request): WP_REST_Response
     {
-        $body = $this->extractValidBody($request);
-        $isBodyInvalid = ($body === null);
+        return $this->safeExecute(function () use ($request) {
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
-
-        $machineName = trim($body['machine'] ?? '');
-        $isMachineEmpty = ($machineName === '');
-
-        if ($isMachineEmpty) {
-            return new WP_REST_Response(
-                [
-                    ResponseKeyType::Success->value => false,
-                    ResponseKeyType::Error->value   => 'Machine name is required in request body',
-                    'code'                          => 'machine_name_missing',
-                ],
-                HttpStatusType::BadRequest->value,
-            );
-        }
-
-        $settingsKey = PluginConfigType::SettingsGroup->value;
-        $settings = get_option($settingsKey, []);
-        $approvedMachines = $settings['approved_machines'] ?? [];
-
-        // Check if already approved (case-insensitive)
-        $lowerMachine = strtolower($machineName);
-        $isAlreadyApproved = false;
-
-        foreach ($approvedMachines as $existing) {
-            if (strtolower($existing) === $lowerMachine) {
-                $isAlreadyApproved = true;
-                break;
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
             }
-        }
 
-        if ($isAlreadyApproved) {
+            $machineName = trim($body['machine'] ?? '');
+            $isMachineEmpty = ($machineName === '');
+
+            if ($isMachineEmpty) {
+                return new WP_REST_Response(
+                    [
+                        ResponseKeyType::Success->value => false,
+                        ResponseKeyType::Error->value   => 'Machine name is required in request body',
+                        'code'                          => 'machine_name_missing',
+                    ],
+                    HttpStatusType::BadRequest->value,
+                );
+            }
+
+            $settingsKey = PluginConfigType::SettingsGroup->value;
+            $settings = get_option($settingsKey, []);
+            $approvedMachines = $settings['approved_machines'] ?? [];
+
+            // Check if already approved (case-insensitive)
+            $lowerMachine = strtolower($machineName);
+            $isAlreadyApproved = false;
+
+            foreach ($approvedMachines as $existing) {
+                if (strtolower($existing) === $lowerMachine) {
+                    $isAlreadyApproved = true;
+                    break;
+                }
+            }
+
+            if ($isAlreadyApproved) {
+                return new WP_REST_Response(
+                    [
+                        ResponseKeyType::Success->value => true,
+                        ResponseKeyType::Message->value => "Machine '$machineName' is already approved",
+                        'machine'                       => $machineName,
+                        'approved_machines'              => $approvedMachines,
+                        'already_approved'               => true,
+                    ],
+                    HttpStatusType::Ok->value,
+                );
+            }
+
+            $approvedMachines[] = $machineName;
+            $settings['approved_machines'] = $approvedMachines;
+            update_option($settingsKey, $settings);
+
+            $this->fileLogger->info('Machine approved remotely', [
+                'machine'           => $machineName,
+                'approved_machines' => $approvedMachines,
+            ]);
+
             return new WP_REST_Response(
                 [
                     ResponseKeyType::Success->value => true,
-                    ResponseKeyType::Message->value => "Machine '$machineName' is already approved",
+                    ResponseKeyType::Message->value => "Machine '$machineName' approved successfully",
                     'machine'                       => $machineName,
                     'approved_machines'              => $approvedMachines,
-                    'already_approved'               => true,
                 ],
                 HttpStatusType::Ok->value,
             );
-        }
-
-        $approvedMachines[] = $machineName;
-        $settings['approved_machines'] = $approvedMachines;
-        update_option($settingsKey, $settings);
-
-        $this->fileLogger->info('Machine approved remotely', [
-            'machine'           => $machineName,
-            'approved_machines' => $approvedMachines,
-        ]);
-
-        return new WP_REST_Response(
-            [
-                ResponseKeyType::Success->value => true,
-                ResponseKeyType::Message->value => "Machine '$machineName' approved successfully",
-                'machine'                       => $machineName,
-                'approved_machines'              => $approvedMachines,
-            ],
-            HttpStatusType::Ok->value,
-        );
+        }, 'handleApproveMachine');
     }
 }

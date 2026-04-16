@@ -29,11 +29,13 @@ trait SiteSettingsTrait
      */
     public function handleGetSiteSettings(WP_REST_Request $request): WP_REST_Response
     {
-        $this->fileLogger->info('Site settings GET requested');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('Site settings GET requested');
 
-        return EnvelopeBuilder::success()
-            ->setSingleResult($this->buildSiteSettingsPayload())
-            ->toResponse();
+            return EnvelopeBuilder::success()
+                ->setSingleResult($this->buildSiteSettingsPayload())
+                ->toResponse();
+        }, 'handleGetSiteSettings');
     }
 
     /**
@@ -41,126 +43,128 @@ trait SiteSettingsTrait
      */
     public function handleUpdateSiteSettings(WP_REST_Request $request): WP_REST_Response
     {
-        $body = $this->extractValidBody($request);
-        $isBodyInvalid = ($body === null);
+        return $this->safeExecute(function () use ($request) {
+            $body = $this->extractValidBody($request);
+            $isBodyInvalid = ($body === null);
 
-        if ($isBodyInvalid) {
-            return $this->validationError('Invalid or missing JSON body', $request);
-        }
-        $updated = [];
-        $errors = [];
-
-        // Search engine visibility (blog_public: 1 = visible, 0 = discouraged)
-        if (array_key_exists('searchEngineVisible', $body)) {
-            $value = (bool) $body['searchEngineVisible'];
-            update_option('blog_public', $value ? '1' : '0');
-            $updated['searchEngineVisible'] = $value;
-            $this->fileLogger->info('Updated search engine visibility', ['value' => $value]);
-        }
-
-        // WP_DEBUG — requires wp-config.php modification
-        if (array_key_exists('wpDebug', $body)) {
-            $result = $this->updateWpConfigConstant('WP_DEBUG', (bool) $body['wpDebug']);
-            if ($result) {
-                $updated['wpDebug'] = (bool) $body['wpDebug'];
-            } else {
-                $errors[] = 'Failed to update WP_DEBUG — wp-config.php may not be writable';
+            if ($isBodyInvalid) {
+                return $this->validationError('Invalid or missing JSON body', $request);
             }
-        }
+            $updated = [];
+            $errors = [];
 
-        // WP_DEBUG_LOG
-        if (array_key_exists('wpDebugLog', $body)) {
-            $result = $this->updateWpConfigConstant('WP_DEBUG_LOG', (bool) $body['wpDebugLog']);
-            if ($result) {
-                $updated['wpDebugLog'] = (bool) $body['wpDebugLog'];
-            } else {
-                $errors[] = 'Failed to update WP_DEBUG_LOG';
+            // Search engine visibility (blog_public: 1 = visible, 0 = discouraged)
+            if (array_key_exists('searchEngineVisible', $body)) {
+                $value = (bool) $body['searchEngineVisible'];
+                update_option('blog_public', $value ? '1' : '0');
+                $updated['searchEngineVisible'] = $value;
+                $this->fileLogger->info('Updated search engine visibility', ['value' => $value]);
             }
-        }
 
-        // WP_DEBUG_DISPLAY
-        if (array_key_exists('wpDebugDisplay', $body)) {
-            $result = $this->updateWpConfigConstant('WP_DEBUG_DISPLAY', (bool) $body['wpDebugDisplay']);
-            if ($result) {
-                $updated['wpDebugDisplay'] = (bool) $body['wpDebugDisplay'];
-            } else {
-                $errors[] = 'Failed to update WP_DEBUG_DISPLAY';
+            // WP_DEBUG — requires wp-config.php modification
+            if (array_key_exists('wpDebug', $body)) {
+                $result = $this->updateWpConfigConstant('WP_DEBUG', (bool) $body['wpDebug']);
+                if ($result) {
+                    $updated['wpDebug'] = (bool) $body['wpDebug'];
+                } else {
+                    $errors[] = 'Failed to update WP_DEBUG — wp-config.php may not be writable';
+                }
             }
-        }
 
-        // RISEUP_DEBUG_BOOT
-        if (array_key_exists('riseupDebugBoot', $body)) {
-            $result = $this->updateWpConfigConstant('RISEUP_DEBUG_BOOT', (bool) $body['riseupDebugBoot']);
-            if ($result) {
-                $updated['riseupDebugBoot'] = (bool) $body['riseupDebugBoot'];
-            } else {
-                $errors[] = 'Failed to update RISEUP_DEBUG_BOOT';
+            // WP_DEBUG_LOG
+            if (array_key_exists('wpDebugLog', $body)) {
+                $result = $this->updateWpConfigConstant('WP_DEBUG_LOG', (bool) $body['wpDebugLog']);
+                if ($result) {
+                    $updated['wpDebugLog'] = (bool) $body['wpDebugLog'];
+                } else {
+                    $errors[] = 'Failed to update WP_DEBUG_LOG';
+                }
             }
-        }
 
-        // QUPLOAD_DEBUG_BOOT
-        if (array_key_exists('quploadDebugBoot', $body)) {
-            $result = $this->updateWpConfigConstant('QUPLOAD_DEBUG_BOOT', (bool) $body['quploadDebugBoot']);
-            if ($result) {
-                $updated['quploadDebugBoot'] = (bool) $body['quploadDebugBoot'];
-            } else {
-                $errors[] = 'Failed to update QUPLOAD_DEBUG_BOOT';
+            // WP_DEBUG_DISPLAY
+            if (array_key_exists('wpDebugDisplay', $body)) {
+                $result = $this->updateWpConfigConstant('WP_DEBUG_DISPLAY', (bool) $body['wpDebugDisplay']);
+                if ($result) {
+                    $updated['wpDebugDisplay'] = (bool) $body['wpDebugDisplay'];
+                } else {
+                    $errors[] = 'Failed to update WP_DEBUG_DISPLAY';
+                }
             }
-        }
 
-        // Upload max filesize (PHP ini — .htaccess or user.ini)
-        if (array_key_exists('uploadMaxFilesize', $body)) {
-            $val = $this->sanitizeSizeValue($body['uploadMaxFilesize']);
-            if ($val !== null) {
-                $this->updatePhpIniOverride('upload_max_filesize', $val);
-                $updated['uploadMaxFilesize'] = $val;
-            } else {
-                $errors[] = 'Invalid uploadMaxFilesize value';
+            // RISEUP_DEBUG_BOOT
+            if (array_key_exists('riseupDebugBoot', $body)) {
+                $result = $this->updateWpConfigConstant('RISEUP_DEBUG_BOOT', (bool) $body['riseupDebugBoot']);
+                if ($result) {
+                    $updated['riseupDebugBoot'] = (bool) $body['riseupDebugBoot'];
+                } else {
+                    $errors[] = 'Failed to update RISEUP_DEBUG_BOOT';
+                }
             }
-        }
 
-        // Post max size
-        if (array_key_exists('postMaxSize', $body)) {
-            $val = $this->sanitizeSizeValue($body['postMaxSize']);
-            if ($val !== null) {
-                $this->updatePhpIniOverride('post_max_size', $val);
-                $updated['postMaxSize'] = $val;
-            } else {
-                $errors[] = 'Invalid postMaxSize value';
+            // QUPLOAD_DEBUG_BOOT
+            if (array_key_exists('quploadDebugBoot', $body)) {
+                $result = $this->updateWpConfigConstant('QUPLOAD_DEBUG_BOOT', (bool) $body['quploadDebugBoot']);
+                if ($result) {
+                    $updated['quploadDebugBoot'] = (bool) $body['quploadDebugBoot'];
+                } else {
+                    $errors[] = 'Failed to update QUPLOAD_DEBUG_BOOT';
+                }
             }
-        }
 
-        // Memory limit
-        if (array_key_exists('memoryLimit', $body)) {
-            $val = $this->sanitizeSizeValue($body['memoryLimit']);
-            if ($val !== null) {
-                $this->updatePhpIniOverride('memory_limit', $val);
-                $updated['memoryLimit'] = $val;
-            } else {
-                $errors[] = 'Invalid memoryLimit value';
+            // Upload max filesize (PHP ini — .htaccess or user.ini)
+            if (array_key_exists('uploadMaxFilesize', $body)) {
+                $val = $this->sanitizeSizeValue($body['uploadMaxFilesize']);
+                if ($val !== null) {
+                    $this->updatePhpIniOverride('upload_max_filesize', $val);
+                    $updated['uploadMaxFilesize'] = $val;
+                } else {
+                    $errors[] = 'Invalid uploadMaxFilesize value';
+                }
             }
-        }
 
-        $hasErrors = count($errors) > 0;
+            // Post max size
+            if (array_key_exists('postMaxSize', $body)) {
+                $val = $this->sanitizeSizeValue($body['postMaxSize']);
+                if ($val !== null) {
+                    $this->updatePhpIniOverride('post_max_size', $val);
+                    $updated['postMaxSize'] = $val;
+                } else {
+                    $errors[] = 'Invalid postMaxSize value';
+                }
+            }
 
-        $this->fileLogger->info('Site settings update complete', [
-            'updated' => array_keys($updated),
-            'errors'  => $errors,
-        ]);
+            // Memory limit
+            if (array_key_exists('memoryLimit', $body)) {
+                $val = $this->sanitizeSizeValue($body['memoryLimit']);
+                if ($val !== null) {
+                    $this->updatePhpIniOverride('memory_limit', $val);
+                    $updated['memoryLimit'] = $val;
+                } else {
+                    $errors[] = 'Invalid memoryLimit value';
+                }
+            }
 
-        $result = [
-            ResponseKeyType::Success->value => true,
-            'updated'  => $updated,
-            'settings' => $this->buildSiteSettingsPayload(),
-        ];
+            $hasErrors = count($errors) > 0;
 
-        if ($hasErrors) {
-            $result['warnings'] = $errors;
-        }
+            $this->fileLogger->info('Site settings update complete', [
+                'updated' => array_keys($updated),
+                'errors'  => $errors,
+            ]);
 
-        return EnvelopeBuilder::success()
-            ->setSingleResult($result)
-            ->toResponse();
+            $result = [
+                ResponseKeyType::Success->value => true,
+                'updated'  => $updated,
+                'settings' => $this->buildSiteSettingsPayload(),
+            ];
+
+            if ($hasErrors) {
+                $result['warnings'] = $errors;
+            }
+
+            return EnvelopeBuilder::success()
+                ->setSingleResult($result)
+                ->toResponse();
+        }, 'handleUpdateSiteSettings');
     }
 
     /**

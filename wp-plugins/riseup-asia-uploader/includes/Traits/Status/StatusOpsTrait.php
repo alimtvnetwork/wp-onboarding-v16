@@ -27,15 +27,17 @@ use RiseupAsia\Helpers\ResultHelper;
 trait StatusOpsTrait {
 
     public function handleOpenapi(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('OpenAPI endpoint called');
-        $spec = $this->loadOpenApiSpec();
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('OpenAPI endpoint called');
+            $spec = $this->loadOpenApiSpec();
 
-        if ($spec instanceof WP_REST_Response) {
-            return $spec;
-        }
-        $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
+            if ($spec instanceof WP_REST_Response) {
+                return $spec;
+            }
+            $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
 
-        return new WP_REST_Response($spec, HttpStatusType::Ok->value);
+            return new WP_REST_Response($spec, HttpStatusType::Ok->value);
+        }, 'handleOpenapi');
     }
 
     private function loadOpenApiSpec(): array|WP_REST_Response {
@@ -83,15 +85,17 @@ trait StatusOpsTrait {
     }
 
     public function handleOpcacheReset(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('OPcache reset endpoint called');
-        $result = $this->buildOpcacheResult();
-        $result[ResponseKeyType::FilesInvalidated->value] = $this->invalidatePluginFiles();
-        wp_cache_delete('plugins', 'plugins');
+        return $this->safeExecute(function () use ($request) {
+            $this->fileLogger->info('OPcache reset endpoint called');
+            $result = $this->buildOpcacheResult();
+            $result[ResponseKeyType::FilesInvalidated->value] = $this->invalidatePluginFiles();
+            wp_cache_delete('plugins', 'plugins');
 
-        return EnvelopeBuilder::success('OPcache reset complete')
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::OpcacheReset->value)
-            ->setSingleResult($result)
-            ->toResponse();
+            return EnvelopeBuilder::success('OPcache reset complete')
+                ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::OpcacheReset->value)
+                ->setSingleResult($result)
+                ->toResponse();
+        }, 'handleOpcacheReset');
     }
 
     private function buildOpcacheResult(): array {
