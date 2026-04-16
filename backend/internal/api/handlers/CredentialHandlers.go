@@ -140,7 +140,7 @@ func DeleteSiteCredentialHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]bool{"deleted": true})
+	respondSuccess(w, ActionResponse{IsDeleted: true})
 }
 
 // SetDefaultSiteCredential sets a credential as default.
@@ -166,7 +166,7 @@ func SetDefaultSiteCredential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]bool{"updated": true})
+	respondSuccess(w, ActionResponse{IsUpdated: true})
 }
 
 // validateCredentialInput validates create credential input.
