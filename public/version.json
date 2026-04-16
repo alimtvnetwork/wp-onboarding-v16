@@ -1,13 +1,26 @@
 {
   "appName": "WP Publish",
-  "version": "2.40.0",
+  "version": "2.41.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.40.0",
+  "scriptVersion": "2.41.0",
   "wpPluginVersion": "2.48.0",
-  "quploadVersion": "2.40.0",
+  "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.41.0",
+      "date": "2026-04-16",
+      "title": "Typed Responses: Eliminate map[string]any from respondSuccess",
+      "changes": [
+        "Audited all 31 Go handler files: zero remaining map[string]any (or map[string]bool) literals passed to respondSuccess.",
+        "DeployPreflightHandlers: map[string]any{\"Results\": results} → typed DeployPreflightResponse{Results: []site.PreflightSiteResult} (added to ResponseTypes.go).",
+        "CredentialHandlers: map[string]bool{\"deleted\": true} and {\"updated\": true} → ActionResponse{IsDeleted: true} / {IsUpdated: true} (added IsUpdated field to the shared ActionResponse struct).",
+        "Note: frontend (request<void>) ignored these bodies, so the JSON-key rename (deleted→isDeleted, updated→isUpdated) is non-breaking.",
+        "Response shape lint passes: ✓ All 31 handler files have consistent respondSuccess shapes.",
+        "Stats endpoints (error history, site health, publish history) already returned typed *models.*Stats structs — no change needed."
+      ]
+    },
     {
       "version": "2.40.0",
       "date": "2026-04-16",
