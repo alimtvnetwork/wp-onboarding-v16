@@ -1,5 +1,5 @@
 # WordPress Plugin Uploader V2
-# Version: 2.8.0
+# Version: 2.9.0
 # Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
 #
@@ -248,6 +248,72 @@ function Write-ServerErrorBanner {
     Write-Host "  ║  4. Check server error logs (Apache/Nginx)             ║" -ForegroundColor White
     Write-Host "  ║  5. Ensure WP_DEBUG is enabled in wp-config.php        ║" -ForegroundColor White
     Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+    Write-Host ""
+}
+
+# ============================================================================
+# DIAGNOSTIC REPORTING FRAMEWORK
+# Tracks Git, Lint, ZIP, Upload, Verify sections for grouped failure output
+# ============================================================================
+function New-V2DiagnosticSection {
+    param([string]$Name)
+    return [ordered]@{
+        Name    = $Name
+        Status  = "PENDING"
+        Summary = "Not started"
+        Details = @()
+    }
+}
+
+function New-V2DiagnosticSet {
+    return [ordered]@{
+        Git    = (New-V2DiagnosticSection -Name "Git")
+        Lint   = (New-V2DiagnosticSection -Name "Lint")
+        ZIP    = (New-V2DiagnosticSection -Name "ZIP")
+        Upload = (New-V2DiagnosticSection -Name "Upload")
+        Verify = (New-V2DiagnosticSection -Name "Verify")
+    }
+}
+
+function Set-V2DiagnosticSection {
+    param($Section, [string]$Status, [string]$Summary)
+    $Section.Status = $Status
+    $Section.Summary = $Summary
+}
+
+function Add-V2DiagnosticDetail {
+    param($Section, [string]$Detail)
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) {
+        $Section.Details += $Detail
+    }
+}
+
+function Write-V2DiagnosticReport {
+    param($Diagnostics, [string]$PluginSlug, [string]$SiteUrl)
+
+    Write-Host ""
+    Write-Host "  ========================================" -ForegroundColor Cyan
+    Write-Host "  Failure Diagnostics ($PluginSlug)" -ForegroundColor Cyan
+    if ($SiteUrl -ne "") {
+        Write-Host "  Site: $SiteUrl" -ForegroundColor Gray
+    }
+    Write-Host "  ========================================" -ForegroundColor Cyan
+
+    foreach ($name in @("Git", "Lint", "ZIP", "Upload", "Verify")) {
+        $section = $Diagnostics[$name]
+        $color = switch ($section.Status) {
+            "OK"   { "Green" }
+            "WARN" { "Yellow" }
+            "FAIL" { "Red" }
+            "SKIP" { "DarkGray" }
+            default { "Gray" }
+        }
+        Write-Host "  [$name] $($section.Status): $($section.Summary)" -ForegroundColor $color
+        foreach ($detail in $section.Details) {
+            Write-Host "    - $detail" -ForegroundColor DarkGray
+        }
+    }
+
     Write-Host ""
 }
 
@@ -702,6 +768,9 @@ if ($Debug) {
 $folderName = Split-Path $PluginFolderPath -Leaf
 if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 
+# Initialize diagnostic tracking
+$v2Diag = New-V2DiagnosticSet
+
 # ============================================================================
 # STEP 1: GIT PULL
 # ============================================================================
@@ -729,17 +798,22 @@ if (-not $SkipGitPull) {
             git pull 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "  WARNING: git pull failed, continuing anyway..." -ForegroundColor Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Git -Status "WARN" -Summary "Git pull failed; continuing"
+                Add-V2DiagnosticDetail -Section $v2Diag.Git -Detail "Branch: $branch"
             } else {
                 Write-Status "      ✓ Git pull complete" -Color Green
+                Set-V2DiagnosticSection -Section $v2Diag.Git -Status "OK" -Summary "Git pull succeeded on $branch"
             }
         } finally {
             Pop-Location
         }
     } else {
         Write-Status "      Skipping git pull (no .git found)" -Color Gray
+        Set-V2DiagnosticSection -Section $v2Diag.Git -Status "SKIP" -Summary "No .git directory found"
     }
 } else {
     Write-Status "[1/8] Skipping git pull (-SkipGitPull)" -Color Gray
+    Set-V2DiagnosticSection -Section $v2Diag.Git -Status "SKIP" -Summary "Git pull skipped by flag"
 }
 Write-Status ""
 
@@ -790,11 +864,14 @@ if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
     Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
     Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
     Write-Host "      Continuing with upload anyway." -ForegroundColor DarkYellow
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "WARN" -Summary "PHP syntax warning; upload continued"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail "File: $($syntaxResult.FailedFile)"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail $syntaxResult.LintMessage
 }
 
-if ($isSyntaxChecked) {
+if ($isSyntaxChecked -and $isSyntaxSuccess) {
     Write-Status "      Syntax OK ($($syntaxResult.Checked) PHP files checked)" -Color Green
-} else {
+} elseif (-not $isSyntaxChecked) {
     Write-Status "      Syntax check skipped: $($syntaxResult.Message)" -Color DarkYellow
 }
 
@@ -807,6 +884,8 @@ if (-not $isEnumLintSuccess) {
         Write-Host "      - $($issue.Enum) in $($issue.File) => value $($issue.Value) used by $($issue.FirstCase) and $($issue.DuplicateCase)" -ForegroundColor Yellow
     }
     Write-Host "      Fix duplicate enum case values before ZIP/upload." -ForegroundColor Red
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "FAIL" -Summary "Duplicate backed enum values detected"
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
@@ -819,6 +898,9 @@ $isPhpstanSuccess = $phpstanResult.IsSuccess
 if ($isPhpstanChecked -and (-not $isPhpstanSuccess)) {
     Write-Host "      PHPStan analysis FAILED" -ForegroundColor Red
     Write-Host "      $($phpstanResult.AnalysisOutput)" -ForegroundColor Yellow
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "FAIL" -Summary "PHPStan analysis failed"
+    Add-V2DiagnosticDetail -Section $v2Diag.Lint -Detail $phpstanResult.AnalysisOutput
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
@@ -826,6 +908,15 @@ if ($isPhpstanChecked) {
     Write-Status "      $($phpstanResult.Message)" -Color Green
 } else {
     Write-Status "      PHPStan skipped: $($phpstanResult.Message)" -Color DarkYellow
+}
+
+# Finalize lint diagnostic if not already set to WARN/FAIL
+if ($v2Diag.Lint.Status -eq "PENDING") {
+    $lintChecks = @()
+    if ($isSyntaxChecked) { $lintChecks += "syntax" }
+    $lintChecks += "enum"
+    if ($isPhpstanChecked) { $lintChecks += "phpstan" }
+    Set-V2DiagnosticSection -Section $v2Diag.Lint -Status "OK" -Summary "All checks passed ($($lintChecks -join ', '))"
 }
 
 Write-Status ""
@@ -1064,8 +1155,12 @@ try {
     Write-Status "      Path: $OutputZipPath" -Color Gray
     Write-Status "      Cache: $cacheDir" -Color Gray
     Write-Status "      Files: $totalFiles" -Color Gray
+    Set-V2DiagnosticSection -Section $v2Diag.ZIP -Status "OK" -Summary "ZIP created: ${zipSizeKB} KB ($totalFiles files, ${ratio}% ratio)"
+    Add-V2DiagnosticDetail -Section $v2Diag.ZIP -Detail "Path: $OutputZipPath"
 } catch {
     Write-Host "      Error creating ZIP: $_" -ForegroundColor Red
+    Set-V2DiagnosticSection -Section $v2Diag.ZIP -Status "FAIL" -Summary "ZIP creation failed: $_"
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     exit 1
 }
 
@@ -1356,6 +1451,11 @@ if (-not $uploadSuccess -or $null -eq $response) {
     }
 
     $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
+    Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "FAIL" -Summary "All namespaces failed"
+    foreach ($attemptDetail in $uploadAttemptErrors) {
+        Add-V2DiagnosticDetail -Section $v2Diag.Upload -Detail $attemptDetail
+    }
+    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "SKIP" -Summary "Verify not attempted because upload failed"
     throw "Upload failed on all known Riseup namespaces: ${uploadErrorSummary}"
 }
 
@@ -1400,6 +1500,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
     Write-Status "  ✓ PUBLISH COMPLETE!" -Color Green
     Write-Status "===============================================" -Color Green
     Write-Status ""
+    Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "OK" -Summary "Upload succeeded via $activeNamespace"
     $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
     $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
     $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
@@ -1488,15 +1589,19 @@ if (-not $uploadSuccess -or $null -eq $response) {
                 
                 if ($deployedVersion -eq $LocalVersion) {
                     Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Server confirmed v$deployedVersion"
                 } else {
                     Write-Status "      ⚠ Server still reports v$deployedVersion (OPcache may need manual reset)" -Color Yellow
                     Write-Status "        Files ARE on disk (v$LocalVersion). OPcache TTL will expire shortly." -Color DarkGray
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Server reports v$deployedVersion; OPcache TTL pending"
                 }
             } else {
                 Write-Status "      ⚠ Verification blocked — check WP admin manually" -Color Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification blocked"
             }
         } catch {
             Write-Status "      ⚠ Verification failed: $($_.Exception.Message)" -Color Yellow
+            Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification failed: $($_.Exception.Message)"
         }
     } elseif ($isSelfUpdate -and $responseVersion -eq $LocalVersion) {
         # =================================================================
@@ -1505,6 +1610,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
         # =================================================================
         Write-Status ""
         Write-Status "[8/8] Self-update verified — server already reports v$responseVersion ✓" -Color Green
+        Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Self-update confirmed v$responseVersion"
     } else {
         # =================================================================
         # NON-SELF-UPDATE: Standard post-upload verification
@@ -1521,6 +1627,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
 
             if ($null -eq $verifyResponse) {
                 Write-Status "      ⚠ Verification blocked by HTML challenge — check WP admin manually" -Color Yellow
+                Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification blocked by HTML challenge"
             } else {
                 $verifyData = $verifyResponse
                 if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
@@ -1532,8 +1639,10 @@ if (-not $uploadSuccess -or $null -eq $response) {
 
                 if ($deployedVersion -eq $LocalVersion) {
                     Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Server confirmed v$deployedVersion"
                 } elseif ($deployedVersion -eq "unknown") {
                     Write-Status "      ⚠ Could not determine deployed version from /status" -Color Yellow
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Could not determine deployed version"
                 } else {
                     Write-Status ""
                     Write-Status "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
@@ -1546,11 +1655,13 @@ if (-not $uploadSuccess -or $null -eq $response) {
                     Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
                     Write-Status "║" -ForegroundColor Red
                     Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Version mismatch: uploaded v$LocalVersion, deployed v$deployedVersion"
                 }
             }
         } catch {
             Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
             Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
+            Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification call failed: $($_.Exception.Message)"
         }
     }
 
@@ -1597,6 +1708,14 @@ if (-not $uploadSuccess -or $null -eq $response) {
     }
     Write-ErrorBody $errorBody "Riseup API Error"
     Write-ServerErrorBanner
+    if ($v2Diag.Upload.Status -eq "PENDING") {
+        Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "FAIL" -Summary $errorMessage
+        Add-V2DiagnosticDetail -Section $v2Diag.Upload -Detail "Endpoint: $uploadUrl"
+    }
+    if ($v2Diag.Verify.Status -eq "PENDING") {
+        Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "SKIP" -Summary "Verify not attempted because upload failed"
+    }
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     Write-Host ""
     Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
     Write-Host ""
