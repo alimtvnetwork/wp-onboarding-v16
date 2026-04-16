@@ -28,9 +28,9 @@ use RiseupAsia\Helpers\ResultHelper;
 trait PluginExportTrait
 {
     public function handleExportSelf(WP_REST_Request $request): WP_REST_Response {
-        $this->fileLogger->info('Export-self endpoint called');
+        return $this->safeExecute(function() use ($request) {
+            $this->fileLogger->info('Export-self endpoint called');
 
-        try {
             $pluginDir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
             $ignore = UploadIgnore::fromDirectory($pluginDir);
             $zipContent = $this->createPluginZip($pluginDir, PluginConfigType::Slug->value, $ignore);
@@ -48,11 +48,8 @@ trait PluginExportTrait
                 ResponseKeyType::Slug->value      => PluginConfigType::Slug->value,
                 ResponseKeyType::Version->value   => PluginConfigType::Version->value,
             ]), HttpStatusType::Ok->value);
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Export-self error');
-
-            return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'export_self');
+    }
     }
 
     public function handleExportPlugin(WP_REST_Request $request): WP_REST_Response {

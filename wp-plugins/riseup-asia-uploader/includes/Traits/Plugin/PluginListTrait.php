@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use WP_REST_Request;
 use WP_REST_Response;
-use Throwable;
+
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -36,9 +36,9 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     public function handleListPlugins($request) {
-        $this->fileLogger->info('List plugins endpoint called');
+        return $this->safeExecute(function() use ($request) {
+            $this->fileLogger->info('List plugins endpoint called');
 
-        try {
             if (BooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
@@ -49,11 +49,7 @@ trait PluginListTrait
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Plugins->route())
                 ->setResults($plugins)
                 ->toResponse();
-        } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'List plugins error');
-
-            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'list_plugins');
     }
 
     /**
@@ -143,21 +139,16 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     public function handlePluginFiles($request) {
-        $body = $this->extractValidBody($request);
-        $slug = ($body !== null && isset($body['plugin'])) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        return $this->safeExecute(function() use ($request) {
+            $body = $this->extractValidBody($request);
+            $slug = ($body !== null && isset($body['plugin'])) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
 
-        if (empty($slug)) {
-
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
-        }
-
-        try {
+            if (empty($slug)) {
+                return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+            }
 
             return $this->scanPluginFilesWithCache($slug);
-        } catch (Throwable $e) {
-
-            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'plugin_files');
     }
 
     /**
@@ -197,28 +188,23 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     public function handlePluginFileContent($request) {
-        $json = $this->extractValidBody($request);
-        $slug = ($json !== null && isset($json['plugin'])) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
+        return $this->safeExecute(function() use ($request) {
+            $json = $this->extractValidBody($request);
+            $slug = ($json !== null && isset($json['plugin'])) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
 
-        if (empty($slug)) {
+            if (empty($slug)) {
+                return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+            }
 
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
-        }
-
-        try {
             $filePath = isset($json[ResponseKeyType::Path->value]) ? $json[ResponseKeyType::Path->value] : null;
 
             $validation = $this->validateFilePath($filePath, $slug);
             if ($validation instanceof WP_REST_Response) {
-
                 return $validation;
             }
 
             return $this->readAndReturnFile($validation[ResponseKeyType::RealPath->value], $validation[ResponseKeyType::FilePath->value]);
-        } catch (Throwable $e) {
-
-            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::InternalServerError->value, $e);
-        }
+        }, 'plugin_file_content');
     }
 
     /**

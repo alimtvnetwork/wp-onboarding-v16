@@ -72,6 +72,6 @@ trait SnapshotCrudListTrait {
      * Alias for handleGetSnapshot.
      */
     public function handleSnapshotInfo(WP_REST_Request $request): WP_REST_Response {
-        return $this->handleGetSnapshot($request);
+        return $this->safeExecute(fn() => $this->handleGetSnapshot($request), 'snapshot_info');
     }
 }
