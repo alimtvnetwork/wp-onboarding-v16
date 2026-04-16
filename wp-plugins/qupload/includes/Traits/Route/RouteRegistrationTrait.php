@@ -124,6 +124,12 @@ trait RouteRegistrationTrait
     }
 
     private function registerCoreRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::Ping->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handlePing'],
+            'permission_callback' => '__return_true',
+        ]);
+
         $safeRegister(EndpointType::Status->route(), [
             'methods'             => HttpMethodType::Get->value,
             'callback'            => [$this, 'handleStatus'],

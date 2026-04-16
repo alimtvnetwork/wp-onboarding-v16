@@ -24,6 +24,8 @@ enum PluginConfigType: string
     case ApiVersion    = 'v1';
     case LogPrefix      = '[QUpload]';
     case SettingsGroup  = 'qupload_settings';
+    case Author         = 'Developers Organism';
+    case Company        = 'Riseup Asia';
 
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }

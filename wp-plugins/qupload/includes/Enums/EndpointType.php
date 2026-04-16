@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 enum EndpointType: string
 {
+    case Ping         = 'ping';
     case Status       = 'status';
     case Upload       = 'upload';
     case Activate     = 'activate';

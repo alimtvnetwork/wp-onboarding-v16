@@ -20,6 +20,7 @@ use QUpload\Logging\FileLogger;
 use QUpload\Traits\Auth\AuthTrait;
 use QUpload\Traits\Route\RouteRegistrationTrait;
 use QUpload\Traits\Core\StatusHandlerTrait;
+use QUpload\Traits\Core\PingHandlerTrait;
 use QUpload\Traits\Core\ResponseTrait;
 use QUpload\Traits\Core\PluginInventoryTrait;
 use QUpload\Traits\Upload\UploadHandlerTrait;
@@ -39,6 +40,7 @@ class Plugin {
     use AuthTrait;
     use RouteRegistrationTrait;
     use StatusHandlerTrait;
+    use PingHandlerTrait;
     use ResponseTrait;
     use PluginInventoryTrait;
     use UploadHandlerTrait;

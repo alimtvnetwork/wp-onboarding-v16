@@ -321,6 +321,7 @@ enum ResponseKeyType: string
     case Capabilities = 'Capabilities';
     case Version      = 'Version';
     case Author       = 'Author';
+    case Company      = 'Company';
     case Description  = 'Description';
     case Active       = 'Active';
     case TotalFiles   = 'TotalFiles';

@@ -18,4 +18,5 @@ trait StatusHandlerTrait
 {
     use StatusPayloadTrait;
     use StatusOpsTrait;
+    use PingHandlerTrait;
 }

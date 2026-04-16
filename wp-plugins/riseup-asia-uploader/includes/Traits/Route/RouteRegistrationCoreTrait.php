@@ -86,6 +86,12 @@ trait RouteRegistrationCoreTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerUtilityRoutes(callable $safeRegister): void {
+        $safeRegister(EndpointType::Ping->route(), [
+            'methods'             => HttpMethodType::Get->value,
+            'callback'            => [$this, 'handlePing'],
+            'permission_callback' => '__return_true',
+        ]);
+
         $safeRegister(EndpointType::Status->route(), [
             'methods'             => HttpMethodType::Get->value,
             'callback'            => [$this, 'handleStatus'],
