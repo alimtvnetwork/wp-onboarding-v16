@@ -246,29 +246,59 @@ if ($All) {
 }
 
 # ============================================================================
-# ZIP CREATION (SmallestSize compression)
+# ORCHESTRATION (versioned ZIP path + git pull + syntax check)
 # ============================================================================
+function Get-LocalPluginVersion {
+    param([string]$PluginPath)
+
+    $enumFile = Join-Path $PluginPath "includes/Enums/PluginConfigType.php"
+    if (Test-Path $enumFile) {
+        $enumContent = Get-Content $enumFile -Raw
+        if ($enumContent -match "case\s+Version\s*=\s*'([0-9]+\.[0-9]+\.[0-9]+)'") {
+            return $Matches[1]
+        }
+    }
+
+    $mainFile = Get-ChildItem $PluginPath -Filter "*.php" | Where-Object {
+        (Get-Content $_.FullName -Head 8) -match 'Plugin Name:'
+    } | Select-Object -First 1
+
+    if ($mainFile) {
+        $content = Get-Content $mainFile.FullName -Raw
+        if ($content -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
+            return $Matches[1]
+        }
+    }
+
+    return "unknown"
+}
+
 $pluginDisplayName = if ($plugin -and $plugin.name) { $plugin.name } else { $Slug }
 $siteCountLabel = if ($targetSites.Count -eq 1) { $targetSites[0].name } else { "$($targetSites.Count) sites" }
 $sourceLabel = if ($isDirectPath) { " [DirectPath]" } else { "" }
+$localVersion = Get-LocalPluginVersion -PluginPath $pluginFolderPath
+$zipFolderPath = Split-Path $pluginFolderPath -Parent
+$zipFileName = if ($localVersion -ne "unknown") { "$Slug-$localVersion.zip" } else { "$Slug.zip" }
+$zipPath = Join-Path $zipFolderPath $zipFileName
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Custom Plugin Upload$sourceLabel" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Plugin:  $pluginDisplayName ($Slug)" -ForegroundColor White
-Write-Host "  Path:    $pluginFolderPath" -ForegroundColor Gray
-Write-Host "  Target:  $siteCountLabel" -ForegroundColor Gray
+Write-Host "  Plugin:   $pluginDisplayName ($Slug)" -ForegroundColor White
+Write-Host "  Path:     $pluginFolderPath" -ForegroundColor Gray
+Write-Host "  Target:   $siteCountLabel" -ForegroundColor Gray
+Write-Host "  Version:  $localVersion" -ForegroundColor Gray
+Write-Host "  ZIP:      $zipPath" -ForegroundColor Gray
 if ($pingEndpoint -ne "") {
-    Write-Host "  Ping:    $pingEndpoint" -ForegroundColor Gray
+    Write-Host "  Ping:     $pingEndpoint" -ForegroundColor Gray
 }
 Write-Host ""
 
-# Start total timer
 $totalWatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # ============================================================================
-# GIT PULL (auto-detected)
+# GIT PULL (pull first, rebase only if required)
 # ============================================================================
 if ($SkipGitPull) {
     Write-Host "  Git pull skipped (-skipgitpull)" -ForegroundColor DarkGray
@@ -278,33 +308,31 @@ if ($SkipGitPull) {
         $gitCheckOutput = & git -C $pluginFolderPath rev-parse --is-inside-work-tree 2>&1
         if ($LASTEXITCODE -eq 0 -and $gitCheckOutput -eq "true") {
             $gitWatch = [System.Diagnostics.Stopwatch]::StartNew()
-            $branchName = & git -C $pluginFolderPath rev-parse --abbrev-ref HEAD 2>&1
+            $branchName = (& git -C $pluginFolderPath rev-parse --abbrev-ref HEAD 2>&1 | Out-String).Trim()
             Write-Host "  Git repo detected (branch: $branchName)" -ForegroundColor DarkCyan
-            Write-Host "  Running git pull --rebase..." -ForegroundColor Yellow
+            Write-Host "  Running git pull..." -ForegroundColor Yellow
 
-            $gitOutput = & git -C $pluginFolderPath pull --rebase 2>&1
+            $gitOutput = (& git -C $pluginFolderPath pull 2>&1 | Out-String).Trim()
             $gitExitCode = $LASTEXITCODE
+
+            if ($gitExitCode -ne 0 -and ($gitOutput -match 'rebase' -or $gitOutput -match 'divergent' -or $gitOutput -match 'reconcile divergent branches')) {
+                Write-Host "  Git pull requires rebase; retrying with --rebase..." -ForegroundColor Yellow
+                $gitOutput = (& git -C $pluginFolderPath pull --rebase 2>&1 | Out-String).Trim()
+                $gitExitCode = $LASTEXITCODE
+            }
+
             $gitWatch.Stop()
             $gitElapsed = [math]::Round($gitWatch.Elapsed.TotalSeconds, 1)
 
             if ($gitExitCode -eq 0) {
-                $shortHash = & git -C $pluginFolderPath rev-parse --short HEAD 2>&1
+                $shortHash = (& git -C $pluginFolderPath rev-parse --short HEAD 2>&1 | Out-String).Trim()
                 Write-Host "  Git pull OK ($branchName @ $shortHash) - ${gitElapsed}s" -ForegroundColor Green
             } else {
-                Write-Host "  Git pull WARNING: $($gitOutput | Out-String)" -ForegroundColor DarkYellow
+                Write-Host "  Git pull WARNING: $gitOutput" -ForegroundColor DarkYellow
                 Write-Host "  Continuing with upload... - ${gitElapsed}s" -ForegroundColor DarkYellow
             }
         }
     }
-}
-
-$tempDir = if ($isWin) { $env:TEMP } else { "/tmp" }
-$zipFileName = "$Slug.zip"
-$zipPath = Join-Path $tempDir $zipFileName
-
-# Remove existing ZIP if present
-if (Test-Path $zipPath) {
-    Remove-Item $zipPath -Force
 }
 
 # ============================================================================
@@ -317,8 +345,6 @@ if ($null -ne $phpCommand) {
     Write-Host "  PHP syntax check..." -ForegroundColor Yellow
 
     $skipFolders = @("vendor")
-
-    # Also read per-plugin skip folders from settings.json
     $pluginSettingsPath = Join-Path $pluginFolderPath "settings.json"
     if (Test-Path $pluginSettingsPath) {
         try {
@@ -330,15 +356,13 @@ if ($null -ne $phpCommand) {
     }
 
     $phpFiles = @(Get-ChildItem -Path $pluginFolderPath -Recurse -File -Filter "*.php" | Sort-Object FullName)
-
-    # Filter out skipped folders
     $filteredFiles = @()
     $skippedCount = 0
     foreach ($file in $phpFiles) {
-        $relativePath = $file.FullName.Substring($pluginFolderPath.Length).TrimStart('\', '/')
+        $relativePath = $file.FullName.Substring($pluginFolderPath.Length).TrimStart('\\', '/')
         $isSkipped = $false
         foreach ($skip in $skipFolders) {
-            if ($relativePath -like "$skip\*" -or $relativePath -like "$skip/*") {
+            if ($relativePath -like "$skip\\*" -or $relativePath -like "$skip/*") {
                 $isSkipped = $true
                 $skippedCount++
                 break
@@ -370,30 +394,9 @@ if ($null -ne $phpCommand) {
     Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
 }
 
-$zipWatch = [System.Diagnostics.Stopwatch]::StartNew()
-Write-Host "  Zipping with SmallestSize compression..." -ForegroundColor Yellow
-
-try {
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::CreateFromDirectory(
-        $pluginFolderPath,
-        $zipPath,
-        [System.IO.Compression.CompressionLevel]::SmallestSize,
-        $true  # includeBaseDirectory — root folder = slug name
-    )
-    $zipWatch.Stop()
-    $zipElapsed = [math]::Round($zipWatch.Elapsed.TotalSeconds, 1)
-    $zipSize = (Get-Item $zipPath).Length
-    $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Host "  ZIP created: $zipPath ($zipSizeMB MB) - ${zipElapsed}s" -ForegroundColor Green
-} catch {
-    Write-Host "  ERROR: ZIP creation failed: $($_.Exception.Message)" -ForegroundColor Red
-    exit 4
-}
-
-# ============================================================================
-# UPLOAD TO TARGET SITES
-# ============================================================================
+# ==========================================================================
+# UPLOAD SCRIPT SETUP
+# ==========================================================================
 $uploadScript = Join-Path $ScriptDir "upload-plugin-v2.ps1"
 
 if (-not (Test-Path $uploadScript)) {
