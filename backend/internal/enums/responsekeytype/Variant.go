@@ -410,4 +410,21 @@ const (
 	Pagination
 	NextAction
 	FieldsModified
+
+	// Log status keys (PHP log status/retrieval responses).
+	File
+	LogFile
+	ErrorFile
+	StacktraceFile
+	ArchiveCount
+	SizeBytes
+	LastModified
+	LineCount
+	IncludeInfoLog
+	IncludeErrorLog
+	IncludeStacktrace
+	MaxLines
+	Database
+	TransactionCount
+	ErrorSessionCount
 )

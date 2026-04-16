@@ -40,30 +40,30 @@ trait LogRetrievalTrait
             ResponseKeyType::Settings->value     => $settings,
         ];
 
-        $isInfoLogRequested = $settings['include_info_log'];
+        $isInfoLogRequested = $settings[ResponseKeyType::IncludeInfoLog->value];
 
         if ($isInfoLogRequested) {
             $result[ResponseKeyType::InfoLog->value] = $this->readLogFileTail(
                 $logsDir . '/log.txt',
-                $settings['max_lines'],
+                $settings[ResponseKeyType::MaxLines->value],
             );
         }
 
-        $isErrorLogRequested = $settings['include_error_log'];
+        $isErrorLogRequested = $settings[ResponseKeyType::IncludeErrorLog->value];
 
         if ($isErrorLogRequested) {
             $result[ResponseKeyType::ErrorLog->value] = $this->readLogFileTail(
                 $logsDir . '/error.txt',
-                $settings['max_lines'],
+                $settings[ResponseKeyType::MaxLines->value],
             );
         }
 
-        $isStacktraceRequested = $settings['include_stacktrace'];
+        $isStacktraceRequested = $settings[ResponseKeyType::IncludeStacktrace->value];
 
         if ($isStacktraceRequested) {
             $result[ResponseKeyType::StacktraceLog->value] = $this->readLogFileTail(
                 $logsDir . '/stacktrace.txt',
-                $settings['max_lines'],
+                $settings[ResponseKeyType::MaxLines->value],
             );
         }
 
@@ -74,14 +74,19 @@ trait LogRetrievalTrait
     /** Resolve retrieval settings from query params with defaults. */
     private function resolveRetrievalSettings(WP_REST_Request $request): array
     {
+        $includeInfoLogKey   = ResponseKeyType::IncludeInfoLog->value;
+        $includeErrorLogKey  = ResponseKeyType::IncludeErrorLog->value;
+        $includeStacktraceKey = ResponseKeyType::IncludeStacktrace->value;
+        $maxLinesKey         = ResponseKeyType::MaxLines->value;
+
         $resolved = [
-            'include_info_log'   => true,
-            'include_error_log'  => true,
-            'include_stacktrace' => true,
-            'max_lines'          => 200,
+            $includeInfoLogKey    => true,
+            $includeErrorLogKey   => true,
+            $includeStacktraceKey => true,
+            $maxLinesKey          => 200,
         ];
 
-        foreach (['include_info_log', 'include_error_log', 'include_stacktrace'] as $key) {
+        foreach ([$includeInfoLogKey, $includeErrorLogKey, $includeStacktraceKey] as $key) {
             $paramValue = $request->get_param($key);
             $isParamPresent = ($paramValue !== null);
 
@@ -90,11 +95,11 @@ trait LogRetrievalTrait
             }
         }
 
-        $maxLinesParam = $request->get_param('max_lines');
+        $maxLinesParam = $request->get_param($maxLinesKey);
         $isMaxLinesPresent = ($maxLinesParam !== null);
 
         if ($isMaxLinesPresent) {
-            $resolved['max_lines'] = max(10, min(5000, (int) $maxLinesParam));
+            $resolved[$maxLinesKey] = max(10, min(5000, (int) $maxLinesParam));
         }
 
         return $resolved;
@@ -105,7 +110,7 @@ trait LogRetrievalTrait
     {
         $result = [
             ResponseKeyType::Exists->value    => false,
-            'File'                             => basename($filePath),
+            ResponseKeyType::File->value      => basename($filePath),
             ResponseKeyType::Path->value      => $filePath,
             ResponseKeyType::Content->value   => '',
             ResponseKeyType::Lines->value     => 0,

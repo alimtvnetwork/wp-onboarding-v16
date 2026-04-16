@@ -35,11 +35,11 @@ trait LogStatusTrait
         return new WP_REST_Response(
             [
                 ResponseKeyType::Success->value => true,
-                'logs' => [
-                    'log_file'        => $logStatus,
-                    'error_file'      => $errorStatus,
-                    'stacktrace_file' => $stacktraceStatus,
-                    'archive_count'   => $archiveCount,
+                ResponseKeyType::Logs->value => [
+                    ResponseKeyType::LogFile->value        => $logStatus,
+                    ResponseKeyType::ErrorFile->value      => $errorStatus,
+                    ResponseKeyType::StacktraceFile->value => $stacktraceStatus,
+                    ResponseKeyType::ArchiveCount->value   => $archiveCount,
                 ],
             ],
             HttpStatusType::Ok->value,
@@ -52,10 +52,10 @@ trait LogStatusTrait
 
         if ($isFileExists === false) {
             return [
-                'exists'        => false,
-                'size_bytes'    => 0,
-                'last_modified' => null,
-                'line_count'    => 0,
+                ResponseKeyType::Exists->value       => false,
+                ResponseKeyType::SizeBytes->value    => 0,
+                ResponseKeyType::LastModified->value => null,
+                ResponseKeyType::LineCount->value    => 0,
             ];
         }
 
@@ -64,10 +64,10 @@ trait LogStatusTrait
         $lineCount = $this->countFileLines($filePath);
 
         return [
-            'exists'        => true,
-            'size_bytes'    => ($size !== false) ? $size : 0,
-            'last_modified' => ($mtime !== false) ? gmdate('Y-m-d\TH:i:s\Z', $mtime) : null,
-            'line_count'    => $lineCount,
+            ResponseKeyType::Exists->value       => true,
+            ResponseKeyType::SizeBytes->value    => ($size !== false) ? $size : 0,
+            ResponseKeyType::LastModified->value => ($mtime !== false) ? gmdate('Y-m-d\TH:i:s\Z', $mtime) : null,
+            ResponseKeyType::LineCount->value    => $lineCount,
         ];
     }
 
