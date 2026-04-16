@@ -346,4 +346,8 @@ var variantLabels = [...]string{
 	NewestArchive:         "Newest Archive",
 	Riseup:                "Riseup",
 	Qupload:               "QUpload",
+	Namespace:             "Namespace",
+	TotalRoutes:           "Total Routes",
+	Routes:                "Routes",
+	Pattern:               "Pattern",
 }

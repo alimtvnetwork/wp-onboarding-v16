@@ -451,6 +451,12 @@ enum ResponseKeyType: string
     case Riseup            = 'Riseup';
     case Qupload           = 'Qupload';
 
+    /** Debug route keys. */
+    case Namespace         = 'Namespace';
+    case TotalRoutes       = 'TotalRoutes';
+    case Routes            = 'Routes';
+    case Pattern           = 'Pattern';
+
     public function isEqual(self $other): bool { return $this === $other; }
     public function isOtherThan(self $other): bool { return $this !== $other; }
     public function isAnyOf(self ...$others): bool { return in_array($this, $others, true); }
