@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.34.0",
+  "version": "2.35.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.34.0",
-  "wpPluginVersion": "2.46.0",
-  "quploadVersion": "2.38.0",
+  "scriptVersion": "2.35.0",
+  "wpPluginVersion": "2.47.0",
+  "quploadVersion": "2.39.0",
   "changelog": [
+    {
+      "version": "2.35.0",
+      "date": "2026-04-16",
+      "title": "V2 Uploader Grouped Failure Diagnostics",
+      "changes": [
+        "🧭 upload-plugin-v2.ps1 now tracks Git, Lint, ZIP, Upload, and Verify diagnostic sections",
+        "📋 On failure or fallback, a grouped diagnostic report prints status and details for each section",
+        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+      ]
+    },
     {
       "version": "2.34.0",
       "date": "2026-04-16",
