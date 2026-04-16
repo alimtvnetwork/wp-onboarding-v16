@@ -33,7 +33,7 @@ type Config struct {
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Version:      "1.1.0",
+		Version:      "1.2.0",
 		DatabasePath: "data/app.db",
 		TempDir:      ".temp",
 		Server: ServerConfig{
