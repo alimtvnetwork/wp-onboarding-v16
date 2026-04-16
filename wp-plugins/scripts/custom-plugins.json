@@ -1,0 +1,35 @@
+{
+  "defaultSite": "Test V2",
+  "sites": [
+    {
+      "name": "Test V2",
+      "url": "https://testv2.developers-organism.com",
+      "username": "test-plugins@pxdmail.net",
+      "appPassword": "ScZX fOa1 jqAk FWnV TuGA KIrN"
+    },
+    {
+      "name": "Test V1",
+      "url": "https://testv1.developers-organism.com",
+      "username": "test-plugins@pxdmail.net",
+      "appPassword": "ScZX fOa1 jqAk FWnV TuGA KIrN"
+    },
+    {
+      "name": "Atto Property Demo",
+      "url": "https://demoat.attoproperty.com.au",
+      "username": "admin",
+      "appPassword": "EKRM pPCM aug9 E4j8 o3rP sl9A"
+    }
+  ],
+  "plugins": [
+    {
+      "slug": "alim",
+      "name": "Alim Plugin",
+      "paths": {
+        "windows": "D:\\wp-work\\riseup-asia\\wp-alim\\alim",
+        "unix": "/Users/dev/wp-work/riseup-asia/wp-alim/alim"
+      },
+      "activate": true,
+      "pingEndpoint": "/wp-json/alim/v1/status"
+    }
+  ]
+}
