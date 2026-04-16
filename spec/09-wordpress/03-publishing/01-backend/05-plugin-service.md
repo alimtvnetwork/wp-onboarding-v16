@@ -515,6 +515,7 @@ func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, e
 }
 
 func searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string, error) {
+    // Pass 1: check PHP files in the provided directory
     for _, entry := range entries {
         isPHP := !entry.IsDir() && strings.HasSuffix(entry.Name(), ".php")
         if !isPHP {
@@ -524,6 +525,32 @@ func searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string
         name, version := parsePluginHeader(filepath.Join(dir, entry.Name()))
         if name != "" {
             return entry.Name(), name, version, nil
+        }
+    }
+
+    // Pass 2: check one level of subdirectories so repo-root paths work
+    // Example: D:\wp-work\riseup-asia\wp-alim → D:\wp-work\riseup-asia\wp-alim\alim\alim.php
+    for _, entry := range entries {
+        if !entry.IsDir() {
+            continue
+        }
+
+        subDir := filepath.Join(dir, entry.Name())
+        subEntries, err := os.ReadDir(subDir)
+        if err != nil {
+            continue
+        }
+
+        for _, subEntry := range subEntries {
+            isPHP := !subEntry.IsDir() && strings.HasSuffix(subEntry.Name(), ".php")
+            if !isPHP {
+                continue
+            }
+
+            name, version := parsePluginHeader(filepath.Join(subDir, subEntry.Name()))
+            if name != "" {
+                return filepath.Join(entry.Name(), subEntry.Name()), name, version, nil
+            }
         }
     }
 
