@@ -37,5 +37,5 @@ func DeployPreflight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]any{"Results": results})
+	respondSuccess(w, DeployPreflightResponse{Results: results})
 }

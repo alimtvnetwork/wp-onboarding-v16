@@ -5,6 +5,7 @@ import (
 	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
+	"wp-plugin-publish/internal/services/site"
 )
 
 // --- Common action responses ---
@@ -12,6 +13,7 @@ import (
 // ActionResponse represents a simple boolean action result (deleted, cleared, enabled, etc.)
 type ActionResponse struct {
 	IsDeleted  bool   `json:",omitempty"`
+	IsUpdated  bool   `json:",omitempty"`
 	IsCleared  bool   `json:",omitempty"`
 	IsEnabled  bool   `json:",omitempty"`
 	IsDisabled bool   `json:",omitempty"`
@@ -22,6 +24,12 @@ type ActionResponse struct {
 	SiteId     int64  `json:",omitempty"`
 	Message    string `json:",omitempty"`
 	Count      int    `json:",omitempty"`
+}
+
+// DeployPreflightResponse is the response shape for the deploy pre-flight endpoint.
+// Wraps per-site results so the frontend always sees a stable {Results: [...]} envelope.
+type DeployPreflightResponse struct {
+	Results []site.PreflightSiteResult
 }
 
 // --- Paginated list responses ---
