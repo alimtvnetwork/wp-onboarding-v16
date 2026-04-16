@@ -163,7 +163,7 @@ if ($List) {
 }
 
 # ============================================================================
-# SLUG VALIDATION
+# SLUG VALIDATION + DIRECT FOLDER PATH FALLBACK
 # ============================================================================
 if ([string]::IsNullOrWhiteSpace($Slug)) {
     Write-Host "ERROR: Plugin slug is required. Use -Slug 'name' or .\run.ps1 -ucp name" -ForegroundColor Red
@@ -171,34 +171,48 @@ if ([string]::IsNullOrWhiteSpace($Slug)) {
     exit 2
 }
 
-# Find plugin in config
+$isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
+$isDirectPath = $false
+$pluginFolderPath = ""
+$pingEndpoint = ""
+
+# Try to find plugin in config by slug
 $plugin = $config.plugins | Where-Object { $_.slug -eq $Slug }
 
-if (-not $plugin) {
-    Write-Host "ERROR: Plugin '$Slug' not found in custom-plugins.json" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Available plugins:" -ForegroundColor Yellow
-    foreach ($p in $config.plugins) {
-        Write-Host "  - $($p.slug)" -ForegroundColor Gray
+if ($plugin) {
+    # --- Found in config: resolve OS-aware path ---
+    $pluginFolderPath = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
+    $pingEndpoint = if ($plugin.pingEndpoint) { $plugin.pingEndpoint } else { "" }
+
+    if ([string]::IsNullOrWhiteSpace($pluginFolderPath)) {
+        $osLabel = if ($isWindows) { "windows" } else { "unix" }
+        Write-Host "ERROR: No '$osLabel' path configured for plugin '$Slug'" -ForegroundColor Red
+        exit 3
     }
-    exit 2
-}
 
-# ============================================================================
-# OS-AWARE PATH RESOLUTION
-# ============================================================================
-$isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
-$pluginFolderPath = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
-
-if ([string]::IsNullOrWhiteSpace($pluginFolderPath)) {
-    $osLabel = if ($isWindows) { "windows" } else { "unix" }
-    Write-Host "ERROR: No '$osLabel' path configured for plugin '$Slug'" -ForegroundColor Red
-    exit 3
-}
-
-if (-not (Test-Path $pluginFolderPath)) {
-    Write-Host "ERROR: Plugin folder not found: $pluginFolderPath" -ForegroundColor Red
-    exit 3
+    if (-not (Test-Path $pluginFolderPath)) {
+        Write-Host "ERROR: Plugin folder not found: $pluginFolderPath" -ForegroundColor Red
+        exit 3
+    }
+} else {
+    # --- Not in config: treat $Slug as a direct folder path ---
+    if (Test-Path $Slug) {
+        $isDirectPath = $true
+        $pluginFolderPath = (Resolve-Path $Slug).Path
+        $Slug = Split-Path $pluginFolderPath -Leaf
+        Write-Host "  [DirectPath] Folder detected, using slug: $Slug" -ForegroundColor DarkCyan
+    } else {
+        Write-Host "ERROR: '$Slug' is not a registered plugin slug and not a valid folder path" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Registered plugins:" -ForegroundColor Yellow
+        foreach ($p in $config.plugins) {
+            Write-Host "  - $($p.slug)" -ForegroundColor Gray
+        }
+        Write-Host ""
+        Write-Host "Or provide a direct folder path:" -ForegroundColor Yellow
+        Write-Host "  .\run.ps1 -ucp 'D:\path\to\my-plugin'" -ForegroundColor Gray
+        exit 2
+    }
 }
 
 # ============================================================================
@@ -231,16 +245,20 @@ if ($All) {
 # ============================================================================
 # ZIP CREATION (SmallestSize compression)
 # ============================================================================
-$pluginDisplayName = if ($plugin.name) { $plugin.name } else { $Slug }
+$pluginDisplayName = if ($plugin -and $plugin.name) { $plugin.name } else { $Slug }
 $siteCountLabel = if ($targetSites.Count -eq 1) { $targetSites[0].name } else { "$($targetSites.Count) sites" }
+$sourceLabel = if ($isDirectPath) { " [DirectPath]" } else { "" }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Custom Plugin Upload" -ForegroundColor Cyan
+Write-Host "  Custom Plugin Upload$sourceLabel" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Plugin:  $pluginDisplayName ($Slug)" -ForegroundColor White
 Write-Host "  Path:    $pluginFolderPath" -ForegroundColor Gray
 Write-Host "  Target:  $siteCountLabel" -ForegroundColor Gray
+if ($pingEndpoint -ne "") {
+    Write-Host "  Ping:    $pingEndpoint" -ForegroundColor Gray
+}
 Write-Host ""
 
 # Create temp ZIP
@@ -251,6 +269,66 @@ $zipPath = Join-Path $tempDir $zipFileName
 # Remove existing ZIP if present
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
+}
+
+# ============================================================================
+# PHP SYNTAX CHECK (skip vendor folder)
+# ============================================================================
+$phpCommand = Get-Command php -ErrorAction SilentlyContinue
+
+if ($null -ne $phpCommand) {
+    Write-Host "  PHP syntax check..." -ForegroundColor Yellow
+
+    $skipFolders = @("vendor")
+
+    # Also read per-plugin skip folders from settings.json
+    $pluginSettingsPath = Join-Path $pluginFolderPath "settings.json"
+    if (Test-Path $pluginSettingsPath) {
+        try {
+            $pluginSettings = Get-Content $pluginSettingsPath -Raw | ConvertFrom-Json
+            if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                $skipFolders += @($pluginSettings.phpCheck.skipFolders)
+            }
+        } catch { }
+    }
+
+    $phpFiles = @(Get-ChildItem -Path $pluginFolderPath -Recurse -File -Filter "*.php" | Sort-Object FullName)
+
+    # Filter out skipped folders
+    $filteredFiles = @()
+    $skippedCount = 0
+    foreach ($file in $phpFiles) {
+        $relativePath = $file.FullName.Substring($pluginFolderPath.Length).TrimStart('\', '/')
+        $isSkipped = $false
+        foreach ($skip in $skipFolders) {
+            if ($relativePath -like "$skip\*" -or $relativePath -like "$skip/*") {
+                $isSkipped = $true
+                $skippedCount++
+                break
+            }
+        }
+        if (-not $isSkipped) { $filteredFiles += $file }
+    }
+
+    $syntaxErrors = 0
+    foreach ($file in $filteredFiles) {
+        $lintOutput = & php -l $file.FullName 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $syntaxErrors++
+            Write-Host "    SYNTAX ERROR: $($file.FullName)" -ForegroundColor Red
+            Write-Host "    $($lintOutput | Out-String)" -ForegroundColor DarkRed
+        }
+    }
+
+    if ($syntaxErrors -gt 0) {
+        Write-Host "  PHP syntax check FAILED: $syntaxErrors error(s) found" -ForegroundColor Red
+        exit 4
+    }
+
+    $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in vendor)" } else { "" }
+    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel" -ForegroundColor Green
+} else {
+    Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
 }
 
 Write-Host "  Zipping with SmallestSize compression..." -ForegroundColor Yellow
@@ -283,8 +361,60 @@ if (-not (Test-Path $uploadScript)) {
 }
 
 $shouldActivate = $true
-if ($null -ne $plugin.activate) {
+if ($plugin -and $null -ne $plugin.activate) {
     $shouldActivate = $plugin.activate
+}
+
+# ============================================================================
+# PING FUNCTION — verifies plugin is active on the site after upload
+# ============================================================================
+function Invoke-PluginPing {
+    param(
+        [string]$SiteUrl,
+        [string]$Endpoint,
+        [string]$Username,
+        [string]$Password,
+        [string]$SiteName,
+        [string]$Label = ""
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Endpoint)) { return }
+
+    $pingUrl = $SiteUrl.TrimEnd('/') + $Endpoint
+    Write-Host "  ${Label}Pinging $pingUrl ..." -ForegroundColor DarkCyan
+
+    try {
+        $cleanPwd = $Password -replace '\s', ''
+        $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${cleanPwd}"))
+        $headers = @{
+            "Authorization" = "Basic $base64Auth"
+            "Accept" = "application/json"
+        }
+
+        $response = Invoke-RestMethod -Uri $pingUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+        Write-Host "  ${Label}PING OK - $SiteName responded" -ForegroundColor Green
+
+        # Show standard ping fields
+        $pingData = $response
+        if ($response.Results -and $response.Results.Count -gt 0) {
+            $pingData = $response.Results[0]
+        }
+        if ($pingData.Author) {
+            Write-Host "  ${Label}  Author:  $($pingData.Author)" -ForegroundColor DarkGray
+        }
+        if ($pingData.Company) {
+            Write-Host "  ${Label}  Company: $($pingData.Company)" -ForegroundColor DarkGray
+        }
+        if ($pingData.Version) {
+            Write-Host "  ${Label}  Version: $($pingData.Version)" -ForegroundColor DarkGray
+        }
+    } catch {
+        $statusCode = ""
+        if ($_.Exception.Response) {
+            $statusCode = " (HTTP $([int]$_.Exception.Response.StatusCode))"
+        }
+        Write-Host "  ${Label}PING FAILED$statusCode - $($_.Exception.Message)" -ForegroundColor DarkYellow
+    }
 }
 
 $successCount = 0
@@ -313,7 +443,7 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
     )
     
     if ($shouldActivate) { $uploadArgs += "-Activate" }
-    if ($VerboseOutput) { $uploadArgs += "-Verbose" }
+    if ($VerboseOutput) { $uploadArgs += "-VerboseOutput" }
 
     try {
         & $uploadScript @uploadArgs
@@ -322,6 +452,17 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
         if ($uploadExitCode -eq 0) {
             Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name)" -ForegroundColor Green
             $successCount++
+
+            # Post-upload ping verification
+            if ($pingEndpoint -ne "") {
+                Invoke-PluginPing `
+                    -SiteUrl $targetSite.url `
+                    -Endpoint $pingEndpoint `
+                    -Username $targetSite.username `
+                    -Password $cleanPassword `
+                    -SiteName $targetSite.name `
+                    -Label $siteLabel
+            }
         } else {
             Write-Host "  ${siteLabel}FAILED - Exit code: $uploadExitCode" -ForegroundColor Red
             $failCount++

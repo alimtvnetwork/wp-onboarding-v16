@@ -38,12 +38,6 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 # List all registered custom plugins
 .\run.ps1 -ucp -list
 
-# Upload ALL plugins from config to default site
-.\run.ps1 -ucp -ap
-
-# Upload ALL plugins from config to ALL sites
-.\run.ps1 -ucp -ap -a
-
 # Help
 .\run.ps1 -ucp -help
 ```
@@ -56,7 +50,6 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 | `-ucp <path>` | — | Upload from a direct folder path (slug = folder name) |
 | `-ucp s1,s2` | — | Upload multiple plugins (comma-separated slugs) |
 | `-a` | `-allcustomsites` | Upload to all configured sites instead of default |
-| `-ap` | `-allplugins` | Upload ALL plugins from config (no slug needed) |
 | `-site <name>` | — | Upload to a specific site by name |
 | `-list` | — | List all registered custom plugins and their paths |
 | `-help` | — | Show custom plugin upload help |
@@ -223,15 +216,13 @@ The `-ucp` flag is handled via `mode-custom-upload.ps1` module (dot-sourced by `
 ```powershell
 # In run.ps1 param block:
 [Alias('ucp')][string]$uploadcustomplugin = "",
-[Alias('a')][switch]$allcustomsites,
-[Alias('ap')][switch]$allplugins
+[Alias('a')][switch]$allcustomsites
 
 # In run.ps1 early exit modes:
 if ($isUcpActive) {
     Invoke-CustomPluginUploadMode `
         -PluginSlug $ucpSlugValue `
         -AllSites:$allcustomsites `
-        -AllPlugins:$isAllPluginsMode `
         -SiteName $site `
         -VerboseMode:$verbose
 }

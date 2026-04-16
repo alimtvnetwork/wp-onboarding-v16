@@ -50,8 +50,7 @@ param(
     [string]$set = "",
     [string]$setval = "",
     [Alias('ucp')][string]$uploadcustomplugin = "",
-    [Alias('a')][switch]$allcustomsites,
-    [Alias('ap')][switch]$allplugins
+    [Alias('a')][switch]$allcustomsites
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -315,8 +314,6 @@ if ($help) {
     Write-Host "  -ucp 'slug' -a      Upload custom plugin to ALL configured sites"
     Write-Host "  -ucp 's1,s2'        Upload multiple custom plugins (comma-separated)"
     Write-Host "  -ucp 's1,s2' -a     Upload multiple custom plugins to ALL sites"
-    Write-Host "  -ucp -ap            Upload ALL custom plugins from config to default site"
-    Write-Host "  -ucp -ap -a         Upload ALL custom plugins to ALL sites"
     Write-Host "  -ucp 'slug' -site 'name'  Upload custom plugin to a specific site"
     Write-Host "  -ucp -list          List all registered custom plugins"
     Write-Host "  Config: wp-plugins/scripts/custom-plugins.json"
@@ -393,8 +390,6 @@ if ($help) {
     Write-Host "    .\run.ps1 -ucp alim -a             # Upload 'alim' to ALL sites"
     Write-Host "    .\run.ps1 -ucp alim -site 'Test V1'  # Upload to specific site"
     Write-Host "    .\run.ps1 -ucp alim,other -a       # Upload multiple plugins to ALL sites"
-    Write-Host "    .\run.ps1 -ucp -ap                 # Upload ALL custom plugins to default site"
-    Write-Host "    .\run.ps1 -ucp -ap -a              # Upload ALL custom plugins to ALL sites"
     Write-Host "    .\run.ps1 -ucp -list               # List registered custom plugins"
     Write-Host ""
     Write-Host "  Plugin status:" -ForegroundColor DarkGray
@@ -679,14 +674,12 @@ if ($uploadcustomplugin -ne "" -or $uploadcustomplugin -eq "" -and $MyInvocation
     if ($isUcpActive) {
         $ucpSlugValue = $uploadcustomplugin
         $isListMode = $ucpSlugValue -eq "list" -or $ucpSlugValue -eq "-list"
-        $isAllPluginsMode = $allplugins -or $ucpSlugValue -eq "ap" -or $ucpSlugValue -eq "-ap"
         
         Invoke-CustomPluginUploadMode `
             -PluginSlug $ucpSlugValue `
             -AllSites:$allcustomsites `
             -SiteName $site `
             -ListPlugins:$isListMode `
-            -AllPlugins:$isAllPluginsMode `
             -VerboseMode:$verbose
     }
 }

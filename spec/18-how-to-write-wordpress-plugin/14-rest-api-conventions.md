@@ -641,6 +641,108 @@ private function executeStatus(WP_REST_Request $request): WP_REST_Response
 }
 ```
 
+### Ping endpoint (every plugin must have one)
+
+Every WordPress plugin **must** expose a `/ping` endpoint that returns basic identity and liveness information. This enables external tools (e.g., `upload-custom-plugin.ps1`) to verify a plugin is active after deployment.
+
+#### Auth modes
+
+The ping endpoint supports two auth modes — the developer chooses one per plugin:
+
+| Mode | `permission_callback` | Use case |
+|------|----------------------|----------|
+| **Public** (non-authorized) | `__return_true` | Monitoring, uptime checks, CI/CD verification |
+| **Authorized** (Basic Auth) | `checkStatusPermission` | Security-sensitive environments, hides version from public |
+
+The chosen mode should be documented in the plugin's `endpoints.json` under the `ping` entry.
+
+#### Required response fields
+
+| Field | Source | Description |
+|-------|--------|-------------|
+| `Author` | `PluginConfigType::Author->value` | Plugin author name |
+| `Company` | `PluginConfigType::Company->value` | Company or organisation name |
+| `Version` | `PluginConfigType::Version->value` | Current plugin version string |
+
+#### EndpointType enum entry
+
+```php
+case Ping = 'ping';
+```
+
+#### Route registration
+
+```php
+// In RouteRegistrationTrait or RouteRegistrationCoreTrait
+[
+    'route'    => EndpointType::Ping->route(),    // '/ping'
+    'method'   => 'GET',
+    'callback' => [$this, 'handlePing'],
+    // Choose ONE:
+    'permission_callback' => '__return_true',                                    // Public
+    // 'permission_callback' => $this->buildPermissionCallback('ping', [$this, 'checkStatusPermission']),  // Authorized
+],
+```
+
+#### Handler implementation
+
+```php
+// GET /ping — Liveness check with identity info
+public function handlePing(WP_REST_Request $request): WP_REST_Response
+{
+    return $this->safeExecute(
+        fn() => $this->executePing($request),
+        'ping',
+    );
+}
+
+private function executePing(WP_REST_Request $request): WP_REST_Response
+{
+    return EnvelopeBuilder::success('OK')
+        ->setRequestedAt($request->get_route())
+        ->setSingleResult([
+            ResponseKeyType::Author->value  => PluginConfigType::Author->value,
+            ResponseKeyType::Company->value => PluginConfigType::Company->value,
+            ResponseKeyType::Version->value => PluginConfigType::Version->value,
+        ])
+        ->toResponse();
+}
+```
+
+#### Example response (public mode)
+
+```json
+{
+  "Status": "OK",
+  "Results": [
+    {
+      "Author": "MD ALIM UL KARIM",
+      "Company": "Developers Organism",
+      "Version": "2.43.0"
+    }
+  ]
+}
+```
+
+#### PluginConfigType enum entries required
+
+```php
+case Author  = 'MD ALIM UL KARIM';       // Plugin author
+case Company = 'Developers Organism';     // Company / org name
+```
+
+> **Note:** If `Author` and `Company` are not yet in `PluginConfigType`, they must be added when implementing the ping endpoint. These are static config values, not runtime data.
+
+#### PowerShell verification
+
+The `upload-custom-plugin.ps1` script pings this endpoint after upload when `pingEndpoint` is configured in `custom-plugins.json`:
+
+```json
+{ "slug": "alim", "pingEndpoint": "/wp-json/alim/v1/ping" }
+```
+
+The script sends `GET {siteUrl}/wp-json/{slug}/v1/ping` with Basic Auth headers, then reports the `Author`, `Company`, and `Version` fields from the response.
+
 ### List endpoint with pagination and filters
 
 ```php
