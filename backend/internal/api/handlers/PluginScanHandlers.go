@@ -89,6 +89,8 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 }
 
 // respondScanWithDetection handles the detection file creation logic for ScanDirectoryPath.
+// Returns a flat response (scan fields + detection metadata) so the frontend can
+// read `isValid`, `pluginName`, `detectionCreated`, etc. without nested unwrapping.
 func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult scanDetectionInput) {
 	shouldCreateDetection := scanResult.Input.CreateDetection
 	if !shouldCreateDetection {
@@ -97,24 +99,68 @@ func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult
 		return
 	}
 
-	appErr := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path)
-	if appErr != nil {
-		errorResponse := ScanResultResponse{
-			Scan:           scanResult.Result,
-			DetectionError: appErr.Error(),
-		}
-
-		respondSuccess(w, errorResponse)
+	// Skip writing detection file if scan was invalid — avoids masking the real
+	// reason ("not a WordPress plugin") with a generic ErrPathInvalid wrapper.
+	canWriteDetection := scanResult.Result != nil && scanResult.Result.IsValid
+	if !canWriteDetection {
+		respondSuccess(w, buildFlatScanResponse(scanResult.Result, false, ""))
 
 		return
 	}
 
-	successResponse := ScanResultResponse{
-		Scan:               scanResult.Result,
-		IsDetectionCreated: true,
+	appErr := Services.PluginService.WritePluginDetected(r.Context(), scanResult.Input.Path)
+	if appErr != nil {
+		respondSuccess(w, buildFlatScanResponse(scanResult.Result, false, appErr.Error()))
+
+		return
 	}
 
-	respondSuccess(w, successResponse)
+	respondSuccess(w, buildFlatScanResponse(scanResult.Result, true, ""))
+}
+
+// buildFlatScanResponse merges scan results with detection metadata into a flat map
+// so frontend keys (after PascalCase→camelCase transform) match the expected shape:
+// { path, isValid, pluginName, version, mainFile, ..., detectionCreated, detectionError }.
+func buildFlatScanResponse(scan *plugin.ScanResult, detectionCreated bool, detectionError string) map[string]any {
+	out := map[string]any{
+		"DetectionCreated": detectionCreated,
+	}
+
+	if detectionError != "" {
+		out["DetectionError"] = detectionError
+	}
+
+	if scan == nil {
+		out["IsValid"] = false
+
+		return out
+	}
+
+	out["Path"] = scan.Path
+	out["IsValid"] = scan.IsValid
+	out["FileCount"] = scan.FileCount
+	out["TotalSize"] = scan.TotalSize
+
+	addStringIfSet(out, "PluginName", scan.PluginName)
+	addStringIfSet(out, "Version", scan.Version)
+	addStringIfSet(out, "MainFile", scan.MainFile)
+	addStringIfSet(out, "Description", scan.Description)
+	addStringIfSet(out, "Author", scan.Author)
+	addStringIfSet(out, "AuthorUri", scan.AuthorUri)
+	addStringIfSet(out, "PluginUri", scan.PluginUri)
+	addStringIfSet(out, "TextDomain", scan.TextDomain)
+	addStringIfSet(out, "RequiresPhp", scan.RequiresPhp)
+	addStringIfSet(out, "RequiresWP", scan.RequiresWP)
+	addStringIfSet(out, "Error", scan.Error)
+
+	return out
+}
+
+// addStringIfSet adds a key to the map only when the value is non-empty.
+func addStringIfSet(m map[string]any, key, value string) {
+	if value != "" {
+		m[key] = value
+	}
 }
 
 // scanDetectionInput bundles parameters for respondScanWithDetection.
@@ -194,7 +240,7 @@ func scanSingleDirectory(r *http.Request, path string, createDetection bool) Dir
 
 	isPlugin :=
 		result != nil &&
-		result.IsValid
+			result.IsValid
 
 	sr := DirectoryScanResult{
 		Path:     path,
