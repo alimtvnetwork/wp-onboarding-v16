@@ -29,7 +29,7 @@
         "unix": "/Users/dev/wp-work/riseup-asia/wp-alim/alim"
       },
       "activate": true,
-      "pingEndpoint": "/wp-json/alim/v1/status"
+      "pingEndpoint": "/wp-json/alim/v1/ping"
     }
   ]
 }
