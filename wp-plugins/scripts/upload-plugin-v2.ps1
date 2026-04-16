@@ -768,6 +768,9 @@ if ($Debug) {
 $folderName = Split-Path $PluginFolderPath -Leaf
 if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 
+# Initialize diagnostic tracking
+$v2Diag = New-V2DiagnosticSet
+
 # ============================================================================
 # STEP 1: GIT PULL
 # ============================================================================
