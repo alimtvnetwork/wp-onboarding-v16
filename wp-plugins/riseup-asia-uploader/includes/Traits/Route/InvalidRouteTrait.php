@@ -124,7 +124,7 @@ trait InvalidRouteTrait
     }
 
     private function resolveErrorCode(array $data): ?WpErrorCodeType {
-        $code = $data[ResponseKeyType::Code->value] ?? null;
+        $code = $data[ResponseKeyType::Code->value] ?? $data['code'] ?? null;
         if ($code === null) {
 
             return null;
@@ -238,7 +238,7 @@ trait InvalidRouteTrait
             'route'          => $route,
             'status'         => $status,
             ResponseKeyType::ErrorCategory->value => $data[ResponseKeyType::ErrorCategory->value] ?? 'unknown',
-            ResponseKeyType::Message->value => $data[ResponseKeyType::Message->value] ?? $data['Status']['Message'] ?? 'Unknown',
+            ResponseKeyType::Message->value => $data[ResponseKeyType::Message->value] ?? $data['message'] ?? $data['Status']['Message'] ?? 'Unknown',
             ResponseKeyType::PluginVersion->value => PluginConfigType::Version->value,
         ];
 
