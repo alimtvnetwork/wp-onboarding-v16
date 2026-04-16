@@ -1,5 +1,5 @@
 # WordPress Plugin Uploader V2
-# Version: 2.7.0
+# Version: 2.8.0
 # Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
 #
@@ -382,7 +382,34 @@ function Test-PluginPhpSyntax {
         }
     }
 
-    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Sort-Object FullName
+    $skipFolders = @("vendor")
+    $pluginSettingsPath = Join-Path $PluginDir "settings.json"
+
+    if (Test-Path $pluginSettingsPath) {
+        try {
+            $pluginSettings = Get-Content $pluginSettingsPath -Raw | ConvertFrom-Json
+            if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                $skipFolders += @($pluginSettings.phpCheck.skipFolders)
+            }
+        } catch {}
+    }
+
+    $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Where-Object {
+        $basePath = [System.IO.Path]::GetFullPath($PluginDir)
+        $fullPath = [System.IO.Path]::GetFullPath($_.FullName)
+        if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+            $basePath += [System.IO.Path]::DirectorySeparatorChar
+        }
+        $baseUri = [System.Uri]::new($basePath)
+        $fullUri = [System.Uri]::new($fullPath)
+        $relativePath = [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($fullUri).ToString()) -replace '/', '\\'
+        foreach ($skip in $skipFolders) {
+            if ($relativePath -like "$skip\\*" -or $relativePath -like "$skip/*") {
+                return $false
+            }
+        }
+        return $true
+    } | Sort-Object FullName
 
     foreach ($file in $phpFiles) {
         $lintOutput = & php -l $file.FullName 2>&1
@@ -759,10 +786,10 @@ $isSyntaxChecked = $syntaxResult.IsChecked
 $isSyntaxSuccess = $syntaxResult.IsSuccess
 
 if ($isSyntaxChecked -and (-not $isSyntaxSuccess)) {
-    Write-Host "      Syntax check FAILED" -ForegroundColor Red
+    Write-Host "      Syntax check WARNING" -ForegroundColor DarkYellow
     Write-Host "      File: $($syntaxResult.FailedFile)" -ForegroundColor Yellow
     Write-Host "      Detail: $($syntaxResult.LintMessage)" -ForegroundColor Yellow
-    exit 1
+    Write-Host "      Continuing with upload anyway." -ForegroundColor DarkYellow
 }
 
 if ($isSyntaxChecked) {

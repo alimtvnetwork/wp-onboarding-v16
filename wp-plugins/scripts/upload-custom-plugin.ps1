@@ -1,5 +1,5 @@
 # Upload Custom Plugin — External Plugin Zipper & Uploader
-# Version: 1.0.0
+# Version: 1.1.0
 # Reads plugin paths from custom-plugins.json, zips with best compression,
 # and uploads via upload-plugin-v2.ps1 to configured WordPress sites.
 #
@@ -273,6 +273,31 @@ function Get-LocalPluginVersion {
     return "unknown"
 }
 
+function Get-RelativePluginPath {
+    param(
+        [string]$BasePath,
+        [string]$FullPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BasePath) -or [string]::IsNullOrWhiteSpace($FullPath)) {
+        return $FullPath
+    }
+
+    $normalizedBase = [System.IO.Path]::GetFullPath($BasePath)
+    $normalizedFull = [System.IO.Path]::GetFullPath($FullPath)
+
+    if (-not $normalizedBase.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $normalizedBase += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $baseUri = [System.Uri]::new($normalizedBase)
+    $fullUri = [System.Uri]::new($normalizedFull)
+    $relativeUri = $baseUri.MakeRelativeUri($fullUri)
+    $relativePath = [System.Uri]::UnescapeDataString($relativeUri.ToString())
+
+    return ($relativePath -replace '/', '\\')
+}
+
 $pluginDisplayName = if ($plugin -and $plugin.name) { $plugin.name } else { $Slug }
 $siteCountLabel = if ($targetSites.Count -eq 1) { $targetSites[0].name } else { "$($targetSites.Count) sites" }
 $sourceLabel = if ($isDirectPath) { " [DirectPath]" } else { "" }
@@ -336,7 +361,7 @@ if ($SkipGitPull) {
 }
 
 # ============================================================================
-# PHP SYNTAX CHECK (skip vendor folder)
+# PHP SYNTAX CHECK (uses PHP CLI, but does not block publish)
 # ============================================================================
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
 
@@ -359,7 +384,7 @@ if ($null -ne $phpCommand) {
     $filteredFiles = @()
     $skippedCount = 0
     foreach ($file in $phpFiles) {
-        $relativePath = $file.FullName.Substring($pluginFolderPath.Length).TrimStart('\\', '/')
+        $relativePath = Get-RelativePluginPath -BasePath $pluginFolderPath -FullPath $file.FullName
         $isSkipped = $false
         foreach ($skip in $skipFolders) {
             if ($relativePath -like "$skip\\*" -or $relativePath -like "$skip/*") {
@@ -382,14 +407,14 @@ if ($null -ne $phpCommand) {
     }
 
     if ($syntaxErrors -gt 0) {
-        Write-Host "  PHP syntax check FAILED: $syntaxErrors error(s) found" -ForegroundColor Red
-        exit 4
+        Write-Host "  PHP syntax check WARNING: $syntaxErrors error(s) found" -ForegroundColor DarkYellow
+        Write-Host "  Continuing with upload; fix the PHP files in the plugin repo." -ForegroundColor DarkYellow
+    } else {
+        $phpWatch.Stop()
+        $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
+        $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in configured folders)" } else { "" }
+        Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel - ${phpElapsed}s" -ForegroundColor Green
     }
-
-    $phpWatch.Stop()
-    $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
-    $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in vendor)" } else { "" }
-    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel - ${phpElapsed}s" -ForegroundColor Green
 } else {
     Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
 }

@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.32.0",
+  "version": "2.33.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.32.0",
-  "wpPluginVersion": "2.44.0",
-  "quploadVersion": "2.36.0",
+  "scriptVersion": "2.33.0",
+  "wpPluginVersion": "2.45.0",
+  "quploadVersion": "2.37.0",
   "changelog": [
+    {
+      "version": "2.33.0",
+      "date": "2026-04-16",
+      "title": "Custom Upload Syntax Tolerance",
+      "changes": [
+        "📦 Fixed custom plugin upload PowerShell path trimming and kept versioned ZIPs in the plugin folder during upload",
+        "🐘 PHP syntax checks now run via PHP CLI and report warnings without blocking publish in custom upload flows",
+        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+      ]
+    },
     {
       "version": "2.32.0",
       "date": "2026-04-16",
