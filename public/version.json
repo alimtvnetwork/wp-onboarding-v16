@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.33.0",
+  "version": "2.34.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.33.0",
-  "wpPluginVersion": "2.45.0",
-  "quploadVersion": "2.37.0",
+  "scriptVersion": "2.34.0",
+  "wpPluginVersion": "2.46.0",
+  "quploadVersion": "2.38.0",
   "changelog": [
+    {
+      "version": "2.34.0",
+      "date": "2026-04-16",
+      "title": "Grouped Upload Failure Diagnostics",
+      "changes": [
+        "🧭 Custom plugin upload failures now print grouped diagnostic sections for git, lint, ZIP, upload, and ping",
+        "🧪 Ping failures now emit a focused warning summary without hiding successful uploads",
+        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+      ]
+    },
     {
       "version": "2.33.0",
       "date": "2026-04-16",

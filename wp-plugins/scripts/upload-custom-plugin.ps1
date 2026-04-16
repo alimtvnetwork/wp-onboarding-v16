@@ -1,5 +1,5 @@
 # Upload Custom Plugin — External Plugin Zipper & Uploader
-# Version: 1.1.0
+# Version: 1.2.0
 # Reads plugin paths from custom-plugins.json, zips with best compression,
 # and uploads via upload-plugin-v2.ps1 to configured WordPress sites.
 #
@@ -298,6 +298,98 @@ function Get-RelativePluginPath {
     return ($relativePath -replace '/', '\\')
 }
 
+function New-DiagnosticSection {
+    param([string]$Name)
+
+    return [ordered]@{
+        Name    = $Name
+        Status  = "PENDING"
+        Summary = "Not started"
+        Details = @()
+    }
+}
+
+function New-DiagnosticSet {
+    return [ordered]@{
+        Git    = (New-DiagnosticSection -Name "Git")
+        Lint   = (New-DiagnosticSection -Name "Lint")
+        ZIP    = (New-DiagnosticSection -Name "ZIP")
+        Upload = (New-DiagnosticSection -Name "Upload")
+        Ping   = (New-DiagnosticSection -Name "Ping")
+    }
+}
+
+function Copy-DiagnosticSet {
+    param($Template)
+
+    $copy = New-DiagnosticSet
+    foreach ($name in @("Git", "Lint", "ZIP", "Upload", "Ping")) {
+        $copy[$name].Status = $Template[$name].Status
+        $copy[$name].Summary = $Template[$name].Summary
+        $copy[$name].Details = @($Template[$name].Details)
+    }
+
+    return $copy
+}
+
+function Set-DiagnosticSection {
+    param(
+        $Section,
+        [string]$Status,
+        [string]$Summary
+    )
+
+    $Section.Status = $Status
+    $Section.Summary = $Summary
+}
+
+function Add-DiagnosticDetail {
+    param(
+        $Section,
+        [string]$Detail
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) {
+        $Section.Details += $Detail
+    }
+}
+
+function Get-DiagnosticColor {
+    param([string]$Status)
+
+    switch ($Status) {
+        "OK" { return "Green" }
+        "WARN" { return "Yellow" }
+        "FAIL" { return "Red" }
+        "SKIP" { return "DarkGray" }
+        default { return "Gray" }
+    }
+}
+
+function Write-DiagnosticReport {
+    param(
+        $Diagnostics,
+        [string]$SiteLabel,
+        [string]$PluginSlug
+    )
+
+    Write-Host ""
+    Write-Host "  ${SiteLabel}========================================" -ForegroundColor Cyan
+    Write-Host "  ${SiteLabel}Failure Diagnostics ($PluginSlug)" -ForegroundColor Cyan
+    Write-Host "  ${SiteLabel}========================================" -ForegroundColor Cyan
+
+    foreach ($name in @("Git", "Lint", "ZIP", "Upload", "Ping")) {
+        $section = $Diagnostics[$name]
+        $color = Get-DiagnosticColor -Status $section.Status
+        Write-Host "  ${SiteLabel}[$name] $($section.Status): $($section.Summary)" -ForegroundColor $color
+        foreach ($detail in $section.Details) {
+            Write-Host "  ${SiteLabel}  - $detail" -ForegroundColor DarkGray
+        }
+    }
+
+    Write-Host ""
+}
+
 $pluginDisplayName = if ($plugin -and $plugin.name) { $plugin.name } else { $Slug }
 $siteCountLabel = if ($targetSites.Count -eq 1) { $targetSites[0].name } else { "$($targetSites.Count) sites" }
 $sourceLabel = if ($isDirectPath) { " [DirectPath]" } else { "" }
@@ -305,6 +397,18 @@ $localVersion = Get-LocalPluginVersion -PluginPath $pluginFolderPath
 $zipFolderPath = Split-Path $pluginFolderPath -Parent
 $zipFileName = if ($localVersion -ne "unknown") { "$Slug-$localVersion.zip" } else { "$Slug.zip" }
 $zipPath = Join-Path $zipFolderPath $zipFileName
+$baseDiagnostics = New-DiagnosticSet
+
+Set-DiagnosticSection -Section $baseDiagnostics.ZIP -Status "PENDING" -Summary "ZIP not created yet"
+Add-DiagnosticDetail -Section $baseDiagnostics.ZIP -Detail "Expected path: $zipPath"
+Add-DiagnosticDetail -Section $baseDiagnostics.ZIP -Detail "Expected versioned file: $zipFileName"
+
+if ($pingEndpoint -ne "") {
+    Set-DiagnosticSection -Section $baseDiagnostics.Ping -Status "PENDING" -Summary "Ping will run after upload"
+    Add-DiagnosticDetail -Section $baseDiagnostics.Ping -Detail "Endpoint: $pingEndpoint"
+} else {
+    Set-DiagnosticSection -Section $baseDiagnostics.Ping -Status "SKIP" -Summary "Ping endpoint not configured"
+}
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -327,6 +431,7 @@ $totalWatch = [System.Diagnostics.Stopwatch]::StartNew()
 # ============================================================================
 if ($SkipGitPull) {
     Write-Host "  Git pull skipped (-skipgitpull)" -ForegroundColor DarkGray
+    Set-DiagnosticSection -Section $baseDiagnostics.Git -Status "SKIP" -Summary "Git pull skipped by flag"
 } else {
     $gitCommand = Get-Command git -ErrorAction SilentlyContinue
     if ($null -ne $gitCommand) {
@@ -352,11 +457,21 @@ if ($SkipGitPull) {
             if ($gitExitCode -eq 0) {
                 $shortHash = (& git -C $pluginFolderPath rev-parse --short HEAD 2>&1 | Out-String).Trim()
                 Write-Host "  Git pull OK ($branchName @ $shortHash) - ${gitElapsed}s" -ForegroundColor Green
+                Set-DiagnosticSection -Section $baseDiagnostics.Git -Status "OK" -Summary "Git pull succeeded on $branchName"
+                Add-DiagnosticDetail -Section $baseDiagnostics.Git -Detail "Commit: $shortHash"
+                Add-DiagnosticDetail -Section $baseDiagnostics.Git -Detail "Elapsed: ${gitElapsed}s"
             } else {
                 Write-Host "  Git pull WARNING: $gitOutput" -ForegroundColor DarkYellow
                 Write-Host "  Continuing with upload... - ${gitElapsed}s" -ForegroundColor DarkYellow
+                Set-DiagnosticSection -Section $baseDiagnostics.Git -Status "WARN" -Summary "Git pull failed; upload continued"
+                Add-DiagnosticDetail -Section $baseDiagnostics.Git -Detail "Branch: $branchName"
+                Add-DiagnosticDetail -Section $baseDiagnostics.Git -Detail "Reason: $gitOutput"
             }
+        } else {
+            Set-DiagnosticSection -Section $baseDiagnostics.Git -Status "SKIP" -Summary "Plugin folder is not a git work tree"
         }
+    } else {
+        Set-DiagnosticSection -Section $baseDiagnostics.Git -Status "SKIP" -Summary "git command not found"
     }
 }
 
@@ -397,26 +512,42 @@ if ($null -ne $phpCommand) {
     }
 
     $syntaxErrors = 0
+    $syntaxDetails = @()
     foreach ($file in $filteredFiles) {
         $lintOutput = & php -l $file.FullName 2>&1
         if ($LASTEXITCODE -ne 0) {
             $syntaxErrors++
             Write-Host "    SYNTAX ERROR: $($file.FullName)" -ForegroundColor Red
             Write-Host "    $($lintOutput | Out-String)" -ForegroundColor DarkRed
+            if ($syntaxDetails.Count -lt 5) {
+                $shortMessage = (($lintOutput | Out-String).Trim() -replace "\s+", " ")
+                $syntaxDetails += "$(Split-Path $file.FullName -Leaf): $shortMessage"
+            }
         }
     }
+
+    $phpWatch.Stop()
+    $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
 
     if ($syntaxErrors -gt 0) {
         Write-Host "  PHP syntax check WARNING: $syntaxErrors error(s) found" -ForegroundColor DarkYellow
         Write-Host "  Continuing with upload; fix the PHP files in the plugin repo." -ForegroundColor DarkYellow
+        Set-DiagnosticSection -Section $baseDiagnostics.Lint -Status "WARN" -Summary "$syntaxErrors PHP lint warning(s); upload continued"
+        Add-DiagnosticDetail -Section $baseDiagnostics.Lint -Detail "Checked: $($filteredFiles.Count) file(s) in ${phpElapsed}s"
+        Add-DiagnosticDetail -Section $baseDiagnostics.Lint -Detail "Skipped folders/files: $skippedCount"
+        foreach ($detail in $syntaxDetails) {
+            Add-DiagnosticDetail -Section $baseDiagnostics.Lint -Detail $detail
+        }
     } else {
-        $phpWatch.Stop()
-        $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
         $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in configured folders)" } else { "" }
         Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel - ${phpElapsed}s" -ForegroundColor Green
+        Set-DiagnosticSection -Section $baseDiagnostics.Lint -Status "OK" -Summary "PHP lint passed"
+        Add-DiagnosticDetail -Section $baseDiagnostics.Lint -Detail "Checked: $($filteredFiles.Count) file(s) in ${phpElapsed}s"
+        Add-DiagnosticDetail -Section $baseDiagnostics.Lint -Detail "Skipped folders/files: $skippedCount"
     }
 } else {
     Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
+    Set-DiagnosticSection -Section $baseDiagnostics.Lint -Status "SKIP" -Summary "PHP CLI not found"
 }
 
 # ==========================================================================
@@ -447,7 +578,13 @@ function Invoke-PluginPing {
         [string]$Label = ""
     )
 
-    if ([string]::IsNullOrWhiteSpace($Endpoint)) { return }
+    if ([string]::IsNullOrWhiteSpace($Endpoint)) {
+        return [ordered]@{
+            Status  = "SKIP"
+            Summary = "Ping endpoint not configured"
+            Details = @()
+        }
+    }
 
     $pingUrl = $SiteUrl.TrimEnd('/') + $Endpoint
     Write-Host "  ${Label}Pinging $pingUrl ..." -ForegroundColor DarkCyan
@@ -477,12 +614,31 @@ function Invoke-PluginPing {
         if ($pingData.Version) {
             Write-Host "  ${Label}  Version: $($pingData.Version)" -ForegroundColor DarkGray
         }
+
+        $details = @("URL: $pingUrl")
+        if ($pingData.Version) { $details += "Version: $($pingData.Version)" }
+        if ($pingData.Company) { $details += "Company: $($pingData.Company)" }
+
+        return [ordered]@{
+            Status  = "OK"
+            Summary = "Ping succeeded"
+            Details = $details
+        }
     } catch {
         $statusCode = ""
         if ($_.Exception.Response) {
             $statusCode = " (HTTP $([int]$_.Exception.Response.StatusCode))"
         }
         Write-Host "  ${Label}PING FAILED$statusCode - $($_.Exception.Message)" -ForegroundColor DarkYellow
+
+        return [ordered]@{
+            Status  = "WARN"
+            Summary = "Ping failed$statusCode"
+            Details = @(
+                "URL: $pingUrl",
+                "Message: $($_.Exception.Message)"
+            )
+        }
     }
 }
 
@@ -495,6 +651,7 @@ Write-Host ""
 for ($idx = 0; $idx -lt $totalSites; $idx++) {
     $targetSite = $targetSites[$idx]
     $siteLabel = if ($totalSites -gt 1) { "[$($idx+1)/$totalSites] " } else { "" }
+    $siteDiagnostics = Copy-DiagnosticSet -Template $baseDiagnostics
 
     $siteWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  ${siteLabel}Uploading to $($targetSite.name) ($($targetSite.url))..." -ForegroundColor Yellow
@@ -522,28 +679,76 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
         if ($uploadExitCode -eq 0) {
             $siteWatch.Stop()
             $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
+            Set-DiagnosticSection -Section $siteDiagnostics.Upload -Status "OK" -Summary "Upload succeeded"
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Site: $($targetSite.name)"
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Elapsed: ${siteElapsed}s"
+            Set-DiagnosticSection -Section $siteDiagnostics.ZIP -Status "SKIP" -Summary "ZIP was created and then deleted after successful upload"
+            Add-DiagnosticDetail -Section $siteDiagnostics.ZIP -Detail "Path: $zipPath"
             Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name) - ${siteElapsed}s" -ForegroundColor Green
             $successCount++
 
             if ($pingEndpoint -ne "") {
-                Invoke-PluginPing `
+                $pingResult = Invoke-PluginPing `
                     -SiteUrl $targetSite.url `
                     -Endpoint $pingEndpoint `
                     -Username $targetSite.username `
                     -Password $cleanPassword `
                     -SiteName $targetSite.name `
                     -Label $siteLabel
+
+                Set-DiagnosticSection -Section $siteDiagnostics.Ping -Status $pingResult.Status -Summary $pingResult.Summary
+                foreach ($detail in $pingResult.Details) {
+                    Add-DiagnosticDetail -Section $siteDiagnostics.Ping -Detail $detail
+                }
+
+                if ($pingResult.Status -ne "OK") {
+                    Write-DiagnosticReport -Diagnostics $siteDiagnostics -SiteLabel $siteLabel -PluginSlug $Slug
+                }
+            } else {
+                Set-DiagnosticSection -Section $siteDiagnostics.Ping -Status "SKIP" -Summary "Ping endpoint not configured"
             }
         } else {
+            $siteWatch.Stop()
+            $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
+            if (Test-Path $zipPath) {
+                Set-DiagnosticSection -Section $siteDiagnostics.ZIP -Status "OK" -Summary "ZIP created and preserved for debugging"
+                Add-DiagnosticDetail -Section $siteDiagnostics.ZIP -Detail "Path: $zipPath"
+            } else {
+                Set-DiagnosticSection -Section $siteDiagnostics.ZIP -Status "FAIL" -Summary "ZIP file not found after failed upload"
+                Add-DiagnosticDetail -Section $siteDiagnostics.ZIP -Detail "Expected path: $zipPath"
+            }
+            Set-DiagnosticSection -Section $siteDiagnostics.Upload -Status "FAIL" -Summary "upload-plugin-v2.ps1 exited with code $uploadExitCode"
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Site: $($targetSite.name)"
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Elapsed: ${siteElapsed}s"
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "See detailed uploader output above for REST, namespace, and verification traces"
+            Set-DiagnosticSection -Section $siteDiagnostics.Ping -Status "SKIP" -Summary "Ping not attempted because upload failed"
             Write-Host "  ${siteLabel}FAILED - Exit code: $uploadExitCode" -ForegroundColor Red
+            Write-DiagnosticReport -Diagnostics $siteDiagnostics -SiteLabel $siteLabel -PluginSlug $Slug
             $failCount++
         }
     } catch {
         $siteWatch.Stop()
+        $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
+        if (Test-Path $zipPath) {
+            Set-DiagnosticSection -Section $siteDiagnostics.ZIP -Status "OK" -Summary "ZIP created and preserved for debugging"
+            Add-DiagnosticDetail -Section $siteDiagnostics.ZIP -Detail "Path: $zipPath"
+        } else {
+            Set-DiagnosticSection -Section $siteDiagnostics.ZIP -Status "FAIL" -Summary "ZIP file not found after exception"
+            Add-DiagnosticDetail -Section $siteDiagnostics.ZIP -Detail "Expected path: $zipPath"
+        }
+        Set-DiagnosticSection -Section $siteDiagnostics.Upload -Status "FAIL" -Summary "Upload threw an exception"
+        Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Site: $($targetSite.name)"
+        Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Elapsed: ${siteElapsed}s"
+        Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "Message: $($_.Exception.Message)"
+        if ($_.ScriptStackTrace) {
+            Add-DiagnosticDetail -Section $siteDiagnostics.Upload -Detail "StackTrace: $($_.ScriptStackTrace)"
+        }
+        Set-DiagnosticSection -Section $siteDiagnostics.Ping -Status "SKIP" -Summary "Ping not attempted because upload failed"
         Write-Host "  ${siteLabel}FAILED - $($_.Exception.Message)" -ForegroundColor Red
         if ($_.ScriptStackTrace) {
             Write-Host "  ${siteLabel}STACKTRACE: $($_.ScriptStackTrace)" -ForegroundColor DarkRed
         }
+        Write-DiagnosticReport -Diagnostics $siteDiagnostics -SiteLabel $siteLabel -PluginSlug $Slug
         $failCount++
     }
 
