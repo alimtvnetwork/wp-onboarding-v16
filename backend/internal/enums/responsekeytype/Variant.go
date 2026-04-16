@@ -121,6 +121,11 @@ const (
 	Lines
 	TotalLines
 
+	// Log-clearing token keys.
+	ConfirmationRequired
+	ConfirmEndpoint
+	ExpiresIn
+
 	// Internal/domain-specific keys.
 	Ids
 	TotalSnapshots

@@ -76,12 +76,12 @@ trait LogClearingTrait
     private function buildClearTokenResponse(string $token, string $namespace): WP_REST_Response {
         return new WP_REST_Response(
             [
-                ResponseKeyType::Success->value => true,
-                'confirmation_required'         => true,
-                'confirm_endpoint'              => '/wp-json/' . $namespace . '/logs/clear/confirm',
-                'token'                         => $token,
-                'expires_in'                    => self::CLEAR_TOKEN_TTL_SECONDS,
-                'message'                       => 'Confirmation required. Send POST to confirm_endpoint within 60 seconds.',
+                ResponseKeyType::Success->value              => true,
+                ResponseKeyType::ConfirmationRequired->value => true,
+                ResponseKeyType::ConfirmEndpoint->value      => '/wp-json/' . $namespace . '/logs/clear/confirm',
+                'token'                                      => $token,
+                ResponseKeyType::ExpiresIn->value            => self::CLEAR_TOKEN_TTL_SECONDS,
+                ResponseKeyType::Message->value              => 'Confirmation required. Send POST to ConfirmEndpoint within 60 seconds.',
             ],
             HttpStatusType::Ok->value,
         );
