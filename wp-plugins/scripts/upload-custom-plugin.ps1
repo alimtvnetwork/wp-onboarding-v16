@@ -313,6 +313,7 @@ if (Test-Path $zipPath) {
 $phpCommand = Get-Command php -ErrorAction SilentlyContinue
 
 if ($null -ne $phpCommand) {
+    $phpWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  PHP syntax check..." -ForegroundColor Yellow
 
     $skipFolders = @("vendor")
@@ -361,12 +362,15 @@ if ($null -ne $phpCommand) {
         exit 4
     }
 
+    $phpWatch.Stop()
+    $phpElapsed = [math]::Round($phpWatch.Elapsed.TotalSeconds, 1)
     $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in vendor)" } else { "" }
-    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel" -ForegroundColor Green
+    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel - ${phpElapsed}s" -ForegroundColor Green
 } else {
     Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
 }
 
+$zipWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "  Zipping with SmallestSize compression..." -ForegroundColor Yellow
 
 try {
@@ -377,10 +381,11 @@ try {
         [System.IO.Compression.CompressionLevel]::SmallestSize,
         $true  # includeBaseDirectory — root folder = slug name
     )
-    
+    $zipWatch.Stop()
+    $zipElapsed = [math]::Round($zipWatch.Elapsed.TotalSeconds, 1)
     $zipSize = (Get-Item $zipPath).Length
     $zipSizeMB = [math]::Round($zipSize / 1MB, 2)
-    Write-Host "  ZIP created: $zipPath ($zipSizeMB MB)" -ForegroundColor Green
+    Write-Host "  ZIP created: $zipPath ($zipSizeMB MB) - ${zipElapsed}s" -ForegroundColor Green
 } catch {
     Write-Host "  ERROR: ZIP creation failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 4
@@ -463,6 +468,7 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
     $targetSite = $targetSites[$idx]
     $siteLabel = if ($totalSites -gt 1) { "[$($idx+1)/$totalSites] " } else { "" }
     
+    $siteWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "  ${siteLabel}Uploading to $($targetSite.name) ($($targetSite.url))..." -ForegroundColor Yellow
 
     # Decode credentials
@@ -486,7 +492,9 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
         $uploadExitCode = $LASTEXITCODE
         
         if ($uploadExitCode -eq 0) {
-            Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name)" -ForegroundColor Green
+            $siteWatch.Stop()
+            $siteElapsed = [math]::Round($siteWatch.Elapsed.TotalSeconds, 1)
+            Write-Host "  ${siteLabel}SUCCESS - $Slug uploaded to $($targetSite.name) - ${siteElapsed}s" -ForegroundColor Green
             $successCount++
 
             # Post-upload ping verification
