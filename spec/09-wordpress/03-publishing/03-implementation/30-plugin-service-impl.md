@@ -724,6 +724,7 @@ func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, e
 }
 
 func (s *serviceImpl) searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string, error) {
+	// Pass 1: check PHP files in the provided directory
 	for _, entry := range entries {
 		isSkippableEntry := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
 		if isSkippableEntry {
@@ -733,6 +734,32 @@ func (s *serviceImpl) searchPHPHeaders(dir string, entries []os.DirEntry) (strin
 		name, version := s.parsePluginHeader(filepath.Join(dir, entry.Name()))
 		if name != "" {
 			return entry.Name(), name, version, nil
+		}
+	}
+
+	// Pass 2: check one level of subdirectories so repo-root paths work
+	// Example: D:\wp-work\riseup-asia\wp-alim → D:\wp-work\riseup-asia\wp-alim\alim\alim.php
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		subDir := filepath.Join(dir, entry.Name())
+		subEntries, err := os.ReadDir(subDir)
+		if err != nil {
+			continue
+		}
+
+		for _, subEntry := range subEntries {
+			isSkippableEntry := subEntry.IsDir() || !strings.HasSuffix(subEntry.Name(), ".php")
+			if isSkippableEntry {
+				continue
+			}
+
+			name, version := s.parsePluginHeader(filepath.Join(subDir, subEntry.Name()))
+			if name != "" {
+				return filepath.Join(entry.Name(), subEntry.Name()), name, version, nil
+			}
 		}
 	}
 
