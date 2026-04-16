@@ -17,9 +17,18 @@ use RiseupAsia\Licensing\LicenseManager;
 
 trait AdminLicenseAjaxTrait {
 
+    /** Verify nonce and manage_options capability for license actions. */
+    private function checkLicensePermission(): void {
+        check_ajax_referer(NonceType::License->value, '_nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'You do not have permission to manage licenses.'], 403);
+        }
+    }
+
     /** Save a new license key and validate it. */
     public function ajaxLicenseSave(): void {
-        check_ajax_referer(NonceType::License->value, '_nonce');
+        $this->checkLicensePermission();
 
         $key = isset($_POST['license_key']) ? sanitize_text_field($_POST['license_key']) : '';
 
@@ -42,7 +51,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Activate the stored license on this domain. */
     public function ajaxLicenseActivate(): void {
-        check_ajax_referer(NonceType::License->value, '_nonce');
+        $this->checkLicensePermission();
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->activateLicense();
@@ -59,7 +68,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Deactivate the stored license from this domain. */
     public function ajaxLicenseDeactivate(): void {
-        check_ajax_referer(NonceType::License->value, '_nonce');
+        $this->checkLicensePermission();
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->deactivateLicense();
@@ -76,7 +85,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Remove the license key entirely. */
     public function ajaxLicenseRemove(): void {
-        check_ajax_referer(NonceType::License->value, '_nonce');
+        $this->checkLicensePermission();
 
         $manager = LicenseManager::getInstance();
         $manager->removeLicenseKey();
@@ -86,7 +95,7 @@ trait AdminLicenseAjaxTrait {
 
     /** Refresh validation status from the API. */
     public function ajaxLicenseRefresh(): void {
-        check_ajax_referer(NonceType::License->value, '_nonce');
+        $this->checkLicensePermission();
 
         $manager = LicenseManager::getInstance();
         $result  = $manager->validateLicense();
