@@ -395,7 +395,14 @@ function Test-PluginPhpSyntax {
     }
 
     $phpFiles = Get-ChildItem -Path $PluginDir -Recurse -File -Filter "*.php" | Where-Object {
-        $relativePath = $_.FullName.Substring($PluginDir.Length).TrimStart('\\','/')
+        $basePath = [System.IO.Path]::GetFullPath($PluginDir)
+        $fullPath = [System.IO.Path]::GetFullPath($_.FullName)
+        if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+            $basePath += [System.IO.Path]::DirectorySeparatorChar
+        }
+        $baseUri = [System.Uri]::new($basePath)
+        $fullUri = [System.Uri]::new($fullPath)
+        $relativePath = [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($fullUri).ToString()) -replace '/', '\\'
         foreach ($skip in $skipFolders) {
             if ($relativePath -like "$skip\\*" -or $relativePath -like "$skip/*") {
                 return $false
