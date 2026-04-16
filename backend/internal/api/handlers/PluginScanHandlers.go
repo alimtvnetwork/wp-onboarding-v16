@@ -120,49 +120,64 @@ func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult
 	respondSuccess(w, buildFlatScanResponse(scanResult.Result, true, ""))
 }
 
-// buildFlatScanResponse merges scan results with detection metadata into a flat map
-// so frontend keys (after PascalCase→camelCase transform) match the expected shape:
-// { path, isValid, pluginName, version, mainFile, ..., detectionCreated, detectionError }.
-func buildFlatScanResponse(scan *plugin.ScanResult, detectionCreated bool, detectionError string) map[string]any {
-	out := map[string]any{
-		"DetectionCreated": detectionCreated,
-	}
+// FlatScanResponse is the compile-time-enforced shape returned by ScanDirectoryPath.
+// All optional metadata uses `omitempty` so the JSON shape remains identical to the
+// previous map[string]any output (empty fields were skipped via addStringIfSet).
+//
+// Frontend (after PascalCase→camelCase transform) reads:
+//   path, isValid, fileCount, totalSize, pluginName, version, mainFile,
+//   description, author, authorUri, pluginUri, textDomain, requiresPhp,
+//   requiresWP, error, detectionCreated, detectionError
+type FlatScanResponse struct {
+	Path             string `json:"Path,omitempty"`
+	IsValid          bool   `json:"IsValid"`
+	FileCount        int    `json:"FileCount,omitempty"`
+	TotalSize        int64  `json:"TotalSize,omitempty"`
+	PluginName       string `json:"PluginName,omitempty"`
+	Version          string `json:"Version,omitempty"`
+	MainFile         string `json:"MainFile,omitempty"`
+	Description      string `json:"Description,omitempty"`
+	Author           string `json:"Author,omitempty"`
+	AuthorUri        string `json:"AuthorUri,omitempty"`
+	PluginUri        string `json:"PluginUri,omitempty"`
+	TextDomain       string `json:"TextDomain,omitempty"`
+	RequiresPhp      string `json:"RequiresPhp,omitempty"`
+	RequiresWP       string `json:"RequiresWP,omitempty"`
+	Error            string `json:"Error,omitempty"`
+	DetectionCreated bool   `json:"DetectionCreated"`
+	DetectionError   string `json:"DetectionError,omitempty"`
+}
 
-	if detectionError != "" {
-		out["DetectionError"] = detectionError
+// buildFlatScanResponse merges scan results with detection metadata into a typed
+// FlatScanResponse. The struct is the single source of truth for the response
+// shape — adding/removing fields requires a struct change, caught at compile time.
+func buildFlatScanResponse(scan *plugin.ScanResult, detectionCreated bool, detectionError string) FlatScanResponse {
+	out := FlatScanResponse{
+		DetectionCreated: detectionCreated,
+		DetectionError:   detectionError,
 	}
 
 	if scan == nil {
-		out["IsValid"] = false
-
 		return out
 	}
 
-	out["Path"] = scan.Path
-	out["IsValid"] = scan.IsValid
-	out["FileCount"] = scan.FileCount
-	out["TotalSize"] = scan.TotalSize
-
-	addStringIfSet(out, "PluginName", scan.PluginName)
-	addStringIfSet(out, "Version", scan.Version)
-	addStringIfSet(out, "MainFile", scan.MainFile)
-	addStringIfSet(out, "Description", scan.Description)
-	addStringIfSet(out, "Author", scan.Author)
-	addStringIfSet(out, "AuthorUri", scan.AuthorUri)
-	addStringIfSet(out, "PluginUri", scan.PluginUri)
-	addStringIfSet(out, "TextDomain", scan.TextDomain)
-	addStringIfSet(out, "RequiresPhp", scan.RequiresPhp)
-	addStringIfSet(out, "RequiresWP", scan.RequiresWP)
-	addStringIfSet(out, "Error", scan.Error)
+	out.Path = scan.Path
+	out.IsValid = scan.IsValid
+	out.FileCount = scan.FileCount
+	out.TotalSize = scan.TotalSize
+	out.PluginName = scan.PluginName
+	out.Version = scan.Version
+	out.MainFile = scan.MainFile
+	out.Description = scan.Description
+	out.Author = scan.Author
+	out.AuthorUri = scan.AuthorUri
+	out.PluginUri = scan.PluginUri
+	out.TextDomain = scan.TextDomain
+	out.RequiresPhp = scan.RequiresPhp
+	out.RequiresWP = scan.RequiresWP
+	out.Error = scan.Error
 
 	return out
-}
-
-// addStringIfSet adds a key to the map only when the value is non-empty.
-func addStringIfSet(m map[string]any, key, value string) {
-	if value != "" {
-		m[key] = value
-	}
 }
 
 // scanDetectionInput bundles parameters for respondScanWithDetection.

@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.39.0",
+  "version": "2.40.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.39.0",
+  "scriptVersion": "2.40.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.40.0",
   "changelog": [
+    {
+      "version": "2.40.0",
+      "date": "2026-04-16",
+      "title": "Typed Response: FlatScanResponse Struct",
+      "changes": [
+        "Promoted buildFlatScanResponse from map[string]any to a typed FlatScanResponse struct so the /plugins/scan-directory response shape is enforced at compile time.",
+        "All 17 fields (Path, IsValid, FileCount, TotalSize, plugin metadata, DetectionCreated, DetectionError) are declared once with json:\",omitempty\" tags — adding/removing/renaming a field now requires a struct change caught by the Go compiler.",
+        "JSON shape is byte-identical to the previous map output: omitempty preserves the 'skip empty strings' behavior of the removed addStringIfSet helper.",
+        "Removed the addStringIfSet helper; all branches of respondScanWithDetection now return the same concrete FlatScanResponse value."
+      ]
+    },
     {
       "version": "2.39.0",
       "date": "2026-04-16",
