@@ -50,7 +50,9 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 | `-ucp <path>` | — | Upload from a direct folder path (slug = folder name) |
 | `-ucp s1,s2` | — | Upload multiple plugins (comma-separated slugs) |
 | `-a` | `-allcustomsites` | Upload to all configured sites instead of default |
+| `-ap` | `-allplugins` | Upload every plugin in custom-plugins.json |
 | `-site <name>` | — | Upload to a specific site by name |
+| `-skipgitpull` | — | Skip the automatic git pull before zipping |
 | `-list` | — | List all registered custom plugins and their paths |
 | `-help` | — | Show custom plugin upload help |
 
