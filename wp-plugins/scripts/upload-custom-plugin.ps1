@@ -31,7 +31,7 @@ param(
     [switch]$Activate = $true,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Verbose = $false,
+    [switch]$VerboseOutput = $false,
 
     [Parameter(Mandatory=$false)]
     [switch]$Help = $false
@@ -313,7 +313,7 @@ for ($idx = 0; $idx -lt $totalSites; $idx++) {
     )
     
     if ($shouldActivate) { $uploadArgs += "-Activate" }
-    if ($Verbose) { $uploadArgs += "-Verbose" }
+    if ($VerboseOutput) { $uploadArgs += "-Verbose" }
 
     try {
         & $uploadScript @uploadArgs
