@@ -89,9 +89,11 @@ func phpFileToLogFileInfo(name string, info LogsStatusPhpFileInfo) LogFileInfo {
 
 // LogsClearRequestData is the typed response from PHP logs/clear Step 1 (request token).
 type LogsClearRequestData struct {
-	Token     string `json:"token"`
-	ExpiresIn int    `json:"expiresIn"`
-	Message   string `json:"message"`
+	Token                string `json:"token"`
+	ConfirmationRequired bool   `json:"ConfirmationRequired"`
+	ConfirmEndpoint      string `json:"ConfirmEndpoint"`
+	ExpiresIn            int    `json:"ExpiresIn"`
+	Message              string `json:"Message"`
 }
 
 // LogsClearConfirmData is the typed response from PHP logs/clear Step 2 (confirm).

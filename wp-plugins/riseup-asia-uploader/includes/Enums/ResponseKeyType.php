@@ -147,6 +147,11 @@ enum ResponseKeyType: string
     case TotalLines    = 'TotalLines';
     case RequestedAt   = 'RequestedAt';
 
+    /** Log-clearing token keys. */
+    case ConfirmationRequired = 'ConfirmationRequired';
+    case ConfirmEndpoint      = 'ConfirmEndpoint';
+    case ExpiresIn            = 'ExpiresIn';
+
     /** Dedup registry keys. */
     case DedupRegistry = 'DedupRegistry';
     case EntryCount    = 'EntryCount';
