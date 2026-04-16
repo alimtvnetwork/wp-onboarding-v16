@@ -451,4 +451,16 @@ const (
 	TotalRoutes
 	Routes
 	Pattern
+
+	// QUpload-specific keys.
+	Api
+	DbAvailable
+	MemoryLimit
+	PostMaxSize
+	PostMaxSizeBytes
+	PreviousVersion
+	RolledBack
+	ServerTime
+	UploadMaxFilesize
+	UploadMaxFilesizeBytes
 )
