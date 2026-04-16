@@ -364,6 +364,289 @@
       "category": "diagnostics",
       "description": "Query error sessions",
       "auth": true
+    },
+    {
+      "path": "logs/status",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Get log file status and metadata",
+      "auth": true
+    },
+    {
+      "path": "logs/rotation-status",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Get log rotation status",
+      "auth": true
+    },
+    {
+      "path": "logs/clear",
+      "methods": ["POST"],
+      "category": "diagnostics",
+      "description": "Clear a specific log file",
+      "auth": true
+    },
+    {
+      "path": "logs/clear-all",
+      "methods": ["POST"],
+      "category": "diagnostics",
+      "description": "Clear all log files",
+      "auth": true
+    },
+    {
+      "path": "logs/clear/confirm",
+      "methods": ["POST"],
+      "category": "diagnostics",
+      "description": "Confirm log clear operation",
+      "auth": true
+    },
+    {
+      "path": "logs/email",
+      "methods": ["POST"],
+      "category": "diagnostics",
+      "description": "Email log files",
+      "auth": true
+    },
+    {
+      "path": "logs/retrieve",
+      "methods": ["POST"],
+      "category": "diagnostics",
+      "description": "Retrieve log file contents",
+      "auth": true
+    },
+    {
+      "path": "logs/dedup-registry",
+      "methods": ["GET", "DELETE"],
+      "category": "diagnostics",
+      "description": "View or clear the log deduplication registry",
+      "auth": true
+    },
+    {
+      "path": "machines/approve",
+      "methods": ["POST"],
+      "category": "security",
+      "description": "Approve a machine for API access",
+      "auth": true
+    },
+    {
+      "path": "users",
+      "methods": ["GET"],
+      "category": "users",
+      "description": "List WordPress users",
+      "auth": true
+    },
+    {
+      "path": "users/(?P<id>\\d+)",
+      "methods": ["GET"],
+      "category": "users",
+      "description": "Get a single user by ID",
+      "auth": true
+    },
+    {
+      "path": "users/app-password",
+      "methods": ["POST"],
+      "category": "users",
+      "description": "Create or manage application passwords",
+      "auth": true
+    },
+    {
+      "path": "users/export",
+      "methods": ["POST"],
+      "category": "users",
+      "description": "Export users as JSON",
+      "auth": true
+    },
+    {
+      "path": "users/import",
+      "methods": ["POST"],
+      "category": "users",
+      "description": "Import users from JSON",
+      "auth": true
+    },
+    {
+      "path": "users/export-sqlite",
+      "methods": ["POST"],
+      "category": "users",
+      "description": "Export users as SQLite database",
+      "auth": true
+    },
+    {
+      "path": "users/import-sqlite",
+      "methods": ["POST"],
+      "category": "users",
+      "description": "Import users from SQLite database",
+      "auth": true
+    },
+    {
+      "path": "site-settings",
+      "methods": ["GET", "POST"],
+      "category": "settings",
+      "description": "Get or update site settings",
+      "auth": true
+    },
+    {
+      "path": "site-health-summary",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Get WordPress site health summary",
+      "auth": true
+    },
+    {
+      "path": "debug/routes",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "List all registered REST API routes",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/accounts",
+      "methods": ["GET", "POST"],
+      "category": "cloud-storage",
+      "description": "List or create cloud storage accounts",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/accounts/(?P<id>\\d+)",
+      "methods": ["GET", "PUT", "DELETE"],
+      "category": "cloud-storage",
+      "description": "Get, update, or delete a cloud storage account",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/accounts/test",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Test cloud storage account connectivity",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/settings",
+      "methods": ["GET", "POST"],
+      "category": "cloud-storage",
+      "description": "Get or update cloud storage settings",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/settings/(?P<provider>[a-zA-Z]+)",
+      "methods": ["GET", "PUT"],
+      "category": "cloud-storage",
+      "description": "Get or update provider-specific settings",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/upload",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Upload file to cloud storage",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/files",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "List files in cloud storage",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/delete",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Delete file from cloud storage",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/oauth/callback",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "OAuth callback handler",
+      "auth": false
+    },
+    {
+      "path": "cloud-storage/oauth/initiate",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Initiate OAuth flow for cloud provider",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/repos",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "List repositories from cloud provider",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/branches",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "List branches from cloud repository",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/backup-history",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "List backup history entries",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/backup-history/(?P<id>\\d+)",
+      "methods": ["GET", "DELETE"],
+      "category": "cloud-storage",
+      "description": "Get or delete a backup history entry",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/restore",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Restore from cloud storage backup",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/rotation-status",
+      "methods": ["GET"],
+      "category": "cloud-storage",
+      "description": "Get cloud storage rotation status",
+      "auth": true
+    },
+    {
+      "path": "cloud-storage/rotate",
+      "methods": ["POST"],
+      "category": "cloud-storage",
+      "description": "Trigger cloud storage backup rotation",
+      "auth": true
+    },
+    {
+      "path": "plugins/backup",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Create a plugin backup",
+      "auth": true,
+      "body": { "slug": "string" }
+    },
+    {
+      "path": "plugins/backup-restore",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Restore a plugin from backup",
+      "auth": true,
+      "body": { "slug": "string" }
+    },
+    {
+      "path": "plugins/backup-list",
+      "methods": ["GET"],
+      "category": "plugins",
+      "description": "List available plugin backups",
+      "auth": true
+    },
+    {
+      "path": "plugins/backup-delete",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Delete a plugin backup",
+      "auth": true,
+      "body": { "slug": "string" }
     }
   ]
 }
