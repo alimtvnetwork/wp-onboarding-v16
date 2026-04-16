@@ -1,7 +1,7 @@
 package responsekeytype
 
 // Variant represents standardized response array keys.
-type Variant byte
+type Variant uint16
 
 const (
 	Invalid Variant = iota
@@ -94,6 +94,7 @@ const (
 
 	// Plugin lifecycle keys.
 	Activated
+	Deactivated
 	PluginSlug
 	IsUpdate
 	IsSelfUpdate
@@ -101,6 +102,22 @@ const (
 	ActivationError
 	Inventory
 	PluginFile
+
+	// Self-update diagnostics keys.
+	SelfUpdateStatus
+	RollbackReason
+	RollbackAttempted
+	RollbackSuccess
+	RestoredVersion
+	RootCause
+	Validation
+	HealthCheck
+	Passed
+	ErrorCount
+	Healthy
+	IssueCount
+	Issues
+	BootErrors
 
 	// General-purpose entity keys.
 	Slug
@@ -113,6 +130,7 @@ const (
 
 	// Log/diagnostic keys.
 	ErrorLog
+	InfoLog
 	FullLog
 	StacktraceLog
 	Exists
@@ -120,11 +138,18 @@ const (
 	Truncated
 	Lines
 	TotalLines
+	RequestedAt
 
 	// Log-clearing token keys.
 	ConfirmationRequired
 	ConfirmEndpoint
 	ExpiresIn
+
+	// Dedup registry keys.
+	DedupRegistry
+	EntryCount
+	Entries
+	FileSizeBytes
 
 	// Internal/domain-specific keys.
 	Ids
@@ -319,7 +344,6 @@ const (
 	// Plugin archive keys.
 	Zip
 	ZipFile
-	FileSizeBytes
 	ChecksumMd5
 	PluginName
 
@@ -328,4 +352,62 @@ const (
 	Methods
 	Result
 	Results
+
+	// Cloud storage keys.
+	Account
+	AccountId
+	AccountLabel
+	Accounts
+	ConnectionStatus
+	RemotePath
+	RemoteUrl
+	ProviderSettings
+	RotationApplied
+	CurrentCount
+	CurrentSizeMB
+	MaxCount
+	MaxSizeMB
+	IsOverLimit
+	OAuthState
+	OAuthUrl
+
+	// Backup and history keys.
+	Backup
+	BackupHistory
+	BaseFullBackupId
+
+	// Upload result keys.
+	UploadResult
+	DeletedFiles
+	FilesMoved
+	MovedFiles
+	ArchiveFileSizeBytes
+
+	// User management keys.
+	AppPassword
+	DisplayName
+	Email
+	Username
+	UserId
+	Users
+	Uuid
+	Role
+	Revoked
+	TokenMask
+	ReassignedTo
+
+	// Git/repository keys.
+	BranchName
+	Branches
+	CommitSha
+	Repositories
+
+	// Miscellaneous keys.
+	Created
+	Updated
+	Skipped
+	Meta
+	Pagination
+	NextAction
+	FieldsModified
 )
