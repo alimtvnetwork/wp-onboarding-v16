@@ -1,0 +1,105 @@
+{
+  "namespace": "qupload-api/v1",
+  "version": "1.0.0",
+  "description": "Complete listing of all REST API endpoints registered by the QUpload plugin. Synchronized with EndpointType enum.",
+  "endpoints": [
+    {
+      "path": "status",
+      "methods": ["GET"],
+      "category": "core",
+      "description": "Health check — plugin version, PHP version, WP version",
+      "auth": true
+    },
+    {
+      "path": "upload",
+      "methods": ["POST"],
+      "category": "core",
+      "description": "Upload plugin ZIP, extract, replace existing, and activate",
+      "auth": true
+    },
+    {
+      "path": "activate",
+      "methods": ["PUT"],
+      "category": "core",
+      "description": "Activate an already-installed plugin by slug",
+      "auth": true
+    },
+    {
+      "path": "deactivate",
+      "methods": ["PUT"],
+      "category": "core",
+      "description": "Deactivate an active plugin by slug",
+      "auth": true
+    },
+    {
+      "path": "plugins",
+      "methods": ["GET"],
+      "category": "core",
+      "description": "List all installed plugins",
+      "auth": true
+    },
+    {
+      "path": "logs/status",
+      "methods": ["GET"],
+      "category": "logs",
+      "description": "Log file metadata (sizes, modification dates)",
+      "auth": true
+    },
+    {
+      "path": "logs/rotation-status",
+      "methods": ["GET"],
+      "category": "logs",
+      "description": "Log rotation configuration and state",
+      "auth": true
+    },
+    {
+      "path": "logs/clear",
+      "methods": ["DELETE"],
+      "category": "logs",
+      "description": "Step 1 of two-step log clearing — generates confirmation token",
+      "auth": true
+    },
+    {
+      "path": "logs/clear/confirm",
+      "methods": ["POST"],
+      "category": "logs",
+      "description": "Step 2 of two-step log clearing — consumes token and executes deletion",
+      "auth": true
+    },
+    {
+      "path": "logs/email",
+      "methods": ["POST"],
+      "category": "logs",
+      "description": "Email log files as attachments via wp_mail()",
+      "auth": true
+    },
+    {
+      "path": "logs/retrieve",
+      "methods": ["GET"],
+      "category": "logs",
+      "description": "Retrieve log file contents",
+      "auth": true
+    },
+    {
+      "path": "logs/dedup-registry",
+      "methods": ["GET", "DELETE"],
+      "category": "logs",
+      "description": "View or clear the deduplication registry",
+      "auth": true
+    },
+    {
+      "path": "machines/approve",
+      "methods": ["PUT"],
+      "category": "machines",
+      "description": "Approve a machine name for restricted operations",
+      "auth": true
+    },
+    {
+      "path": "debug/routes",
+      "methods": ["GET"],
+      "category": "debug",
+      "description": "List all registered REST API routes for diagnostics",
+      "auth": true
+    }
+  ]
+}
