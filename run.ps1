@@ -387,6 +387,7 @@ if ($help) {
     Write-Host "    .\run.ps1 -ucp alim                # Upload 'alim' to default site (Test V2)"
     Write-Host "    .\run.ps1 -ucp alim -a             # Upload 'alim' to ALL sites"
     Write-Host "    .\run.ps1 -ucp alim -site 'Test V1'  # Upload to specific site"
+    Write-Host "    .\run.ps1 -ucp alim,other -a       # Upload multiple plugins to ALL sites"
     Write-Host "    .\run.ps1 -ucp -list               # List registered custom plugins"
     Write-Host ""
     Write-Host "  Plugin status:" -ForegroundColor DarkGray
