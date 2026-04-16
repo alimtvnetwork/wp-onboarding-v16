@@ -24,8 +24,9 @@ import { DeployStatus } from "@/lib/constants";
 import { useErrorStore } from "@/stores/errorStore";
 import type { ApiError } from "@/lib/api/types";
 import { Progress } from "@/components/ui/progress";
-import { api } from "@/lib/api";
-import { useVersionInfo } from "@/hooks/useWhatsNew";
+import { api, type Plugin } from "@/lib/api";
+import { usePlugins } from "@/hooks/usePlugins";
+import { compareVersions } from "@/lib/versionUtils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -108,10 +109,24 @@ export function DeployUploaderDialog({
   const [expandedSites, setExpandedSites] = useState<Set<number>>(new Set());
   const [completedSiteIds, setCompletedSiteIds] = useState<Set<number>>(new Set());
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const { data: versionInfo } = useVersionInfo();
-  const localWpPluginVersion = (versionInfo as unknown as Record<string, string>)?.wpPluginVersion;
-  const localQuploadVersion = (versionInfo as unknown as Record<string, string>)?.quploadVersion;
+  const { data: plugins = [] } = usePlugins();
   const { lastMessage } = useWebSocket();
+
+  const findPluginBySlug = useCallback((matcher: (plugin: Plugin) => boolean) => {
+    return plugins.find(matcher);
+  }, [plugins]);
+
+  const localWpPluginVersion = findPluginBySlug((plugin) => {
+    const name = plugin.name.toLowerCase();
+    const path = plugin.path.toLowerCase();
+    return name.includes("riseup") || name.includes("rise up") || path.includes("riseup-asia-uploader");
+  })?.version;
+
+  const localQuploadVersion = findPluginBySlug((plugin) => {
+    const name = plugin.name.toLowerCase();
+    const path = plugin.path.toLowerCase();
+    return name.includes("qupload") || path.includes("qupload");
+  })?.version;
 
   // Listen for WebSocket log messages
   useEffect(() => {
@@ -960,14 +975,18 @@ function PluginSummaryBadge({
   remoteVersion?: string;
   localVersion?: string;
 }) {
-  const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
-  const isUpToDate = available && remoteVersion && localVersion && remoteVersion === localVersion;
+  const versionComparison = remoteVersion && localVersion ? compareVersions(localVersion, remoteVersion) : null;
+  const needsPublish = available && versionComparison !== null && versionComparison > 0;
+  const isUpToDate = available && versionComparison === 0;
+  const remoteAhead = available && versionComparison !== null && versionComparison < 0;
 
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border font-medium ${
       available
         ? needsPublish
           ? "bg-warning/10 text-warning border-warning/20"
+          : remoteAhead
+            ? "bg-muted/40 text-muted-foreground border-border"
           : "bg-primary/10 text-primary border-primary/20"
         : "bg-muted text-muted-foreground border-border"
     }`}>
@@ -983,6 +1002,13 @@ function PluginSummaryBadge({
         <>
           <span className="opacity-60">→</span>
           <span className="font-mono">v{remoteVersion}</span>
+        </>
+      )}
+      {remoteAhead && remoteVersion && (
+        <>
+          <span className="opacity-60">→</span>
+          <span className="font-mono">v{remoteVersion}</span>
+          <span className="opacity-70">remote newer</span>
         </>
       )}
       {!available && (
@@ -1011,8 +1037,10 @@ function PluginDetailCard({
   preferred?: boolean;
 }) {
   const remoteVersion = plugin?.version;
-  const needsPublish = available && remoteVersion && localVersion && remoteVersion !== localVersion;
-  const isUpToDate = available && remoteVersion && localVersion && remoteVersion === localVersion;
+  const versionComparison = remoteVersion && localVersion ? compareVersions(localVersion, remoteVersion) : null;
+  const needsPublish = available && versionComparison !== null && versionComparison > 0;
+  const isUpToDate = available && versionComparison === 0;
+  const remoteAhead = available && versionComparison !== null && versionComparison < 0;
   const versionUnknown = available && !remoteVersion;
 
   return (
@@ -1020,6 +1048,8 @@ function PluginDetailCard({
       available
         ? needsPublish
           ? "border-warning/30 bg-warning/5"
+          : remoteAhead
+            ? "border-border/60 bg-muted/20"
           : "border-border/60 bg-muted/20"
         : "border-border/40 bg-muted/10"
     }`}>
@@ -1076,6 +1106,11 @@ function PluginDetailCard({
             {needsPublish && (
               <span className="text-warning text-xs font-medium flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" /> Needs publish
+              </span>
+            )}
+            {remoteAhead && (
+              <span className="text-muted-foreground text-xs font-medium flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Remote is newer than local
               </span>
             )}
           </div>
