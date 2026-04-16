@@ -813,6 +813,7 @@ if (-not $SkipGitPull) {
     }
 } else {
     Write-Status "[1/8] Skipping git pull (-SkipGitPull)" -Color Gray
+    Set-V2DiagnosticSection -Section $v2Diag.Git -Status "SKIP" -Summary "Git pull skipped by flag"
 }
 Write-Status ""
 
