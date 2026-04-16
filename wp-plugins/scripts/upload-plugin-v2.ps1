@@ -1638,8 +1638,10 @@ if (-not $uploadSuccess -or $null -eq $response) {
 
                 if ($deployedVersion -eq $LocalVersion) {
                     Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "OK" -Summary "Server confirmed v$deployedVersion"
                 } elseif ($deployedVersion -eq "unknown") {
                     Write-Status "      ⚠ Could not determine deployed version from /status" -Color Yellow
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Could not determine deployed version"
                 } else {
                     Write-Status ""
                     Write-Status "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
@@ -1652,11 +1654,13 @@ if (-not $uploadSuccess -or $null -eq $response) {
                     Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
                     Write-Status "║" -ForegroundColor Red
                     Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+                    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Version mismatch: uploaded v$LocalVersion, deployed v$deployedVersion"
                 }
             }
         } catch {
             Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
             Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
+            Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "WARN" -Summary "Verification call failed: $($_.Exception.Message)"
         }
     }
 
