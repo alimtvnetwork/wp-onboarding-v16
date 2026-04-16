@@ -1,6 +1,7 @@
 # Module: mode-custom-upload.ps1
 # Handles -ucp (upload custom plugin) mode for run.ps1
-# Dot-sourced by run.ps1 — expects $ScriptDir, $WpScriptsDir to be set.
+# Supports comma-separated slugs: .\run.ps1 -ucp alim,other-plugin -a
+# Dot-sourced by run.ps1 — expects $ScriptDir to be set.
 
 function Invoke-CustomPluginUploadMode {
     param(
@@ -19,38 +20,83 @@ function Invoke-CustomPluginUploadMode {
         exit 1
     }
 
-    $scriptArgs = @()
-
+    # --- Help / List (no slug needed) ---
     if ($ShowHelp) {
-        $scriptArgs += "-Help"
-        & $customUploadScript @scriptArgs
+        & $customUploadScript -Help
         exit 0
     }
 
     if ($ListPlugins) {
-        $scriptArgs += "-List"
-        & $customUploadScript @scriptArgs
+        & $customUploadScript -List
         exit 0
     }
 
     if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
         Write-Host "ERROR: Plugin slug required. Usage: .\run.ps1 -ucp <slug>" -ForegroundColor Red
-        Write-Host "Use '.\run.ps1 -ucp -list' to see registered plugins." -ForegroundColor Yellow
+        Write-Host "  Multiple: .\run.ps1 -ucp slug1,slug2" -ForegroundColor Yellow
+        Write-Host "  List:     .\run.ps1 -ucp -list" -ForegroundColor Yellow
         exit 2
     }
 
-    $scriptArgs += @("-Slug", $PluginSlug)
+    # --- Parse comma-separated slugs ---
+    $slugs = $PluginSlug -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+    $isMulti = $slugs.Count -gt 1
 
-    if ($AllSites) {
-        $scriptArgs += "-All"
-    } elseif ($SiteName -ne "") {
-        $scriptArgs += @("-Site", $SiteName)
+    if ($isMulti) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Batch Custom Plugin Upload ($($slugs.Count) plugins)" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Plugins: $($slugs -join ', ')" -ForegroundColor White
+        Write-Host ""
     }
 
-    if ($VerboseMode) {
-        $scriptArgs += "-Verbose"
+    $batchSuccess = 0
+    $batchFail = 0
+
+    foreach ($slug in $slugs) {
+        if ($isMulti) {
+            $slugIndex = [array]::IndexOf($slugs, $slug) + 1
+            Write-Host "--- [$slugIndex/$($slugs.Count)] $slug ---" -ForegroundColor Cyan
+        }
+
+        $scriptArgs = @("-Slug", $slug)
+
+        if ($AllSites) {
+            $scriptArgs += "-All"
+        } elseif ($SiteName -ne "") {
+            $scriptArgs += @("-Site", $SiteName)
+        }
+
+        if ($VerboseMode) {
+            $scriptArgs += "-Verbose"
+        }
+
+        & $customUploadScript @scriptArgs
+        $exitCode = $LASTEXITCODE
+
+        if ($exitCode -eq 0) {
+            $batchSuccess++
+        } else {
+            $batchFail++
+        }
     }
 
-    & $customUploadScript @scriptArgs
-    exit $LASTEXITCODE
+    # --- Batch summary ---
+    if ($isMulti) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        if ($batchFail -eq 0) {
+            Write-Host "  Batch: $batchSuccess/$($slugs.Count) plugins completed successfully" -ForegroundColor Green
+        } else {
+            Write-Host "  Batch: $batchSuccess succeeded, $batchFail failed (out of $($slugs.Count))" -ForegroundColor Red
+        }
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+    }
+
+    if ($batchFail -gt 0) {
+        exit 5
+    }
+    exit 0
 }
