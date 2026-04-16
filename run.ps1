@@ -312,6 +312,8 @@ if ($help) {
     Write-Host "CUSTOM PLUGIN UPLOAD:" -ForegroundColor Yellow
     Write-Host "  -ucp 'slug'         Upload a custom (external) plugin to default site"
     Write-Host "  -ucp 'slug' -a      Upload custom plugin to ALL configured sites"
+    Write-Host "  -ucp 's1,s2'        Upload multiple custom plugins (comma-separated)"
+    Write-Host "  -ucp 's1,s2' -a     Upload multiple custom plugins to ALL sites"
     Write-Host "  -ucp 'slug' -site 'name'  Upload custom plugin to a specific site"
     Write-Host "  -ucp -list          List all registered custom plugins"
     Write-Host "  Config: wp-plugins/scripts/custom-plugins.json"
