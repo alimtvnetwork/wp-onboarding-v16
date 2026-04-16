@@ -1,21 +1,31 @@
 {
   "appName": "WP Publish",
-  "version": "2.36.0",
+  "version": "2.37.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.36.0",
+  "scriptVersion": "2.37.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.40.0",
   "changelog": [
+    {
+      "version": "2.37.0",
+      "date": "2026-04-16",
+      "title": "Fix Scan Directory False Invalid Plugin When Detection File Enabled",
+      "changes": [
+        "Bug fix: Scan Directory no longer reports 'Invalid Plugin' for valid WordPress plugins when the 'Create wp-plugin-detected.json' checkbox is enabled.",
+        "Backend /plugins/scan-directory now returns a flat response (path, isValid, pluginName, version, ..., detectionCreated) instead of a nested {Scan, IsDetectionCreated} envelope the frontend could not unwrap.",
+        "Detection file write is now skipped when the scan was invalid, surfacing the real reason instead of a generic ErrPathInvalid."
+      ]
+    },
     {
       "version": "2.36.0",
       "date": "2026-04-16",
       "title": "WP Debug Toggle Command",
       "changes": [
-        "🐛 New -wpd (WP Debug) shortcut: toggle WP_DEBUG on/off per site or all sites",
-        "📋 Supports status check, enable, disable with -a, -site, -i targeting",
-        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+        "\ud83d\udc1b New -wpd (WP Debug) shortcut: toggle WP_DEBUG on/off per site or all sites",
+        "\ud83d\udccb Supports status check, enable, disable with -a, -site, -i targeting",
+        "\ud83d\udd22 Version bump across app, Riseup Asia Uploader, and QUpload"
       ]
     },
     {
@@ -23,9 +33,9 @@
       "date": "2026-04-16",
       "title": "Grouped Upload Failure Diagnostics",
       "changes": [
-        "🧭 Custom plugin upload failures now print grouped diagnostic sections for git, lint, ZIP, upload, and ping",
-        "🧪 Ping failures now emit a focused warning summary without hiding successful uploads",
-        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+        "\ud83e\udded Custom plugin upload failures now print grouped diagnostic sections for git, lint, ZIP, upload, and ping",
+        "\ud83e\uddea Ping failures now emit a focused warning summary without hiding successful uploads",
+        "\ud83d\udd22 Version bump across app, Riseup Asia Uploader, and QUpload"
       ]
     },
     {
@@ -33,9 +43,9 @@
       "date": "2026-04-16",
       "title": "Custom Upload Syntax Tolerance",
       "changes": [
-        "📦 Fixed custom plugin upload PowerShell path trimming and kept versioned ZIPs in the plugin folder during upload",
-        "🐘 PHP syntax checks now run via PHP CLI and report warnings without blocking publish in custom upload flows",
-        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+        "\ud83d\udce6 Fixed custom plugin upload PowerShell path trimming and kept versioned ZIPs in the plugin folder during upload",
+        "\ud83d\udc18 PHP syntax checks now run via PHP CLI and report warnings without blocking publish in custom upload flows",
+        "\ud83d\udd22 Version bump across app, Riseup Asia Uploader, and QUpload"
       ]
     },
     {
@@ -43,9 +53,9 @@
       "date": "2026-04-16",
       "title": "Custom Plugin Upload Enhancements",
       "changes": [
-        "📦 Added custom plugin upload improvements including all-plugins mode, repo-aware git pull, PHP syntax checks, versioned ZIP output, and V2 uploader alignment",
-        "🏓 Added standardized ping endpoint support and updated custom plugin ping verification",
-        "🔢 Version bump across app, Riseup Asia Uploader, and QUpload"
+        "\ud83d\udce6 Added custom plugin upload improvements including all-plugins mode, repo-aware git pull, PHP syntax checks, versioned ZIP output, and V2 uploader alignment",
+        "\ud83c\udfd3 Added standardized ping endpoint support and updated custom plugin ping verification",
+        "\ud83d\udd22 Version bump across app, Riseup Asia Uploader, and QUpload"
       ]
     },
     {
@@ -53,10 +63,10 @@
       "date": "2026-03-21",
       "title": "PHP Clear-All Endpoint & Version Bump",
       "changes": [
-        "🗑️ New DELETE /logs/clear-all endpoint in Riseup Asia plugin clears logs for BOTH plugins (Riseup Asia + QUpload) in a single call",
-        "🔗 Cross-plugin log clearing: Riseup Asia directly invokes QUpload FileLogger if active on the same site",
-        "🧹 Includes file logs + database tables (Transactions, ErrorSessions) for Riseup Asia",
-        "🔢 Version bump across all components to 2.30.0"
+        "\ud83d\uddd1\ufe0f New DELETE /logs/clear-all endpoint in Riseup Asia plugin clears logs for BOTH plugins (Riseup Asia + QUpload) in a single call",
+        "\ud83d\udd17 Cross-plugin log clearing: Riseup Asia directly invokes QUpload FileLogger if active on the same site",
+        "\ud83e\uddf9 Includes file logs + database tables (Transactions, ErrorSessions) for Riseup Asia",
+        "\ud83d\udd22 Version bump across all components to 2.30.0"
       ]
     },
     {
@@ -64,12 +74,12 @@
       "date": "2026-03-21",
       "title": "Clear All Logs Button & Error History Cleanup",
       "changes": [
-        "🗑️ New 'Clear All Plugins' button in Remote Logs panel clears logs for both Riseup Asia and QUpload in one click",
-        "🔧 Go backend orchestrates two-step clear (token + confirm) for both plugin namespaces atomically",
-        "🧹 Error History drawer now has configurable cleanup (1h, 6h, 24h, 7d, 30d thresholds)",
-        "📡 New DELETE /sites/{id}/remote-logs/clear-all endpoint",
-        "📡 New DELETE /error-history/clear-old?threshold= endpoint",
-        "🔢 Version bump across all components to 2.29.0"
+        "\ud83d\uddd1\ufe0f New 'Clear All Plugins' button in Remote Logs panel clears logs for both Riseup Asia and QUpload in one click",
+        "\ud83d\udd27 Go backend orchestrates two-step clear (token + confirm) for both plugin namespaces atomically",
+        "\ud83e\uddf9 Error History drawer now has configurable cleanup (1h, 6h, 24h, 7d, 30d thresholds)",
+        "\ud83d\udce1 New DELETE /sites/{id}/remote-logs/clear-all endpoint",
+        "\ud83d\udce1 New DELETE /error-history/clear-old?threshold= endpoint",
+        "\ud83d\udd22 Version bump across all components to 2.29.0"
       ]
     },
     {
@@ -77,11 +87,11 @@
       "date": "2026-03-21",
       "title": "HTML Response Detection & Endpoint Mismatch Error Improvement",
       "changes": [
-        "🛡️ Added early HTML response detection in WordPress API call pipeline (doApiCallRaw + decodeApiResponse)",
-        "🔍 New E3013 ErrWPEndpointMismatch error code replaces cryptic 'invalid character <' JSON decode errors",
-        "📋 Clear error message surfaces endpoint path and advises verifying plugin installation and namespace",
-        "🚀 Added startup namespace validation check (validateNamespaces) to prevent silent 404s from mismatched constants",
-        "🔧 Fixed standalone snapshotEndpoint() calls in SnapshotsBackup.go to use receiver method c.snapshotEndpoint()"
+        "\ud83d\udee1\ufe0f Added early HTML response detection in WordPress API call pipeline (doApiCallRaw + decodeApiResponse)",
+        "\ud83d\udd0d New E3013 ErrWPEndpointMismatch error code replaces cryptic 'invalid character <' JSON decode errors",
+        "\ud83d\udccb Clear error message surfaces endpoint path and advises verifying plugin installation and namespace",
+        "\ud83d\ude80 Added startup namespace validation check (validateNamespaces) to prevent silent 404s from mismatched constants",
+        "\ud83d\udd27 Fixed standalone snapshotEndpoint() calls in SnapshotsBackup.go to use receiver method c.snapshotEndpoint()"
       ]
     },
     {
@@ -89,9 +99,9 @@
       "date": "2026-03-21",
       "title": "Critical Namespace Mismatch Fix",
       "changes": [
-        "🐛 Fixed RiseupAsiaNamespace constant using plugin slug instead of API namespace (riseup-asia-api/v1)",
-        "🔧 Resolved 404 errors on remote-plugins, snapshots, and all Riseup Asia API endpoints",
-        "🛠️ Aligned Go backend Constants.go with PHP PluginConfigType::ApiNamespace"
+        "\ud83d\udc1b Fixed RiseupAsiaNamespace constant using plugin slug instead of API namespace (riseup-asia-api/v1)",
+        "\ud83d\udd27 Resolved 404 errors on remote-plugins, snapshots, and all Riseup Asia API endpoints",
+        "\ud83d\udee0\ufe0f Aligned Go backend Constants.go with PHP PluginConfigType::ApiNamespace"
       ]
     },
     {
@@ -99,11 +109,11 @@
       "date": "2026-03-21",
       "title": "Compilation & Error Handling Fixes",
       "changes": [
-        "🐛 Fixed missing imports across Go backend (context, apperror, models packages)",
-        "🔧 Exported DoApiCall/ApiCallInput from wordpress package for cross-package access",
-        "🛠️ Replaced undefined appErr.HttpStatus() calls with resolveHttpStatus() helper in all handlers",
-        "🔧 Fixed EmailLogsRequest type mismatch in AdapterSite.go",
-        "🧹 Removed unused models import from VerboseCheck.go"
+        "\ud83d\udc1b Fixed missing imports across Go backend (context, apperror, models packages)",
+        "\ud83d\udd27 Exported DoApiCall/ApiCallInput from wordpress package for cross-package access",
+        "\ud83d\udee0\ufe0f Replaced undefined appErr.HttpStatus() calls with resolveHttpStatus() helper in all handlers",
+        "\ud83d\udd27 Fixed EmailLogsRequest type mismatch in AdapterSite.go",
+        "\ud83e\uddf9 Removed unused models import from VerboseCheck.go"
       ]
     },
     {
@@ -111,21 +121,21 @@
       "date": "2026-03-20",
       "title": "Changelog & Documentation Enhancements",
       "changes": [
-        "📋 Plugin CHANGELOGs created for both Riseup Asia Uploader and QUpload",
-        "📖 Root README, plugin READMEs, and PowerShell CLI README overhauled",
-        "🔢 run.ps1 startup banner shows version, release date, and 3 recent changelog entries",
-        "📊 Local vs remote version comparison in -ps/-pas commands",
-        "🔍 -check -v verbose mode shows detailed endpoint availability info per site"
+        "\ud83d\udccb Plugin CHANGELOGs created for both Riseup Asia Uploader and QUpload",
+        "\ud83d\udcd6 Root README, plugin READMEs, and PowerShell CLI README overhauled",
+        "\ud83d\udd22 run.ps1 startup banner shows version, release date, and 3 recent changelog entries",
+        "\ud83d\udcca Local vs remote version comparison in -ps/-pas commands",
+        "\ud83d\udd0d -check -v verbose mode shows detailed endpoint availability info per site"
       ]
     },
     {
       "version": "2.28.3",
       "date": "2026-03-20",
-      "title": "Verbose Mode for Log Clearing — Pre-Clear Retrieval",
+      "title": "Verbose Mode for Log Clearing \u2014 Pre-Clear Retrieval",
       "changes": [
-        "🔍 -cl -v and -cla -v now call GET /logs/retrieve before clearing to show current log state",
-        "📊 Displays info.txt, error.txt, stacktrace.txt line counts and sizes before deletion",
-        "🛡️ Gracefully handles missing /logs/retrieve endpoint (v2.18.0+ only)"
+        "\ud83d\udd0d -cl -v and -cla -v now call GET /logs/retrieve before clearing to show current log state",
+        "\ud83d\udcca Displays info.txt, error.txt, stacktrace.txt line counts and sizes before deletion",
+        "\ud83d\udee1\ufe0f Gracefully handles missing /logs/retrieve endpoint (v2.18.0+ only)"
       ]
     },
     {
@@ -133,36 +143,36 @@
       "date": "2026-03-20",
       "title": "Verbose Mode for Upload Commands (-u, -q, -ua, -uas)",
       "changes": [
-        "🔍 Added -v (verbose) support to all upload commands: -u, -q, -ua, -uas, -u -as",
-        "📡 Shows raw JSON request/response for status check and upload POST endpoints",
-        "🔗 Verbose flag wired through upload-plugin-U-Q.ps1, upload-single.ps1, upload-parallel.ps1, and all mode scripts",
-        "🛡️ Also added PHP noise stripping to upload-plugin-U-Q.ps1 status and upload responses",
-        "📋 Updated help text with -v examples for upload commands",
-        "🔢 Version bump to 2.28.2"
+        "\ud83d\udd0d Added -v (verbose) support to all upload commands: -u, -q, -ua, -uas, -u -as",
+        "\ud83d\udce1 Shows raw JSON request/response for status check and upload POST endpoints",
+        "\ud83d\udd17 Verbose flag wired through upload-plugin-U-Q.ps1, upload-single.ps1, upload-parallel.ps1, and all mode scripts",
+        "\ud83d\udee1\ufe0f Also added PHP noise stripping to upload-plugin-U-Q.ps1 status and upload responses",
+        "\ud83d\udccb Updated help text with -v examples for upload commands",
+        "\ud83d\udd22 Version bump to 2.28.2"
       ]
     },
     {
       "version": "2.28.1",
       "date": "2026-03-20",
-      "title": "Invoke-RestMethod Audit — Full Codebase Migration to Invoke-WebRequest",
+      "title": "Invoke-RestMethod Audit \u2014 Full Codebase Migration to Invoke-WebRequest",
       "changes": [
-        "🔍 Audited all PowerShell modules for remaining Invoke-RestMethod usage",
-        "🛡️ Replaced 8 calls across upload-plugin.ps1, upload-plugin-v3.ps1, mode-clear-logs.ps1, and mode-approve-machine.ps1",
-        "📦 All REST calls now use Invoke-WebRequest + PHP noise stripping for resilience against WordPress deprecation notices",
-        "🔢 Version bump to 2.28.1"
+        "\ud83d\udd0d Audited all PowerShell modules for remaining Invoke-RestMethod usage",
+        "\ud83d\udee1\ufe0f Replaced 8 calls across upload-plugin.ps1, upload-plugin-v3.ps1, mode-clear-logs.ps1, and mode-approve-machine.ps1",
+        "\ud83d\udce6 All REST calls now use Invoke-WebRequest + PHP noise stripping for resilience against WordPress deprecation notices",
+        "\ud83d\udd22 Version bump to 2.28.1"
       ]
     },
     {
       "version": "2.28.0",
       "date": "2026-03-19",
-      "title": "Fix Status Parsing — PHP Noise Resilience & Envelope-Aware Extraction",
+      "title": "Fix Status Parsing \u2014 PHP Noise Resilience & Envelope-Aware Extraction",
       "changes": [
-        "🐛 Fixed -am and -check showing 'NOT READY (no version in response)' on all sites despite valid API responses",
-        "🛡️ Replaced Invoke-RestMethod with Invoke-WebRequest in mode-approve-machine.ps1 and mode-check.ps1 to handle PHP deprecation notices prepended to JSON",
-        "📦 Version now correctly extracted from envelope Results[0].Version instead of non-existent top-level .version property",
-        "📋 Root cause issue documented in spec/issues/2027-status-parsing-php-noise.md",
-        "🧠 Memory rule added: never use Invoke-RestMethod for WordPress REST calls",
-        "🔢 Version bump across all components to 2.28.0"
+        "\ud83d\udc1b Fixed -am and -check showing 'NOT READY (no version in response)' on all sites despite valid API responses",
+        "\ud83d\udee1\ufe0f Replaced Invoke-RestMethod with Invoke-WebRequest in mode-approve-machine.ps1 and mode-check.ps1 to handle PHP deprecation notices prepended to JSON",
+        "\ud83d\udce6 Version now correctly extracted from envelope Results[0].Version instead of non-existent top-level .version property",
+        "\ud83d\udccb Root cause issue documented in spec/issues/2027-status-parsing-php-noise.md",
+        "\ud83e\udde0 Memory rule added: never use Invoke-RestMethod for WordPress REST calls",
+        "\ud83d\udd22 Version bump across all components to 2.28.0"
       ]
     },
     {
@@ -170,10 +180,10 @@
       "date": "2026-03-19",
       "title": "Verbose Mode for All REST Commands",
       "changes": [
-        "🔍 -v (verbose) flag now supported on -am, -check, -cl, -cla, -cas, -purge commands",
-        "📡 Verbose mode shows full target URL, request body (JSON), and raw response body for all REST calls",
-        "🐛 Aids debugging 'NOT READY' and connectivity issues by exposing exact HTTP payloads",
-        "🔢 Version bump across all components to 2.27.0"
+        "\ud83d\udd0d -v (verbose) flag now supported on -am, -check, -cl, -cla, -cas, -purge commands",
+        "\ud83d\udce1 Verbose mode shows full target URL, request body (JSON), and raw response body for all REST calls",
+        "\ud83d\udc1b Aids debugging 'NOT READY' and connectivity issues by exposing exact HTTP payloads",
+        "\ud83d\udd22 Version bump across all components to 2.27.0"
       ]
     },
     {
@@ -181,10 +191,10 @@
       "date": "2026-03-19",
       "title": "Clear All Sites Command & Safety Confirmation",
       "changes": [
-        "💣 -cas (Clear All Sites) command: nuke ALL file logs, stacktraces, errors, and audit/activity logs across both plugins and all sites",
-        "⚠️ Destructive action confirmation prompt before -cas/-purge executes (shows site count and names)",
-        "⏩ -yes/-y flag to skip confirmation prompt for scripted/automated usage",
-        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.26.0"
+        "\ud83d\udca3 -cas (Clear All Sites) command: nuke ALL file logs, stacktraces, errors, and audit/activity logs across both plugins and all sites",
+        "\u26a0\ufe0f Destructive action confirmation prompt before -cas/-purge executes (shows site count and names)",
+        "\u23e9 -yes/-y flag to skip confirmation prompt for scripted/automated usage",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload) to 2.26.0"
       ]
     },
     {
@@ -192,15 +202,15 @@
       "date": "2026-03-19",
       "title": "PHP Notice Resilience in Status Checks & Version Consolidation",
       "changes": [
-        "🛡️ -pas/-ps now strips PHP deprecation notices (e.g. UpdraftPlus) before JSON parsing — no more 'version unknown'",
-        "🔍 -v (verbose) flag shows raw JSON response body for status and log retrieval in both sequential and parallel modes",
-        "🏷️ QUpload status response fields now use enum-backed ResponseKeyType for type-safe parsing",
-        "📊 Parallel status checks resilient to WP_DEBUG_DISPLAY noise from third-party plugins",
-        "🔌 -logplugin filter: clear logs for a specific plugin only (q|qupload|r|riseup)",
-        "📂 -logtype filter: clear specific log types (log|err|stack|files|db|all)",
-        "🗑️ -audit flag: clear plugins-onboard audit/activity logs from database via REST API",
-        "💣 -purge command: clear ALL file logs + audit logs in one command with site targeting (-site, -i, -xs)",
-        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.25.0"
+        "\ud83d\udee1\ufe0f -pas/-ps now strips PHP deprecation notices (e.g. UpdraftPlus) before JSON parsing \u2014 no more 'version unknown'",
+        "\ud83d\udd0d -v (verbose) flag shows raw JSON response body for status and log retrieval in both sequential and parallel modes",
+        "\ud83c\udff7\ufe0f QUpload status response fields now use enum-backed ResponseKeyType for type-safe parsing",
+        "\ud83d\udcca Parallel status checks resilient to WP_DEBUG_DISPLAY noise from third-party plugins",
+        "\ud83d\udd0c -logplugin filter: clear logs for a specific plugin only (q|qupload|r|riseup)",
+        "\ud83d\udcc2 -logtype filter: clear specific log types (log|err|stack|files|db|all)",
+        "\ud83d\uddd1\ufe0f -audit flag: clear plugins-onboard audit/activity logs from database via REST API",
+        "\ud83d\udca3 -purge command: clear ALL file logs + audit logs in one command with site targeting (-site, -i, -xs)",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload) to 2.25.0"
       ]
     },
     {
@@ -208,10 +218,10 @@
       "date": "2026-03-20",
       "title": "PHP Notice Resilience, Verbose Status & Enum-Backed QUpload Keys",
       "changes": [
-        "🛡️ Status and log responses now strip PHP warnings/notices before JSON parsing",
-        "🔍 Added -v (verbose) flag to -pas/-ps for raw JSON response output",
-        "🏷️ QUpload status fields (Slug, Api, SiteUrl, DbAvailable, ServerTime) now use ResponseKeyType enum",
-        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.22.0"
+        "\ud83d\udee1\ufe0f Status and log responses now strip PHP warnings/notices before JSON parsing",
+        "\ud83d\udd0d Added -v (verbose) flag to -pas/-ps for raw JSON response output",
+        "\ud83c\udff7\ufe0f QUpload status fields (Slug, Api, SiteUrl, DbAvailable, ServerTime) now use ResponseKeyType enum",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload) to 2.22.0"
       ]
     },
     {
@@ -219,12 +229,12 @@
       "date": "2026-03-19",
       "title": "Cross-Upload Resilience & Version Bump",
       "changes": [
-        "🔄 Cross-upload: QUpload is now uploaded via Riseup Asia API for resilience (fallback to self-upload if unavailable)",
-        "🔄 Cross-upload: Riseup Asia uploaded via QUpload API (already default, now documented)",
-        "🛡️ Upload pipeline detects cross-upload partner availability via /status probe before choosing API",
-        "⚙️ upload-plugin-U-Q.ps1 now supports -ApiNamespace parameter for flexible endpoint targeting",
-        "🐛 Fixed PHP syntax error in QUpload UploadFileSystemTrait.php (truncated extractZipToTemp method)",
-        "🔢 Version bump across all components (app, script, plugins, QUpload) to 2.20.0"
+        "\ud83d\udd04 Cross-upload: QUpload is now uploaded via Riseup Asia API for resilience (fallback to self-upload if unavailable)",
+        "\ud83d\udd04 Cross-upload: Riseup Asia uploaded via QUpload API (already default, now documented)",
+        "\ud83d\udee1\ufe0f Upload pipeline detects cross-upload partner availability via /status probe before choosing API",
+        "\u2699\ufe0f upload-plugin-U-Q.ps1 now supports -ApiNamespace parameter for flexible endpoint targeting",
+        "\ud83d\udc1b Fixed PHP syntax error in QUpload UploadFileSystemTrait.php (truncated extractZipToTemp method)",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload) to 2.20.0"
       ]
     },
     {
@@ -232,22 +242,22 @@
       "date": "2026-03-18",
       "title": "Version Bump & Consistency Checker Enhancements",
       "changes": [
-        "🔢 Version bump across all components (app, script, plugins, QUpload)",
-        "🔤 Go abbreviation casing rule now uses PascalCase config with dynamic ALL-CAPS derivation",
-        "📋 Added go-struct-field-casing rule to consistency checker spec"
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)",
+        "\ud83d\udd24 Go abbreviation casing rule now uses PascalCase config with dynamic ALL-CAPS derivation",
+        "\ud83d\udccb Added go-struct-field-casing rule to consistency checker spec"
       ]
     },
     {
       "version": "2.17.0",
       "date": "2026-03-15",
-      "title": "CLA Root Cause Fix — Endpoint Gating & Machine Approval Source",
+      "title": "CLA Root Cause Fix \u2014 Endpoint Gating & Machine Approval Source",
       "changes": [
-        "🛠️ Fixed Riseup endpoint gating defaults so remote log routes are no longer implicitly disabled on older saved settings",
-        "🔒 Endpoint auth/enable checks now deep-merge settings and default missing keys to secure enabled behavior",
-        "⚙️ Added remote log endpoint controls to the Riseup Settings endpoint configuration UI",
-        "📁 QUpload machine approval now reads approved_machines from settings.json first, with option fallback",
-        "🧭 Improved -cla troubleshooting text for rest_disabled vs machine_not_approved causes",
-        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+        "\ud83d\udee0\ufe0f Fixed Riseup endpoint gating defaults so remote log routes are no longer implicitly disabled on older saved settings",
+        "\ud83d\udd12 Endpoint auth/enable checks now deep-merge settings and default missing keys to secure enabled behavior",
+        "\u2699\ufe0f Added remote log endpoint controls to the Riseup Settings endpoint configuration UI",
+        "\ud83d\udcc1 QUpload machine approval now reads approved_machines from settings.json first, with option fallback",
+        "\ud83e\udded Improved -cla troubleshooting text for rest_disabled vs machine_not_approved causes",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)"
       ]
     },
     {
@@ -255,12 +265,12 @@
       "date": "2026-03-15",
       "title": "Clear Logs Diagnostics & PS 7+ Error Extraction Fix",
       "changes": [
-        "🐛 Fixed -cla showing bare '403' with no response body (PS 7+ compatible error extraction)",
-        "📋 Clear logs now shows full WordPress REST error details (code, message, status)",
-        "🔍 Response body preview shown on failure for immediate diagnostics",
-        "💡 Troubleshooting guide printed on failures (403, 404, 401 causes)",
-        "📋 Summary now includes error reason per site/plugin",
-        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+        "\ud83d\udc1b Fixed -cla showing bare '403' with no response body (PS 7+ compatible error extraction)",
+        "\ud83d\udccb Clear logs now shows full WordPress REST error details (code, message, status)",
+        "\ud83d\udd0d Response body preview shown on failure for immediate diagnostics",
+        "\ud83d\udca1 Troubleshooting guide printed on failures (403, 404, 401 causes)",
+        "\ud83d\udccb Summary now includes error reason per site/plugin",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)"
       ]
     },
     {
@@ -268,24 +278,24 @@
       "date": "2026-03-15",
       "title": "Settings UI Fix, Clear Logs Targeting & REST Conventions",
       "changes": [
-        "🐛 Fixed 'Undefined array key' warnings in Snapshot Settings UI (PascalCase key migration)",
-        "🧹 -cla flag clears logs on ALL sites; -cl now supports -site, -i, -xs targeting",
-        "📋 Updated help text with full log management examples",
-        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+        "\ud83d\udc1b Fixed 'Undefined array key' warnings in Snapshot Settings UI (PascalCase key migration)",
+        "\ud83e\uddf9 -cla flag clears logs on ALL sites; -cl now supports -site, -i, -xs targeting",
+        "\ud83d\udccb Updated help text with full log management examples",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)"
       ]
     },
     {
       "version": "2.14.0",
       "date": "2026-03-14",
-      "title": "User Management System — CRUD, App Passwords, Yoast SEO & Bulk Import/Export",
+      "title": "User Management System \u2014 CRUD, App Passwords, Yoast SEO & Bulk Import/Export",
       "changes": [
-        "👤 Full user CRUD endpoints (GET, POST, PUT, DELETE) with pagination and search",
-        "🔑 Application password creation for users via REST API",
-        "📱 11 social platform fields (Facebook, Instagram, LinkedIn, X, Mastodon, etc.)",
-        "🎓 12 Yoast SEO metadata fields (Honorifics, Expertise, Employer, Job Title, etc.)",
-        "📥 Bulk import/export via CSV and SQLite ZIP bundles with password hash preservation",
-        "🔒 Password hashes preserved in exports, never returned in GET responses",
-        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+        "\ud83d\udc64 Full user CRUD endpoints (GET, POST, PUT, DELETE) with pagination and search",
+        "\ud83d\udd11 Application password creation for users via REST API",
+        "\ud83d\udcf1 11 social platform fields (Facebook, Instagram, LinkedIn, X, Mastodon, etc.)",
+        "\ud83c\udf93 12 Yoast SEO metadata fields (Honorifics, Expertise, Employer, Job Title, etc.)",
+        "\ud83d\udce5 Bulk import/export via CSV and SQLite ZIP bundles with password hash preservation",
+        "\ud83d\udd12 Password hashes preserved in exports, never returned in GET responses",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)"
       ]
     },
     {
@@ -293,13 +303,13 @@
       "date": "2026-03-14",
       "title": "Rollback Protection, New QUpload Endpoints & Parallel Architecture",
       "changes": [
-        "🛡️ Auto-rollback on failed plugin uploads for both QUpload and Riseup Asia Uploader",
-        "🔌 PUT /deactivate endpoint for remote plugin deactivation via QUpload API",
-        "📋 GET /plugins endpoint for remote plugin inventory via QUpload API",
-        "🔢 PluginVersion column in ErrorSessions table for version-aware error tracking",
-        "⚡ New -u -as flag for uploading default plugin to all sites (parallel)",
-        "🔓 QUpload now included in -uas bulk uploads (removed from skipPlugins)",
-        "📝 Diagnostic error reporting spec for opt-in weekly error summaries"
+        "\ud83d\udee1\ufe0f Auto-rollback on failed plugin uploads for both QUpload and Riseup Asia Uploader",
+        "\ud83d\udd0c PUT /deactivate endpoint for remote plugin deactivation via QUpload API",
+        "\ud83d\udccb GET /plugins endpoint for remote plugin inventory via QUpload API",
+        "\ud83d\udd22 PluginVersion column in ErrorSessions table for version-aware error tracking",
+        "\u26a1 New -u -as flag for uploading default plugin to all sites (parallel)",
+        "\ud83d\udd13 QUpload now included in -uas bulk uploads (removed from skipPlugins)",
+        "\ud83d\udcdd Diagnostic error reporting spec for opt-in weekly error summaries"
       ]
     },
     {
@@ -307,11 +317,11 @@
       "date": "2026-03-14",
       "title": "Timezone-Aware Logging, Log Clearing Endpoints & Remote Log Management",
       "changes": [
-        "🕐 Timezone-aware log formatting using WordPress site timezone (Settings > General)",
-        "🗑️ REST API endpoints for log status, clear, and confirm across both plugins",
-        "📋 Admin dashboard endpoint reference tables for QUpload and Riseup Asia",
-        "🧹 PowerShell -cl flag for remote log clearing across all configured sites",
-        "🔢 Version bump across all components (app, script, plugins, spec)"
+        "\ud83d\udd50 Timezone-aware log formatting using WordPress site timezone (Settings > General)",
+        "\ud83d\uddd1\ufe0f REST API endpoints for log status, clear, and confirm across both plugins",
+        "\ud83d\udccb Admin dashboard endpoint reference tables for QUpload and Riseup Asia",
+        "\ud83e\uddf9 PowerShell -cl flag for remote log clearing across all configured sites",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, spec)"
       ]
     },
     {
@@ -319,10 +329,10 @@
       "date": "2026-03-13",
       "title": "Multi-Site Deployment, QUpload Fallback & Default Credential Flow",
       "changes": [
-        "🌐 Multi-site deployment (-uas) with Base64-encoded credentials in powershell.json",
-        "🔄 QUpload fallback in Go publish pipeline (upload + activation)",
-        "🔑 Connection test & GetDecryptedPassword now use default SiteCredential over legacy fields",
-        "📋 Multi-site schema added to powershell.schema.json"
+        "\ud83c\udf10 Multi-site deployment (-uas) with Base64-encoded credentials in powershell.json",
+        "\ud83d\udd04 QUpload fallback in Go publish pipeline (upload + activation)",
+        "\ud83d\udd11 Connection test & GetDecryptedPassword now use default SiteCredential over legacy fields",
+        "\ud83d\udccb Multi-site schema added to powershell.schema.json"
       ]
     },
     {
@@ -330,9 +340,9 @@
       "date": "2026-03-13",
       "title": "Multi-User Per Site Spec & Version Bump",
       "changes": [
-        "📋 Multi-user per site credential spec created (SiteCredentials table, CRUD API, React UI)",
-        "🌱 Test V1 & Test V2 sites added to seed config with credentials",
-        "🔢 Version bump across all components (app, script, plugins, QUpload)"
+        "\ud83d\udccb Multi-user per site credential spec created (SiteCredentials table, CRUD API, React UI)",
+        "\ud83c\udf31 Test V1 & Test V2 sites added to seed config with credentials",
+        "\ud83d\udd22 Version bump across all components (app, script, plugins, QUpload)"
       ]
     },
     {
@@ -340,20 +350,20 @@
       "date": "2026-03-12",
       "title": "Scheduler Config Safety & PHPStan Integration",
       "changes": [
-        "🐛 Fixed 'Undefined array key schedule_enabled' warning in SchedulerConfigTrait",
-        "🛡️ All scheduler settings keys now use null-coalescing with safe defaults",
-        "🔍 Extracted positive boolean variables for schedule and frequency checks",
-        "🔬 PHPStan level-6 static analysis integrated into pre-upload and pre-commit pipelines"
+        "\ud83d\udc1b Fixed 'Undefined array key schedule_enabled' warning in SchedulerConfigTrait",
+        "\ud83d\udee1\ufe0f All scheduler settings keys now use null-coalescing with safe defaults",
+        "\ud83d\udd0d Extracted positive boolean variables for schedule and frequency checks",
+        "\ud83d\udd2c PHPStan level-6 static analysis integrated into pre-upload and pre-commit pipelines"
       ]
     },
     {
       "date": "2026-03-12",
       "title": "Upload Failure Diagnostics & Auth Fix",
       "changes": [
-        "🔧 Fixed checkAuthenticatedOnly() fatal TypeError — WP_User returned instead of true|WP_Error",
-        "📋 Upload script now logs HTTP status, JSON error summary, and response body preview on every failure",
-        "🛡️ Added defensive return type normalization in all permission callbacks",
-        "📝 Issue write-up and memory rules added for return type and diagnostics patterns"
+        "\ud83d\udd27 Fixed checkAuthenticatedOnly() fatal TypeError \u2014 WP_User returned instead of true|WP_Error",
+        "\ud83d\udccb Upload script now logs HTTP status, JSON error summary, and response body preview on every failure",
+        "\ud83d\udee1\ufe0f Added defensive return type normalization in all permission callbacks",
+        "\ud83d\udcdd Issue write-up and memory rules added for return type and diagnostics patterns"
       ]
     },
     {
@@ -361,10 +371,10 @@
       "date": "2026-03-12",
       "title": "Versioned Log Entries & Minor Version Bump",
       "changes": [
-        "📋 Log entries now include plugin version tag [vX.Y.Z] in both Riseup Asia and QUpload",
-        "📅 Log display dates use DD-MMM-YY HH:MM AM/PM format",
-        "🛡️ Backed enum duplicate lint added to both upload scripts (-u and -u -q)",
-        "🔢 Minor version bump across all components (app, script, plugin, QUpload)"
+        "\ud83d\udccb Log entries now include plugin version tag [vX.Y.Z] in both Riseup Asia and QUpload",
+        "\ud83d\udcc5 Log display dates use DD-MMM-YY HH:MM AM/PM format",
+        "\ud83d\udee1\ufe0f Backed enum duplicate lint added to both upload scripts (-u and -u -q)",
+        "\ud83d\udd22 Minor version bump across all components (app, script, plugin, QUpload)"
       ]
     },
     {
@@ -372,16 +382,16 @@
       "date": "2026-03-12",
       "title": "Report/Feedback Feature & Modern UI Overhaul",
       "changes": [
-        "📬 New Report/Feedback page — submit bug reports with subject, body, up to 3 screenshot attachments via wp_mail()",
-        "⚙️ Support Settings — configurable support email and fallback ticket URL in Settings page",
-        "🎨 Complete admin UI modernization — CSS variables, gradient buttons, ripple effects, card hover animations",
-        "✨ Modal animations — backdrop blur, scale-in bounce entry, close button rotation",
-        "💊 All badges now pill-shaped with gradient backgrounds and scale-on-hover",
-        "🔵 Enhanced focus states — glowing blue ring on all inputs",
-        "🎚️ Premium toggle switches with gradient checked state and bounce animation",
-        "📊 Staggered card entrance animations with fade-in-up",
-        "🔤 Monospace font upgrade to SF Mono / Fira Code",
-        "🖱️ Report Issue button on Error Log page header"
+        "\ud83d\udcec New Report/Feedback page \u2014 submit bug reports with subject, body, up to 3 screenshot attachments via wp_mail()",
+        "\u2699\ufe0f Support Settings \u2014 configurable support email and fallback ticket URL in Settings page",
+        "\ud83c\udfa8 Complete admin UI modernization \u2014 CSS variables, gradient buttons, ripple effects, card hover animations",
+        "\u2728 Modal animations \u2014 backdrop blur, scale-in bounce entry, close button rotation",
+        "\ud83d\udc8a All badges now pill-shaped with gradient backgrounds and scale-on-hover",
+        "\ud83d\udd35 Enhanced focus states \u2014 glowing blue ring on all inputs",
+        "\ud83c\udf9a\ufe0f Premium toggle switches with gradient checked state and bounce animation",
+        "\ud83d\udcca Staggered card entrance animations with fade-in-up",
+        "\ud83d\udd24 Monospace font upgrade to SF Mono / Fira Code",
+        "\ud83d\uddb1\ufe0f Report Issue button on Error Log page header"
       ]
     },
     {
@@ -389,11 +399,11 @@
       "date": "2026-03-12",
       "title": "Clear Button Disk Delete & Upgrade Hook Log Reset",
       "changes": [
-        "🗑️ Clear Log button now deletes files from disk via PathHelper::deleteFile() instead of truncating",
-        "🔄 Added upgrader_process_complete hook for forced log reset after plugin update",
-        "🐛 Fixed duplicate ResponseMessageType enum case causing PHP fatal on AJAX handlers",
-        "🛡️ DB-ready guards on all error AJAX handlers prevent silent 500 errors",
-        "📋 Activation handler now resets all log files before writing fresh init entries"
+        "\ud83d\uddd1\ufe0f Clear Log button now deletes files from disk via PathHelper::deleteFile() instead of truncating",
+        "\ud83d\udd04 Added upgrader_process_complete hook for forced log reset after plugin update",
+        "\ud83d\udc1b Fixed duplicate ResponseMessageType enum case causing PHP fatal on AJAX handlers",
+        "\ud83d\udee1\ufe0f DB-ready guards on all error AJAX handlers prevent silent 500 errors",
+        "\ud83d\udccb Activation handler now resets all log files before writing fresh init entries"
       ]
     },
     {
@@ -401,9 +411,9 @@
       "date": "2026-03-12",
       "title": "Version-Based Log Clearing on Plugin Update",
       "changes": [
-        "🧹 Both plugins now clear all log files automatically on version update (not every load)",
-        "📦 Added clearAllLogFiles() to Riseup Asia FileLogger via LoggerPathTrait",
-        "🔖 Version tracked via WP options (riseup_asia_last_version / qupload_last_version)"
+        "\ud83e\uddf9 Both plugins now clear all log files automatically on version update (not every load)",
+        "\ud83d\udce6 Added clearAllLogFiles() to Riseup Asia FileLogger via LoggerPathTrait",
+        "\ud83d\udd16 Version tracked via WP options (riseup_asia_last_version / qupload_last_version)"
       ]
     },
     {
@@ -411,9 +421,9 @@
       "date": "2026-03-12",
       "title": "ORM Case-Sensitivity & Type-Hint Fixes",
       "changes": [
-        "🐛 Fixed ORM class case-sensitivity issue (ORM → Orm) preventing database initialization on Linux",
-        "🐛 Fixed 4 broken RiseupORM type hints in DatabaseQuerySearchTrait causing fatal errors on filter operations",
-        "🐛 Fixed asset path depth (dirname level 3 → 4) so admin CSS/JS loads correctly"
+        "\ud83d\udc1b Fixed ORM class case-sensitivity issue (ORM \u2192 Orm) preventing database initialization on Linux",
+        "\ud83d\udc1b Fixed 4 broken RiseupORM type hints in DatabaseQuerySearchTrait causing fatal errors on filter operations",
+        "\ud83d\udc1b Fixed asset path depth (dirname level 3 \u2192 4) so admin CSS/JS loads correctly"
       ]
     },
     {
@@ -421,12 +431,12 @@
       "date": "2026-03-12",
       "title": "QUpload Admin Menu & Error Log Viewer",
       "changes": [
-        "🖥️ QUpload admin menu system with Dashboard and Error Logs pages",
-        "📋 Tabbed error log viewer (Log, Error, Stack Trace) with Copy, Download, Clear, and Live auto-refresh",
-        "🔧 Fixed template include paths across both plugins (dirname depth correction)",
-        "🔧 Fixed duplicate PathHelper import in qupload.php",
-        "🔧 Fixed PaginationConfigType method call in static property default (Admin.php)",
-        "🔧 Fixed duplicate <?php tag in admin-settings.php"
+        "\ud83d\udda5\ufe0f QUpload admin menu system with Dashboard and Error Logs pages",
+        "\ud83d\udccb Tabbed error log viewer (Log, Error, Stack Trace) with Copy, Download, Clear, and Live auto-refresh",
+        "\ud83d\udd27 Fixed template include paths across both plugins (dirname depth correction)",
+        "\ud83d\udd27 Fixed duplicate PathHelper import in qupload.php",
+        "\ud83d\udd27 Fixed PaginationConfigType method call in static property default (Admin.php)",
+        "\ud83d\udd27 Fixed duplicate <?php tag in admin-settings.php"
       ]
     },
     {
@@ -434,26 +444,26 @@
       "date": "2026-03-12",
       "title": "PHP Syntax Fixes & Go Spacing Audit",
       "changes": [
-        "🔧 Fixed duplicate <?php tag in admin-settings.php causing deployment syntax error",
-        "🛡️ Verified ManagerRestoreTrait.php syntax correctness for PHP 8.2 compatibility",
-        "📏 Full Go source audit: enforced blank-line-before-return and blank-line-before-if spacing rules",
-        "🧹 Fixed spacing violations across 10+ Go files in database, services, envelope, and logger packages"
+        "\ud83d\udd27 Fixed duplicate <?php tag in admin-settings.php causing deployment syntax error",
+        "\ud83d\udee1\ufe0f Verified ManagerRestoreTrait.php syntax correctness for PHP 8.2 compatibility",
+        "\ud83d\udccf Full Go source audit: enforced blank-line-before-return and blank-line-before-if spacing rules",
+        "\ud83e\uddf9 Fixed spacing violations across 10+ Go files in database, services, envelope, and logger packages"
       ]
     },
     {
       "version": "2.0.0",
       "date": "2026-03-09",
-      "title": "Major Version 2.0 — Full Codebase Audit & Hardening",
+      "title": "Major Version 2.0 \u2014 Full Codebase Audit & Hardening",
       "changes": [
-        "🎯 Major version bump across all components: App, WP Plugin, QUpload, and PowerShell script",
-        "🛡️ Full PHP reliability audit: guarded all filesystem operations (scandir, copy, fopen, extractTo)",
-        "🔒 Eliminated silent catch blocks and ensured Throwable-first logging with stack traces",
-        "📏 Enforced 500-line PHP file limit across all plugins with trait decomposition",
-        "🧹 Removed double exception logging in error response pipelines",
-        "📦 QUpload plugin hardened: ZIP extraction, directory operations, and activation flows",
-        "🔧 Riseup Asia Uploader hardened: snapshot imports, sync push, admin log reading",
-        "📋 Centralized plugin identity via PluginConfigType enums (no literal log prefixes)",
-        "✅ All PHP enums standardized with PascalCase values and typed backing"
+        "\ud83c\udfaf Major version bump across all components: App, WP Plugin, QUpload, and PowerShell script",
+        "\ud83d\udee1\ufe0f Full PHP reliability audit: guarded all filesystem operations (scandir, copy, fopen, extractTo)",
+        "\ud83d\udd12 Eliminated silent catch blocks and ensured Throwable-first logging with stack traces",
+        "\ud83d\udccf Enforced 500-line PHP file limit across all plugins with trait decomposition",
+        "\ud83e\uddf9 Removed double exception logging in error response pipelines",
+        "\ud83d\udce6 QUpload plugin hardened: ZIP extraction, directory operations, and activation flows",
+        "\ud83d\udd27 Riseup Asia Uploader hardened: snapshot imports, sync push, admin log reading",
+        "\ud83d\udccb Centralized plugin identity via PluginConfigType enums (no literal log prefixes)",
+        "\u2705 All PHP enums standardized with PascalCase values and typed backing"
       ]
     },
     {
@@ -461,12 +471,12 @@
       "date": "2026-02-04",
       "title": "Detailed Backend Logging & UI Fixes",
       "changes": [
-        "📋 Added detailed inner logs: WordPress connection, ZIP path, file counts, sizes",
-        "📑 PublishProgressDialog now uses tabs (Progress | Logs | Settings) for better fit",
-        "🔔 WebSocket reconnect toast notifications when connection restored",
-        "🔗 Sync button now opens SyncProgressDialog with real-time logs",
-        "📊 broadcastDetailedLog() sends structured log data with context",
-        "📝 Memory updated with logging requirements and error modal standards"
+        "\ud83d\udccb Added detailed inner logs: WordPress connection, ZIP path, file counts, sizes",
+        "\ud83d\udcd1 PublishProgressDialog now uses tabs (Progress | Logs | Settings) for better fit",
+        "\ud83d\udd14 WebSocket reconnect toast notifications when connection restored",
+        "\ud83d\udd17 Sync button now opens SyncProgressDialog with real-time logs",
+        "\ud83d\udcca broadcastDetailedLog() sends structured log data with context",
+        "\ud83d\udcdd Memory updated with logging requirements and error modal standards"
       ]
     },
     {
@@ -474,10 +484,10 @@
       "date": "2026-02-04",
       "title": "Backup Logging & Reusable LogViewer",
       "changes": [
-        "📡 WSHub added to backup service for real-time log streaming",
-        "📋 New reusable LogViewer component for publish, sync, and backup dialogs",
-        "🔧 Fixed version.json malformed JSON structure (4th occurrence)",
-        "📜 BroadcastBackupLog calls during backup creation, restore, and cleanup"
+        "\ud83d\udce1 WSHub added to backup service for real-time log streaming",
+        "\ud83d\udccb New reusable LogViewer component for publish, sync, and backup dialogs",
+        "\ud83d\udd27 Fixed version.json malformed JSON structure (4th occurrence)",
+        "\ud83d\udcdc BroadcastBackupLog calls during backup creation, restore, and cleanup"
       ]
     },
     {
@@ -485,15 +495,15 @@
       "date": "2026-02-04",
       "title": "Enhanced Error Modal & Live Publish Logs",
       "changes": [
-        "📊 Error modal now has 6 tabs: Overview, Backend, Request, Stack, Context, Fixes",
-        "🔧 Backend logs tab shows execution logs and Go stack traces",
-        "🎨 JSON syntax highlighting in Context tab (keys blue, strings green, numbers amber)",
-        "📜 Live log streaming in Publish dialog with auto-scroll",
-        "⚙️ Upload mode toggle (ZIP vs file-by-file) directly in publish dialog",
-        "🔗 Site URL displayed in publish dialog with direct link to open site",
-        "📋 Copy Full Report now includes backend logs and stack traces",
-        "🐛 Fixed Badge using <div> causing validateDOMNesting warning (now uses <span>)",
-        "📚 Updated error-reporting-standards.md with new requirements"
+        "\ud83d\udcca Error modal now has 6 tabs: Overview, Backend, Request, Stack, Context, Fixes",
+        "\ud83d\udd27 Backend logs tab shows execution logs and Go stack traces",
+        "\ud83c\udfa8 JSON syntax highlighting in Context tab (keys blue, strings green, numbers amber)",
+        "\ud83d\udcdc Live log streaming in Publish dialog with auto-scroll",
+        "\u2699\ufe0f Upload mode toggle (ZIP vs file-by-file) directly in publish dialog",
+        "\ud83d\udd17 Site URL displayed in publish dialog with direct link to open site",
+        "\ud83d\udccb Copy Full Report now includes backend logs and stack traces",
+        "\ud83d\udc1b Fixed Badge using <div> causing validateDOMNesting warning (now uses <span>)",
+        "\ud83d\udcda Updated error-reporting-standards.md with new requirements"
       ]
     },
     {
@@ -501,8 +511,8 @@
       "date": "2026-02-04",
       "title": "NULL DateTime Fix & Error Modal Integration",
       "changes": [
-        "🔧 Fixed NULL datetime fields causing scan failures",
-        "📊 Enhanced error modal with trigger context display"
+        "\ud83d\udd27 Fixed NULL datetime fields causing scan failures",
+        "\ud83d\udcca Enhanced error modal with trigger context display"
       ]
     },
     {
@@ -510,13 +520,13 @@
       "date": "2026-02-04",
       "title": "DB Operations & Bidirectional Sync Fix",
       "changes": [
-        "🔧 Created shared dbops package with stack traces, table names, and affected rows logging",
-        "📊 CreateSeedMapping now returns (created bool, error) with proper row count validation",
-        "🔗 Fixed bidirectional plugin↔site sync: UI now fetches fresh mappings from API",
-        "✅ Colorful gradient success toasts for save operations",
-        "🌱 Enhanced seeding logs: === SEEDING START/COMPLETE === with full traceability",
-        "📋 All DB operations now log table name, operation type, and caller info",
-        "⚠️ Stack trace capture on all database errors for debugging"
+        "\ud83d\udd27 Created shared dbops package with stack traces, table names, and affected rows logging",
+        "\ud83d\udcca CreateSeedMapping now returns (created bool, error) with proper row count validation",
+        "\ud83d\udd17 Fixed bidirectional plugin\u2194site sync: UI now fetches fresh mappings from API",
+        "\u2705 Colorful gradient success toasts for save operations",
+        "\ud83c\udf31 Enhanced seeding logs: === SEEDING START/COMPLETE === with full traceability",
+        "\ud83d\udccb All DB operations now log table name, operation type, and caller info",
+        "\u26a0\ufe0f Stack trace capture on all database errors for debugging"
       ]
     },
     {
@@ -524,12 +534,12 @@
       "date": "2026-02-04",
       "title": "Migration Logging & Mapping Sync",
       "changes": [
-        "📊 Detailed logging for all migration steps with version tracking",
-        "🌱 Comprehensive seeding logs showing site/plugin creation and mapping",
-        "🔧 Simplified log format: [vX.X.X - TIME] message (LEVEL file:line)",
-        "⚠️ Warning logs for failed mapping attempts with error details",
-        "🔗 Fixed bidirectional plugin↔site mapping sync",
-        "✅ Success toast notifications on save operations"
+        "\ud83d\udcca Detailed logging for all migration steps with version tracking",
+        "\ud83c\udf31 Comprehensive seeding logs showing site/plugin creation and mapping",
+        "\ud83d\udd27 Simplified log format: [vX.X.X - TIME] message (LEVEL file:line)",
+        "\u26a0\ufe0f Warning logs for failed mapping attempts with error details",
+        "\ud83d\udd17 Fixed bidirectional plugin\u2194site mapping sync",
+        "\u2705 Success toast notifications on save operations"
       ]
     },
     {
@@ -537,12 +547,12 @@
       "date": "2026-02-04",
       "title": "Frontend Logging & Resilience System",
       "changes": [
-        "🐛 Fixed malformed JSON in version changelog causing parse errors",
-        "📊 Frontend function-level logging with file paths and line numbers",
-        "🔄 Automatic retry with exponential backoff for failed API operations",
-        "⚡ Circuit breaker prevents repeated calls to failing functions",
-        "⚙️ Configurable retry and throttling via Settings UI and seed config",
-        "📚 New logging-and-resilience.md architecture documentation"
+        "\ud83d\udc1b Fixed malformed JSON in version changelog causing parse errors",
+        "\ud83d\udcca Frontend function-level logging with file paths and line numbers",
+        "\ud83d\udd04 Automatic retry with exponential backoff for failed API operations",
+        "\u26a1 Circuit breaker prevents repeated calls to failing functions",
+        "\u2699\ufe0f Configurable retry and throttling via Settings UI and seed config",
+        "\ud83d\udcda New logging-and-resilience.md architecture documentation"
       ]
     },
     {
@@ -550,11 +560,11 @@
       "date": "2026-02-04",
       "title": "Mapping Persistence & Seed Fixes",
       "changes": [
-        "🔧 Fixed plugin-site mappings not persisting after save in Plugins and Sites views",
-        "🌱 Seeding now ensures all plugins are mapped to all sites on EVERY startup",
-        "📡 Publish progress WebSocket events correctly update UI stages",
-        "✅ Plugin list correctly includes mappings for display",
-        "🔄 Mappings are created idempotently using INSERT OR IGNORE"
+        "\ud83d\udd27 Fixed plugin-site mappings not persisting after save in Plugins and Sites views",
+        "\ud83c\udf31 Seeding now ensures all plugins are mapped to all sites on EVERY startup",
+        "\ud83d\udce1 Publish progress WebSocket events correctly update UI stages",
+        "\u2705 Plugin list correctly includes mappings for display",
+        "\ud83d\udd04 Mappings are created idempotently using INSERT OR IGNORE"
       ]
     },
     {
@@ -562,12 +572,12 @@
       "date": "2026-02-04",
       "title": "Enhanced Error Reporting System",
       "changes": [
-        "📊 Full stack trace parsing with invocation chain visualization",
-        "🔍 Parsed stack frames table view in Error Modal",
-        "🏷️ Trigger context badges show Component → Action",
-        "📋 Enhanced error reports with call chain and parsed frames",
-        "✅ Mandatory source/triggerComponent/triggerAction in handlers",
-        "📚 New error-reporting-standards.md documentation"
+        "\ud83d\udcca Full stack trace parsing with invocation chain visualization",
+        "\ud83d\udd0d Parsed stack frames table view in Error Modal",
+        "\ud83c\udff7\ufe0f Trigger context badges show Component \u2192 Action",
+        "\ud83d\udccb Enhanced error reports with call chain and parsed frames",
+        "\u2705 Mandatory source/triggerComponent/triggerAction in handlers",
+        "\ud83d\udcda New error-reporting-standards.md documentation"
       ]
     },
     {
@@ -575,10 +585,10 @@
       "date": "2026-02-04",
       "title": "Mapping Persistence & Publish Password Fix",
       "changes": [
-        "🔧 Fixed site→plugin mapping persistence (JSON float64→int64 conversion)",
-        "🔐 Publish service now correctly decrypts site passwords",
-        "📡 Added SitePasswordDecryptor interface for proper credential handling",
-        "🔄 Version bump triggers re-seed to ensure all-to-all mappings"
+        "\ud83d\udd27 Fixed site\u2192plugin mapping persistence (JSON float64\u2192int64 conversion)",
+        "\ud83d\udd10 Publish service now correctly decrypts site passwords",
+        "\ud83d\udce1 Added SitePasswordDecryptor interface for proper credential handling",
+        "\ud83d\udd04 Version bump triggers re-seed to ensure all-to-all mappings"
       ]
     },
     {
@@ -586,11 +596,11 @@
       "date": "2026-02-04",
       "title": "Mapping & Publish Mode Fixes",
       "changes": [
-        "🔗 All seeded plugins now map to ALL seeded sites automatically",
-        "📦 Added Upload Mode setting (file-by-file or ZIP)",
-        "🔌 Added Plugins tab to Add Site / Edit Site dialogs for one-to-many management",
-        "🛡️ Improved null-check and error source reporting to prevent blank screens",
-        "📤 Publish button remains enabled; shows guidance when no sites mapped"
+        "\ud83d\udd17 All seeded plugins now map to ALL seeded sites automatically",
+        "\ud83d\udce6 Added Upload Mode setting (file-by-file or ZIP)",
+        "\ud83d\udd0c Added Plugins tab to Add Site / Edit Site dialogs for one-to-many management",
+        "\ud83d\udee1\ufe0f Improved null-check and error source reporting to prevent blank screens",
+        "\ud83d\udce4 Publish button remains enabled; shows guidance when no sites mapped"
       ]
     },
     {
@@ -598,14 +608,14 @@
       "date": "2026-02-04",
       "title": "Stability Fixes & Seeding Improvements",
       "changes": [
-        "🔧 Fixed blank screen when clicking Add Site / Edit Site dialogs",
-        "🔗 Seeded plugins now correctly linked to seeded sites",
-        "✅ Fixed checkbox double-toggle in plugin-site mapping dialogs",
-        "📤 Sync and Publish buttons now always visible (disabled if no sites mapped)",
-        "🟢 Seeded sites default to Connected status for quick testing",
-        "🌐 URL normalization in seed config (strips /wp-admin, enforces HTTPS)",
-        "🔄 WebSocket reconnection stability improvements",
-        "⚠️ Global unhandled promise rejection handler with detailed error modal"
+        "\ud83d\udd27 Fixed blank screen when clicking Add Site / Edit Site dialogs",
+        "\ud83d\udd17 Seeded plugins now correctly linked to seeded sites",
+        "\u2705 Fixed checkbox double-toggle in plugin-site mapping dialogs",
+        "\ud83d\udce4 Sync and Publish buttons now always visible (disabled if no sites mapped)",
+        "\ud83d\udfe2 Seeded sites default to Connected status for quick testing",
+        "\ud83c\udf10 URL normalization in seed config (strips /wp-admin, enforces HTTPS)",
+        "\ud83d\udd04 WebSocket reconnection stability improvements",
+        "\u26a0\ufe0f Global unhandled promise rejection handler with detailed error modal"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -616,13 +626,13 @@
       "date": "2026-02-04",
       "title": "Version History & Rollback",
       "changes": [
-        "📜 Version history tracking for each publish operation",
-        "⏪ Rollback functionality to restore previous plugin versions",
-        "🗄️ Database migration v5 adds PluginVersions table",
-        "📝 API endpoints for listing versions and triggering rollback",
-        "🔔 WebSocket events for version creation and rollback status",
-        "🖥️ Version History panel on plugin cards with collapsible UI",
-        "🗑️ Delete individual version entries with confirmation dialog"
+        "\ud83d\udcdc Version history tracking for each publish operation",
+        "\u23ea Rollback functionality to restore previous plugin versions",
+        "\ud83d\uddc4\ufe0f Database migration v5 adds PluginVersions table",
+        "\ud83d\udcdd API endpoints for listing versions and triggering rollback",
+        "\ud83d\udd14 WebSocket events for version creation and rollback status",
+        "\ud83d\udda5\ufe0f Version History panel on plugin cards with collapsible UI",
+        "\ud83d\uddd1\ufe0f Delete individual version entries with confirmation dialog"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -633,12 +643,12 @@
       "date": "2026-02-04",
       "title": "Auto-Publish, Live Logs & Encryption Fix",
       "changes": [
-        "⚡ Auto-publish: Plugins with autoPublish flag auto-deploy on file changes",
-        "📺 Live Logs page connected to WebSocket for real-time backend events",
-        "🔐 Fixed seed password encryption - now uses proper AES-256-GCM",
-        "📦 Shared crypto package for consistent encryption across modules",
-        "🔔 WebSocket events for auto-publish lifecycle (triggered, complete, failed)",
-        "📊 Logs page shows connection status with Live/Disconnected badge"
+        "\u26a1 Auto-publish: Plugins with autoPublish flag auto-deploy on file changes",
+        "\ud83d\udcfa Live Logs page connected to WebSocket for real-time backend events",
+        "\ud83d\udd10 Fixed seed password encryption - now uses proper AES-256-GCM",
+        "\ud83d\udce6 Shared crypto package for consistent encryption across modules",
+        "\ud83d\udd14 WebSocket events for auto-publish lifecycle (triggered, complete, failed)",
+        "\ud83d\udcca Logs page shows connection status with Live/Disconnected badge"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -649,11 +659,11 @@
       "date": "2026-02-04",
       "title": "Bulk Operations & Git Integration",
       "changes": [
-        "✅ Bulk plugin selection with checkbox UI",
-        "📦 Bulk actions: Enable Watch, Disable Watch, Sync All, Git Pull, Delete",
-        "🔀 Git panel on plugin cards with status, commit, and push",
-        "📊 Git status shows branch, ahead/behind, staged/modified/untracked counts",
-        "🚀 Backend endpoints for git status, commit, and push operations"
+        "\u2705 Bulk plugin selection with checkbox UI",
+        "\ud83d\udce6 Bulk actions: Enable Watch, Disable Watch, Sync All, Git Pull, Delete",
+        "\ud83d\udd00 Git panel on plugin cards with status, commit, and push",
+        "\ud83d\udcca Git status shows branch, ahead/behind, staged/modified/untracked counts",
+        "\ud83d\ude80 Backend endpoints for git status, commit, and push operations"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -664,11 +674,11 @@
       "date": "2026-02-04",
       "title": "Categories, Filtering & Publish Progress",
       "changes": [
-        "📊 Real-time publish progress dialog with backup/package/upload/activate stages",
-        "🏷️ Category system for sites and plugins (Production, Staging, Development + custom)",
-        "🔍 Category-based filtering UI on Sites and Plugins pages",
-        "🗑️ Removed standalone Sync page - sync features consolidated into Plugins page",
-        "✨ Category badges display on site and plugin cards"
+        "\ud83d\udcca Real-time publish progress dialog with backup/package/upload/activate stages",
+        "\ud83c\udff7\ufe0f Category system for sites and plugins (Production, Staging, Development + custom)",
+        "\ud83d\udd0d Category-based filtering UI on Sites and Plugins pages",
+        "\ud83d\uddd1\ufe0f Removed standalone Sync page - sync features consolidated into Plugins page",
+        "\u2728 Category badges display on site and plugin cards"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -679,11 +689,11 @@
       "date": "2026-02-04",
       "title": "Sync & Publish UI",
       "changes": [
-        "🔄 Sync button on plugin cards to check status with mapped sites",
-        "📤 Publish button with site selection dialog",
-        "📑 Plugins tab in EditSiteDialog for managing relationships",
-        "🔁 Retest Connection button in EditSiteDialog",
-        "🔧 Fixed API endpoint mismatches (scan, git pull)"
+        "\ud83d\udd04 Sync button on plugin cards to check status with mapped sites",
+        "\ud83d\udce4 Publish button with site selection dialog",
+        "\ud83d\udcd1 Plugins tab in EditSiteDialog for managing relationships",
+        "\ud83d\udd01 Retest Connection button in EditSiteDialog",
+        "\ud83d\udd27 Fixed API endpoint mismatches (scan, git pull)"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -694,11 +704,11 @@
       "date": "2026-02-04",
       "title": "Plugin-Site Relationships",
       "changes": [
-        "🔗 Many-to-many plugin-site linking with bulk update API",
-        "📦 Plugin cards show linked sites with badges",
-        "🌐 Site cards show linked plugins",
-        "📝 Remote slug configuration in mapping dialog",
-        "🔄 Full CRUD for plugin mappings (create, update, delete)"
+        "\ud83d\udd17 Many-to-many plugin-site linking with bulk update API",
+        "\ud83d\udce6 Plugin cards show linked sites with badges",
+        "\ud83c\udf10 Site cards show linked plugins",
+        "\ud83d\udcdd Remote slug configuration in mapping dialog",
+        "\ud83d\udd04 Full CRUD for plugin mappings (create, update, delete)"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -709,11 +719,11 @@
       "date": "2026-02-04",
       "title": "Site UI Improvements & Connection Persistence",
       "changes": [
-        "📑 Tabbed Site dialog (Basic + Connection tabs) for reduced scrolling",
-        "✅ Green 'Connected' badge persists after successful connection test",
-        "🔄 Retest button on connected sites for manual refresh",
-        "💾 Save button always visible (test optional but recommended)",
-        "🎨 Improved site cards with status badges and action buttons"
+        "\ud83d\udcd1 Tabbed Site dialog (Basic + Connection tabs) for reduced scrolling",
+        "\u2705 Green 'Connected' badge persists after successful connection test",
+        "\ud83d\udd04 Retest button on connected sites for manual refresh",
+        "\ud83d\udcbe Save button always visible (test optional but recommended)",
+        "\ud83c\udfa8 Improved site cards with status badges and action buttons"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -724,11 +734,11 @@
       "date": "2026-02-04",
       "title": "API Connectivity & Diagnostics Fix",
       "changes": [
-        "🔧 Backend health endpoint now returns standard envelope format",
-        "📡 Added GET /api/v1 index endpoint (prevents 404 on base URL)",
-        "🔍 BackendStatus detection logic fixed: 2xx JSON = connected",
-        "📋 Enhanced diagnostics: shows raw env vars + resolved URLs",
-        "📖 Error modal now displays UI origin, API base (absolute), raw VITE env vars"
+        "\ud83d\udd27 Backend health endpoint now returns standard envelope format",
+        "\ud83d\udce1 Added GET /api/v1 index endpoint (prevents 404 on base URL)",
+        "\ud83d\udd0d BackendStatus detection logic fixed: 2xx JSON = connected",
+        "\ud83d\udccb Enhanced diagnostics: shows raw env vars + resolved URLs",
+        "\ud83d\udcd6 Error modal now displays UI origin, API base (absolute), raw VITE env vars"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -739,10 +749,10 @@
       "date": "2026-02-04",
       "title": "Diagnostics & About Panel",
       "changes": [
-        "🛠️ Copy Diagnostics button for quick support info",
-        "ℹ️ About panel in Settings with app/script versions",
-        "🔧 Build metadata (git commit, build time) in version.json",
-        "📋 Backend now logs app name + version at startup"
+        "\ud83d\udee0\ufe0f Copy Diagnostics button for quick support info",
+        "\u2139\ufe0f About panel in Settings with app/script versions",
+        "\ud83d\udd27 Build metadata (git commit, build time) in version.json",
+        "\ud83d\udccb Backend now logs app name + version at startup"
       ],
       "knownIssues": []
     },
@@ -751,11 +761,11 @@
       "date": "2026-02-04",
       "title": "Version Tracking & Error Improvements",
       "changes": [
-        "🆕 What's New popup with changelog, roadmap, and version history",
-        "🔧 Backend Disconnected banner now has 'View Details' button",
-        "📋 PowerShell script versioning (v1.1.0) with dedicated changelog",
-        "🔄 Fixed -r rebuild flag to properly clean → install → build",
-        "⚙️ Added .env file for VITE_API_URL configuration"
+        "\ud83c\udd95 What's New popup with changelog, roadmap, and version history",
+        "\ud83d\udd27 Backend Disconnected banner now has 'View Details' button",
+        "\ud83d\udccb PowerShell script versioning (v1.1.0) with dedicated changelog",
+        "\ud83d\udd04 Fixed -r rebuild flag to properly clean \u2192 install \u2192 build",
+        "\u2699\ufe0f Added .env file for VITE_API_URL configuration"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
@@ -766,12 +776,12 @@
       "date": "2026-02-04",
       "title": "Initial Release",
       "changes": [
-        "🎉 Site management with WordPress REST API integration",
-        "🔌 Plugin manager with file watcher support",
-        "🔄 Real-time sync dashboard",
-        "🛡️ Global error handling with detailed modal",
-        "⚙️ Configurable backend with 12-hour timestamp format",
-        "🔧 PowerShell runner with -r rebuild flag"
+        "\ud83c\udf89 Site management with WordPress REST API integration",
+        "\ud83d\udd0c Plugin manager with file watcher support",
+        "\ud83d\udd04 Real-time sync dashboard",
+        "\ud83d\udee1\ufe0f Global error handling with detailed modal",
+        "\u2699\ufe0f Configurable backend with 12-hour timestamp format",
+        "\ud83d\udd27 PowerShell runner with -r rebuild flag"
       ],
       "knownIssues": []
     }
