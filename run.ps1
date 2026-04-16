@@ -675,8 +675,15 @@ if ($uploadcustomplugin -ne "" -or $uploadcustomplugin -eq "" -and $MyInvocation
     $isUcpActive = $MyInvocation.BoundParameters.ContainsKey('uploadcustomplugin')
     if ($isUcpActive) {
         $ucpSlugValue = $uploadcustomplugin
+
+        if ($ucpSlugValue -in @('-ap', '--all-plugins', '-allplugins')) {
+            $allplugins = $true
+            $ucpSlugValue = ""
+        }
+
         $isListMode = $ucpSlugValue -eq "list" -or $ucpSlugValue -eq "-list"
-        
+        $isHelpMode = $ucpSlugValue -eq "help" -or $ucpSlugValue -eq "-help"
+
         Invoke-CustomPluginUploadMode `
             -PluginSlug $ucpSlugValue `
             -AllSites:$allcustomsites `
@@ -684,6 +691,7 @@ if ($uploadcustomplugin -ne "" -or $uploadcustomplugin -eq "" -and $MyInvocation
             -SkipGitPull:$skipgitpull `
             -SiteName $site `
             -ListPlugins:$isListMode `
+            -ShowHelp:$isHelpMode `
             -VerboseMode:$verbose
     }
 }

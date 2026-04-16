@@ -80,24 +80,18 @@ function Invoke-CustomPluginUploadMode {
             Write-Host "--- [$slugIndex/$($slugs.Count)] $slug ---" -ForegroundColor Cyan
         }
 
-        $scriptArgs = @("-Slug", $slug)
-
-        if ($AllSites) {
-            $scriptArgs += "-All"
-        } elseif ($SiteName -ne "") {
-            $scriptArgs += @("-Site", $SiteName)
+        try {
+            & $customUploadScript `
+                -Slug $slug `
+                -All:$AllSites `
+                -Site $SiteName `
+                -VerboseOutput:$VerboseMode `
+                -SkipGitPull:$SkipGitPull
+            $exitCode = $LASTEXITCODE
+        } catch {
+            Write-Host "FAILED - $slug - $($_.Exception.Message)" -ForegroundColor Red
+            $exitCode = 5
         }
-
-        if ($VerboseMode) {
-            $scriptArgs += "-VerboseOutput"
-        }
-
-        if ($SkipGitPull) {
-            $scriptArgs += "-SkipGitPull"
-        }
-
-        & $customUploadScript @scriptArgs
-        $exitCode = $LASTEXITCODE
 
         if ($exitCode -eq 0) {
             $batchSuccess++
