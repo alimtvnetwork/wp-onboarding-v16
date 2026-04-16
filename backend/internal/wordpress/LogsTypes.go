@@ -8,30 +8,30 @@ package wordpress
 // The PHP returns: { Success, logs: { log_file, error_file, stacktrace_file, archive_count }, database: {...} }
 type LogsStatusPhpResponse struct {
 	Success  bool                    `json:"Success"`
-	Logs     LogsStatusPhpLogsBlock  `json:"logs"`
-	Database LogsStatusPhpDbBlock    `json:"database"`
+	Logs     LogsStatusPhpLogsBlock  `json:"Logs"`
+	Database LogsStatusPhpDbBlock    `json:"Database"`
 }
 
-// LogsStatusPhpLogsBlock maps the "logs" object from PHP.
+// LogsStatusPhpLogsBlock maps the "Logs" object from PHP.
 type LogsStatusPhpLogsBlock struct {
-	LogFile        LogsStatusPhpFileInfo `json:"log_file"`
-	ErrorFile      LogsStatusPhpFileInfo `json:"error_file"`
-	StacktraceFile LogsStatusPhpFileInfo `json:"stacktrace_file"`
-	ArchiveCount   int                   `json:"archive_count"`
+	LogFile        LogsStatusPhpFileInfo `json:"LogFile"`
+	ErrorFile      LogsStatusPhpFileInfo `json:"ErrorFile"`
+	StacktraceFile LogsStatusPhpFileInfo `json:"StacktraceFile"`
+	ArchiveCount   int                   `json:"ArchiveCount"`
 }
 
 // LogsStatusPhpFileInfo maps a single file entry from PHP logs/status.
 type LogsStatusPhpFileInfo struct {
-	Exists       bool   `json:"exists"`
-	SizeBytes    int64  `json:"size_bytes"`
-	LastModified string `json:"last_modified"`
-	LineCount    int    `json:"line_count"`
+	Exists       bool   `json:"Exists"`
+	SizeBytes    int64  `json:"SizeBytes"`
+	LastModified string `json:"LastModified"`
+	LineCount    int    `json:"LineCount"`
 }
 
-// LogsStatusPhpDbBlock maps the "database" object from PHP.
+// LogsStatusPhpDbBlock maps the "Database" object from PHP.
 type LogsStatusPhpDbBlock struct {
-	TransactionCount   int `json:"transaction_count"`
-	ErrorSessionCount  int `json:"error_session_count"`
+	TransactionCount   int `json:"TransactionCount"`
+	ErrorSessionCount  int `json:"ErrorSessionCount"`
 }
 
 // --- Frontend-facing types (sent to React) ---

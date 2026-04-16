@@ -17,10 +17,10 @@ type LogsRetrievePhpResponse struct {
 
 // LogsRetrieveSettings holds the request settings echoed back by PHP.
 type LogsRetrieveSettings struct {
-	IncludeInfoLog    bool `json:"include_info_log"`
-	IncludeErrorLog   bool `json:"include_error_log"`
-	IncludeStacktrace bool `json:"include_stacktrace"`
-	MaxLines          int  `json:"max_lines"`
+	IncludeInfoLog    bool `json:"IncludeInfoLog"`
+	IncludeErrorLog   bool `json:"IncludeErrorLog"`
+	IncludeStacktrace bool `json:"IncludeStacktrace"`
+	MaxLines          int  `json:"MaxLines"`
 }
 
 // LogsRetrieveFileData represents a single log file's content and metadata.
