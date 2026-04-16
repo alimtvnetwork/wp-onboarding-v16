@@ -152,14 +152,44 @@ else → use paths.unix
 
 If the resolved path does not exist, abort with a clear error.
 
-### 3. ZIP Creation
+### 3. Git Pull (auto-detected)
+
+Before zipping, the script checks if the plugin folder is inside a Git repository:
+
+1. Run `git -C <pluginFolder> rev-parse --is-inside-work-tree` to detect if it's a Git repo
+2. If **not a Git repo** → skip silently, proceed to PHP syntax check
+3. If **is a Git repo** → run `git -C <pluginFolder> pull --rebase`
+   - **On success:** show current branch + short commit hash, proceed
+   - **On failure:** print a **warning** (not fatal) and continue with upload
+4. If `-skipgitpull` flag is set → skip Git pull entirely with a notice
+
+```
+  Git repo detected (branch: main)
+  Running git pull --rebase...
+  Git pull OK (main @ abc1234)
+```
+
+```
+  Git pull WARNING: <error message>
+  Continuing with upload...
+```
+
+**Rationale:** Ensures the latest code is always uploaded. Failure is non-fatal because the developer may be working offline or on a local-only branch.
+
+### 4. PHP Syntax Check (skip vendor folder)
+
+- Run `php -l` on all `.php` files in the plugin folder
+- Skip `vendor/` folder and any folders listed in `settings.json → phpCheck.skipFolders`
+- Abort with exit code 4 if any syntax errors are found
+
+### 5. ZIP Creation
 
 - Use `[System.IO.Compression.ZipFile]::CreateFromDirectory()` with `CompressionLevel::SmallestSize`
 - Root folder inside ZIP must be the plugin `slug`
 - Output ZIP to `$env:TEMP\<slug>.zip` (or OS temp equivalent)
 - Consistent with project ZIP creation rules (see `mem://architecture/backend/zip-creation-rules`)
 
-### 4. Upload
+### 6. Upload
 
 - Delegate to `upload-plugin-v2.ps1` with direct parameters:
   ```
@@ -169,7 +199,7 @@ If the resolved path does not exist, abort with a clear error.
 - If `-site <name>`: find matching site by name
 - Default: use the site matching `defaultSite`
 
-### 5. Post-Upload Ping Verification
+### 7. Post-Upload Ping Verification
 
 If the plugin has a `pingEndpoint` configured:
 
@@ -185,7 +215,7 @@ If the plugin has a `pingEndpoint` configured:
     Version: 1.0.0
 ```
 
-### 6. Multi-Plugin Batch Upload
+### 8. Multi-Plugin Batch Upload
 
 When comma-separated slugs are provided (e.g., `alim,other`):
 
@@ -202,7 +232,30 @@ When comma-separated slugs are provided (e.g., `alim,other`):
 .\run.ps1 -ucp alim,other-plugin -a
 ```
 
-### 7. Cleanup
+### 9. Timing
+
+Every major step is timed using `[System.Diagnostics.Stopwatch]`:
+
+| Step | Timer |
+|------|-------|
+| Git pull | Elapsed time for pull --rebase |
+| PHP syntax check | Elapsed time for all `php -l` runs |
+| ZIP creation | Elapsed time for compression |
+| Upload (per site) | Elapsed time per site upload |
+| **Total** | End-to-end elapsed from start to finish |
+
+All timings are displayed in human-readable format (e.g., `1.23s`, `45.6s`).
+
+```
+  Git pull OK (main @ abc1234) — 0.8s
+  PHP syntax OK: 42 files checked — 1.2s
+  ZIP created: C:\...\alim.zip (1.23 MB) — 0.5s
+  [1/3] SUCCESS - alim uploaded to Test V2 — 3.4s
+  ...
+  Total elapsed: 8.2s
+```
+
+### 10. Cleanup
 
 - Delete temp ZIP after successful upload
 - Preserve ZIP on failure for debugging
