@@ -533,12 +533,16 @@ if ($failCount -gt 0 -and (Test-Path $zipPath)) {
 # ============================================================================
 # SUMMARY
 # ============================================================================
+$totalWatch.Stop()
+$totalElapsed = [math]::Round($totalWatch.Elapsed.TotalSeconds, 1)
+
 Write-Host "========================================" -ForegroundColor Cyan
 if ($failCount -eq 0) {
     Write-Host "  ${Slug}: $successCount/$totalSites sites completed successfully" -ForegroundColor Green
 } else {
     Write-Host "  ${Slug}: $successCount succeeded, $failCount failed (out of $totalSites)" -ForegroundColor Red
 }
+Write-Host "  Total elapsed: ${totalElapsed}s" -ForegroundColor DarkGray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
