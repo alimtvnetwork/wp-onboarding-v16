@@ -485,6 +485,14 @@ if ($sitesettings) {
 }
 
 # ============================================================================
+# WP DEBUG TOGGLE (early exit)
+# ============================================================================
+$isWpdInvoked = $PSBoundParameters.ContainsKey('wpd')
+if ($isWpdInvoked) {
+    Invoke-WpDebugMode -Action $wpd -VerboseMode:$verbose
+}
+
+# ============================================================================
 # PLUGIN STATUS CHECK (early exit — skip if chained with -uas)
 # ============================================================================
 if (($pluginstatus -or $pas) -and -not $uas) {
