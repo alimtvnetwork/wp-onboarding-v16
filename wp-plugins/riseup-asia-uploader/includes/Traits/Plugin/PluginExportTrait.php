@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use RiseupAsia\Upload\UploadIgnore;
 use WP_REST_Response;
-use Throwable;
+
 use ZipArchive;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
