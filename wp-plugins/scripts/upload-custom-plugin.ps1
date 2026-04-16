@@ -31,7 +31,7 @@ param(
     [switch]$Activate = $true,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Verbose = $false,
+    [switch]$VerboseOutput = $false,
 
     [Parameter(Mandatory=$false)]
     [switch]$Help = $false
@@ -163,7 +163,7 @@ if ($List) {
 }
 
 # ============================================================================
-# SLUG VALIDATION
+# SLUG VALIDATION + DIRECT FOLDER PATH FALLBACK
 # ============================================================================
 if ([string]::IsNullOrWhiteSpace($Slug)) {
     Write-Host "ERROR: Plugin slug is required. Use -Slug 'name' or .\run.ps1 -ucp name" -ForegroundColor Red
@@ -171,34 +171,48 @@ if ([string]::IsNullOrWhiteSpace($Slug)) {
     exit 2
 }
 
-# Find plugin in config
+$isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
+$isDirectPath = $false
+$pluginFolderPath = ""
+$pingEndpoint = ""
+
+# Try to find plugin in config by slug
 $plugin = $config.plugins | Where-Object { $_.slug -eq $Slug }
 
-if (-not $plugin) {
-    Write-Host "ERROR: Plugin '$Slug' not found in custom-plugins.json" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Available plugins:" -ForegroundColor Yellow
-    foreach ($p in $config.plugins) {
-        Write-Host "  - $($p.slug)" -ForegroundColor Gray
+if ($plugin) {
+    # --- Found in config: resolve OS-aware path ---
+    $pluginFolderPath = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
+    $pingEndpoint = if ($plugin.pingEndpoint) { $plugin.pingEndpoint } else { "" }
+
+    if ([string]::IsNullOrWhiteSpace($pluginFolderPath)) {
+        $osLabel = if ($isWindows) { "windows" } else { "unix" }
+        Write-Host "ERROR: No '$osLabel' path configured for plugin '$Slug'" -ForegroundColor Red
+        exit 3
     }
-    exit 2
-}
 
-# ============================================================================
-# OS-AWARE PATH RESOLUTION
-# ============================================================================
-$isWindows = ($IsWindows -or $env:OS -eq "Windows_NT")
-$pluginFolderPath = if ($isWindows) { $plugin.paths.windows } else { $plugin.paths.unix }
-
-if ([string]::IsNullOrWhiteSpace($pluginFolderPath)) {
-    $osLabel = if ($isWindows) { "windows" } else { "unix" }
-    Write-Host "ERROR: No '$osLabel' path configured for plugin '$Slug'" -ForegroundColor Red
-    exit 3
-}
-
-if (-not (Test-Path $pluginFolderPath)) {
-    Write-Host "ERROR: Plugin folder not found: $pluginFolderPath" -ForegroundColor Red
-    exit 3
+    if (-not (Test-Path $pluginFolderPath)) {
+        Write-Host "ERROR: Plugin folder not found: $pluginFolderPath" -ForegroundColor Red
+        exit 3
+    }
+} else {
+    # --- Not in config: treat $Slug as a direct folder path ---
+    if (Test-Path $Slug) {
+        $isDirectPath = $true
+        $pluginFolderPath = (Resolve-Path $Slug).Path
+        $Slug = Split-Path $pluginFolderPath -Leaf
+        Write-Host "  [DirectPath] Folder detected, using slug: $Slug" -ForegroundColor DarkCyan
+    } else {
+        Write-Host "ERROR: '$Slug' is not a registered plugin slug and not a valid folder path" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Registered plugins:" -ForegroundColor Yellow
+        foreach ($p in $config.plugins) {
+            Write-Host "  - $($p.slug)" -ForegroundColor Gray
+        }
+        Write-Host ""
+        Write-Host "Or provide a direct folder path:" -ForegroundColor Yellow
+        Write-Host "  .\run.ps1 -ucp 'D:\path\to\my-plugin'" -ForegroundColor Gray
+        exit 2
+    }
 }
 
 # ============================================================================
