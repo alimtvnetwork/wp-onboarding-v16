@@ -19,6 +19,7 @@ use WP_REST_Response;
 use QUpload\Enums\HttpStatusType;
 use QUpload\Enums\PluginConfigType;
 use QUpload\Enums\PhpNativeType;
+use QUpload\Enums\ResponseKeyType;
 
 trait DebugRoutesTrait
 {
