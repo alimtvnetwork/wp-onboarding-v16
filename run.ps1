@@ -52,7 +52,8 @@ param(
     [Alias('ucp')][string]$uploadcustomplugin = "",
     [Alias('a')][switch]$allcustomsites,
     [Alias('ap')][switch]$allplugins,
-    [switch]$skipgitpull
+    [switch]$skipgitpull,
+    [Alias('wpdebug')][string]$wpd = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
