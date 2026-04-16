@@ -26,14 +26,22 @@ use RiseupAsia\Snapshot\SnapshotImport;
 
 trait SnapshotImportStreamTrait {
 
+    /**
+     * Stream a snapshot ZIP file download.
+     *
+     * This handler uses header()+exit for binary streaming,
+     * so it cannot return a WP_REST_Response on success. The safeExecuteVoid
+     * wrapper catches any pre-stream exceptions via the Phase 3 error boundary.
+     */
     public function handleSnapshotDownloadFile(WP_REST_Request $request): ?WP_REST_Response {
         $validated = $this->validateAndResolveExport($request);
         if ($validated instanceof WP_REST_Response) {
-
             return $validated;
         }
 
-        $this->streamZipFile($validated['exportId'], $validated['export']);
+        $this->safeExecuteVoid(function() use ($validated) {
+            $this->streamZipFile($validated['exportId'], $validated['export']);
+        }, 'snapshot_download_file');
 
         return null;
     }
