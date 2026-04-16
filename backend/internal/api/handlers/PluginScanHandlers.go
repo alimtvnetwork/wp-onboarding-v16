@@ -94,7 +94,9 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 func respondScanWithDetection(w http.ResponseWriter, r *http.Request, scanResult scanDetectionInput) {
 	shouldCreateDetection := scanResult.Input.CreateDetection
 	if !shouldCreateDetection {
-		respondSuccess(w, scanResult.Result)
+		// Always return flat shape — never the bare *plugin.ScanResult — so the
+		// frontend sees a consistent response regardless of the createDetection flag.
+		respondSuccess(w, buildFlatScanResponse(scanResult.Result, false, ""))
 
 		return
 	}
