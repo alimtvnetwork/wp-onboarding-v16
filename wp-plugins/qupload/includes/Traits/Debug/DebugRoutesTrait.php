@@ -61,37 +61,39 @@ trait DebugRoutesTrait
             $category = $this->categorizeRoute($relativePath);
 
             $routes[] = [
-                'pattern'  => $pattern,
-                'path'     => $relativePath ?: '/',
-                'methods'  => array_values($methods),
-                'category' => $category,
+                ResponseKeyType::Pattern->value  => $pattern,
+                ResponseKeyType::Path->value     => $relativePath ?: '/',
+                ResponseKeyType::Methods->value  => array_values($methods),
+                ResponseKeyType::Category->value => $category,
             ];
         }
 
         usort($routes, function (array $a, array $b): int {
-            $catCmp = strcmp($a['category'], $b['category']);
+            $catKey = ResponseKeyType::Category->value;
+            $pathKey = ResponseKeyType::Path->value;
+            $catCmp = strcmp($a[$catKey], $b[$catKey]);
 
             if ($catCmp !== 0) {
                 return $catCmp;
             }
 
-            return strcmp($a['path'], $b['path']);
+            return strcmp($a[$pathKey], $b[$pathKey]);
         });
 
         $categories = [];
 
         foreach ($routes as $route) {
-            $cat = $route['category'];
+            $cat = $route[ResponseKeyType::Category->value];
             $categories[$cat] = ($categories[$cat] ?? 0) + 1;
         }
 
         return new WP_REST_Response([
-            'success'     => true,
-            'namespace'   => $namespace,
-            'totalRoutes' => count($routes),
-            'categories'  => $categories,
-            'routes'      => $routes,
-            'version'     => PluginConfigType::Version->value,
+            ResponseKeyType::Success->value     => true,
+            ResponseKeyType::Namespace->value   => $namespace,
+            ResponseKeyType::TotalRoutes->value => count($routes),
+            ResponseKeyType::Categories->value  => $categories,
+            ResponseKeyType::Routes->value      => $routes,
+            ResponseKeyType::Version->value     => PluginConfigType::Version->value,
         ], HttpStatusType::Ok->value);
     }
 
