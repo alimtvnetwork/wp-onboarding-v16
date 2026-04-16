@@ -1707,6 +1707,14 @@ if (-not $uploadSuccess -or $null -eq $response) {
     }
     Write-ErrorBody $errorBody "Riseup API Error"
     Write-ServerErrorBanner
+    if ($v2Diag.Upload.Status -eq "PENDING") {
+        Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "FAIL" -Summary $errorMessage
+        Add-V2DiagnosticDetail -Section $v2Diag.Upload -Detail "Endpoint: $uploadUrl"
+    }
+    if ($v2Diag.Verify.Status -eq "PENDING") {
+        Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "SKIP" -Summary "Verify not attempted because upload failed"
+    }
+    Write-V2DiagnosticReport -Diagnostics $v2Diag -PluginSlug $PluginSlug -SiteUrl $WordPressSiteURL
     Write-Host ""
     Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
     Write-Host ""
