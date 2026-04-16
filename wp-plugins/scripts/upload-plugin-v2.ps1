@@ -1451,6 +1451,11 @@ if (-not $uploadSuccess -or $null -eq $response) {
     }
 
     $uploadErrorSummary = if ($uploadAttemptErrors.Count -gt 0) { $uploadAttemptErrors -join " || " } else { "No response from any namespace" }
+    Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "FAIL" -Summary "All namespaces failed"
+    foreach ($attemptDetail in $uploadAttemptErrors) {
+        Add-V2DiagnosticDetail -Section $v2Diag.Upload -Detail $attemptDetail
+    }
+    Set-V2DiagnosticSection -Section $v2Diag.Verify -Status "SKIP" -Summary "Verify not attempted because upload failed"
     throw "Upload failed on all known Riseup namespaces: ${uploadErrorSummary}"
 }
 
