@@ -88,7 +88,7 @@ function Invoke-CustomPluginUploadMode {
         }
 
         if ($VerboseMode) {
-            $scriptArgs += "-Verbose"
+            $scriptArgs += "-VerboseOutput"
         }
 
         & $customUploadScript @scriptArgs
