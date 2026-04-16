@@ -36,6 +36,7 @@ wp-plugins/scripts/
 ```
 upload-plugin-v3.ps1 ───wraps──→ upload-plugin-v2.ps1 ───fallback──→ upload-plugin.ps1
 upload-plugin-custom.ps1 ──wraps──→ upload-plugin-v2.ps1
+upload-custom-plugin.ps1 ──wraps──→ upload-plugin-v2.ps1 (via custom-plugins.json)
 run.ps1 (project runner) ──calls──→ upload-plugin-v2.ps1
 ```
 
