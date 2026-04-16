@@ -1500,6 +1500,7 @@ if (-not $uploadSuccess -or $null -eq $response) {
     Write-Status "  ✓ PUBLISH COMPLETE!" -Color Green
     Write-Status "===============================================" -Color Green
     Write-Status ""
+    Set-V2DiagnosticSection -Section $v2Diag.Upload -Status "OK" -Summary "Upload succeeded via $activeNamespace"
     $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
     $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
     $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
