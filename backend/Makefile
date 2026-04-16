@@ -22,7 +22,7 @@ lint:
 	golangci-lint run
 
 # Run all custom lint scripts
-lint-all: lint-file-size lint-func-size lint-negative lint-imports lint-ge lint-json-tags lint-inline-if lint-typed-nil
+lint-all: lint-file-size lint-func-size lint-negative lint-imports lint-ge lint-json-tags lint-inline-if lint-typed-nil lint-response-shape
 	@echo "✅ All lint checks passed"
 
 # Individual lint targets
@@ -49,6 +49,9 @@ lint-inline-if:
 
 lint-typed-nil:
 	bash ../scripts/lint-typed-nil.sh
+
+lint-response-shape:
+	bash ../scripts/lint-response-shape.sh
 
 # Clean build artifacts
 clean:
