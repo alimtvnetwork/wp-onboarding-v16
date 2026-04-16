@@ -50,7 +50,6 @@ trait PluginExportTrait
             ]), HttpStatusType::Ok->value);
         }, 'export_self');
     }
-    }
 
     public function handleExportPlugin(WP_REST_Request $request): WP_REST_Response {
         $body = $this->extractValidBody($request);
