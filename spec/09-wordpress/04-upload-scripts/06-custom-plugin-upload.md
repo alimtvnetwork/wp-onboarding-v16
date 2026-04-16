@@ -1,15 +1,17 @@
 # Custom Plugin Upload — External Plugin Zipper & Uploader
 
 > **Script:** `wp-plugins/scripts/upload-custom-plugin.ps1`  
+> **Module:** `wp-plugins/scripts/modules/mode-custom-upload.ps1`  
 > **Config:** `wp-plugins/scripts/custom-plugins.json`  
-> **CLI Flag:** `-ucp` / `-upload-custom-plugin`  
-> **Status:** Spec Draft
+> **CLI Flag:** `-ucp` / `-uploadcustomplugin`  
+> **Version:** 1.1.0  
+> **Status:** Active
 
 ---
 
 ## Purpose
 
-Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tree) by reading their folder paths from a JSON config, zipping with best compression, and uploading via the existing Riseup Asia Uploader pipeline. Supports OS-aware paths (Windows / Unix) and multi-site deployment.
+Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tree) by reading their folder paths from a JSON config, zipping with best compression, and uploading via the existing Riseup Asia Uploader pipeline. Supports OS-aware paths (Windows / Unix), multi-site deployment, comma-separated batch uploads, direct folder paths, and post-upload ping verification.
 
 ---
 
@@ -21,10 +23,17 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 
 # Upload a single plugin to ALL configured sites
 .\run.ps1 -ucp alim -a
-.\run.ps1 -ucp alim -all
 
 # Upload a single plugin to a specific site
 .\run.ps1 -ucp alim -site "Test V1"
+
+# Upload multiple plugins (comma-separated)
+.\run.ps1 -ucp alim,other-plugin
+.\run.ps1 -ucp alim,other-plugin -a
+
+# Direct folder path (slug derived from folder name)
+.\run.ps1 -ucp "D:\wp-work\riseup-asia\wp-alim\alim"
+.\run.ps1 -ucp "/home/dev/wp-alim/alim" -a
 
 # List all registered custom plugins
 .\run.ps1 -ucp -list
@@ -37,8 +46,10 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| `-ucp <slug>` | `-upload-custom-plugin <slug>` | Upload the named custom plugin |
-| `-a` | `-all` | Upload to all configured sites instead of default |
+| `-ucp <slug>` | `-uploadcustomplugin <slug>` | Upload the named custom plugin |
+| `-ucp <path>` | — | Upload from a direct folder path (slug = folder name) |
+| `-ucp s1,s2` | — | Upload multiple plugins (comma-separated slugs) |
+| `-a` | `-allcustomsites` | Upload to all configured sites instead of default |
 | `-site <name>` | — | Upload to a specific site by name |
 | `-list` | — | List all registered custom plugins and their paths |
 | `-help` | — | Show custom plugin upload help |
@@ -48,7 +59,7 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 ## Configuration Schema
 
 **File:** `wp-plugins/scripts/custom-plugins.json`  
-**Not committed to git** (may contain local paths).
+**Not committed to git** (contains local paths and credentials).
 
 ```json
 {
@@ -81,7 +92,8 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
         "windows": "D:\\wp-work\\riseup-asia\\wp-alim\\alim",
         "unix": "/Users/dev/wp-work/riseup-asia/wp-alim/alim"
       },
-      "activate": true
+      "activate": true,
+      "pingEndpoint": "/wp-json/alim/v1/status"
     }
   ]
 }
@@ -115,12 +127,23 @@ Upload external WordPress plugins (plugins outside the managed `wp-plugins/` tre
 | `paths.windows` | String | **Yes** | Absolute Windows path to plugin folder |
 | `paths.unix` | String | **Yes** | Absolute Unix/macOS path to plugin folder |
 | `activate` | Boolean | No | Activate after upload (default: `true`) |
+| `pingEndpoint` | String | No | REST API endpoint suffix for post-upload verification |
 
 ---
 
 ## Behavior
 
-### 1. OS Detection & Path Resolution
+### 1. Slug Resolution (Config Lookup → Direct Path Fallback)
+
+```
+1. Look up $Slug in config.plugins[].slug
+2. If found → use OS-aware path from config
+3. If NOT found → check if $Slug is an existing folder path
+   3a. If folder exists → use it directly, derive slug from folder name
+   3b. If not → error with available slugs
+```
+
+### 2. OS Detection & Path Resolution
 
 ```
 if ($IsWindows -or $env:OS -eq "Windows_NT") → use paths.windows
@@ -129,24 +152,57 @@ else → use paths.unix
 
 If the resolved path does not exist, abort with a clear error.
 
-### 2. ZIP Creation
+### 3. ZIP Creation
 
 - Use `[System.IO.Compression.ZipFile]::CreateFromDirectory()` with `CompressionLevel::SmallestSize`
 - Root folder inside ZIP must be the plugin `slug`
 - Output ZIP to `$env:TEMP\<slug>.zip` (or OS temp equivalent)
 - Consistent with project ZIP creation rules (see `mem://architecture/backend/zip-creation-rules`)
 
-### 3. Upload
+### 4. Upload
 
 - Delegate to `upload-plugin-v2.ps1` with direct parameters:
   ```
-  -PluginPath <zipPath> -SiteUrl <url> -User <username> -Password <appPassword> -Quiet
+  -PluginPath <folderPath> -SiteUrl <url> -User <username> -Password <appPassword> -Slug <slug> -Quiet -DeleteZip
   ```
-- If `-a` / `-all`: loop through all `sites[]` sequentially
+- If `-a`: loop through all `sites[]` sequentially
 - If `-site <name>`: find matching site by name
 - Default: use the site matching `defaultSite`
 
-### 4. Cleanup
+### 5. Post-Upload Ping Verification
+
+If the plugin has a `pingEndpoint` configured:
+
+1. Construct full URL: `{siteUrl}{pingEndpoint}` (e.g., `https://testv2.example.com/wp-json/alim/v1/status`)
+2. Send GET request with Basic Auth headers (`Authorization: Basic <base64>`)
+3. Report HTTP status and response fields (`Status`, `Version`)
+4. Ping failure is **non-fatal** — it's a verification step, not a blocker
+
+```
+  Pinging https://testv2.example.com/wp-json/alim/v1/status ...
+  PING OK - Test V2 responded
+    Status: Active
+    Version: 1.0.0
+```
+
+### 6. Multi-Plugin Batch Upload
+
+When comma-separated slugs are provided (e.g., `alim,other`):
+
+- The `mode-custom-upload.ps1` module splits on commas and invokes the upload script once per slug
+- Each plugin is uploaded sequentially with its own ZIP + upload + ping cycle
+- A batch summary is printed at the end showing success/fail counts
+- **Path detection**: Values containing `\`, `/`, or `:` are treated as folder paths and never comma-split
+
+```powershell
+# Two plugins to default site
+.\run.ps1 -ucp alim,other-plugin
+
+# Two plugins to ALL sites
+.\run.ps1 -ucp alim,other-plugin -a
+```
+
+### 7. Cleanup
 
 - Delete temp ZIP after successful upload
 - Preserve ZIP on failure for debugging
@@ -155,19 +211,20 @@ If the resolved path does not exist, abort with a clear error.
 
 ## Integration with `run.ps1`
 
-The `-ucp` flag is handled in `run.ps1` by dot-sourcing `upload-custom-plugin.ps1`:
+The `-ucp` flag is handled via `mode-custom-upload.ps1` module (dot-sourced by `run.ps1`):
 
 ```powershell
 # In run.ps1 param block:
-[switch]$ucp,              # or $uploadCustomPlugin
-[string]$ucpSlug = "",     # plugin slug
-[switch]$all,              # upload to all sites
+[Alias('ucp')][string]$uploadcustomplugin = "",
+[Alias('a')][switch]$allcustomsites
 
-# In run.ps1 body:
-if ($ucp) {
-    . "$PSScriptRoot/wp-plugins/scripts/upload-custom-plugin.ps1"
-    Invoke-CustomPluginUpload -Slug $ucpSlug -All:$all -Site $site
-    exit $LASTEXITCODE
+# In run.ps1 early exit modes:
+if ($isUcpActive) {
+    Invoke-CustomPluginUploadMode `
+        -PluginSlug $ucpSlugValue `
+        -AllSites:$allcustomsites `
+        -SiteName $site `
+        -VerboseMode:$verbose
 }
 ```
 
@@ -178,36 +235,113 @@ if ($ucp) {
 | Code | Description |
 |------|-------------|
 | 0 | Success |
-| 1 | Config file not found or invalid JSON |
-| 2 | Plugin slug not found in config |
+| 1 | Config file not found, invalid JSON, or site not found |
+| 2 | Plugin slug not found in config AND not a valid folder path |
 | 3 | Plugin folder path does not exist |
 | 4 | ZIP creation failed |
-| 5 | Upload failed (inherits from V2 script) |
+| 5 | Upload failed (inherits from V2 script) or batch partial failure |
 
 ---
 
-## Example Workflow
+## Example Workflows
+
+### Single plugin (config lookup)
 
 ```
 PS> .\run.ps1 -ucp alim
 
-[CustomUpload] Reading config: custom-plugins.json
-[CustomUpload] Plugin: alim (Alim Plugin)
-[CustomUpload] Path (Windows): D:\wp-work\riseup-asia\wp-alim\alim
-[CustomUpload] Target: Test V2 (https://testv2.developers-organism.com)
-[CustomUpload] Zipping... alim.zip (SmallestSize)
-[CustomUpload] Uploading to Test V2...
-[CustomUpload] SUCCESS — alim uploaded and activated on Test V2
+========================================
+  Custom Plugin Upload
+========================================
+  Plugin:  Alim Plugin (alim)
+  Path:    D:\wp-work\riseup-asia\wp-alim\alim
+  Target:  Test V2
+  Ping:    /wp-json/alim/v1/status
+
+  Zipping with SmallestSize compression...
+  ZIP created: C:\...\alim.zip (1.23 MB)
+
+  Uploading to Test V2 (https://testv2.developers-organism.com)...
+  SUCCESS - alim uploaded to Test V2
+  Pinging https://testv2.developers-organism.com/wp-json/alim/v1/status ...
+  PING OK - Test V2 responded
+    Version: 1.0.0
+
+========================================
+  alim: 1/1 sites completed successfully
+========================================
 ```
+
+### Direct folder path
+
+```
+PS> .\run.ps1 -ucp "D:\wp-work\my-new-plugin"
+
+  [DirectPath] Folder detected, using slug: my-new-plugin
+
+========================================
+  Custom Plugin Upload [DirectPath]
+========================================
+  Plugin:  my-new-plugin (my-new-plugin)
+  Path:    D:\wp-work\my-new-plugin
+  Target:  Test V2
+
+  Zipping with SmallestSize compression...
+  ...
+```
+
+### Multi-plugin batch to all sites
+
+```
+PS> .\run.ps1 -ucp alim,other-plugin -a
+
+========================================
+  Batch Custom Plugin Upload (2 plugins)
+========================================
+  Plugins: alim, other-plugin
+
+--- [1/2] alim ---
+  ...
+  SUCCESS - alim uploaded to Test V2
+  PING OK - Test V2 responded
+  SUCCESS - alim uploaded to Test V1
+  PING OK - Test V1 responded
+  SUCCESS - alim uploaded to Atto Property Demo
+  ...
+
+--- [2/2] other-plugin ---
+  ...
+
+========================================
+  Batch: 2/2 plugins completed successfully
+========================================
+```
+
+### All sites upload
 
 ```
 PS> .\run.ps1 -ucp alim -a
 
-[CustomUpload] Uploading alim to ALL sites (3 targets)...
-  [1/3] Test V2 ... SUCCESS
-  [2/3] Test V1 ... SUCCESS
-  [3/3] Atto Property Demo ... SUCCESS
-[CustomUpload] 3/3 sites completed successfully
+========================================
+  Custom Plugin Upload
+========================================
+  Plugin:  Alim Plugin (alim)
+  Path:    D:\wp-work\riseup-asia\wp-alim\alim
+  Target:  3 sites
+
+  [1/3] Uploading to Test V2 (https://testv2.developers-organism.com)...
+  [1/3] SUCCESS - alim uploaded to Test V2
+  [1/3] PING OK - Test V2 responded
+
+  [2/3] Uploading to Test V1 (https://testv1.developers-organism.com)...
+  [2/3] SUCCESS - alim uploaded to Test V1
+
+  [3/3] Uploading to Atto Property Demo (https://demoat.attoproperty.com.au)...
+  [3/3] SUCCESS - alim uploaded to Atto Property Demo
+
+========================================
+  alim: 3/3 sites completed successfully
+========================================
 ```
 
 ---
@@ -220,4 +354,4 @@ PS> .\run.ps1 -ucp alim -a
 
 ---
 
-*Custom plugin upload specification created: 2026-04-16*
+*Custom plugin upload specification v1.1.0 — updated: 2026-04-16*
