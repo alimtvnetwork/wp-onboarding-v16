@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.37.0",
+  "version": "2.38.0",
   "releaseDate": "2026-04-16",
   "gitCommit": "dev",
   "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.37.0",
+  "scriptVersion": "2.38.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.40.0",
   "changelog": [
+    {
+      "version": "2.38.0",
+      "date": "2026-04-16",
+      "title": "Audit: Conditional Response Shape Consistency",
+      "changes": [
+        "Audited all Go HTTP handlers for conditional nested-vs-flat response shapes; only ScanDirectoryPath had the regression.",
+        "Fix: ScanDirectoryPath now always returns the flat shape (path, isValid, pluginName, ..., detectionCreated) regardless of the createDetection flag — previously the false branch returned a bare *plugin.ScanResult missing detectionCreated.",
+        "All other handlers (publish, snapshot, sync, sessions, errors, logs, sites, remote, bootstrap) verified to return a single stable shape per endpoint."
+      ]
+    },
     {
       "version": "2.37.0",
       "date": "2026-04-16",
