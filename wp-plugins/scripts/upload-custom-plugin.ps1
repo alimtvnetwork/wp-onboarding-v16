@@ -253,6 +253,66 @@ if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
 }
 
+# ============================================================================
+# PHP SYNTAX CHECK (skip vendor folder)
+# ============================================================================
+$phpCommand = Get-Command php -ErrorAction SilentlyContinue
+
+if ($null -ne $phpCommand) {
+    Write-Host "  PHP syntax check..." -ForegroundColor Yellow
+
+    $skipFolders = @("vendor")
+
+    # Also read per-plugin skip folders from settings.json
+    $pluginSettingsPath = Join-Path $pluginFolderPath "settings.json"
+    if (Test-Path $pluginSettingsPath) {
+        try {
+            $pluginSettings = Get-Content $pluginSettingsPath -Raw | ConvertFrom-Json
+            if ($pluginSettings.phpCheck -and $pluginSettings.phpCheck.skipFolders) {
+                $skipFolders += @($pluginSettings.phpCheck.skipFolders)
+            }
+        } catch { }
+    }
+
+    $phpFiles = @(Get-ChildItem -Path $pluginFolderPath -Recurse -File -Filter "*.php" | Sort-Object FullName)
+
+    # Filter out skipped folders
+    $filteredFiles = @()
+    $skippedCount = 0
+    foreach ($file in $phpFiles) {
+        $relativePath = $file.FullName.Substring($pluginFolderPath.Length).TrimStart('\', '/')
+        $isSkipped = $false
+        foreach ($skip in $skipFolders) {
+            if ($relativePath -like "$skip\*" -or $relativePath -like "$skip/*") {
+                $isSkipped = $true
+                $skippedCount++
+                break
+            }
+        }
+        if (-not $isSkipped) { $filteredFiles += $file }
+    }
+
+    $syntaxErrors = 0
+    foreach ($file in $filteredFiles) {
+        $lintOutput = & php -l $file.FullName 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $syntaxErrors++
+            Write-Host "    SYNTAX ERROR: $($file.FullName)" -ForegroundColor Red
+            Write-Host "    $($lintOutput | Out-String)" -ForegroundColor DarkRed
+        }
+    }
+
+    if ($syntaxErrors -gt 0) {
+        Write-Host "  PHP syntax check FAILED: $syntaxErrors error(s) found" -ForegroundColor Red
+        exit 4
+    }
+
+    $skipLabel = if ($skippedCount -gt 0) { " ($skippedCount skipped in vendor)" } else { "" }
+    Write-Host "  PHP syntax OK: $($filteredFiles.Count) files checked$skipLabel" -ForegroundColor Green
+} else {
+    Write-Host "  PHP CLI not found — skipping syntax check" -ForegroundColor DarkYellow
+}
+
 Write-Host "  Zipping with SmallestSize compression..." -ForegroundColor Yellow
 
 try {
