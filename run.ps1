@@ -309,6 +309,13 @@ if ($help) {
     Write-Host "  -zq, -zipqupload    ZIP QUpload plugin only"
     Write-Host "  -c,  -clear         (Legacy) Clear is now automatic before all ZIP operations"
     Write-Host ""
+    Write-Host "CUSTOM PLUGIN UPLOAD:" -ForegroundColor Yellow
+    Write-Host "  -ucp 'slug'         Upload a custom (external) plugin to default site"
+    Write-Host "  -ucp 'slug' -a      Upload custom plugin to ALL configured sites"
+    Write-Host "  -ucp 'slug' -site 'name'  Upload custom plugin to a specific site"
+    Write-Host "  -ucp -list          List all registered custom plugins"
+    Write-Host "  Config: wp-plugins/scripts/custom-plugins.json"
+    Write-Host ""
     Write-Host "INFO:" -ForegroundColor Yellow
     Write-Host "  -ls, -lr, -listsites  List all configured sites (powershell.json + config.json)"
     Write-Host ""
