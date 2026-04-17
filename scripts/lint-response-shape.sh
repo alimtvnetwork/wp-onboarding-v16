@@ -213,7 +213,16 @@ for file in "${CANDIDATE_FILES[@]}"; do
   # Match respondSuccess(w, map[string]<any|bool|interface{}>{ ... )
   grep -nE 'respondSuccess\([^,]+,[[:space:]]*(&)?map\[string\](any|bool|interface\{\})\{' "$file" 2>/dev/null \
     | while IFS= read -r hit; do
-        echo "${file}:${hit}" >> "$WARN_REPORT"
+        echo "map:${file}:${hit}" >> "$WARN_REPORT"
+      done || true
+
+  # Match respondSuccess(w, struct{ ... }{ ... }) — anonymous struct literal.
+  # Same compile-time-only shape problem as map literals: field names live in
+  # the literal itself, so typos and refactors aren't caught by the type system,
+  # and the shape can't be referenced/reused from tests or OpenAPI generation.
+  grep -nE 'respondSuccess\([^,]+,[[:space:]]*(&)?struct[[:space:]]*\{' "$file" 2>/dev/null \
+    | while IFS= read -r hit; do
+        echo "struct:${file}:${hit}" >> "$WARN_REPORT"
       done || true
 done
 
