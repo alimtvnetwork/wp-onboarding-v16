@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.41.0",
-  "releaseDate": "2026-04-16",
+  "version": "2.42.0",
+  "releaseDate": "2026-04-17",
   "gitCommit": "dev",
-  "buildTime": "2026-04-16T00:00:00Z",
-  "scriptVersion": "2.41.0",
+  "buildTime": "2026-04-17T00:00:00Z",
+  "scriptVersion": "2.42.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.42.0",
+      "date": "2026-04-17",
+      "title": "Lint: Soft Warning for Bare map[string]any in respondSuccess",
+      "changes": [
+        "Extended scripts/lint-response-shape.sh with a non-fatal warning when respondSuccess is called with a bare map[string]any, map[string]bool, or map[string]interface{} literal — recommends promoting to a typed struct in ResponseTypes.go.",
+        "Detection runs across both backend/ and licensing/ as part of the existing lint pass (CI, Makefile, pre-commit). No new wiring needed.",
+        "Soft by default: warnings print but the script still exits 0 unless the hard 'mixed shape' check fails. Set RESPONSE_SHAPE_STRICT=1 to escalate warnings to errors (e.g. for a future hardening pass).",
+        "Current state: zero warnings — all 31 handler files already use typed structs after the v2.41.0 audit. The lint now blocks regressions at commit time instead of relying on manual audit."
+      ]
+    },
     {
       "version": "2.41.0",
       "date": "2026-04-16",
