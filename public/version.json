@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.43.0",
+  "version": "2.44.0",
   "releaseDate": "2026-04-17",
   "gitCommit": "dev",
   "buildTime": "2026-04-17T00:00:00Z",
-  "scriptVersion": "2.43.0",
+  "scriptVersion": "2.44.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.44.0",
+      "date": "2026-04-17",
+      "title": "CI: Advisory Strict Response-Shape Job (Non-Blocking)",
+      "changes": [
+        "Added a new lint-response-shape-advisory job to .github/workflows/go-lint.yml that runs scripts/lint-response-shape.sh with RESPONSE_SHAPE_STRICT=1 across a backend/licensing matrix.",
+        "Marked continue-on-error: true so soft-warning regressions (bare map[string]any or anonymous struct{...}{...} literals in respondSuccess) surface as a visible yellow status on PRs without failing the overall pipeline — the hard 'mixed shape' check still blocks in the existing lint-backend / lint-licensing jobs.",
+        "fail-fast: false on the matrix so backend and licensing report independently — one dirty target doesn't hide the other.",
+        "Acts as an early-warning channel: when warnings appear, the team has a chance to promote the literal to a typed struct in ResponseTypes.go before flipping RESPONSE_SHAPE_STRICT=1 globally."
+      ]
+    },
     {
       "version": "2.43.0",
       "date": "2026-04-17",
