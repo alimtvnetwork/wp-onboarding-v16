@@ -30,14 +30,21 @@
 #   - call + call to the SAME function name
 #   - anything + empty_slice (the nil-safe []struct{}{} fallback)
 #
+# Soft warnings (non-fatal):
+#   - Bare map[string]any / map[string]bool / map[string]interface{} literals
+#     passed to respondSuccess. These work but bypass compile-time field
+#     checks. Promote to a typed struct in ResponseTypes.go.
+#   - Set RESPONSE_SHAPE_STRICT=1 to escalate warnings to errors.
+#
 # Usage:
 #   ./scripts/lint-response-shape.sh                   # scan backend/
 #   ./scripts/lint-response-shape.sh --dir licensing
 #   ./scripts/lint-response-shape.sh --include-tests
+#   RESPONSE_SHAPE_STRICT=1 ./scripts/lint-response-shape.sh
 #
 # Exit codes:
 #   0 = clean
-#   1 = violations found
+#   1 = hard violations OR (strict mode AND warnings)
 # =============================================================================
 
 set -euo pipefail
