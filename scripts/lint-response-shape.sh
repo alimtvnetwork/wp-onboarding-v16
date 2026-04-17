@@ -34,6 +34,9 @@
 #   - Bare map[string]any / map[string]bool / map[string]interface{} literals
 #     passed to respondSuccess. These work but bypass compile-time field
 #     checks. Promote to a typed struct in ResponseTypes.go.
+#   - Anonymous struct{...}{...} literals passed to respondSuccess. Same
+#     compile-time-only shape problem: field names live in the literal,
+#     can't be referenced from tests/OpenAPI, and refactors are fragile.
 #   - Set RESPONSE_SHAPE_STRICT=1 to escalate warnings to errors.
 #
 # Usage:
