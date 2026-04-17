@@ -163,3 +163,30 @@ jobs:
 
       - name: Lint — Response Shape Consistency
         run: bash scripts/lint-response-shape.sh --dir licensing
+
+  lint-response-shape-advisory:
+    name: "Advisory: Response Shape (strict)"
+    runs-on: ubuntu-latest
+    # Non-blocking: this job runs in strict mode and surfaces soft warnings
+    # (bare map[string]any literals, anonymous struct{...}{...} literals
+    # passed to respondSuccess) as a yellow/failed status WITHOUT failing
+    # the overall pipeline. The hard "mixed shape" check still runs and
+    # blocks in the regular lint-backend / lint-licensing jobs above.
+    #
+    # Toggle: set RESPONSE_SHAPE_STRICT=1 to escalate the soft warnings
+    # documented in scripts/lint-response-shape.sh to fatal exits.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: backend,   dir: backend }
+          - { name: licensing, dir: licensing }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint — Response Shape (strict, advisory) — ${{ matrix.target.name }}
+        env:
+          RESPONSE_SHAPE_STRICT: '1'
+        run: bash scripts/lint-response-shape.sh --dir ${{ matrix.target.dir }}
