@@ -186,6 +186,55 @@ for file in "${CANDIDATE_FILES[@]}"; do
   awk "$AWK_PROG" "$file" >> "$TMP_FINDINGS" 2>/dev/null || true
 done
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SOFT WARNING PASS — bare map[string]any / map[string]bool literals
+#
+# These work but are an anti-pattern: they bypass compile-time field checks,
+# allow typos in JSON keys to ship silently, and make refactors fragile.
+# Recommend promoting to a typed struct (see ResponseTypes.go for examples
+# like ActionResponse, FlatScanResponse, DeployPreflightResponse).
+#
+# Soft = does NOT fail the build. Only the hard "mixed shape" check above
+# can fail. This is intentional: typed structs are a goal, not a gate.
+# Set RESPONSE_SHAPE_STRICT=1 to escalate warnings to errors.
+# ─────────────────────────────────────────────────────────────────────────────
+WARNINGS=0
+WARN_REPORT=$(mktemp)
+trap 'rm -f "$TMP_FINDINGS" "$WARN_REPORT"' EXIT
+
+for file in "${CANDIDATE_FILES[@]}"; do
+  # Match respondSuccess(w, map[string]<any|bool|interface{}>{ ... )
+  grep -nE 'respondSuccess\([^,]+,[[:space:]]*(&)?map\[string\](any|bool|interface\{\})\{' "$file" 2>/dev/null \
+    | while IFS= read -r hit; do
+        echo "${file}:${hit}" >> "$WARN_REPORT"
+      done || true
+done
+
+WARN_COUNT=$(wc -l < "$WARN_REPORT" | tr -d ' ')
+if [[ "$WARN_COUNT" -gt 0 ]]; then
+  echo ""
+  echo -e "${YELLOW}⚠ ${WARN_COUNT} bare map[string]any/bool literal(s) in respondSuccess (soft warning):${NC}"
+  while IFS= read -r ln; do
+    # ln is FILE:LINE:matched-text — show first two segments + a snippet
+    f="${ln%%:*}"
+    rest="${ln#*:}"
+    lno="${rest%%:*}"
+    snippet="${rest#*:}"
+    # Trim leading whitespace from snippet
+    snippet="$(echo "$snippet" | sed 's/^[[:space:]]*//' | cut -c1-100)"
+    echo -e "    ${YELLOW}~${NC} ${f}:${lno}  ${snippet}"
+  done < "$WARN_REPORT"
+  echo ""
+  echo -e "  ${CYAN}Recommendation:${NC} promote to a typed struct in ResponseTypes.go."
+  echo -e "  ${CYAN}Why:${NC} typed structs catch key typos at compile time, document the shape,"
+  echo -e "        and let the response-shape mixer check reason about field consistency."
+  echo ""
+  if [[ "${RESPONSE_SHAPE_STRICT:-0}" == "1" ]]; then
+    echo -e "${RED}✗ RESPONSE_SHAPE_STRICT=1 — escalating warnings to errors${NC}"
+    WARNINGS="$WARN_COUNT"
+  fi
+fi
+
 # Group by FILE+FUNC; flag groups with mixed categories
 # Allowed: empty_slice mixed with anything; identical category|subtype repeats;
 #          all "call" with same function name.
