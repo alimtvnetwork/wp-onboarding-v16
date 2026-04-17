@@ -300,6 +300,7 @@ END {
 
 if [[ -z "$REPORT" ]]; then
   echo -e "${GREEN}✓ All ${TOTAL_FILES} handler files have consistent respondSuccess shapes${NC}"
+  if [[ "${WARNINGS:-0}" -gt 0 ]]; then exit 1; fi
   exit 0
 fi
 
@@ -323,9 +324,11 @@ done
 VIOLATIONS=$(echo "$REPORT" | grep -c '^VIOLATION:' || true)
 
 echo ""
-if [[ "$VIOLATIONS" -eq 0 ]]; then
+if [[ "$VIOLATIONS" -eq 0 && "${WARNINGS:-0}" -eq 0 ]]; then
   echo -e "${GREEN}✓ All ${TOTAL_FILES} handler files have consistent respondSuccess shapes${NC}"
   exit 0
+elif [[ "$VIOLATIONS" -eq 0 ]]; then
+  exit 1
 else
   echo -e "${RED}✗ ${VIOLATIONS} handler(s) return inconsistent response shapes (${TOTAL_FILES} files scanned)${NC}"
   echo ""
