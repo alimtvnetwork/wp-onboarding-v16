@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.42.0",
+  "version": "2.43.0",
   "releaseDate": "2026-04-17",
   "gitCommit": "dev",
   "buildTime": "2026-04-17T00:00:00Z",
-  "scriptVersion": "2.42.0",
+  "scriptVersion": "2.43.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.43.0",
+      "date": "2026-04-17",
+      "title": "Lint: Soft Warning for Anonymous struct{} Literals in respondSuccess",
+      "changes": [
+        "Extended scripts/lint-response-shape.sh to also flag anonymous struct{...}{...} literals (and &struct{...}{...} pointer variants) passed to respondSuccess — same compile-time-only shape problem as bare map literals.",
+        "Warning output now groups by kind: shows separate counts for [map] and [struct] hits, with the per-line snippet tagged so authors know which anti-pattern they hit.",
+        "Detection covers both single-line (struct{ X int }{X: 1}) and multi-line (struct {\\n  IsOk bool\\n}{IsOk: true}) struct literals via a brace-anchored regex.",
+        "Soft by default, escalates to fatal under RESPONSE_SHAPE_STRICT=1 (same toggle as the v2.42.0 map warning). Current backend: zero warnings of either kind."
+      ]
+    },
     {
       "version": "2.42.0",
       "date": "2026-04-17",
