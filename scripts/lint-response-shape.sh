@@ -228,22 +228,29 @@ done
 
 WARN_COUNT=$(wc -l < "$WARN_REPORT" | tr -d ' ')
 if [[ "$WARN_COUNT" -gt 0 ]]; then
+  MAP_COUNT=$(grep -c '^map:' "$WARN_REPORT" || true)
+  STRUCT_COUNT=$(grep -c '^struct:' "$WARN_REPORT" || true)
   echo ""
-  echo -e "${YELLOW}⚠ ${WARN_COUNT} bare map[string]any/bool literal(s) in respondSuccess (soft warning):${NC}"
+  echo -e "${YELLOW}⚠ ${WARN_COUNT} untyped respondSuccess payload(s) (soft warning):${NC}"
+  echo -e "    ${YELLOW}•${NC} ${MAP_COUNT} bare map[string]any/bool literal(s)"
+  echo -e "    ${YELLOW}•${NC} ${STRUCT_COUNT} anonymous struct{...}{...} literal(s)"
+  echo ""
   while IFS= read -r ln; do
-    # ln is FILE:LINE:matched-text — show first two segments + a snippet
-    f="${ln%%:*}"
+    # ln is KIND:FILE:LINE:matched-text
+    kind="${ln%%:*}"
     rest="${ln#*:}"
+    f="${rest%%:*}"
+    rest="${rest#*:}"
     lno="${rest%%:*}"
     snippet="${rest#*:}"
-    # Trim leading whitespace from snippet
     snippet="$(echo "$snippet" | sed 's/^[[:space:]]*//' | cut -c1-100)"
-    echo -e "    ${YELLOW}~${NC} ${f}:${lno}  ${snippet}"
+    echo -e "    ${YELLOW}~${NC} [${kind}] ${f}:${lno}  ${snippet}"
   done < "$WARN_REPORT"
   echo ""
-  echo -e "  ${CYAN}Recommendation:${NC} promote to a typed struct in ResponseTypes.go."
-  echo -e "  ${CYAN}Why:${NC} typed structs catch key typos at compile time, document the shape,"
-  echo -e "        and let the response-shape mixer check reason about field consistency."
+  echo -e "  ${CYAN}Recommendation:${NC} promote to a named struct in ResponseTypes.go."
+  echo -e "  ${CYAN}Why:${NC} named typed structs catch key typos at compile time, document the"
+  echo -e "        shape, can be referenced from tests/OpenAPI, and let the response-shape"
+  echo -e "        mixer check reason about field consistency across branches."
   echo ""
   if [[ "${RESPONSE_SHAPE_STRICT:-0}" == "1" ]]; then
     echo -e "${RED}✗ RESPONSE_SHAPE_STRICT=1 — escalating warnings to errors${NC}"
