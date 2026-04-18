@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.44.0",
-  "releaseDate": "2026-04-17",
+  "version": "2.45.0",
+  "releaseDate": "2026-04-18",
   "gitCommit": "dev",
-  "buildTime": "2026-04-17T00:00:00Z",
-  "scriptVersion": "2.44.0",
+  "buildTime": "2026-04-18T00:00:00Z",
+  "scriptVersion": "2.45.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.45.0",
+      "date": "2026-04-18",
+      "title": "Spec: Response Shape Consistency Documentation",
+      "changes": [
+        "New spec/15-generic-enforce/response-shape-consistency.md: self-contained spec covering the hard 'mixed shape' rule, both soft warnings (bare map[string]any/bool/interface{} literals + anonymous struct{...}{...} literals), the non-blocking lint-response-shape-advisory CI job, exemptions (nil, empty slices, same-type branches), and the RESPONSE_SHAPE_STRICT=1 opt-in path.",
+        "Includes detection regexes, example warning output, PR-status decision matrix, version history (v2.37.0 → v2.45.0), and a quick-reference cheatsheet.",
+        "Cross-linked to spec/15-generic-enforce/readme.md (GE-2 Zero Loose Types) so handoff AIs and contributors discover the rule from the generic-enforce index without reading the lint script."
+      ]
+    },
     {
       "version": "2.44.0",
       "date": "2026-04-17",
