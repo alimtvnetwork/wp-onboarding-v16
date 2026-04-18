@@ -1,13 +1,23 @@
 {
   "appName": "WP Publish",
-  "version": "2.45.0",
+  "version": "2.46.0",
   "releaseDate": "2026-04-18",
   "gitCommit": "dev",
   "buildTime": "2026-04-18T00:00:00Z",
-  "scriptVersion": "2.45.0",
+  "scriptVersion": "2.46.0",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.46.0",
+      "date": "2026-04-18",
+      "title": "Fix: ZIP Entry Backslash Separators Breaking Plugin Extraction",
+      "changes": [
+        "Root cause: wp-plugins/scripts/modules/zip-single.ps1 used [System.IO.Compression.ZipFile]::CreateFromDirectory, which on Windows .NET writes ZIP entry names with backslash path separators (e.g. 'riseup-asia-uploader\\riseup-asia-uploader.php'). PHP's ZipArchive::extractTo on Linux WP servers does NOT translate backslashes — it creates literal files named 'riseup-asia-uploader\\riseup-asia-uploader.php' at the destination root instead of nested folders, so WordPress reports 'Unable to find plugin folder - riseup-asia-uploader\\riseup-asia-uploader.php' and downstream activation fails with 'Plugin file does not exist' (500) or 'Could not detect plugin in ZIP' (400).",
+        "Fix: Rewrote Invoke-SinglePluginZip to use System.IO.Compression.ZipArchive directly. Files are walked with Get-ChildItem -Recurse -File and each entry is created with an explicit forward-slash path ('{slug}/{rel/path}'). No temp-dir copy — streamed straight from disk at Optimal compression.",
+        "ZIP shape is now identical on Windows, macOS, and Linux: every archive contains exactly one top-level folder (the plugin slug) with files nested below using POSIX separators, matching WordPress's expectation and the format produced by Go's archive/zip in backend/internal/services/site/ServiceBootstrapZip.go."
+      ]
+    },
     {
       "version": "2.45.0",
       "date": "2026-04-18",
