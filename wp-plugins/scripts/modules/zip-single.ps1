@@ -49,19 +49,40 @@ function Invoke-SinglePluginZip {
     }
 
     try {
-        $tempDir = Join-Path $env:TEMP "wp-zip-$(Get-Random)"
-        $pluginTempDir = Join-Path $tempDir $pluginName
-        New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
-        Copy-Item -Path "$PluginPath\*" -Destination $pluginTempDir -Recurse
+        # Build ZIP entries manually with forward-slash separators.
+        # CreateFromDirectory on some Windows/.NET versions emits backslashes
+        # in entry names, which breaks PHP ZipArchive::extractTo on Linux WP
+        # servers (it then creates literal "riseup-asia-uploader\file.php"
+        # rather than nested folders, leading to "Unable to find plugin folder"
+        # / "Plugin file does not exist" errors after extraction).
+        $resolvedPluginPath = (Resolve-Path $PluginPath).Path.TrimEnd('\','/')
+        $basePrefix = $resolvedPluginPath + [System.IO.Path]::DirectorySeparatorChar
 
-        [System.IO.Compression.ZipFile]::CreateFromDirectory(
-            $tempDir,
-            $zipOutputPath,
-            [System.IO.Compression.CompressionLevel]::Optimal,
-            $false
-        )
+        $zipStream = [System.IO.File]::Open($zipOutputPath, [System.IO.FileMode]::Create)
+        $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
 
-        Remove-Item $tempDir -Recurse -Force
+        try {
+            $allFiles = Get-ChildItem -Path $resolvedPluginPath -Recurse -File -Force
+            foreach ($file in $allFiles) {
+                $relative = $file.FullName.Substring($basePrefix.Length)
+                $entryName = $pluginName + '/' + ($relative -replace '\\','/')
+                $entry = $archive.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+                $entryStream = $entry.Open()
+                try {
+                    $fileStream = [System.IO.File]::OpenRead($file.FullName)
+                    try {
+                        $fileStream.CopyTo($entryStream)
+                    } finally {
+                        $fileStream.Dispose()
+                    }
+                } finally {
+                    $entryStream.Dispose()
+                }
+            }
+        } finally {
+            $archive.Dispose()
+            $zipStream.Dispose()
+        }
 
         if (Test-Path $zipOutputPath) {
             $zipSize = (Get-Item $zipOutputPath).Length
