@@ -28,6 +28,61 @@ if (!defined('ABSPATH')) {
 .<?php echo CG_CSS::HISTORY_ACTIONS; ?> { display: flex; gap: <?php echo CG_Constants::SPACING_SM; ?>px; margin-left: auto; }
 .<?php echo CG_CSS::HISTORY_STATS; ?> { color: #666; font-size: 14px; flex: 1; text-align: center; }
 
+/* ---------- Columns dropdown (v2.5.0) ---------- */
+#cg-columns-toggle-btn { display: inline-flex !important; align-items: center; gap: 6px; height: 36px; }
+#cg-columns-toggle-btn .dashicons-columns { font-size: 16px; width: 16px; height: 16px; line-height: 1; }
+.cg-columns-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 220px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 9999;
+    padding: 0;
+}
+.cg-columns-dropdown-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f6f7f7;
+    font-size: 12px;
+    color: #1d2327;
+    border-radius: 4px 4px 0 0;
+}
+.cg-columns-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.cg-columns-list li { margin: 0; padding: 0; }
+.cg-columns-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #1d2327;
+}
+.cg-columns-list label:hover { background: #f0f6fc; }
+.cg-columns-list input[type="checkbox"] { margin: 0; }
+.cg-columns-dropdown-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 8px 14px;
+    border-top: 1px solid #e0e0e0;
+    background: #f6f7f7;
+    border-radius: 0 0 4px 4px;
+}
+
+/* When user explicitly hides a column via dropdown, force-hide it (overrides @media) */
+#<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .cg-col-hidden { display: none !important; }
+
 /* ---------- Responsive history table (v2.4.0) ---------- */
 /* Wrap the table in a horizontal scroll container to prevent column squashing */
 .<?php echo CG_CSS::CARD; ?> { overflow-x: auto; }

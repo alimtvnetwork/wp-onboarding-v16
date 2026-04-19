@@ -408,6 +408,87 @@ jQuery(document).ready(function($) {
         });
     });
     
+    // ============= Columns Visibility Dropdown (v2.5.0) =============
+    const CG_COLUMNS_STORAGE_KEY = 'cg_history_hidden_columns_v1';
+    // Columns hidden by default (preserves prior responsive behavior on first load)
+    const CG_DEFAULT_HIDDEN = ['column-taxonomy', 'column-schema', 'column-meta-title'];
+    
+    function getHiddenColumns() {
+        try {
+            const raw = localStorage.getItem(CG_COLUMNS_STORAGE_KEY);
+            if (raw === null) return CG_DEFAULT_HIDDEN.slice();
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) { return CG_DEFAULT_HIDDEN.slice(); }
+    }
+    
+    function saveHiddenColumns(hidden) {
+        try { localStorage.setItem(CG_COLUMNS_STORAGE_KEY, JSON.stringify(hidden)); } catch (e) {}
+    }
+    
+    function applyColumnVisibility() {
+        const hidden = getHiddenColumns();
+        const $table = $('#' + CG_IDS.history.table);
+        $table.find('th, td').removeClass('cg-col-hidden');
+        hidden.forEach(function(colClass) {
+            $table.find('.' + colClass).addClass('cg-col-hidden');
+        });
+        $('.cg-col-toggle').each(function() {
+            const col = $(this).data('col');
+            $(this).prop('checked', hidden.indexOf(col) === -1);
+        });
+    }
+    
+    $('#cg-columns-toggle-btn').on('click', function(e) {
+        e.stopPropagation();
+        const $dd = $('#cg-columns-dropdown');
+        const isOpen = $dd.is(':visible');
+        $dd.toggle();
+        $(this).attr('aria-expanded', !isOpen);
+    });
+    
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.cg-columns-dropdown-wrapper').length) {
+            $('#cg-columns-dropdown').hide();
+            $('#cg-columns-toggle-btn').attr('aria-expanded', 'false');
+        }
+    });
+    
+    $(document).on('change', '.cg-col-toggle', function() {
+        const col = $(this).data('col');
+        const visible = $(this).is(':checked');
+        let hidden = getHiddenColumns();
+        if (visible) {
+            hidden = hidden.filter(function(c) { return c !== col; });
+        } else if (hidden.indexOf(col) === -1) {
+            hidden.push(col);
+        }
+        saveHiddenColumns(hidden);
+        applyColumnVisibility();
+    });
+    
+    $('#cg-columns-show-all').on('click', function() {
+        saveHiddenColumns([]);
+        applyColumnVisibility();
+    });
+    
+    $('#cg-columns-reset').on('click', function() {
+        saveHiddenColumns(CG_DEFAULT_HIDDEN.slice());
+        applyColumnVisibility();
+    });
+    
+    // Re-apply after every history render (tbody is replaced on AJAX reload)
+    const _origLoadHistory = loadHistory;
+    loadHistory = function(page, search) {
+        const result = _origLoadHistory(page, search);
+        applyColumnVisibility();
+        setTimeout(applyColumnVisibility, 100);
+        setTimeout(applyColumnVisibility, 600);
+        return result;
+    };
+    
+    applyColumnVisibility();
+    
     loadHistory();
 });
 </script>
