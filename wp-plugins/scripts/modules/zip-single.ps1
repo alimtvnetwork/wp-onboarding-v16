@@ -60,7 +60,7 @@ function Invoke-SinglePluginZip {
         $basePrefix = $resolvedPluginPath + [System.IO.Path]::DirectorySeparatorChar
 
         $zipStream = [System.IO.File]::Open($zipOutputPath, [System.IO.FileMode]::Create)
-        $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+        $archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
 
         try {
             $allFiles = Get-ChildItem -Path $resolvedPluginPath -Recurse -File -Force

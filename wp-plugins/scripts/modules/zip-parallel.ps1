@@ -29,6 +29,7 @@ function Invoke-ParallelPluginZip {
         $zipJobs += Start-Job -Name "zip-$currentIndex-$folderName" -ScriptBlock {
             param($ZipSinglePath, $PluginHelpersPath, $PluginPath, $Index)
 
+            Add-Type -AssemblyName System.IO.Compression
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             . $PluginHelpersPath
             . $ZipSinglePath
