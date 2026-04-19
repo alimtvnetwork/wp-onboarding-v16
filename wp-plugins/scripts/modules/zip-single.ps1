@@ -2,6 +2,7 @@
 # Atomic ZIP operation: creates a ZIP archive for exactly one WordPress plugin.
 # Dot-sourced by run.ps1 - expects plugin-helpers.ps1 loaded (Get-PluginVersion).
 
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 function Invoke-SinglePluginZip {
@@ -59,7 +60,7 @@ function Invoke-SinglePluginZip {
         $basePrefix = $resolvedPluginPath + [System.IO.Path]::DirectorySeparatorChar
 
         $zipStream = [System.IO.File]::Open($zipOutputPath, [System.IO.FileMode]::Create)
-        $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+        $archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
 
         try {
             $allFiles = Get-ChildItem -Path $resolvedPluginPath -Recurse -File -Force

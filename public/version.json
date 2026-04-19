@@ -1,13 +1,24 @@
 {
   "appName": "WP Publish",
-  "version": "2.46.0",
-  "releaseDate": "2026-04-18",
+  "version": "2.46.1",
+  "releaseDate": "2026-04-19",
   "gitCommit": "dev",
-  "buildTime": "2026-04-18T00:00:00Z",
-  "scriptVersion": "2.46.0",
+  "buildTime": "2026-04-19T00:00:00Z",
+  "scriptVersion": "2.46.1",
   "wpPluginVersion": "2.48.0",
   "quploadVersion": "2.41.0",
   "changelog": [
+    {
+      "version": "2.46.1",
+      "date": "2026-04-19",
+      "title": "Hotfix: ZIP Step Failing With 0.0 KB / 0.2s in Parallel Jobs",
+      "changes": [
+        "Symptom: After v2.46.0 rewrote zip-single.ps1 to use System.IO.Compression.ZipArchive directly, every plugin failed in the parallel pipeline with 'qupload-v2.40.0: FAILED (0.0 KB) [0.2s]' and 'No plugins available for upload (all failed PHP check or ZIP)'.",
+        "Root cause: The new code references [System.IO.Compression.ZipArchive], which lives in the System.IO.Compression assembly — NOT System.IO.Compression.FileSystem. The old CreateFromDirectory call only needed the FileSystem assembly, so only that one was loaded. In the parallel background-job runspace the missing type resolved to a terminating error, the try/catch returned a hashtable with empty Error, and the pipeline saw 0-byte output.",
+        "Fix: Added 'Add-Type -AssemblyName System.IO.Compression' at the top of wp-plugins/scripts/modules/zip-single.ps1 (alongside the existing FileSystem load) and inside the Start-Job ScriptBlock in wp-plugins/scripts/modules/zip-parallel.ps1, so the ZipArchive type resolves in both the main runspace and every parallel job.",
+        "Also switched 'New-Object System.IO.Compression.ZipArchive(...)' to '[System.IO.Compression.ZipArchive]::new(...)' for clearer constructor binding under PowerShell 5.1 + 7.x."
+      ]
+    },
     {
       "version": "2.46.0",
       "date": "2026-04-18",
