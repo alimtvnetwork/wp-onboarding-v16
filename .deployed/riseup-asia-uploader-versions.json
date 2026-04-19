@@ -1,0 +1,10 @@
+﻿{
+    "pluginSlug":  "riseup-asia-uploader",
+    "versions":  [
+                     {
+                         "deployedAt":  "2026-04-16T17:24:20Z",
+                         "commitSha":  "3ea09a7f3b191c3f8c2499724b4810018db4f44f",
+                         "version":  "2.48.0"
+                     }
+                 ]
+}

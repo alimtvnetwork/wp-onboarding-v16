@@ -2,8 +2,6 @@ nodeLinker: isolated
 
 packageImportMethod: auto
 
-storeDir: E:\.pnpm-store
-
 symlink: true
 
 virtualStoreDir: .pnpm
