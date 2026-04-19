@@ -2,6 +2,7 @@
 # Atomic ZIP operation: creates a ZIP archive for exactly one WordPress plugin.
 # Dot-sourced by run.ps1 - expects plugin-helpers.ps1 loaded (Get-PluginVersion).
 
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 function Invoke-SinglePluginZip {
