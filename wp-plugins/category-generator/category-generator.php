@@ -3,7 +3,7 @@
  * Plugin Name: Category Generator for Area by Riseup Asia LLC
  * Plugin URI: https://riseup-asia.com/
  * Description: A powerful WordPress plugin to generate categories by cross-joining titles and areas with templated HTML descriptions, Yoast SEO integration, and Local Business Schema. Developed by MD Alim Ul Karim, founder of Riseup Asia LLC - a leading technology solutions company specializing in innovative web development, digital transformation, and enterprise software solutions.
- * Version: 2.3.0
+ * Version: 2.4.0
  * Author: MD Alim Ul Karim
  * Author URI: https://riseup-asia.com/
  * License: GPL v2 or later

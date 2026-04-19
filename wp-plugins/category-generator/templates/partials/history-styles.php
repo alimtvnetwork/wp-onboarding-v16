@@ -28,11 +28,44 @@ if (!defined('ABSPATH')) {
 .<?php echo CG_CSS::HISTORY_ACTIONS; ?> { display: flex; gap: <?php echo CG_Constants::SPACING_SM; ?>px; margin-left: auto; }
 .<?php echo CG_CSS::HISTORY_STATS; ?> { color: #666; font-size: 14px; flex: 1; text-align: center; }
 
-#<?php echo CG_CSS::ID_HISTORY_TABLE; ?> th, #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> td { vertical-align: middle; font-size: 12px; }
+/* ---------- Responsive history table (v2.4.0) ---------- */
+/* Wrap the table in a horizontal scroll container to prevent column squashing */
+.<?php echo CG_CSS::CARD; ?> { overflow-x: auto; }
+#<?php echo CG_CSS::ID_HISTORY_TABLE; ?> {
+    table-layout: auto !important; /* override .fixed equal-width columns */
+    min-width: 1200px;             /* keep readable widths; container scrolls horizontally */
+    width: 100%;
+}
+#<?php echo CG_CSS::ID_HISTORY_TABLE; ?> th,
+#<?php echo CG_CSS::ID_HISTORY_TABLE; ?> td {
+    vertical-align: middle;
+    font-size: 12px;
+    white-space: nowrap;            /* stop cells wrapping into vertical strips */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .<?php echo CG_CSS::COLUMN_CB; ?> { text-align: center; }
 .<?php echo CG_CSS::COLUMN_CB; ?> input { margin: 0; }
-.<?php echo CG_CSS::COLUMN_NAME; ?> { font-weight: 600; }
-.<?php echo CG_CSS::COLUMN_SLUG; ?>, .<?php echo CG_CSS::COLUMN_META_TITLE; ?>, .<?php echo CG_CSS::COLUMN_META_DESC; ?> { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.<?php echo CG_CSS::COLUMN_NAME; ?> { font-weight: 600; max-width: 220px; }
+.<?php echo CG_CSS::COLUMN_SLUG; ?> { max-width: 180px; }
+.<?php echo CG_CSS::COLUMN_TITLE; ?> { max-width: 160px; }
+.<?php echo CG_CSS::COLUMN_AREA; ?> { max-width: 110px; }
+.<?php echo CG_CSS::COLUMN_META_TITLE; ?>,
+.<?php echo CG_CSS::COLUMN_META_DESC; ?> { max-width: 180px; }
+
+/* Hide low-priority columns under 1200px (the table still scrolls if needed) */
+@media (max-width: 1200px) {
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> { min-width: 900px; }
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_TAXONOMY; ?>,
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_SCHEMA; ?>,
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_META_TITLE; ?> { display: none; }
+}
+@media (max-width: 900px) {
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> { min-width: 640px; }
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_META_DESC; ?>,
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_SLUG; ?>,
+    #<?php echo CG_CSS::ID_HISTORY_TABLE; ?> .<?php echo CG_CSS::COLUMN_DATE; ?> { display: none; }
+}
 
 .<?php echo CG_CSS::BADGE; ?> { display: inline-block; padding: 2px <?php echo CG_Constants::SPACING_MD; ?>px; border-radius: <?php echo CG_Constants::BORDER_RADIUS_SM; ?>px; font-size: 10px; font-weight: 600; }
 .<?php echo CG_CSS::BADGE_YES; ?> { background: #d4edda; color: #155724; }
