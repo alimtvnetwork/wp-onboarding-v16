@@ -151,10 +151,30 @@ trait AuthCredentialTrait
         $authHeader = $this->resolveAuthHeader($request);
 
         if (empty($authHeader)) {
-            return $this->buildMissingAuthError($request);
+            return $this->resolveCookieAuthenticatedUser($request);
         }
 
         return $this->authenticateUser($authHeader);
+    }
+
+    /**
+     * Accept WP cookie + REST nonce auth (browser admin UI) when no Authorization header is present.
+     * Falls back to MissingAuthError when no logged-in user is detected.
+     */
+    private function resolveCookieAuthenticatedUser(WP_REST_Request $request): WP_User|WP_Error {
+        $userId = get_current_user_id();
+        $isLoggedIn = ($userId > 0);
+
+        if ($isLoggedIn) {
+            $user = get_user_by('id', $userId);
+            $isUserResolved = ($user instanceof WP_User);
+
+            if ($isUserResolved) {
+                return $user;
+            }
+        }
+
+        return $this->buildMissingAuthError($request);
     }
 
     private function verifyCapability(WP_User $user, string $capability): true|WP_Error {
