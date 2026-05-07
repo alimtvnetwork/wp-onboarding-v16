@@ -535,17 +535,17 @@ Raw text file from `GET /api/v1/logs/error`. Contains only error-level entries.
   Error Message: [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/riseup-asia-uploader/v1/snapshots/settings): status 403
   Backend Error: [E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/riseup-asia-uploader/v1/snapshots/settings): status 403
   Go Backend Stack:
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1
   Go Methods Stack:
-    #0 handlers.init.handleSiteActionByID.func63 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go:107
-    #1 api.NewServer.SessionLogging.func3.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go:107
-    #2 api.NewServer.Recovery.func2.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:245
-    #3 api.NewServer.Logging.func1.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:66
-    #4 middleware.CORS.func1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:45
+    #0 handlers.init.handleSiteActionByID.func63 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go:107
+    #1 api.NewServer.SessionLogging.func3.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go:107
+    #2 api.NewServer.Recovery.func2.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:245
+    #3 api.NewServer.Logging.func1.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:66
+    #4 middleware.CORS.func1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:45
 ```
 
 ### Format Rules
@@ -601,17 +601,17 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
   Error Message: [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/riseup-asia-uploader/v1/snapshots/settings): status 403
   Backend Error: [E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/riseup-asia-uploader/v1/snapshots/settings): status 403
   Go Backend Stack:
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1
-    D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1
+    D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1
   Go Methods Stack:
-    #0 handlers.init.handleSiteActionByID.func63 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go:107
-    #1 api.NewServer.SessionLogging.func3.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go:107
-    #2 api.NewServer.Recovery.func2.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:245
-    #3 api.NewServer.Logging.func1.1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:66
-    #4 middleware.CORS.func1 at D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:45
+    #0 handlers.init.handleSiteActionByID.func63 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go:107
+    #1 api.NewServer.SessionLogging.func3.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go:107
+    #2 api.NewServer.Recovery.func2.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:245
+    #3 api.NewServer.Logging.func1.1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:66
+    #4 middleware.CORS.func1 at D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:45
   Delegated Server Info:
     Endpoint: "https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings"
     Method: "GET"

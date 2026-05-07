@@ -81,7 +81,7 @@ export function AboutPanel() {
               asChild
             >
               <a
-                href="https://github.com/riseup-asia/wp-onboarding-v5/blob/main/CHANGELOG.md"
+                href="https://github.com/riseup-asia/wp-onboarding-v16/blob/main/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -96,7 +96,7 @@ export function AboutPanel() {
               asChild
             >
               <a
-                href="https://github.com/riseup-asia/wp-onboarding-v5/blob/main/spec/powershell-integration/CHANGELOG.md"
+                href="https://github.com/riseup-asia/wp-onboarding-v16/blob/main/spec/powershell-integration/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >

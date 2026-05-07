@@ -30,11 +30,11 @@
       "#1 {main}"
     ],
     "Backend": [
-      "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63",
-      "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1",
-      "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1",
-      "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1",
-      "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1"
+      "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go:107 handlers.init.handleSiteActionByID.func63",
+      "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go:107 api.NewServer.SessionLogging.func3.1",
+      "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:245 api.NewServer.Recovery.func2.1",
+      "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:66 api.NewServer.Logging.func1.1",
+      "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go:45 middleware.CORS.func1"
     ],
     "Frontend": [],
     "DelegatedRequestServer": {
@@ -66,27 +66,27 @@
     "Backend": [
       {
         "Method": "handlers.init.handleSiteActionByID.func63",
-        "File": "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/handlers/handler_factory.go",
+        "File": "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/handlers/handler_factory.go",
         "LineNumber": 107
       },
       {
         "Method": "api.NewServer.SessionLogging.func3.1",
-        "File": "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/session_logging.go",
+        "File": "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/session_logging.go",
         "LineNumber": 107
       },
       {
         "Method": "api.NewServer.Recovery.func2.1",
-        "File": "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go",
+        "File": "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go",
         "LineNumber": 245
       },
       {
         "Method": "api.NewServer.Logging.func1.1",
-        "File": "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go",
+        "File": "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go",
         "LineNumber": 66
       },
       {
         "Method": "middleware.CORS.func1",
-        "File": "D:/wp-work/riseup-asia/wp-onboarding-v5/backend/internal/api/middleware/middleware.go",
+        "File": "D:/wp-work/riseup-asia/wp-onboarding-v16/backend/internal/api/middleware/middleware.go",
         "LineNumber": 45
       }
     ],
